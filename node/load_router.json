@@ -1,0 +1,28 @@
+[
+    {
+        "info": {
+            "usage":{
+                "usage":"-name -model [-overwrite]",
+                "options":{
+                    "name":"name of the ESP router",
+                    "model":"file containing the ESP router configuration",
+                    "overwrite":"true | false (overwrite project if it exists, defaults to false)"
+                }
+            },
+            "defaults": {
+                "overwrite":"false",
+                "parms":{}
+            },
+            "exit-on-response":true
+        }
+    },
+    {
+        "router": {
+            "name":"@name@",
+            "data":"$model$",
+            "action":"load",
+            "overwrite":"@overwrite@",
+            "#include":"parms"
+        }
+    }
+]

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP Weather Demo</title>
+
+<link rel="stylesheet" href="../../style/connect.css" />
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/main"></script>
+
+<script type="text/javascript">
+
+var _visuals = null;
+var _visual = null;
+var _appid = "";
+var _conn = null;
+var _api = null;
+
+function
+esp(api)
+{
+    _api = api;
+
+    var parms = _api.getParms();
+
+    if (parms.hasOwnProperty("server") == false)
+    {
+        alert("you must specify ESP server URL");
+        return;
+    }
+
+    var server = parms["server"];
+    delete parms["server"];
+
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+
+    _appid = parms.hasOwnProperty("appid") ? parms["appid"] : "";
+
+    document.getElementById("appid").value = _appid;
+
+    _conn = _api.connect(server,{ready:ready},{interval:0});
+    _visuals = _api.createVisuals(parms);
+
+    _api.handleLayout();
+}
+
+function
+ready()
+{
+    if (_appid.length > 0)
+    {
+        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true,parms:{appid:_appid,config:new URL("config.xml",document.URL).toString()}});
+    }
+    else
+    {
+        _api.getDialogs().pushModal("help");
+    }
+
+    _api.size();
+
+    _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
+}
+
+function
+loaded()
+{
+    _visuals.clear();
+
+    var weather = _conn.getEventCollection({window:"p/cq/weather",pagesize:3});
+    var aggr = _conn.getEventCollection({window:"p/cq/aggr"});
+    var barColor = "rgba(255,255,255,.5)";
+    var width = 400;
+    var height = 60;
+    var lw = 2;
+
+    _visuals.createGauge("temperature",weather,{segments:5,value:"temp",header:"Temperature",width:width,height:height,bar_color:barColor,
+                            range:[0,120],fill:"#e8e8e8",line_width:lw,colors:null,show_controls:false,shape:"bullet",borderx:0,delta:true})
+    _visuals.createGauge("speed",weather,{segments:5,value:"windSpeed",width:width,height:height,range:[0,20],fill:"#e8e8e8",delta:true,shape:"bullet",bar_color:barColor,
+                            line_width:lw,header:"Wind Speed",colors:null,show_controls:false,borderx:0,marginx:{l:30,r:30,b:30,t:30}})
+    _visuals.createCompass("direction",weather,{value:"windDirection",size:225,header:"Wind Direction",show_controls:false})
+    _visuals.createBarChart("highsAndLows",aggr,{y:["high","low"],header:"High and Low Temperatures",line_width:2,fillx:true});
+
+    _api.size();
+}
+
+function
+publish()
+{
+}
+
+function
+sendData(request,text,data)
+{
+    console.log(text);
+}
+
+function
+weatherError()
+{
+}
+
+function
+done()
+{
+    _api.getDialogs().popModal("help");
+    _appid = document.getElementById("appid").value;
+
+    if (_appid.length > 0)
+    {
+        var url = new URL("config.xml",document.URL);
+        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true,appid:_appid,config:url.href});
+    }
+
+    ready();
+}
+
+</script>
+
+</head>
+
+<body>
+
+    <div id="banner">
+        <table style="width:100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_api.getDialogs().pushModal('espModel')">&#xf426;</a>
+                    <a class="icon" href="javascript:_api.getDialogs().pushModal('help')">&#xf30b;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content">
+        <div class="layout">
+            <div id="temperature" style="width:98%;height:200px"></div>
+            <div id="speed" style="width:98%;height:200px"></div>
+            <div id="direction" style="width:50%;height:400px"></div>
+            <div id="highsAndLows" style="width:45%;height:400px"></div>
+        </div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+    <div id="help" class="dialog" style="width:60%">
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">ESP Weather Demo</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogContent">
+            This example shows live weather data from <a href="https://openweathermap.org" target="_blank">openweathermap.org</a>.
+            <br/><br/>
+            In order to run the model, you need to sign up and get an appid from the <a href="https://home.openweathermap.org/users/sign_up" target="_blank">here</a>
+            and enter it in the text box below.
+            <br/><br/>
+            <input type="text" id="appid" style="width:100%" />
+            <br/><br/>
+            After you have done this, the model should load and the weather data should begin to display.
+            <br/><br/>
+        </div>
+
+        <div class="dialogButtons">
+            <table style="width:100%">
+                <tr>
+                    <td class="dialogButton">
+                        <span><button class="close" onclick="javascript:done()">Done</button></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="espModel" class="dialog" style="width:90%;height:90%">
+
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">ESP Model</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogContent" style="width:95%;height:70%;margin:auto">
+            <pre id="espModelXml" class="model"></pre>
+        </div>
+    </div>
+
+</html>

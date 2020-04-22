@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP Symbols Example</title>
+
+<link rel="stylesheet" href="../../esp/style/connect.css" />
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/main"></script>
+
+<script type="text/javascript">
+
+var _api = null;
+var _conn = null;
+var _visuals = null;
+
+function
+esp(api)
+{
+    _api = api;
+
+    var parms = api.getParms();
+
+    if (parms.hasOwnProperty("server") == false)
+    {
+        alert("you must specify ESP server URL");
+        return;
+    }
+
+    var server = parms["server"];
+    delete parms["server"];
+
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+
+    _conn = _api.connect(server,{ready:ready},{debug:false});
+    _visuals = _api.createVisuals(parms);
+
+    _api.handleLayout();
+}
+
+function
+ready()
+{
+    if (_api.getParm("load",true))
+    {
+        _api.showStatus("Loading project...");
+        _conn.loadProjectFrom("p","model.xml",{loaded:loaded,error:error},{overwrite:true});
+    }
+    else
+    {
+        loaded();
+    }
+}
+
+function
+loaded()
+{
+    _api.clearStatus();
+
+    _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
+
+    var gradient = "#3b99fc";
+    var cheapSymbols = _conn.getEventCollection({window:"p/cq/symbols",pagesize:20,filter:"lt($averagePrice,10)",sort:"averagePrice:ascending"});
+    //var expensiveSymbols = _conn.getEventCollection({window:"p/cq/symbols",pagesize:20,filter:"gt($averagePrice,100)",sort:"averagePrice"});
+    var expensiveSymbols = _conn.getEventCollection({window:"p/cq/symbols",pagesize:20,filter:"gt($averagePrice,100)",sort:"averagePrice"});
+
+    _visuals.createBarChart("cheapBar",cheapSymbols,{y:"averagePrice",header:"Cheap Symbols",show_controls:false,color:"averagePrice",gradient:gradient,gradient_end:true,enable_filter:true});
+    _visuals.createTable("cheapTable",cheapSymbols,{values:["symbol","averagePrice"],header:"Cheap Symbols",show_controls:false,color:"averagePrice",gradient:gradient,gradient_end:true,enable_filter:true});
+
+    _visuals.createBarChart("expensiveBar",expensiveSymbols,{y:"averagePrice",header:"Cheap Symbols",show_controls:false,color:"averagePrice",gradient:gradient,gradient_end:true,enable_filter:true});
+    _visuals.createTable("expensiveTable",expensiveSymbols,{values:["symbol","averagePrice"],header:"Expensive Symbols",show_controls:false,color:"averagePrice",gradient:gradient,gradient_end:true,enable_filter:true});
+
+    _api.size();
+}
+
+function
+error()
+{
+    alert("error");
+}
+
+function
+publish()
+{
+    var a = document.createElement("a");
+    a.href = "../trades/trades1M.bin";
+    _conn.publishUrl("p/cq/trades",a.href,null,{format:"bin"});
+}
+
+</script>
+</head>
+
+<style>
+
+</style>
+
+<body>
+
+    <div id="banner">
+        <table style="width:100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td class="icon">
+                    <a class="icon" href="javascript:publish()">&#xf539;</a>
+                    <a class="icon" href="javascript:_api.getDialogs().pushModal('espModel')">&#xf426;</a>
+                    <a class="icon" href="javascript:_api.getDialogs().pushModal('help')">&#xf30b;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content">
+        <div class="layout">
+            <div id="cheapBar" class="component" style="width:60%;height:400px"></div>
+            <div id="cheapTable" class="component" style="width:35%;height:400px"></div>
+            <div id="expensiveBar" class="component" style="width:60%;height:400px"></div>
+            <div id="expensiveTable" class="component" style="width:35%;height:400px"></div>
+        </div>
+    </div>
+
+    <div id="publish" style="display:none">
+        <input type="button" value="Publish"></input>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+    <div id="help" class="dialog" style="width:60%">
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">ESP Stock Trades Example</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogContent">
+        This example pushes stock trade data through an ESP model and aggregates symbol data. The graphics display the highest and lowest symbols by average trade price.
+        <br/></br/>
+        Hit the publish icon at the upper right to initiate sending events into ESP.
+        </div>
+
+        <div class="dialogButtons">
+            <table style="width:100%">
+                <tr>
+                    <td class="dialogButton">
+                        <span><button class="close" onclick="javascript:_api.getDialogs().popModal('help')">Done</button></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="espModel" class="dialog" style="width:90%;height:90%">
+
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">ESP Model</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogContent" style="width:95%;height:70%;margin:auto">
+            <pre id="espModelXml" class="model"></pre>
+        </div>
+    </div>
+
+
+</body>
+
+</html>

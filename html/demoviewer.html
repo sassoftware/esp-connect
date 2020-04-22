@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+
+<!--
+    Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
+    SPDX-License-Identifier: Apache-2.0
+-->
+
+<html>
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP Demo</title>
+
+<link rel="stylesheet" href="../style/connect.css" />
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../js/main"></script>
+
+<script type="text/javascript">
+
+var _demo = null;
+
+function
+esp(api)
+{
+    _demo = new Demo(api);
+}
+
+function
+openDemo()
+{
+    _demo.api.getDialogs().popModal("open");
+    _demo.open(document.getElementById("_demourl").value);
+}
+
+function
+over(event)
+{
+	event.stopPropagation();
+	event.preventDefault();
+}
+
+var	_reader = new FileReader();
+_reader.onload = gotFileContent;
+
+function
+drop(event)
+{
+	event.stopPropagation();
+	event.preventDefault();
+
+	var	files = event.dataTransfer.files;
+	var	file = files[0];
+
+	_reader.readAsText(file);
+}
+
+function
+gotFileContent()
+{
+    var config = _reader.result;
+
+    _demo.load(config);
+
+    _demo._storage.setOpt("config",config);
+    _demo._storage.clearOpt("url");
+}
+
+function
+subscriberSchema(subscriber)
+{
+    _demo.subscriberLoaded(subscriber);
+}
+
+function
+publisherSchema(publisher)
+{
+    _demo.publisherLoaded(publisher);
+}
+
+function
+projectLoaded(connection,project)
+{
+    _demo.projectLoaded(connection,project);
+}
+
+function
+routerLoaded(connection,router)
+{
+    _demo.routerLoaded(connection,router);
+}
+
+function
+Demo(api)
+{
+    this._connections = {};
+
+    this._xml = null;
+    this._viewer = null;
+    this._script = null;
+    this._xpath = null;
+    this._style = null;
+    this._config = null;
+
+    this._api = api;
+    this._parms = this._api.getParms();
+    this._visuals = this._api.createVisuals(this._parms);
+
+    this._api.handleLayout();
+    this._xpath = this._api.getXPath();
+
+    this._storage = this._api.getStorage("espdemo");
+
+    var content = document.getElementById("content");
+    content.addEventListener("dragover",over,false);
+    content.addEventListener("drop",drop,false);
+
+    this._parms = this._api.getParms();
+    this._baseURL = document.URL;
+
+    Object.defineProperty(this,"api", {
+        get() {
+            return(this._api);
+        }
+    });
+
+    if (this._parms.hasOwnProperty("url"))
+    {
+        document.getElementById("_demourl").value = this._parms["url"];
+        this.open(this._parms["url"]);
+    }
+    else if (this._storage.hasOpt("url"))
+    {
+        document.getElementById("_demourl").value = this._storage.getOpt("url");
+        this.open(this._storage.getOpt("url"));
+    }
+    else if (this._storage.hasOpt("config"))
+    {
+        this.load(this._storage.getOpt("config"));
+    }
+}
+
+Demo.prototype.open =
+function(url)
+{
+    this._baseURL = new URL(url,document.URL);
+    this._api.getAjax().create("config",url,{response:this.loadConfig,error:this.error}).get();
+    this._storage.setOpt("url",url);
+    this._storage.clearOpt("config");
+}
+
+Demo.prototype.loadConfig =
+function(request,data)
+{
+    _demo.load(data);
+}
+
+Demo.prototype.error =
+function(request,error)
+{
+    throw(error);
+}
+
+Demo.prototype.load =
+function(config)
+{
+    this._config = config;
+
+    document.getElementById("layout").innerHTML = "";
+
+    Object.values(this._connections).forEach((connection) => {
+        connection.close();
+    });
+
+    this._connections = {};
+
+    var rgx = new RegExp("@([A-z0-9_]*)@");
+    var parms = this._api.getParms();
+    var values = [];
+
+    while ((results = rgx.exec(this._config)) != null)
+    {
+        var name = results[1];
+        if (parms.hasOwnProperty(name) == false)
+        {
+            values.push({name:name});
+            this._config = this._config.replace(new RegExp("@" + name + "@","g"),"%" + name + "%");
+        }
+        else
+        {
+            this._config = this._config.replace(new RegExp("@" + name + "@","g"),parms[name]);
+        }
+    }
+
+    if (values.length > 0)
+    {
+        var demo = this;
+        this._api.getDialogs().showDialog({ok:function(data){demo.setValues(data)},cancel:demo._api.getDialogs().hideDialog,header:"Demo Values",values:values});
+        return;
+    }
+
+    this.api.getDialogs().pushModal("loading");
+
+    this.addLoadingMessage("Loading Demo");
+
+    this._xml = this._xpath.createXml(this._config);
+
+    var info = this._xpath.getNode("./info",this._xml.documentElement);
+
+    if (info != null)
+    {
+        var title = this._xpath.getString("title",info);
+        if (title.length == 0)
+        {
+            title = "ESP Demo";
+        }
+
+        document.title = title;
+        document.getElementById("bannerTitle").innerHTML = title;
+    }
+
+    var script = this._xpath.getNode("./script",this._xml.documentElement);
+
+    if (script != null)
+    {
+        if (this._script == null)
+        {
+            this._script = document.createElement("script");
+            this._script.type = "text/javascript";
+            document.body.appendChild(this._script);
+        }
+
+        this._script.text = this._xpath.nodeText(script);
+    }
+
+    var css = this._xpath.getNode("./css",this._xml.documentElement);
+
+    if (css != null)
+    {
+        if (this._style == null)
+        {
+            this._style = document.createElement("style");
+            this._style.type = "text/css";
+            document.body.appendChild(this._style);
+        }
+
+        this._style.innerHTML = this._xpath.nodeText(css);
+    }
+
+    this._xpath.getNodes("//servers/server",this._xml.documentElement).forEach((server) => {
+        var name = server.getAttribute("name");
+        var url = server.getAttribute("url");
+        var connection = this._api.connect(url,this,{name:name,config:server,connected:false,projects:{},subscribers:{},publishers:{},routers:{}});
+        this._connections[name] = connection;
+    });
+
+    this.checkLoaded();
+}
+
+Demo.prototype.addLoadingMessage =
+function(message)
+{
+    var div = document.getElementById("loadingStatus");
+    var text = div.innerHTML;
+    if (text.length > 0)
+    {
+        text += "<br/>";
+    }
+    text += message;
+    div.innerHTML = text;
+}
+
+Demo.prototype.setValues =
+function(data)
+{
+    var rgx = new RegExp("%([A-z0-9_]*)%");
+    var parms = this._api.getParms();
+    var values = [];
+
+    while ((results = rgx.exec(this._config)) != null)
+    {
+        var name = results[1];
+        this._config = this._config.replace(new RegExp("%" + name + "%","g"),data[name]);
+    }
+
+    this.load(this._config);
+}
+
+Demo.prototype.ready =
+function(connection)
+{
+    connection.setOpt("connected",true);
+
+    if (this.loadProjects(connection) == false)
+    {
+        if (this.loadRouters(connection) == false)
+        {
+            this.loadSubscribers(connection);
+            this.loadPublishers(connection);
+        }
+    }
+}
+
+Demo.prototype.loadProjects =
+function(connection)
+{
+    var code = false;
+    var nodes = this._xpath.getNodes("./projects/*",connection.getOpt("config"));
+
+    if (nodes.length > 0)
+    {
+        var projects = connection.getOpt("projects");
+
+        nodes.forEach((p) => {
+            var name = p.getAttribute("name");
+            projects[name] = false;
+            var options = this.createOptions(p);
+            options.parms = this.createOptions(p,"./parms");
+            options.overwrite = true;
+            if (p.tagName == "project-url")
+            {
+                var url = new URL(p.getAttribute("url"),this._baseURL);
+                connection.loadProjectFrom(name,url.toString(),{loaded:projectLoaded},options);
+                this.addLoadingMessage("loading project " + name);
+            }
+            else
+            {
+                var definition = this._xpath.getNode("./project",p);
+                if (definition != null)
+                {
+                    connection.loadProject(name,this._xpath.format(definition),{loaded:projectLoaded},options);
+                    this.addLoadingMessage("loading project " + name);
+                }
+            }
+        });
+
+        code = true;
+    }
+
+    return(code);
+}
+
+Demo.prototype.projectLoaded =
+function(connection,project)
+{
+    this.addLoadingMessage("project " + project + " loaded");
+    connection.getOpt("projects")[project] = true;
+    var loaded = true;
+
+    Object.values(connection.getOpt("projects")).forEach((p) => {
+        if (p == false)
+        {
+            loaded = false;
+        }
+    });
+
+    if (loaded)
+    {
+        if (this.loadRouters(connection) == false)
+        {
+            this.loadSubscribers(connection);
+            this.loadPublishers(connection);
+        }
+    }
+}
+
+Demo.prototype.loadRouters =
+function(connection)
+{
+    var code = false;
+    var nodes = this._xpath.getNodes("./routers/*",connection.getOpt("config"));
+
+    if (nodes.length > 0)
+    {
+        var routers = connection.getOpt("routers");
+
+        nodes.forEach((r) => {
+            var name = r.getAttribute("name");
+            routers[name] = false;
+            var options = this.createOptions(r);
+            options.parms = this.createOptions(r,"./parms");
+            options.overwrite = true;
+            if (r.tagName == "router-url")
+            {
+                var url = new URL(r.getAttribute("url"),this._baseURL);
+                connection.loadRouterFrom(name,url.toString(),{loaded:routerLoaded},options);
+            }
+            else
+            {
+                var definition = this._xpath.getNode("./project",p);
+                if (definition != null)
+                {
+                    connection.loadRouter(name,this._xpath.format(definition),{loaded:routerLoaded},options);
+                }
+            }
+        });
+        code = true;
+    }
+
+    return(code);
+}
+
+Demo.prototype.routerLoaded =
+function(connection,router)
+{
+    this.addLoadingMessage("router " + router + " loaded");
+    connection.getOpt("routers")[router] = true;
+    var loaded = true;
+
+    Object.values(connection.getOpt("routers")).forEach((r) => {
+        if (r == false)
+        {
+            loaded = false;
+        }
+    });
+
+    if (loaded)
+    {
+        this.loadSubscribers(connection);
+        this.loadPublishers(connection);
+    }
+}
+
+Demo.prototype.loadSubscribers =
+function(connection)
+{
+    var code = false;
+    var nodes = this._xpath.getNodes("./subscribers/*",connection.getOpt("config"));
+
+    if (nodes.length > 0)
+    {
+        var subscribers = connection.getOpt("subscribers");
+
+        nodes.forEach((s) => {
+            var name = s.getAttribute("name");
+            var subscriber = null;
+            var options = {ready:false};
+
+            if (s.tagName == "collection")
+            {
+                ["name","window","page_size","debug"].forEach((opt) => {
+                    if (s.hasAttribute(opt))
+                    {
+                        options[opt] = s.getAttribute(opt);
+                    }
+                });
+                this.addLoadingMessage("getting event collection " + name);
+                subscriber = connection.getEventCollection(options);
+            }
+            else if (s.tagName == "stream")
+            {
+                options.ignore_deletes = true;
+                ["name","window","max_events","ignore_deletes","debug"].forEach((opt) => {
+                    if (s.hasAttribute(opt))
+                    {
+                        options[opt] = s.getAttribute(opt);
+                    }
+                });
+                this.addLoadingMessage("getting event stream " + name);
+                subscriber = connection.getEventStream(options);
+            }
+
+            if (subscriber != null)
+            {
+                subscribers[name] = subscriber;
+                subscriber.addSchemaDelegate({schemaSet:subscriberSchema});
+            }
+        });
+
+        code = true;
+    }
+
+    return(code);
+}
+
+Demo.prototype.subscriberLoaded =
+function(subscriber)
+{
+    subscriber.setOpt("ready",true);
+    this.checkLoaded();
+}
+
+Demo.prototype.loadPublishers =
+function(connection)
+{
+    var code = false;
+    var nodes = this._xpath.getNodes("./publishers/*",connection.getOpt("config"));
+
+    if (nodes.length > 0)
+    {
+        var publishers = connection.getOpt("publishers");
+
+        nodes.forEach((node) => {
+            var name = node.getAttribute("name");
+            var options = {ready:false};
+            ["window"].forEach((opt) => {
+                if (node.hasAttribute(opt))
+                {
+                    options[opt] = node.getAttribute(opt);
+                }
+            });
+
+            var publisher = connection.getPublisher(options);
+            publisher.addSchemaDelegate({schemaSet:publisherSchema});
+            publishers[name] = publisher;
+        });
+
+        code = true;
+    }
+
+    return(code);
+}
+
+Demo.prototype.publisherLoaded =
+function(publisher)
+{
+    publisher.setOpt("ready",true);
+    this.checkLoaded();
+}
+
+Demo.prototype.checkLoaded =
+function()
+{
+    var loaded = true;
+    var connections = Object.values(this._connections);
+
+    for (var i = 0; i < connections.length; i++)
+    {
+        var connection = connections[i];
+
+        if (connection.getOpt("connected") == false)
+        {
+            loaded = false;
+            break;
+        }
+
+        Object.values(connection.getOpt("projects")).forEach((p) => {
+            if (p == false)
+            {
+                loaded = false;
+            }
+        });
+
+        if (loaded == false)
+        {
+            break;
+        }
+
+        Object.values(connection.getOpt("routers")).forEach((r) => {
+            if (r == false)
+            {
+                loaded = false;
+            }
+        });
+
+        if (loaded == false)
+        {
+            break;
+        }
+
+        var subscribers = Object.values(connection.getOpt("subscribers"));
+
+        for (var j = 0; j < subscribers.length; j++)
+        {
+            if (subscribers[j].getOpt("ready",false) == false)
+            {
+                loaded = false;
+                break;
+            }
+        }
+
+        if (loaded == false)
+        {
+            break;
+        }
+
+        var publishers = Object.values(connection.getOpt("publishers"));
+
+        for (var j = 0; j < publishers.length; j++)
+        {
+            if (publishers[j].getOpt("ready",false) == false)
+            {
+                loaded = false;
+                break;
+            }
+        }
+
+        if (loaded == false)
+        {
+            break;
+        }
+    }
+
+    if (loaded)
+    {
+        this.api.getDialogs().clearModals();
+
+        Object.values(this._connections).forEach((conn) => {
+            this._xpath.getNodes("./load/*",conn.getOpt("config")).forEach((node) => {
+                var w = node.getAttribute("window");
+                if (node.tagName == "load-url")
+                {
+                    var url = new URL(node.getAttribute("url"),this._baseURL);
+                    conn.publishUrl(w,url.toString());
+                }
+                else if (node.tagName == "load-data")
+                {
+                    conn.publishData(w,this._xpath.nodeText(node));
+                }
+            });
+        });
+
+        this.addCell(this._xpath.getNode("./cells",this._xml.documentElement),document.getElementById("layout"));
+        this._api.size();
+        this._api.refresh(1000);
+        /*
+        console.log(document.getElementById("layout").outerHTML);
+        */
+    }
+}
+
+Demo.prototype.addCell =
+function(cell,to)
+{
+    var type = cell.tagName;
+    var s = this._xpath.getString("./options",cell);
+    var options = this.createOptions(cell);
+    var div = null;
+
+    if (type == "chart")
+    {
+        var chartType = cell.hasAttribute("type") ? cell.getAttribute("type") : "bar";
+
+        if (this._visuals.isChartType(chartType) == false)
+        {
+            chartType = "bar";
+        }
+
+        var subscriber = (cell.hasAttribute("subscriber")) ? this.getSubscriber(cell.getAttribute("subscriber")) : null;
+
+        if (subscriber == null)
+        {
+            this.addLoadingMessage("no subscriber specified for \n\n" + this._xpath.format(cell) + "\n");
+            return;
+        }
+
+        div = this.createDiv(cell);
+        this._visuals.createChart(chartType,div,subscriber,options);
+        to.appendChild(div);
+    }
+    else if (type == "container")
+    {
+        div = this.createDiv(cell,"layout");
+        to.appendChild(div);
+        this._xpath.getNodes("./chart | ./modelviewer | ./logviewer",cell).forEach((c) => {
+            this.addCell(c,div);
+        });
+        to.appendChild(div);
+        if (cell.getAttribute("divider") == "true")
+        {
+            var divider = document.createElement("div");
+            divider.appendChild(document.createElement("hr"));
+            divider.style.width = "100%";
+            to.appendChild(divider);
+        }
+    }
+    else if (type == "header")
+    {
+        div = this.createDiv(cell,"chartsHeader");
+
+        if (cell.hasAttribute("url"))
+        {
+            var o = {};
+            o.response = function(request,data) {
+                div.innerHTML = data;
+            };
+            o.error = function(request,error) {
+                throw(error);
+            };
+            url = new URL(cell.getAttribute("url"),this._baseURL);
+            this._api.getAjax().create("header",url.toString(),o).get();
+        }
+        else
+        {
+            var html = "";
+            this._xpath.getChildren(cell).forEach((node) => {
+                html += this._xpath.format(node);
+                html += "\n";
+            });
+            div.innerHTML = html;
+        }
+
+        to.appendChild(div);
+    }
+    else if (type == "cells")
+    {
+        var d = document.createElement("div");
+        d.innerHTML = "&nbsp;";
+        to.appendChild(d);
+        this._xpath.getNodes("./*",cell).forEach((c) => {
+            this.addCell(c,to);
+        });
+        d = document.createElement("div");
+        d.innerHTML = "&nbsp;";
+        to.appendChild(d);
+    }
+    else if (type == "html")
+    {
+        div = this.createDiv(cell);
+        var html = "";
+        this._xpath.getChildren(cell).forEach((node) => {
+            html += this._xpath.format(node);
+            html += "\n";
+        });
+        div.innerHTML = html;
+        to.appendChild(div);
+    }
+    else if (type == "modelviewer")
+    {
+        var server = cell.getAttribute("server");
+        var connection = this.getConnection(server);
+        if (connection == null)
+        {
+            throw("cannot find server " + server);
+        }
+        else
+        {
+            div = this.createDiv(cell);
+            to.appendChild(div);
+            this._visuals.createModelViewer(div,connection,options);
+        }
+    }
+    else if (type == "logviewer")
+    {
+        var server = cell.getAttribute("server");
+        var connection = this.getConnection(server);
+        if (connection == null)
+        {
+            throw("cannot find server " + server);
+        }
+        else
+        {
+            div = this.createDiv(cell);
+            to.appendChild(div);
+            this._visuals.createLogViewer(div,connection,options);
+        }
+    }
+
+    return(div);
+}
+
+Demo.prototype.createOptions =
+function(node,expression)
+{
+    if (expression == null)
+    {
+        expression = "./options";
+    }
+
+    var s = this._xpath.getString(expression,node);
+    var options = {};
+
+    if (s.length > 0)
+    {
+        try
+        {
+            options = JSON.parse(s);
+        }
+        catch (exception)
+        {
+            console.log("bad options\n\n" + s + "\n\n" + exception + "\n\n");
+        }
+    }
+
+    return(options);
+}
+
+Demo.prototype.createDiv =
+function(cell,classname)
+{
+    var div = document.createElement("div");
+    div.id = cell.hasAttribute("id") ? cell.getAttribute("id") : this._api.guid();
+
+    var classname = (classname != null) ? classname : "";
+
+    if (cell.hasAttribute("class"))
+    {
+        if (classname.length > 0)
+        {
+            classname += " ";
+        }
+
+        classname += cell.getAttribute("class");
+    }
+
+    if (classname.length > 0)
+    {
+        div.className = classname;
+    }
+
+    if (cell.hasAttribute("style"))
+    {
+        div.style = cell.getAttribute("style");
+    }
+
+    ["width","height"].forEach((p) => {
+        if (cell.hasAttribute(p))
+        {
+            var value = cell.getAttribute(p);
+            div.style[p] = value;
+        }
+    });
+
+    return(div);
+}
+
+Demo.prototype.getSubscriber =
+function(name)
+{
+    var subscriber = null;
+
+    for (var x in this._connections)
+    {
+        var subscribers = this._connections[x].getOpt("subscribers");
+
+        if (subscribers.hasOwnProperty(name))
+        {
+            subscriber = subscribers[name];
+            break;
+        }
+    }
+
+    return(subscriber);
+}
+
+Demo.prototype.getPublisher =
+function(name)
+{
+    var publisher = null;
+
+    for (var x in this._connections)
+    {
+        var publishers = this._connections[x].getOpt("publishers");
+
+        if (publishers.hasOwnProperty(name))
+        {
+            publisher = publishers[name];
+            break;
+        }
+    }
+
+    return(publisher);
+}
+
+Demo.prototype.getConnection =
+function(name)
+{
+    return(this._connections.hasOwnProperty(name) ? this._connections[name] : null);
+}
+
+Demo.prototype.closed =
+function(connection)
+{
+    document.getElementById("layout").innerHTML = "";
+}
+
+Demo.prototype.publishUrl =
+function(server,window,url,options)
+{
+    var u = new URL(url,this._baseURL);
+    var connection  = this.getConnection(server);
+
+    if (connection == null)
+    {
+        throw("cannot find server " + server);
+        return;
+    }
+
+    connection.publishUrl(window,u.toString(),null,options);
+}
+
+</script>
+
+<style type="text/css">
+
+</style>
+
+</head>
+
+<body>
+    <div id="banner">
+        <table style="width:100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td id="bannerTitle">ESP Demo</td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_demo.api.getDialogs().pushModal('open')">&#xf4a2;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content">
+        <div id="layout" class="layout">
+        </div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+    <div id="open" class="dialog" style="width:50%">
+
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_demo.api.getDialogs().popModal('open')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">Open ESP Demo</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="dialogContent">
+                <table border="0" style="width:100%;height:100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td class="dialogLabel">URL:</td>
+                    </tr>
+                    <tr>
+                        <td class="dialogValue"><input id="_demourl" type="text"></input></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div class="dialogButtons">
+            <table style="width:100%">
+                <tr>
+                    <td class="dialogButton">
+                        <span><button class="close" onclick="javascript:openDemo()">Open</button></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="loading" class="dialog" style="width:50%;padding:20px">
+        <div class="dialogTop">
+            <div class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">Loading ESP Demo</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="dialogContent">
+                <pre id="loadingStatus" style="width:98%;height:400px;border:1px solid #d8d8d8;margin:auto;overflow:auto;font-family:AvenirNextforSAS"></pre>
+            </div>
+        </div>
+        <div class="dialogButtons">
+            <table style="width:100%">
+                <tr>
+                    <td class="dialogButton">
+                        <span><button class="close" onclick="javascript:_demo.api.getDialogs().clearModals()">Close</button></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+ </body>
+
+</html>

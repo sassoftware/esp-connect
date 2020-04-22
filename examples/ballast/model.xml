@@ -1,0 +1,287 @@
+<project name='p' pubsub='auto' threads='1' use-tagged-token='true' heartbeat-interval='1'>
+    <contqueries>
+        <contquery name='cq'>
+            <windows>
+                <window-source pubsub='true' index='pi_EMPTY' insert-only='true' autogen-key='true' name='image'>
+                    <schema>
+                        <fields>
+                            <field name='id' type='int64' key='true'/>
+                            <field name='_image_' type='blob'/>
+                            <field name='DateTime' type='stamp'/>
+                            <field name='speed' type='double'/>
+                            <field name='gps_latitude' type='double'/>
+                            <field name='gps_longitude' type='double'/>
+                            <field name='position' type='double'/>
+                        </fields>
+                    </schema>
+                </window-source>
+                <window-compute pubsub='true' index='pi_EMPTY' name='displayAddLabel'>
+                    <schema>
+                        <fields>
+                            <field name='id' type='int64' key='true'/>
+                            <field name='VideoFeed' type='string'/>
+                            <field name='_image_' type='blob'/>
+                            <field name='image_resize' type='blob'/>
+                        </fields>
+                    </schema>
+                    <output>
+                        <field-expr>"CCTV_1"</field-expr>
+                        <field-expr>_image_</field-expr>
+                        <field-expr>image_resize</field-expr>
+                    </output>
+                </window-compute>
+                <window-calculate pubsub='true' algorithm='ImageProcessing' index='pi_EMPTY' name='displayResizeImage'>
+                    <schema>
+                        <fields>
+                            <field name='id' type='int64' key='true'/>
+                            <field name='_image_' type='blob'/>
+                            <field name='image_resize' type='blob'/>
+                        </fields>
+                    </schema>
+                    <parameters>
+                        <properties>
+                            <property name='function'>resize</property>
+                            <property name='preFlip'>-1000</property>
+                            <property name='x'>0</property>
+                            <property name='y'>0</property>
+                            <property name='width'>480</property>
+                            <property name='height'>270</property>
+                            <property name='outputWidth'>0</property>
+                            <property name='outputHeight'>0</property>
+                            <property name='alpha'>0</property>
+                            <property name='beta'>0</property>
+                            <property name='delta'>0</property>
+                            <property name='theta'>0</property>
+                            <property name='value'>0</property>
+                            <property name='minValue'>0</property>
+                            <property name='maxValue'>0</property>
+                            <property name='type'>0</property>
+                            <property name='flag1'>0</property>
+                            <property name='flag2'>0</property>
+                            <property name='flag3'>0</property>
+                            <property name='flag4'>0</property>
+                            <property name='flag5'>0</property>
+                        </properties>
+                    </parameters>
+                    <input-map>
+                        <properties>
+                            <property name='imageInput'>_image_</property>
+                        </properties>
+                    </input-map>
+                    <output-map>
+                        <properties>
+                            <property name='imageOutput'>image_resize</property>
+                        </properties>
+                    </output-map>
+                </window-calculate>
+                <window-calculate pubsub='true' algorithm='ImageProcessing' index='pi_EMPTY' name='imageCropandResize'>
+                    <schema>
+                        <fields>
+                            <field name='id' type='int64' key='true'/>
+                            <field name='_image_' type='blob'/>
+                            <field name='image_track_cropped' type='blob'/>
+                            <field name='DateTime' type='stamp'/>
+                            <field name='speed' type='double'/>
+                            <field name='gps_latitude' type='double'/>
+                            <field name='gps_longitude' type='double'/>
+                            <field name='position' type='double'/>
+                        </fields>
+                    </schema>
+                    <parameters>
+                        <properties>
+                            <property name='function'>crop</property>
+                            <property name='preFlip'>-1000</property>
+                            <property name='x'>400</property>
+                            <property name='y'>500</property>
+                            <property name='width'>1100</property>
+                            <property name='height'>500</property>
+                            <property name='outputWidth'>224</property>
+                            <property name='outputHeight'>224</property>
+                            <property name='alpha'>0</property>
+                            <property name='beta'>0</property>
+                            <property name='delta'>0</property>
+                            <property name='theta'>0</property>
+                            <property name='value'>0</property>
+                            <property name='minValue'>0</property>
+                            <property name='maxValue'>0</property>
+                            <property name='type'>0</property>
+                            <property name='flag1'>0</property>
+                            <property name='flag2'>0</property>
+                            <property name='flag3'>0</property>
+                            <property name='flag4'>0</property>
+                            <property name='flag5'>0</property>
+                        </properties>
+                    </parameters>
+                    <input-map>
+                        <properties>
+                            <property name='imageInput'>_image_</property>
+                        </properties>
+                    </input-map>
+                    <output-map>
+                        <properties>
+                            <property name='imageOutput'>image_track_cropped</property>
+                        </properties>
+                    </output-map>
+                </window-calculate>
+                <window-source insert-only='true' index='pi_HASH' pubsub='true' name='scoreRequest'>
+                    <schema>
+                        <fields>
+                            <field name='req_id' type='int64' key='true'/>
+                            <field name='req_key' type='string'/>
+                            <field name='req_val' type='string'/>
+                        </fields>
+                    </schema>
+                </window-source>
+                <window-model-reader name='readModel' pubsub='true' model-type='astore'/>
+                <window-score name='imageScore' pubsub='true'>
+                    <schema>
+                        <fields>
+                            <field name='id' type='int64' key='true'/>
+                            <field name='image_track_cropped' type='blob'/>
+                            <field name='DateTime' type='stamp'/>
+                            <field name='speed' type='double'/>
+                            <field name='gps_latitude' type='double'/>
+                            <field name='gps_longitude' type='double'/>
+                            <field name='position' type='double'/>
+                            <field name='P_Label_Good' type='double'/>
+                            <field name='P_Label_Bad' type='double'/>
+                            <field name='P_Label' type='double'/>
+                        </fields>
+                    </schema>
+                    <models>
+                        <offline model-type='astore'>
+                            <input-map>
+                                <properties>
+                                    <property name='_image_'>image_track_cropped</property>
+                                </properties>
+                            </input-map>
+                            <output-map>
+                                <properties>
+                                    <property name='P__label_Bad'>P_Label_Bad</property>
+                                    <property name='P__label_Good'>P_Label_Good</property>
+                                </properties>
+                            </output-map>
+                        </offline>
+                    </models>
+                </window-score>
+                <window-compute pubsub='true' index='pi_EMPTY' name='outputData'>
+                    <schema>
+                        <fields>
+                            <field name='id' type='int64' key='true'/>
+                            <field name='image_track_cropped' type='blob'/>
+                            <field name='DateTime' type='stamp'/>
+                            <field name='speed' type='double'/>
+                            <field name='gps_latitude' type='double'/>
+                            <field name='gps_longitude' type='double'/>
+                            <field name='position' type='double'/>
+                            <field name='P_Label_Good' type='double'/>
+                            <field name='P_Label_Bad' type='double'/>
+                            <field name='P_Label' type='double'/>
+                            <field name='TrackHealthPercent' type='int64'/>
+                            <field name='LOCO_ID' type='string'/>
+                        </fields>
+                    </schema>
+                    <output>
+                        <field-expr>image_track_cropped</field-expr>
+                        <field-expr>DateTime</field-expr>
+                        <field-expr>speed</field-expr>
+                        <field-expr>gps_latitude</field-expr>
+                        <field-expr>gps_longitude</field-expr>
+                        <field-expr>position</field-expr>
+                        <field-expr>P_Label_Good</field-expr>
+                        <field-expr>P_Label_Bad</field-expr>
+                        <field-expr>P_Label</field-expr>
+                        <field-expr>49.9+50*(1-P_Label_Bad)</field-expr>
+                        <field-expr>"Engine_0001"</field-expr>
+                    </output>
+                </window-compute>
+                <window-aggregate pubsub='true' name='latestTrackHealth'>
+                    <schema>
+                        <fields>
+                            <field name='LOCO_ID' type='string' key='true'/>
+                            <field name='TrackHealthPercent' type='int64'/>
+                        </fields>
+                    </schema>
+                    <output>
+                        <field-expr>ESP_aLastNonNull(TrackHealthPercent)</field-expr>
+                    </output>
+                </window-aggregate>
+                <window-aggregate pubsub='true' name='engineStatus'>
+                    <schema>
+                        <fields>
+                            <field name='LOCO_ID' type='string' key='true'/>
+                            <field name='DateTime' type='stamp'/>
+                            <field name='speed' type='double'/>
+                            <field name='gps_latitude' type='double'/>
+                            <field name='gps_longitude' type='double'/>
+                            <field name='position' type='double'/>
+                            <field name='P_Label_Good' type='double'/>
+                            <field name='P_Label_Bad' type='double'/>
+                            <field name='P_Label' type='double'/>
+                            <field name='TrackHealthPercent' type='int64'/>
+                        </fields>
+                    </schema>
+                    <output>
+                        <field-expr>ESP_aLastNonNull(DateTime)</field-expr>
+                        <field-expr>ESP_aLastNonNull(speed)</field-expr>
+                        <field-expr>ESP_aLastNonNull(gps_latitude)</field-expr>
+                        <field-expr>ESP_aLastNonNull(gps_longitude)</field-expr>
+                        <field-expr>ESP_aLastNonNull(position)</field-expr>
+                        <field-expr>ESP_aLastNonNull(P_Label_Good)</field-expr>
+                        <field-expr>ESP_aLastNonNull(P_Label_Bad)</field-expr>
+                        <field-expr>ESP_aLastNonNull(P_Label)</field-expr>
+                        <field-expr>ESP_aLastNonNull(TrackHealthPercent)</field-expr>
+                    </output>
+                </window-aggregate>
+                <window-pattern pubsub='true' name='anomaliesDetected'>
+                    <schema>
+                        <fields>
+                            <field name='alertID' type='int64' key='true'/>
+                            <field name='startTime' type='stamp'/>
+                            <field name='endTime' type='stamp'/>
+                            <field name='eventTime' type='stamp'/>
+                            <field name='latitude' type='double'/>
+                            <field name='longitude' type='double'/>
+                            <field name='position' type='double'/>
+                            <field name='TrackHealthPercent' type='int64'/>
+                        </fields>
+                    </schema>
+                    <patterns>
+                        <pattern name='alertLooseBallast'>
+                            <events>
+                                <event name='noAlertCondition' source='outputData'>TrackHealthPercent > 75</event>
+                                <event name='AlertCondition' source='outputData'><![CDATA[TrackHealthPercent < 75]]></event>
+                                <event name='leaveAlertCondition' source='outputData'><![CDATA[TrackHealthPercent > 75]]></event>
+                            </events>
+                            <logic>fby{}(noAlertCondition, is(AlertCondition), leaveAlertCondition)</logic>
+                            <output>
+                                <field-selection name='DateTime' node='noAlertCondition'/>
+                                <field-selection name='DateTime' node='leaveAlertCondition'/>
+                                <field-selection name='DateTime' node='AlertCondition'/>
+                                <field-selection name='gps_latitude' node='AlertCondition'/>
+                                <field-selection name='gps_longitude' node='AlertCondition'/>
+                                <field-selection name='position' node='AlertCondition'/>
+                                <field-selection name='TrackHealthPercent' node='AlertCondition'/>
+                            </output>
+                            <timefields>
+                                <timefield source='outputData' field='DateTime'/>
+                            </timefields>
+                        </pattern>
+                    </patterns>
+                </window-pattern>
+            </windows>
+            <edges>
+                <edge source='image' target='displayResizeImage' role='data'/>
+                <edge source='displayResizeImage' target='displayAddLabel'/>
+                <edge source='image' target='imageCropandResize' role='data'/>
+                <edge source='scoreRequest' target='readModel' role='request'/>
+                <edge source='imageCropandResize' target='imageScore' role='data'/>
+                <edge source='readModel' target='imageScore' role='model'/>
+                <edge source='imageScore' target='outputData'/>
+                <edge source='outputData' target='latestTrackHealth'/>
+                <edge source='outputData' target='anomaliesDetected'/>
+                <edge source='outputData' target='engineStatus'/>
+            </edges>
+        </contquery>
+    </contqueries>
+</project>

@@ -1,0 +1,4 @@
+i,n,1,action,load
+i,n,2,type,astore
+i,n,3,reference,loose_ballast.astore
+i,n,4,,

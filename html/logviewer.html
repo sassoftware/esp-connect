@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+
+<!--
+    Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
+    SPDX-License-Identifier: Apache-2.0
+-->
+
+<html>
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP Log Viewer</title>
+
+<link rel="stylesheet" href="../style/connect.css" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../js/main"></script>
+
+<script type="text/javascript">
+
+var _loggerTable = null;
+var _connection = null;
+var _maxentries = 100;
+var _visuals = null;
+var	_storage = null;
+var _viewer = null;
+var _parms = null;
+var _init = false;
+var _api = null;
+
+function
+esp(api)
+{
+    _api = api;
+    setup();
+}
+
+function
+init()
+{
+    _init = true;
+    setup();
+}
+
+function
+setup()
+{
+    if (_api == null || _init == false)
+    {
+        return;
+    }
+
+    _storage = _api.getStorage("logviewer");
+
+    _maxentries = _storage.hasOpt("maxentries") ? _storage.getOpt("maxentries") : 0;
+
+    if (_maxentries == 0 || isNaN(_maxentries))
+    {
+        _maxentries = 100;
+    }
+
+    document.getElementById("maxentries").value = _maxentries;
+
+    _parms = _api.getParms();
+
+    _visuals = _api.createVisuals(_api.getParms());
+
+    if (_api.hasParm("server") == false && _storage.hasOpt("server"))
+    {
+        _api.setParm("server",_storage.getOpt("server"));
+    }
+
+    if (_parms.hasOwnProperty("filter") == false)
+    {
+        _parms["filter"] = "";
+    }
+
+    _parms["header"] = "ESP Server Log";
+
+    if (_api.hasParm("server"))
+    {
+        document.getElementById("server").value = _api.getParm("server");
+        connect(encodeURI(_api.getParm("server")));
+    }
+    else
+    {
+        _api.getDialogs().pushModal("connect");
+    }
+
+    var fields = new Array();
+    fields.push({name:"@name",type:"string",label:"Logger"});
+    fields.push({name:"@level",type:"string",label:"Level"});
+
+    _loggerTable = _visuals.createSimpleTable(document.getElementById("loggers"),{name:"loggers",key:"@name"},{itemClicked:loggerSelected});
+    _loggerTable.setFields(fields);
+    _loggerTable.draw();
+
+    _api.handleLayout();
+}
+
+function
+connect(server)
+{
+    if (server == null)
+    {
+        server = encodeURI(document.getElementById('server').value);
+    }
+
+    _maxentries = parseInt(document.getElementById("maxentries").value);
+
+    if (_maxentries == 0 || isNaN(_maxentries))
+    {
+        _maxentries = 100;
+    }
+
+    if (_viewer != null)
+    {
+        if (_viewer.connection != null)
+        {
+            _viewer.connection.stop();
+        }
+
+        _viewer.setOpt("max",_maxentries);
+    }
+
+    _api.connect(server,{ready:ready,closed:closed});
+
+    _api.getDialogs().clearModals();
+
+    document.getElementById("bannerTitle").innerHTML = "ESP Log Viewer (" + server + ")";
+
+    _api.size();
+
+    _storage.setOpt("server",server);
+    _storage.setOpt("maxentries",_maxentries);
+}
+
+function
+ready(connection)
+{
+    _connection = connection;
+
+    if (_viewer == null)
+    {
+        _parms.enable_controls = true;
+        _parms.show_header = false;
+        _parms.max = _maxentries;
+        _viewer = _visuals.createLogViewer("viewer",null,_parms);
+        _api.size();
+    }
+
+    _viewer.connection = _connection;
+
+    document.getElementById("setLevel").disabled = true;
+
+    _connection.getLoggers({response:handleLoggers});
+}
+
+function
+showLoggers()
+{
+    document.getElementById("setLevel").disabled = true;
+    _loggerTable.deselectAll();
+    _api.getDialogs().pushModal("contexts");
+    _loggerTable.draw();
+}
+
+function
+handleLoggers(connection,data)
+{
+    _loggerTable.setData(data);
+}
+
+function
+loggerSelected(item)
+{
+    _loggerTable.deselectAll();
+    item.selected = true;
+
+    document.getElementById("loglevel").value = item["@level"].toLowerCase();
+    document.getElementById("setLevel").disabled = false;
+}
+
+function
+setLogLevel()
+{
+    var item = _loggerTable.getSelectedItem();
+    if (item != null)
+    {
+        _connection.setLogger(item["@name"],document.getElementById("loglevel").value,{response:handleLoggers});
+    }
+}
+
+function
+closed(connection)
+{
+    _viewer = null;
+}
+
+</script>
+
+<style type="text/css">
+
+div#content
+{
+    padding-top:20px;
+}
+
+div#loggers
+{
+    border:1px solid #d8d8d8;
+    height:300px;
+}
+
+select#loglevel
+{
+    font-size:12pt;
+}
+
+</style>
+
+</head>
+
+<body onload="init()">
+    <div id="banner">
+        <table style="width:100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td id="bannerTitle">ESP Log Viewer</td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_api.getDialogs().pushModal('connect')">&#xf137;</a>
+                    <a class="icon" href="javascript:showLoggers()">&#xf3ca;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content" class="container" style="margin:auto">
+        <div id="viewer" class="component" style="width:95%;height:95%"></div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+    <div id="connect" class="dialog" style="width:50%">
+
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('connect')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">Connect to ESP Server</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="dialogContent">
+                <table border="0" style="width:100%;height:100%" cellspacing="0" cellpadding="0">
+                    <tr><td class="dialogLabel">ESP Server:</td></tr>
+                    <tr><td class="dialogValue"><input id="server" type="text"></input></td></tr>
+                    <tr><td class="dialogLabel">Max Log Entries:</td></tr>
+                    <tr><td class="dialogValue"><input id="maxentries" type="text"></input></td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="dialogButtons">
+            <table style="width:100%">
+                <tr>
+                    <td class="dialogButton">
+                        <span><button class="close" onclick="javascript:connect()">Connect</button></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="contexts" class="dialog" style="width:50%">
+
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('contexts')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">Log Levels</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="dialogContent">
+                <div id="loggers"></div>
+                <table border="0" style="width:100%;height:100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td class="dialogLabel">Level:</td>
+                    </tr>
+                    <tr>
+                        <td class="dialogValue">
+                            <select id="loglevel">
+                                <option value="trace">Trace</option>
+                                <option value="debug">Debug</option>
+                                <option value="info">Info</option>
+                                <option value="warn">Warn</option>
+                                <option value="error">Error</option>
+                                <option value="fatal">Fatal</option>
+                                <option value="off">None</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-top:10px">
+                            <button id="setLevel" style="font-size:12pt" onclick="javascript:setLogLevel()" disabled="true">Set Level</button>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP Trades Demo</title>
+
+<link rel="stylesheet" href="../../esp/style/connect.css" />
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/main"></script>
+
+<script type="text/javascript">
+
+var _api = null;
+var _conn = null;
+var _visuals = null;
+
+function
+esp(api)
+{
+    _api = api;
+
+    var parms = api.getParms();
+
+    if (parms.hasOwnProperty("server") == false)
+    {
+        alert("you must specify ESP server URL");
+        return;
+    }
+
+    var server = parms["server"];
+    delete parms["server"];
+
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+
+    _conn = _api.connect(server,{ready:ready,closed:closed});
+    _visuals = _api.createVisuals(_api.getParms());
+
+    _api.handleLayout();
+}
+
+function
+ready()
+{
+    if (_api.getParm("load",true))
+    {
+        _api.showStatus("Loading project...");
+        _conn.loadProjectFrom("primary","primary.xml",{loaded:projectLoaded,error:error},{overwrite:true});
+        _conn.loadProjectFrom("secondary","secondary.xml",{loaded:projectLoaded,error:error},{overwrite:true});
+    }
+    else
+    {
+        loaded();
+    }
+
+    _api.size();
+}
+
+var _primaryLoaded = false;
+var _secondaryLoaded = false;
+
+function
+closed()
+{
+    _primaryLoaded = false;
+    _secondaryLoaded = false;
+}
+
+var _primaryXml = "";
+var _secondaryXml = "";
+
+function
+projectLoaded(connection,name)
+{
+    if (name == "primary")
+    {
+        _primaryLoaded = true;
+    }
+    else if (name == "secondary")
+    {
+        _secondaryLoaded = true;
+    }
+
+    if (_primaryLoaded && _secondaryLoaded)
+    {
+        connection.publishDataFrom("primary/cq/brokersSource","brokers.csv",null,{informat:"csv"});
+        connection.publishDataFrom("primary/cq/venuesSource","venues.csv",null,{informat:"csv"});
+        connection.publishDataFrom("primary/cq/restrictedSource","restricted.csv",null,{informat:"csv"});
+        connection.loadRouterFrom("router","router.xml",{loaded:loaded,error:error},{overwrite:true,parms:{host:_conn.host,port:_conn.port + 1}});
+    }
+}
+
+function
+loaded()
+{
+    _conn.getProjectXml("primary",{response:function(c,data){_primaryXml = data;}});
+    _conn.getProjectXml("secondary",{response:function(c,data){_secondaryXml = data;}});
+    createVisuals();
+}
+
+function
+showModel()
+{
+    var s = _primaryXml;
+    s += "\n\n";
+    s += _secondaryXml;
+    document.getElementById("espModelXml").innerText = s;
+    _api.getDialogs().pushModal("espModel");
+}
+
+function
+error()
+{
+}
+
+function
+createVisuals()
+{
+    _api.clearStatus();
+
+    var alerts = _conn.getEventCollection({window:"secondary/cq/brokerAlertsAggr"});
+    /*
+    var venues = _conn.getEventCollection({window:"secondary/cq/venueAlertsAggr"});
+    */
+    var rates = _conn.getEventCollection({window:"primary/cq/counter"});
+    var rateStream = _conn.getEventStream({window:"primary/cq/counter",ignore_deletes:true});
+
+    var gradient = "#3b99fc";
+    var colors = _visuals.colors.createGradientColors({color:gradient,num:5,end:true});
+
+    _visuals.createTimeSeries("rates",rateStream,{y:["totalRate","intervalRate"],time:"@timestamp",header:"Event Rates",line_width:5,curved:true,colors:[colors[0],colors[4]]});
+
+    /*
+    _visuals.createTable("venueTable",venues,{values:["city","count"],header:"Venue Alerts",color:"count",gradient:gradient,gradient_end:true});
+    _visuals.createMap("venueMap",venues,{lat:"lat",lon:"lon",size:"count",color:"count",header:"Venue Alerts",gradient:gradient,gradient_end:true,marker_border:1,center:[39,-98],zoom:4,popup:["city","count"],sizes:[5,50]})
+    */
+
+    _visuals.createModelViewer("model",_conn,{header:"Model Viewer",counts:true,cpu:true,cpu_color:"#D6EAF8"});
+
+    _visuals.createTable("alertTable",alerts,{values:["brokerName","total"],header:"Broker Alerts",color:"total",gradient:gradient,gradient_end:true});
+
+    var barColor = "rgba(255,255,255,.5)";
+
+    _visuals.createGauge("brokers",alerts,{value:"total",range:[0,300],segments:5,width:250,colors:colors,header:"Total Broker Violations",bar_color:barColor});
+    _visuals.createGauge("totalCount",rates,{value:"totalCount",range:[0,50000000],segments:5,border:0,colors:colors,show_title:false,header:"Events Processed",width:300,height:300,bar_color:barColor});
+    _visuals.createGauge("totalRate",rates,{value:"totalRate",range:[0,1000000],segments:5,width:300,height:300,colors:colors,delta:false,border:0,show_title:false,header:"Total Rate",bar_color:barColor});
+
+    _api.size();
+}
+
+function
+publish()
+{
+    _conn.publishUrl("primary/cq/rawTrades",new URL("trades1M.bin",document.URL).toString(),null,{format:"bin",times:50});
+}
+
+</script>
+
+</head>
+
+<body>
+
+    <div id="banner">
+        <table style="width:100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td class="icon">
+                    <a class="icon" href="javascript:publish()">&#xf539;</a>
+                    <a class="icon" href="javascript:showModel()">&#xf426;</a>
+                    <a class="icon" href="javascript:_api.getDialogs().pushModal('help')">&#xf30b;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content">
+        <div class="layout">
+            <div id="brokers" style="width:98%;height:300px"></div>
+            <div class="container" style="width:100%;height:300px">
+                <!--
+                <div id="alerts" style="width:30%;height:100%"></div>
+                -->
+                <div id="rates" style="width:35%;height:100%"></div>
+                <div id="totalCount" style="width:30%;height:100%"></div>
+                <div id="totalRate" style="width:30%;height:100%"></div>
+            </div>
+            <div class="container" style="width:100%;height:400px">
+                <!--
+                <div id="venueMap" style="width:35%;height:100%"></div>
+                <div id="venueTable" style="width:30%;height:100%"></div>
+                -->
+                <div id="model" style="width:67%;height:100%"></div>
+                <div id="alertTable" style="width:30%;height:100%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+    <div id="help" class="dialog" style="width:60%">
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">ESP Stock Trades Example</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogContent">
+        This example pushes stock trade data through an ESP model looking for trade violations.
+        </div>
+
+        <div class="dialogButtons">
+            <table style="width:100%">
+                <tr>
+                    <td class="dialogButton">
+                        <span><button class="close" onclick="javascript:_api.getDialogs().popModal('help')">Done</button></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="espModel" class="dialog" style="width:90%;height:90%">
+
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">ESP Model</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogContent" style="width:95%;height:70%;margin:auto">
+            <pre id="espModelXml" class="model"></pre>
+        </div>
+    </div>
+
+</body>
+
+</html>

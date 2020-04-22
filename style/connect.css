@@ -1,0 +1,760 @@
+/*
+    Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
+    SPDX-License-Identifier: Apache-2.0
+*/
+
+@font-face
+{
+	font-family:AvenirNextforSAS;
+	src:url(../fonts/AvenirNextforSAS.ttf);
+}
+
+@font-face
+{
+	font-family:AvenirNextforSAS;
+	src:url(../fonts/AvenirNextforSAS-Bold.ttf);
+	font-weight:bold;
+}
+
+@font-face
+{
+	font-family:AvenirNextforSAS;
+	src:url(../fonts/AvenirNextforSAS-BoldItalic.ttf);
+	font-weight:bold;
+	font-style:italic;
+}
+
+@font-face
+{
+	font-family:AvenirNextforSAS;
+	src:url(../fonts/AvenirNextforSAS-Italic.ttf);
+	font-style:italic;
+}
+
+@font-face
+{
+	font-family:AvenirNextforSAS;
+	src:url(../fonts/AvenirNextforSAS-Light.ttf);
+	opacity:.2;
+}
+
+@font-face
+{
+	font-family:AvenirNextforSAS;
+	src:url(../fonts/AvenirNextforSAS-LightItalic.ttf);
+	font-style:italic;
+	opacity:.2;
+}
+
+@font-face
+{
+	font-family:sas-icons;
+	src:url(../fonts/sasicons.ttf);
+}
+
+html,
+body
+{
+    height:100%;
+    overflow:hidden;
+    margin:0;
+    font-family:AvenirNextforSAS;
+}
+
+div.container
+{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:start;
+    justify-content:space-between;
+    justify-content:space-around;
+    font-family:AvenirNextforSAS;
+    font-size:12pt;
+}
+
+div#banner,
+div#content,
+div#footer
+{
+    position:absolute;
+    width:100%;
+}
+
+div#banner
+{
+    background:#3b99fc;
+    padding:.5rem;
+    color:white;
+    z-index:10;
+}
+
+div#banner a.icon
+{
+    color:white;
+}
+
+div#content
+{
+    overflow:auto;
+    padding:0;
+}
+
+div#footer
+{
+    background:#3b99fc;
+    padding:5px;
+    font-size:1rem;
+    color:white;
+}
+
+/* Icons */
+.icon
+{
+    font-family:sas-icons;
+}
+
+a.icon
+{
+	color:#4e4e4e;
+	text-decoration:none;
+    padding-left:10px;
+}
+
+a.icon:hover
+{
+	color:#0093e5;
+}
+
+td.icon
+{
+	padding-right:1rem;
+    text-align:right;
+}
+
+td.lastIcon
+{
+	padding-right:0;
+}
+
+td.icon
+{
+	padding-left:8px;
+	padding-right:8px;
+}
+
+/* End Icons */
+
+/* Images */
+
+div.Images
+{
+    font-family:AvenirNextforSAS;
+    font-weight:regular;
+    font-size:.875rem;
+    border:1px solid #d8d8d8;
+}
+
+div.Images div.ObjectText
+{
+    font-size:10pt;
+}
+
+/* End Images */
+
+/* Dialogs */
+div.dialog
+{
+	font-family:AvenirNextforSAS;
+	position:absolute;
+	display:none;
+	background:white;
+	overflow:auto;
+	border:0;
+	box-shadow:0px 2px 2px 0px rgba(0,0,0,0.10);
+	box-shadow:0px 20px 20px 0px rgba(0,0,0,0.50);
+    width:80%;
+    border-radius:10px;
+}
+
+div.dialogTop
+{
+	padding:2rem;
+}
+
+div.dialogHeader
+{
+	padding-bottom:2rem;
+}
+
+div.dialogTitle
+{
+	font-family:AvenirNextforSAS;
+	font-size:1.5rem;
+	color:#0072b2;
+}
+
+div.dialogTitle td.icon
+{
+	text-align:right;
+}
+
+div.dialogTitle a
+{
+	color:black;
+}
+
+div.dialogToolbar
+{
+	padding-bottom:.5rem;
+}
+
+div.dialogDivider
+{
+	padding-left:2rem;
+	padding-right:2rem;
+	background:#d8d8d8;
+	font-size:.25rem;
+	font-size:2px;
+}
+
+div.dialogContent
+{
+    width:90%;
+    margin:auto;
+}
+
+div.dialogContent input,
+div.dialogContent select,
+div.dialogContent textarea
+{
+	font-family:AvenirNextforSAS;
+	font-size:.875rem;
+}
+
+div.dialogContent textarea
+{
+	height:100px;
+	resize:none;
+}
+
+/*
+div.dialogContent td
+{
+	padding:4px;
+}
+*/
+
+div.dialogButtons
+{
+	padding-top:0;
+	padding:1rem;
+}
+
+div.dialogButtons td.dialogStatus
+{
+	width:70%;
+}
+
+div.dialogButtons button,
+div#_popup button,
+button#resourcePublishClear
+{
+	font-family:AvenirNextforSAS;
+	font-size:.875rem;
+}
+
+div.dialogButtons td.dialogButton span
+{
+	padding-left:4px;
+	padding-right:4px;
+}
+
+div.dialogButtons td.dialogButton
+{
+	text-align:right;
+}
+
+div.dialogButtons button
+{
+	height:1.75rem;
+	padding-left:1rem;
+	padding-right:1rem;
+}
+
+div.dialogButtons button:focus
+{
+    border:2px solid #c0c0c0;
+}
+
+div.obscureCover
+{
+	background:#000000;
+	opacity:.2;
+}
+
+table.dialogClose td
+{
+	text-align:right;
+	padding-top:.5rem;
+	padding-right:.5rem;
+}
+
+td.dialogLabel,
+td.dialogValue input,
+td.dialogValue select,
+td.dialogValue textarea,
+td.dialogValue label
+{
+    min-width:250px;
+    width:100%;
+    font-family:AvenirNextforSAS;
+    font-weight:regular;
+}
+
+td.dialogLabel
+{
+    padding-top:10px;
+}
+
+/* End Dialogs */
+
+/*
+div.box
+{
+    font-family:AvenirNextforSAS;
+    font-size:12pt;
+}
+*/
+
+div.visualHeader
+{
+    padding-top:10px;
+    font-size:12pt;
+}
+
+div.visual
+{
+}
+
+/*
+div.visualHeader td.headerText
+{
+    text-align:left;
+    background:red;
+    border:1px solid black;
+}
+*/
+
+div.visualHeader td.icons
+{
+    width:60px;
+    text-align:right;
+}
+
+div.visualHeader td.icons a
+{
+    padding-left:5px;
+    padding-right:5px;
+}
+
+div.visualContent
+{
+    border:1px solid #d8d8d8;
+}
+
+div.visualContent a
+{
+    color:black;
+}
+
+table.visualTable
+{
+    border:0;
+}
+
+table.visualTable th,
+table.visualTable td
+{
+    border:1px solid #d8d8d8;
+    border-right:0;
+    border-bottom:0;
+    padding:4px;
+}
+
+table.visualTable th
+{
+    border-bottom:1px solid #d8d8d8;
+    border-top:0;
+    font-weight:normal;
+    background:white;
+    padding:4px;
+    position:sticky;
+    top:0;
+}
+
+table.visualTable th.first,
+table.visualTable td.first
+{
+    border-left:0;
+}
+
+table.visualTable tr.last td
+{
+    border-bottom:1px solid #d8d8d8;
+}
+
+table.visualTable tr.first td
+{
+    border-top:0;
+}
+
+div.visualControlPanel
+{
+    border:1px solid #d8d8d8;
+    border-top:0;
+}
+
+div.visualControlPanel a.icon
+{
+    font-size:1.5rem;
+}
+
+td.visualControlPanelNav
+{
+    padding-right:30px;
+    width:100px;
+}
+
+td.visualControlPanelPlayPause
+{
+    width:50px;
+}
+
+td.visualControlPanelFilter
+{
+    text-align:right;
+}
+
+td.visualControlPanelFilter a.icon
+{
+    font-size:1.3rem;
+}
+
+td.visualControlPanelFilter input
+{
+	font-family:AvenirNextforSAS;
+    font-size:12pt;
+    width:70%;
+}
+
+div.modelViewerHeader
+{
+    border-bottom:1px solid #d8d8d8;
+}
+
+div.modelViewerHeader td.action a
+{
+    font-size:16pt;
+}
+
+table.modelViewerHeader table.controls td.display
+{
+    padding-left:10px;
+}
+
+table.modelViewerHeader td.cpu
+{
+    border-left:1px solid #d8d8d8;
+}
+
+div.modelViewerHeader td,
+div.modelViewerFooter td,
+div.modelViewerHeader select
+{
+	font-family:AvenirNextforSAS;
+    font-size:11pt;
+}
+
+div.modelViewerHeader select
+{
+    width:200px;
+}
+
+div.modelViewerHeader td.action
+{
+    text-align:center;
+    horizontal-align:center;
+}
+
+div.modelViewerHeader td.action a
+{
+    padding:5px;
+}
+
+table.modelViewerHeader
+{
+    margin:auto;
+}
+
+table.modelViewerHeader td
+{
+    padding:0;
+}
+
+table.modelViewerHeader td.project
+{
+    padding-right:10px;
+}
+
+table.modelViewerHeader td.memoryHeader
+{
+}
+
+table.modelViewerHeader table.navigation
+{
+    border-right:1px solid #d8d8d8;
+    padding-right:10px;
+}
+
+table.modelViewerHeader table.controls
+{
+    padding-left:10px;
+}
+
+div.modelViewerFooter td.memoryLabel
+{
+    padding-left:10px;
+}
+
+div.modelViewerFooter td.memoryValue
+{
+    min-width:80px;
+}
+
+div.modelViewerFooter
+{
+    border:1px solid #d8d8d8;
+    background:#3b99fc;
+    color:white;
+}
+
+div.compassHeader
+{
+    text-align:left;
+}
+
+div.logcontrols
+{
+    border-top:1px solid #d8d8d8;
+    padding:4px;
+}
+
+div.logcontrols input
+{
+	font-family:AvenirNextforSAS;
+    font-size:14pt;
+    font-size:1rem;
+}
+
+div.logcontrols a.icon
+{
+    font-size:1.5rem;
+}
+
+pre.model
+{
+	font-family:AvenirNextforSAS;
+    font-size:.875rem;
+    width:100%;
+    height:100%;
+    border:1px solid #d8d8d8;
+    overflow:auto;
+}
+
+span.navigation
+{
+}
+
+span.filter
+{
+    padding-left:10px;
+}
+
+span.share
+{
+    padding-left:10px;
+    padding-right:10px;
+}
+
+span.playPause
+{
+    padding-left:10px;
+    padding-right:10px;
+    border-right:2px solid #d8d8d8;
+}
+
+span.close
+{
+    padding-left:10px;
+    border-left:2px solid #d8d8d8;
+}
+
+div.visualHeader a.icon
+{
+    font-size:.75rem;
+}
+
+.mapicon
+{
+	font-family:sas-icons;
+}
+
+select
+{
+    outline:none;
+}
+
+div.hsplitter,
+div.vsplitter
+{
+	font-family:sas-icons;
+	font-weight:regular;
+	font-size:1rem;
+	color:#4e4e4e;
+	padding:0;
+	border:0;
+}
+
+div.hsplitter
+{
+	width:20px;
+}
+
+div.vsplitter
+{
+	height:20px;
+}
+
+tr.selected td
+{
+    background:#3b99fc;
+    color:white;
+}
+
+*
+{
+    outline:none;
+}
+
+table.tabs
+{
+    width:100%;
+	border:0;
+}
+
+table.tabs td.tabAfter
+{
+	border:0;
+	font-size:10pt;
+	padding-left:10px;
+	font-style:italic;
+}
+
+table.tabs td.tabSelected,
+table.tabs td.tabs,
+table.tabs td.endOfTabs,
+table.tabs td.tabs button
+{
+	background:white;
+	vertical-align:middle;
+	border:0;
+	cursor:pointer;
+	font-family:AvenirNextforSAS;
+	font-weight:normal;
+	font-size:12pt;
+	padding:2px;
+	padding-left:5px;
+	padding-right:5px;
+	color:black;
+}
+
+table.tabs td.tabs
+{
+	border:1px solid #c0c0c0;
+	border-right:0;
+}
+
+table.tabs td.tabFirst
+{
+	border-top-left-radius:8px;
+}
+
+table.tabs td.tabLast
+{
+	border-top-right-radius:8px;
+	border-right:1px solid #c0c0c0;
+	border:1px solid #c0c0c0;
+}
+
+/*
+table.tabs td.tabs:hover
+{
+	background:#f6fcff;
+	color:#0093e5;
+}
+*/
+
+table.tabs td.tabSelected,
+table.tabs td.tabSelected button
+{
+	color:#0072b2;
+	border-bottom:0;
+	background:white;
+	font-weight:bold;
+	color:black;
+    background:#f8f8f8;
+}
+
+table.tabs button:focus
+{
+	outline:none;
+}
+
+hr
+{
+    border:0;
+    border-top:1px solid #d8d8d8;
+}
+
+div.layout
+{
+    width:98%;
+    height:98%;
+    overflow:auto;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    justify-content:space-around;
+    margin:auto;
+}
+
+.chartsHeader
+{
+    width:100%;
+    padding:10px;
+    border:1px solid #d8d8d8;
+    border-radius:8px;
+    background:#f8f8f8;
+}
+
+div.chartsContainer
+{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-around;
+}
+
+button:focus
+{
+    border:2px solid #c0c0c0;
+}

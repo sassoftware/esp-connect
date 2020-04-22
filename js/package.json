@@ -1,0 +1,30 @@
+{
+  "name": "@sassoftware/esp-connect",
+  "version": "7.1.0",
+  "description": "Package used to connect to an ESP server",
+  "main": "api.js",
+  "keywords": [
+    "SAS",
+    "ESP",
+    "Event Stream Processing"
+  ],
+  "homepage": "https://github.com/sassoftware/esp-connect",
+  "bugs": {
+    "url": "https://github.com/sassoftware/esp-connect/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "Robert Levey <robert.levey@sas.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sassoftware/esp-connect.git"
+  },
+  "dependencies": {
+    "amdefine": "latest",
+    "ws": "latest",
+    "xmldom": "latest",
+    "xpath": "latest",
+    "xmlhttprequest": "latest",
+    "readline-sync": "latest",
+    "detect-node": "latest"
+  }
+}

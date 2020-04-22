@@ -1,0 +1,24 @@
+[
+    {
+        "info": {
+            "usage":{
+                "usage":"[-name] [-format]",
+                "options":{
+                    "name":"name of the project for which to retrieve the xml (defaults to all)",
+                    "format":"xml | json | ubjson (defaults to xml)"
+                }
+            },
+            "defaults": {
+                "name":"",
+                "format":"xml"
+            },
+            "exit-on-response":true
+        }
+    },
+    {
+        "xml": {
+            "name":"@name@",
+            "format":"@format@"
+        }
+    }
+]

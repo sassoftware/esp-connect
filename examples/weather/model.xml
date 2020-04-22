@@ -1,0 +1,95 @@
+<project name='p' threads='4' pubsub='auto'>
+	<contqueries>
+		<contquery name='cq' trace='aggr'>
+			<windows>
+				<window-source name='s'>
+					<schema>
+						<fields>
+							<field name='name' type='string' key='true' />
+							<field name='weather' type='string' />
+							<field name='temp' type='double' />
+							<field name='tempMin' type='double' />
+							<field name='tempMax' type='double' />
+							<field name='pressure' type='int32' />
+							<field name='humidity' type='int32' />
+							<field name='windSpeed' type='double' />
+							<field name='windDirection' type='int32' />
+							<field name='sunrise' type='date' />
+							<field name='sunset' type='date' />
+							<field name='lat' type='double' />
+							<field name='lon' type='double' />
+							<field name='guid' type='string' />
+						</fields>
+					</schema>
+					<connectors>
+						<connector class='url'>
+							<properties>
+								<property name='type'>pub</property>
+								<property name='configUrl'>@config@</property>
+								<property name='properties'>APPID=@appid@</property>
+                                <!--
+								<property name='interval'>1</property>
+								<property name='interval'>6000</property>
+                                -->
+								<property name='interval'>5</property>
+							</properties>
+						</connector>
+					</connectors>
+				</window-source>
+                <window-functional name='weather'>
+                    <schema copy='s' />
+                    <function-context>
+                        <properties>
+                            <property-string name='tempRatio'>product($temp,.10)</property-string>
+                            <property-string name='windSpeedRatio'>product($windSpeed,.10)</property-string>
+                            <property-string name='windDirectionRatio'>product($windDirection,.10)</property-string>
+                        </properties>
+                        <functions>
+                            <function name='temp'>sum($temp,random(diff(0,#tempRatio),#tempRatio))</function>
+                            <function name='windSpeed'>sum($windSpeed,random(diff(0,#windSpeedRatio),#windSpeedRatio))</function>
+                            <function name='windDirection'>sum($windDirection,random(diff(0,#windDirectionRatio),#windDirectionRatio))</function>
+                        </functions>
+                    </function-context>
+                </window-functional>
+                <window-aggregate name='aggr'>
+					<schema>
+						<fields>
+							<field name='name' type='string' key='true' />
+							<field name='low' type='double' />
+							<field name='high' type='double' />
+						</fields>
+					</schema>
+                    <output>
+                        <field-expr>ESP_aMin(temp)</field-expr>
+                        <field-expr>ESP_aMax(temp)</field-expr>
+                    </output>
+                </window-aggregate>
+                <window-functional name='func' index='pi_EMPTY' output-insert-only='true'>
+                    <schema copy='s' copy-keys='false'>
+                        <fields>
+							<field name='guid' type='string' key='true' />
+                        </fields>
+                    </schema>
+                    <opcode>insert</opcode>
+                    <function-context>
+                        <properties>
+                            <property-string name='tempRatio'>product($temp,.10)</property-string>
+                            <property-string name='windSpeedRatio'>product($windSpeed,.10)</property-string>
+                            <property-string name='windDirectionRatio'>product($windDirection,.10)</property-string>
+                        </properties>
+                        <functions>
+                            <function name='temp'>sum($temp,random(diff(0,#tempRatio),#tempRatio))</function>
+                            <function name='windSpeed'>sum($windSpeed,random(diff(0,#windSpeedRatio),#windSpeedRatio))</function>
+                            <function name='windDirection'>sum($windDirection,random(diff(0,#windDirectionRatio),#windDirectionRatio))</function>
+                        </functions>
+                    </function-context>
+                </window-functional>
+			</windows>
+			<edges>
+				<edge source='s' target='weather'/>
+				<edge source='s' target='func'/>
+				<edge source='func' target='aggr'/>
+			</edges>
+		</contquery>
+	</contqueries>
+</project>
