@@ -112,8 +112,9 @@ If you want to use the model viewer visualizations, include the vis.js declarati
 
 The following code must be added to bring in the Connect API:
 ```html
-<script data-main="../../js/libs/esp/main" src="../../js/libs/require/require.js"></script>
 <link rel="stylesheet" href="../../style/connect.css" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/main"></script>
 ```
 
 Now you must supply the *esp* function which is called when the module is ready to go. This function is usually used to create one or more connections to 
