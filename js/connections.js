@@ -2566,7 +2566,7 @@ define([
         {
             var o;
 
-            entries.forEach(e =>
+            entries.forEach((e) =>
             {
                 o = {};
                 for (var k in e)

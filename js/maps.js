@@ -8,16 +8,6 @@ if (typeof(define) !== "function")
     var define = require("amdefine")(module);
 }
 
-var _isNode = false;
-
-try
-{
-    _isNode = (require("detect-node") != null);
-}
-catch (e)
-{
-}
-
 define([
     "./chart",
     "./options"
@@ -35,16 +25,270 @@ define([
     Maps.prototype.createMap =
     function(visuals,container,datasource,options)
     {
-        var chart = new Map(visuals,container,datasource,options);
+        var type = visuals.getOpt("maps","leaflet");
+        var chart = null;
+
+        if (type == "plotly")
+        {
+            chart = new PlotlyMap(visuals,container,datasource,options);
+        }
+        else if (type == "choropleth")
+        {
+            chart = new ChoroplethMap(visuals,container,datasource,options);
+        }
+        else
+        {
+            chart = new LeafletMap(visuals,container,datasource,options);
+        }
+
         return(chart);
     }
 
     /* Map */
-
     function
     Map(visuals,container,datasource,options)
     {
         Chart.call(this,visuals,container,datasource,options);
+        this._lat = null;
+        this._lon = null;
+    }
+
+    Map.prototype = Object.create(Chart.prototype);
+    Map.prototype.constructor = Map;
+
+    Map.prototype.init =
+    function(data,clear)
+    {
+        this._lat = this.getOpt("lat");
+
+        if (this._lat == null)
+        {
+            throw("you must specify the lat property")
+        }
+
+        this._lon = this.getOpt("lon");
+
+        if (this._lon == null)
+        {
+            throw("you must specify the lon property")
+        }
+
+        this._initialized = true;
+    }
+
+    Map.prototype.getData =
+    function()
+    {
+        if (this._datasource.schema == null)
+        {
+            return;
+        }
+
+        this._data = this._datasource.getList();
+
+        if (this._data == null)
+        {
+            return(null);
+        }
+
+        var mapdata = {};
+        mapdata.keys = [];
+        mapdata.tooltips = [];
+        mapdata.colors = [];
+        mapdata.lat = [];
+        mapdata.lon = [];
+        mapdata.sizes = [];
+        mapdata.selected = [];
+
+        var html = this.getOpt("html");
+        mapdata.html = (html != null) ? [] : null;
+
+        var keys = this.getValues("keys");
+        var tooltips = this.getValues("tooltip");
+        var tooltip;
+        var value;
+        var key;
+        var s;
+
+        if (keys.length == 0)
+        {
+            keys = ["@key"];
+        }
+
+        if ((value = this.getOpt("size")) != null)
+        {
+            if ((field = this._datasource.schema.getField(value)) != null)
+            {
+                var values = this._datasource.getValues(value);
+                if (values != null && values.length > 0)
+                {
+                    var s = this.getOpt("sizes",[10,50]);
+                    mapdata.sizes = this._visuals.getSizes(values,s[0],s[1]);
+                }
+            }
+            else
+            {
+                this._data.forEach((item) => {mapdata.sizes.push(value);});
+            }
+        }
+        else
+        {
+            this._data.forEach((item) => {mapdata.sizes.push(20)});
+        }
+
+        var field;
+
+        if ((value = this.getOpt("color")) != null)
+        {
+            if ((field = this._datasource.schema.getField(value)) != null)
+            {
+                var values = this._datasource.getValues(value);
+
+                if (values != null && values.length > 0)
+                {
+                    var options = {};
+
+                    if (this.hasOpt("colors"))
+                    {
+                        options["colors"] = this.getOpt("colors");
+                    }
+                    else if (this.hasOpt("gradient"))
+                    {
+                        options["gradient"] = this.getOpt("gradient","lightest");
+                        options["gradient_end"] = this.getOpt("gradient_end",false);
+                    }
+
+                    if (this.hasOpt("color_range"))
+                    {
+                        options["range"] = this.getOpt("color_range");
+                    }
+
+                    mapdata.colors = this._visuals._colors.createColors(values,options);
+                }
+            }
+            else
+            {
+                var c = this._visuals._colors.getColor(value);
+                this._data.forEach((item) => {mapdata.colors.push(c);});
+            }
+        }
+        else
+        {
+            this._data.forEach((item) => {mapdata.colors.push("white");});
+        }
+
+        this._data.forEach((item) => {
+
+            mapdata.selected.push(this._datasource.isSelected(value));
+
+            key = "";
+
+            for (var i = 0; i < keys.length; i++)
+            {
+                if (i > 0)
+                {
+                    key += ".";
+                }
+
+                s = keys[i];
+
+                if (item.hasOwnProperty(s))
+                {
+                    key += item[s];
+                }
+            }
+
+            mapdata.keys.push(key);
+
+            tooltip = "";
+
+            for (var i = 0; i < keys.length; i++)
+            {
+                if (i > 0)
+                {
+                    tooltip += ".";
+                }
+
+                s = keys[i];
+
+                if (item.hasOwnProperty(s))
+                {
+                    tooltip += item[s];
+                }
+            }
+
+            for (var i = 0; i < tooltips.length; i++)
+            {
+                tooltip += "<br>";
+
+                s = tooltips[i];
+
+                if (item.hasOwnProperty(s))
+                {
+                    tooltip += s + "=" + item[s];
+                }
+            }
+
+            mapdata.tooltips.push(tooltip);
+
+            mapdata.lat.push((item.hasOwnProperty(this._lat)) ? item[this._lat] : null);
+            mapdata.lon.push((item.hasOwnProperty(this._lon)) ? item[this._lon] : null);
+
+            if (html != null)
+            {
+                //mapdata.html.push(html(this,item,map.colors[i],map.sizes[i],mapdata.selected[i]));
+                mapdata.html.push(html());
+            }
+        });
+
+        return(mapdata);
+    }
+
+    Map.prototype.getText =
+    function(fields)
+    {
+        var text = "";
+        var type;
+        var f;
+        var s;
+        var v;
+
+        for (var i = 0; i < fields.length; i++)
+        {
+            f = fields[i];
+
+            if (i > 0)
+            {
+                text += "<br/>";
+            }
+
+            s = f["name"];
+            v = value[s];
+            type = f["espType"];
+
+            if (type == "date" || type == "datetime")
+            {
+                v = this._visuals.getDateString(v);
+            }
+            else if (type == "stamp" || type == "timestamp")
+            {
+                v = this._visuals.getTimeString(v);
+            }
+
+            text += s + "=" + v;
+        }
+
+        return(text);
+    }
+
+    /* End Map */
+
+    /* Leaflet Map */
+
+    function
+    LeafletMap(visuals,container,datasource,options)
+    {
+        Map.call(this,visuals,container,datasource,options);
 
         if (window.L == null)
         {
@@ -55,8 +299,6 @@ define([
 
         this._map = new L.map(this._content,{zoom:4});
 
-        this._lat = null;
-        this._lon = null;
         this._markers = {};
 
         this._circles = [];
@@ -104,22 +346,22 @@ define([
         }
 
         this._data = null;
-
-        this._polylineOpts = this.getOpt("polyline");
     }
 
-    Map.prototype = Object.create(Chart.prototype);
-    Map.prototype.constructor = Map;
+    LeafletMap.prototype = Object.create(Map.prototype);
+    LeafletMap.prototype.constructor = LeafletMap;
 
-    Map.prototype.getType =
+    LeafletMap.prototype.getType =
     function()
     {
         return("map");
     }
 
-    Map.prototype.init =
+    LeafletMap.prototype.init =
     function(data,clear)
     {
+		Map.prototype.init.call(this);
+
         if (this.hasOpt("zoom"))
         {
             this._map.setZoom(this.getOpt("zoom"));
@@ -129,155 +371,37 @@ define([
         {
             this._map.setView(this.getOpt("center"));
         }
-
-        this._lat = this.getOpt("lat");
-
-        if (this._lat == null)
-        {
-            throw("you must specify the lat property")
-        }
-
-        this._lon = this.getOpt("lon");
-
-        if (this._lon == null)
-        {
-            throw("you must specify the lon property")
-        }
-
-        this._initialized = true;
     }
 
-    Map.prototype.draw =
+    LeafletMap.prototype.draw =
     function(data,clear)
     {
-        if (this._datasource.schema == null)
+        var mapdata = this.getData();
+
+        if (mapdata == null)
         {
             return;
         }
+
+console.log(JSON.stringify(mapdata));
 
         if (this._initialized == false)
         {
             this.init();
         }
 
-        this._data = this._datasource.getList();
+        var polylineOpts = this.getOpt("polyline");
 
-        if (this._data == null)
-        {
-            return;
-        }
-
-        var popup = [];
-        var s = this.getValues("popup");
-
-        if (s.length > 0)
-        {
-            var f;
-
-            for (var x of s)
-            {
-                if ((f = this._datasource.schema.getField(x)) != null)
-                {
-                    if (popup == null)
-                    {
-                        popup = [];
-                    }
-                    popup.push(f);
-                }
-            }
-        }
-
-        var value;
-        var field;
-        var sizePixels = null;
-        var sizes = null;
-        var colors = null;
-
-        if ((value = this.getOpt("size")) != null)
-        {
-            if ((field = this._datasource.schema.getField(value)) != null)
-            {
-                var values = this._datasource.getValues(value);
-                if (values != null && values.length > 0)
-                {
-                    var s = this.getOpt("sizes",[10,50]);
-                    sizes = this._visuals.getSizes(values,s[0],s[1]);
-                }
-            }
-            else
-            {
-                sizes = [];
-                this._data.forEach(item => {sizes.push(value);});
-            }
-        }
-        else
-        {
-            sizes = [];
-            this._data.forEach(item => {sizes.push(20);});
-        }
-
-        if ((value = this.getOpt("color")) != null)
-        {
-            if ((field = this._datasource.schema.getField(value)) != null)
-            {
-                var values = this._datasource.getValues(value);
-
-                if (values != null && values.length > 0)
-                {
-                    var options = {};
-
-                    if (this.hasOpt("colors"))
-                    {
-                        options["colors"] = this.getOpt("colors");
-                    }
-                    else if (this.hasOpt("gradient"))
-                    {
-                        options["gradient"] = this.getOpt("gradient","lightest");
-                        options["gradient_end"] = this.getOpt("gradient_end",false);
-                    }
-
-                    if (this.hasOpt("color_range"))
-                    {
-                        options["range"] = this.getOpt("color_range");
-                    }
-
-                    colors = this._visuals._colors.createColors(values,options);
-                }
-            }
-            else
-            {
-                colors = [];
-                var c = this._visuals._colors.getColor(value);
-                this._data.forEach(item => {colors.push(c);});
-            }
-        }
-        else
-        {
-            colors = [];
-            this._data.forEach(item => {colors.push("white");});
-        }
-
-        var htmlFunc = this.getOpt("html");
         var opacity = this.getOpt("marker_opacity",1);
         var marker = null;
         var lastMarker = null;
         var html = null;
-
-        var keyValues = this.getValues("keys");
-
-        if (keyValues.length == 0)
-        {
-            keyValues = ["@key"];
-        }
+        var key = null;
 
         var selectedBorder = this._visuals.selectedBorder;
         var borderWidth = this.getOpt("border_width","1");
         var borderColor = this.getOpt("border_color","black");
         var firstSelected = null;
-        var keys = [];
-        var index = 0;
-        var selected;
-        var key;
 
         var remove = {};
 
@@ -288,53 +412,23 @@ define([
 
         var points = null;
 
-        if (this._polylineOpts != null)
+        if (polylineOpts != null)
         {
             points = [];
         }
 
-        for (var value of this._data)
+        for (var i = 0; i < mapdata.keys.length; i++)
         {
-            selected = this._datasource.isSelected(value);
-            
-            key = "";
-
-            html = (htmlFunc != null) ? htmlFunc(this,value,colors[index],sizes[index],selected) : null;
-
-            for (var i = 0; i < keyValues.length; i++)
-            {
-                k = keyValues[i];
-
-                if (i > 0)
-                {
-                    key += ".";
-                }
-
-                if (value.hasOwnProperty(k))
-                {
-                    key += value[k];
-                }
-            }
-                
-            keys.push(key);
-
-            var latLng = null;
-
-            if (value.hasOwnProperty(this._lat) && value.hasOwnProperty(this._lon))
-            {
-                lat = value[this._lat];
-                lon = value[this._lon];
-
-                if (lat != 0 && lon != 0)
-                {
-                    latLng = new L.LatLng(lat,lon);
-                }
-            }
-
-            if (latLng == null)
+            if (mapdata.lat[i] == null || mapdata.lon[i] == null)
             {
                 continue;
             }
+
+            key = mapdata.keys[i];
+
+            html = (mapdata.html != null) ? mapdata.html[i] : null;
+
+            latLng = new L.LatLng(mapdata.lat[i],mapdata.lon[i]);
 
             if (points != null)
             {
@@ -383,7 +477,7 @@ define([
             marker.setLatLng(latLng);
             lastMarker = marker;
 
-            if (selected)
+            if (mapdata.selected[i])
             {
                 if (firstSelected == null)
                 {
@@ -397,7 +491,7 @@ define([
             }
             else
             {
-                if (selected)
+                if (mapdata.selected[i])
                 {
                     marker.setStyle({weight:selectedBorder.width});
                     marker.setStyle({color:selectedBorder.color});
@@ -408,61 +502,28 @@ define([
                     marker.setStyle({color:borderColor});
                 }
 
+                /*
                 if (sizePixels != null)
                 {
                     marker.setRadius(sizePixels);
                 }
                 else if (sizes != null)
-                {
-                    marker.setRadius(sizes[index] / 2);
-                }
-
-                if (colors != null)
-                {
-                    marker.setStyle({fillColor:colors[index]});
-                }
-            }
-
-            if (popup.length > 0)
-            {
-                var text = ""
-                var esptype;
-                var v;
-                var f;
-                var s;
-
-                for (var i = 0; i < popup.length; i++)
-                {
-                    f = popup[i];
-
-                    if (i > 0)
-                    {
-                        text += "<br/>";
-                    }
-
-                    s = f["name"];
-                    v = value[s];
-                    esptype = f["espType"];
-
-                    if (esptype == "date" || esptype == "datetime")
-                    {
-                        v = this._visuals.getDateString(v);
-                    }
-                    else if (esptype == "stamp" || esptype == "timestamp")
-                    {
-                        v = this._visuals.getTimeString(v);
-                    }
-
-                    text += s + "=" + v;
-                }
-
-                /*
-                marker.bindPopup(text);
                 */
-                marker.bindTooltip(text);
+                if (mapdata.sizes != null)
+                {
+                    marker.setRadius(mapdata.sizes[i] / 2);
+                }
+
+                if (mapdata.colors != null)
+                {
+                    marker.setStyle({fillColor:mapdata.colors[i]});
+                }
             }
 
-            index++;
+            if (mapdata.tooltips[i].length > 0)
+            {
+                marker.bindTooltip(mapdata.tooltips[i]);
+            }
         }
 
         for (var key in remove)
@@ -478,7 +539,7 @@ define([
             {
                 this._polyline = L.polyline([]);
                 this._map.addLayer(this._polyline);
-                this._polyline.setStyle(this._polylineOpts);
+                this._polyline.setStyle(polylineOpts);
             }
 
             this._polyline.setLatLngs(points);
@@ -501,9 +562,7 @@ define([
         }
     }
 
-
-
-    Map.prototype.clicked =
+    LeafletMap.prototype.clicked =
     function(e)
     {
         var key = null;
@@ -537,7 +596,7 @@ define([
         }
     }
 
-    Map.prototype.mouseover =
+    LeafletMap.prototype.mouseover =
     function(e)
     {
         var key = null;
@@ -564,7 +623,7 @@ define([
         }
     }
 
-    Map.prototype.addCircles =
+    LeafletMap.prototype.addCircles =
     function(options)
     {
         var opts = new Options(options);
@@ -615,7 +674,7 @@ define([
         datasource.addDelegate(this);
     }
 
-    Map.prototype.loadCircles =
+    LeafletMap.prototype.loadCircles =
     function(o)
     {
         o["layers"].clearLayers()
@@ -698,7 +757,7 @@ define([
         }
     }
 
-    Map.prototype.addPolygons =
+    LeafletMap.prototype.addPolygons =
     function(options)
     {
         var opts = new Options(options);
@@ -732,7 +791,7 @@ define([
         datasource.addDelegate(this);
     }
 
-    Map.prototype.loadPolygons =
+    LeafletMap.prototype.loadPolygons =
     function(o)
     {
         o["layers"].clearLayers()
@@ -821,7 +880,7 @@ define([
         }
     }
 
-    Map.prototype.dataChanged =
+    LeafletMap.prototype.dataChanged =
     function(datasource,data,clear)
     {
         var o = null;
@@ -857,6 +916,183 @@ define([
     }
 
     /* End Map */
+
+    /* Plotly Map */
+
+    function
+    PlotlyMap(visuals,container,datasource,options)
+    {
+        Map.call(this,visuals,container,datasource,options);
+        this._type = "scattergeo";
+    }
+
+    PlotlyMap.prototype = Object.create(Map.prototype);
+    PlotlyMap.prototype.constructor = PlotlyMap;
+
+    PlotlyMap.prototype.getType =
+    function()
+    {
+        return("map");
+    }
+
+    PlotlyMap.prototype.draw =
+    function(data,clear)
+    {
+        var mapdata = this.getData();
+
+        if (mapdata == null)
+        {
+            return;
+        }
+
+        if (this._initialized == false)
+        {
+            this.init();
+        }
+
+        var data = [{
+            type: this._type,
+            mode: "markers",
+            locationmode: "USA-states",
+            lat: mapdata.lat,
+            lon: mapdata.lon,
+            hoverinfo: "text",
+            text: mapdata.tooltips,
+            marker: {
+                size: mapdata.sizes,
+                color:mapdata.colors,
+                line: {
+                    color: "black",
+                    width: 1
+                },
+            }
+        }];
+
+        this._layout.geo = {
+            showland: true,
+            landcolor: "rgb(217, 217, 217)",
+            landcolor: "rgb(233, 233, 233)",
+            subunitwidth: 1,
+            countrywidth: 1,
+            subunitcolor: "rgb(255,255,255)",
+            countrycolor: "rgb(255,255,255)"
+        };
+
+        /*
+        this._layout.geo = {
+            scope: "usa",
+            projection: {
+                type: "albers usa"
+            },
+            showland: true,
+            landcolor: "rgb(217, 217, 217)",
+            landcolor: "rgb(233, 233, 233)",
+            subunitwidth: 1,
+            countrywidth: 1,
+            subunitcolor: "rgb(255,255,255)",
+            countrycolor: "rgb(255,255,255)"
+        };
+        */
+
+        Plotly.react(this._content,data,this._layout,this._defaults);
+    }
+
+    /* End Plotly Map */
+
+    /* Choropleth Map */
+
+    function
+    ChoroplethMap(visuals,container,datasource,options)
+    {
+        Map.call(this,visuals,container,datasource,options);
+        this._type = "choropleth";
+    }
+
+    ChoroplethMap.prototype = Object.create(PlotlyMap.prototype);
+    ChoroplethMap.prototype.constructor = ChoroplethMap;
+
+    ChoroplethMap.prototype.draw =
+    function(data,clear)
+    {
+        var mapdata = this.getData();
+
+        if (mapdata == null)
+        {
+            return;
+        }
+
+        if (this._initialized == false)
+        {
+            this.init();
+        }
+
+        var values = this.getValues("locations");
+
+        if (values.length == 0)
+        {
+            throw("you must specify the locations property")
+        }
+
+        var locations = this._datasource.getValues(values[0]);
+
+        values = this.getValues("values");
+
+        if (values.length == 0)
+        {
+            throw("you must specify the values property")
+        }
+
+        var z = this._datasource.getValues(values[0]);
+
+        var data = [{
+            type: this._type,
+            mode: "markers",
+            locations:locations,
+            locationmode: "geojson-id",
+            geojson: "https://raw.githubusercontent.com/shawnbot/topogram/master/data/us-states.geojson",
+            featureidkey:"properties.name",
+            z:z,
+            hoverinfo: "text",
+            text: mapdata.tooltips,
+            marker: {
+                size: mapdata.sizes,
+                color:mapdata.colors,
+                line: {
+                    color: "black",
+                    width: 1
+                },
+            }
+        }];
+
+        this._layout.geo = {
+            scope: "usa"
+        };
+        /*
+        */
+
+        /*
+        this._layout.geo = {
+            scope: "usa",
+            projection: {
+                type: "albers usa"
+            },
+            showland: true,
+            landcolor: "rgb(217, 217, 217)",
+            landcolor: "rgb(233, 233, 233)",
+            subunitwidth: 1,
+            countrywidth: 1,
+            subunitcolor: "rgb(255,255,255)",
+            countrycolor: "rgb(255,255,255)"
+        };
+        */
+
+        Plotly.react(this._content,data,this._layout,this._defaults);
+
+        this.setHandlers();
+        this.setHeader();
+    }
+
+    /* End Choropleth Map */
 
     return(Maps);
 });

@@ -43,7 +43,7 @@ esp(api)
 
     document.getElementById("appid").value = _appid;
 
-    _conn = _api.connect(server,{ready:ready},{interval:0});
+    _conn = _api.connect(server,{ready:ready});
     _visuals = _api.createVisuals(parms);
 
     _api.handleLayout();

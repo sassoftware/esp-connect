@@ -2,6 +2,8 @@
 
 The esp-connect package enables you to communicate with a SAS Event Stream Processing (ESP) server using Javascript objects.
 
+**NOTE** This version of esp-connect works with the ESP 7.1 server.
+
 ## Table of Contents
 
 * [Overview](#overview)
