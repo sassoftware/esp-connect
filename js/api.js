@@ -64,11 +64,6 @@ define([
             }
         },
 
-        createWebSocket:function(url,delegate)
-        {
-            return(connections.createWebSocket(url,delegate));
-        },
-
         createVisuals:function(options)
         {
             var visuals = new Visuals(options);
