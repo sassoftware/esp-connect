@@ -67,7 +67,7 @@ in the API, you must perform an *npm install* of the connect API (the *work* dir
 * change to your HOME directory.
 * Install the Connect API from the directory where you cloned it (the module name is <i>esp-connect</i>):
 ```
-$ npm install @work@/js/libs/esp
+$ npm install @work@/js
 ```
 * change directory to *@work@/node*.
 * run a test using the following command (use your own ESP server):
