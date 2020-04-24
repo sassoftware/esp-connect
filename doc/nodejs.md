@@ -8,7 +8,7 @@ To use the API with Node.js, perform the following steps (this assumes you have 
 * Install the Connect API from the directory where you downloaded it (the module name is *@sassoftware/esp-connect*):
 
 ```sh
-$ npm install @work@/esp/js/libs/esp
+$ npm install @work@/js
 ```
 * change directory to *@work@/esp/node*
 * run a test using the following command (use your own ESP server):
