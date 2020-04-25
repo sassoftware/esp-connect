@@ -165,6 +165,7 @@ define([
 		}
 
 		this._xml = data;
+        this._xml.documentElement.removeAttribute("id");
 
         Object.defineProperty(this,"xml", {
             get() {

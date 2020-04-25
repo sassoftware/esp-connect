@@ -57,6 +57,22 @@ define([
         return(this._options.hasOwnProperty(s));
     }
 
+	Options.prototype.hasOpts =
+    function(opts)
+    {
+        var code = true;
+
+        for (var o of opts)
+        {
+            if (this.hasOpt(o) == false)
+            {
+                code = false;
+            }
+        }
+
+        return(code);
+    }
+
 	Options.prototype.getOpt =
     function(name,dv)
     {

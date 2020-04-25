@@ -218,6 +218,12 @@ define([
 		this._reconnect = {"interval":5,"attempts":0,"timestamp":0,"timer":null};
 		this._websocket = null;
 
+        Object.defineProperty(this,"websocket", {
+            get() {
+		        return(this._websocket);
+            }
+        });
+
         Object.defineProperty(this,"protocol", {
             get() {
 		        return(this._secure ? "wss" : "ws");
