@@ -9,7 +9,7 @@
 
 <title>ESP Image Object Detection</title>
 
-<link rel="stylesheet" href="../../esp/style/connect.css" />
+<link rel="stylesheet" href="../../style/connect.css" />
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
 
@@ -40,7 +40,7 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
-    _conn = _api.connect(server,{ready:ready,closed:closed});
+    _api.connect(server,{ready:ready,closed:closed});
     _visuals = _api.createVisuals(parms);
 
     _visuals.createWrapper("video",{header:"<br/>The video plays here",style:{width:"45%",height:"40%"}});
@@ -54,8 +54,10 @@ esp(api)
 }
 
 function
-ready()
+ready(connection)
 {
+    _conn = connection;
+
     if (_api.getParm("load",true))
     {
         _conn.loadProjectFrom("p","model.xml",{loaded:loaded,error:error},{overwrite:true});
@@ -304,8 +306,7 @@ function
 editProperties()
 {
     var video = document.getElementById("video");
-    //var url = (video.src != null && video.src.length > 0) ? new URL(video.src,document.URL).toString() :  new URL("video.mp4",document.URL).toString();
-    var url = (video.src != null && video.src.length > 0) ? new URL(video.src,document.URL).toString() :  new URL("/resources/video/sample1.mp4",document.URL).toString();
+    var url = (video.src != null && video.src.length > 0) ? new URL(video.src,document.URL).toString() :  new URL("../data/sample.mp4",document.URL).toString();
     document.getElementById("videoUrl").value = url;
     document.getElementById("textColor").value = _viewer.getOpt("image_text_color","white");
 
@@ -397,7 +398,7 @@ button
             This example allows you to specify a video to play. The page will grab each frame from the video and publish it into the ESP model. The example
             uses binary communication with the ESP server so it can keep up with the rate and amount of data being processed.
             <br/><br/>
-            In order to run the model, you must copy the <a href="images.astore">astore file</a>
+            In order to run the model, you must copy the <a href="../data/images.astore">astore file</a>
             into the directory in which you are running your ESP server.
             <br/><br/>
             After you have done this, you can hit the play icon and start the video. As the video starts, each frame is grabbed and copied into the HTML

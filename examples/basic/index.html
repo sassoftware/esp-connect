@@ -41,12 +41,13 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
  
-    _conn = _api.connect(server,{ready:ready},{debug:false});
     _visuals = _api.createVisuals(parms);
 
     _visuals.createWrapper("colors",{header:"Click on the colored areas to generate events",style:{width:"95%",height:"150px"}});
 
     _api.handleLayout({layout:layout});
+
+    _api.connect(server,{ready:ready});
 }
 
 function
@@ -56,8 +57,10 @@ layout()
 }
 
 function
-ready()
+ready(conn)
 {
+    _conn = conn;
+
     if (_api.getParm("load",true))
     {
         var  model = "<project threads='4' pubsub='auto'>\

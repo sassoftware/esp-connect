@@ -19,17 +19,10 @@ catch (e)
 }
 
 define([
-    "./resources",
-    "./model",
-    "./schema",
-    "./xpath",
-    "./ajax",
     "./tools",
     "./codec",
-    "./options",
-    "./visuals",
-    "./dialogs"
-], function(resources,Model,Schema,xpath,ajax,tools,codec,Options,Visuals,dialogs)
+    "./options"
+], function(tools,codec,Options)
 {
     var WS = _isNode ? require("ws") : null;
 
@@ -251,6 +244,22 @@ define([
         Object.defineProperty(this,"isSecure", {
             get() {
                 return(this._secure);
+            }
+        });
+
+        Object.defineProperty(this,"url", {
+            get() {
+                var	url = "";
+                url += this.httpProtocol;
+                url += "://";
+                url += this.host;
+                url += ":";
+                url += this.port;
+                if (this._path != null && this._path.length > 0)
+                {
+                    url += this._path;
+                }
+		        return(url);
             }
         });
 	}
@@ -568,6 +577,19 @@ define([
         {
 		    this._websocket.send(this._authorization);
         }
+    }
+
+	Connection.prototype.getUrl =
+	function()
+    {
+        return(this.url);
+    }
+
+	Connection.prototype.established =
+	function()
+    {
+        var url = this.getUrl();
+        return(_websockets.established(url));
     }
 
     return(Connection);

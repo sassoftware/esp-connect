@@ -10,14 +10,13 @@
 <title>ESP Trades Demo</title>
 
 <link rel="stylesheet" href="../../esp/style/connect.css" />
+<link rel="stylesheet" href="../../esp/style/leaflet.css" />
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+<script src="../../esp/js/libs/leaflet/leaflet.js"></script>
+<script src="../../esp/js/libs/vis.js/vis-network.min.js"></script>
+<script src="../../esp/js/libs/plotly/plotly-latest.min.js"></script>
 
-<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
-<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/main"></script>
+<script data-main="../../esp/js/libs/esp/main" src="../../esp/js/libs/require/require.js"></script>
 
 <script type="text/javascript">
 
@@ -43,15 +42,17 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
-    _conn = _api.connect(server,{ready:ready,closed:closed});
+    _api.connect(server,{ready:ready,closed:closed});
     _visuals = _api.createVisuals(_api.getParms());
 
     _api.handleLayout();
 }
 
 function
-ready()
+ready(connection)
 {
+    _conn = connection;
+
     if (_api.getParm("load",true))
     {
         _api.showStatus("Loading project...");

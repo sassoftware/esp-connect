@@ -25,10 +25,10 @@ if (server == null)
     process.exit(0);
 }
 
-var connection = api.connect(server,{ready:ready});
+api.connect(server,{ready:ready});
 
 function
-ready()
+ready(connection)
 {
     var delegate = {modelLoaded:function(model,conn) {
         console.log("" + model.xml);

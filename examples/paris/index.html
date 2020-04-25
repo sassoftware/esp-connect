@@ -41,15 +41,17 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
-    _conn = _api.connect(server,{ready:ready});
+    _api.connect(server,{ready:ready});
     _visuals = _api.createVisuals(_api.getParms());
 
     _api.handleLayout();
 }
 
 function
-ready()
+ready(connection)
 {
+    _conn = connection;
+
     _api.showStatus("Loading project...");
     _conn.loadUrl("model","model.xml",{loaded:sendModel});
     _conn.loadUrl("trip","paris_trip.csv",{loaded:function(name,text){_trip = text;}});
@@ -74,7 +76,6 @@ loaded(p,conn)
     _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
 
     _api.clearStatus();
-
 }
 
 function

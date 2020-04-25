@@ -382,7 +382,7 @@ define([
         while (i < this._visuals.length)
         {
             v = this._visuals[i];
-            
+ 
             if (connection == null || tools.supports(v,"usesConnection") && v.usesConnection(connection))
             {
                 v.remove();

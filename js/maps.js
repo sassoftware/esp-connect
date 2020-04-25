@@ -177,6 +177,8 @@ define([
             this._data.forEach((item) => {mapdata.colors.push("white");});
         }
 
+        var index = 0;
+
         this._data.forEach((item) => {
 
             mapdata.selected.push(this._datasource.isSelected(value));
@@ -236,9 +238,10 @@ define([
 
             if (html != null)
             {
-                //mapdata.html.push(html(this,item,map.colors[i],map.sizes[i],mapdata.selected[i]));
-                mapdata.html.push(html());
+                mapdata.html.push(html(this,item,mapdata.colors[index],mapdata.sizes[index],mapdata.selected[index]));
             }
+
+            index++;
         });
 
         return(mapdata);
@@ -382,8 +385,6 @@ define([
         {
             return;
         }
-
-console.log(JSON.stringify(mapdata));
 
         if (this._initialized == false)
         {

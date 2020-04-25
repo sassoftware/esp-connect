@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html>
 <head>
 
@@ -8,10 +7,7 @@
 
 <title>ESP Weather Demo</title>
 
-<link rel="stylesheet" href="../../esp/style/connect.css" />
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+<link rel="stylesheet" href="../../style/connect.css" />
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
 
@@ -47,15 +43,17 @@ esp(api)
 
     document.getElementById("appid").value = _appid;
 
-    _conn = _api.connect(server,{ready:ready},{interval:0});
+    _api.connect(server,{ready:ready});
     _visuals = _api.createVisuals(parms);
 
     _api.handleLayout();
 }
 
 function
-ready()
+ready(connection)
 {
+    _conn = connection;
+
     if (_appid.length > 0)
     {
         _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true,parms:{appid:_appid,config:new URL("config.xml",document.URL).toString()}});

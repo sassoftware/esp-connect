@@ -9,7 +9,7 @@
 
 <title>ESP Basic Example</title>
 
-<link rel="stylesheet" href="../../esp/style/connect.css" />
+<link rel="stylesheet" href="../../style/connect.css" />
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
@@ -41,12 +41,13 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
  
-    _conn = _api.connect(server,{ready:ready},{debug:false});
     _visuals = _api.createVisuals(parms);
 
     _visuals.createWrapper("colors",{header:"Click on the colored areas to generate events",style:{width:"95%",height:"150px"}});
 
     _api.handleLayout({layout:layout});
+
+    _api.connect(server,{ready:ready});
 }
 
 function
@@ -56,13 +57,15 @@ layout()
 }
 
 function
-ready()
+ready(conn)
 {
+    _conn = conn;
+
     if (_api.getParm("load",true))
     {
         var  model = "<project threads='4' pubsub='auto'>\
                        <contqueries>\
-                         <contquery name='cq'>\
+                         <contquery name='cq' trace='clicks'>\
                            <windows>\
                              <window-source name='clicks' insert-only='true' index='pi_EMPTY'>\
                                 <schema-string>id*:string,element:string,x:int32,y:int32</schema-string>\

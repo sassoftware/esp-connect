@@ -135,15 +135,18 @@ esp(api)
 
     var server = _api.getParm("server");
  
-    _conn = _api.connect(server,{ready:ready});
     _visuals = _api.createVisuals(parms);
 
     _api.handleLayout({layout:layout});
+
+    _api.connect(server,{ready:ready});
 }
 
 function
-ready()
+ready(connection)
 {
+    _conn = connection;
+
     var  model = "<project threads='4' pubsub='auto'>\
                    <contqueries>\
                      <contquery name='cq'>\

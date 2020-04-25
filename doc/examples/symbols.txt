@@ -11,9 +11,9 @@
 
 <link rel="stylesheet" href="../../esp/style/connect.css" />
 
-<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+<script src="../../esp/js/libs/plotly/plotly-latest.min.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/main"></script>
+<script data-main="../../esp/js/libs/esp/main" src="../../esp/js/libs/require/require.js"></script>
 
 <script type="text/javascript">
 
@@ -39,15 +39,17 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
-    _conn = _api.connect(server,{ready:ready},{debug:false});
+    _api.connect(server,{ready:ready});
     _visuals = _api.createVisuals(parms);
 
     _api.handleLayout();
 }
 
 function
-ready()
+ready(connection)
 {
+    _conn = connection;
+
     if (_api.getParm("load",true))
     {
         _api.showStatus("Loading project...");

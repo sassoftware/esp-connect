@@ -40,7 +40,7 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
-    _conn = _api.connect(server,{ready:ready,closed:closed});
+    _api.connect(server,{ready:ready,closed:closed});
     _visuals = _api.createVisuals(parms);
 
     _visuals.createWrapper("video",{header:"<br/>The video plays here",style:{width:"45%",height:"40%"}});
@@ -54,8 +54,10 @@ esp(api)
 }
 
 function
-ready()
+ready(connection)
 {
+    _conn = connection;
+
     if (_api.getParm("load",true))
     {
         _conn.loadProjectFrom("p","model.xml",{loaded:loaded,error:error},{overwrite:true});

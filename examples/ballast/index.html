@@ -41,7 +41,7 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
-    _conn = _api.connect(server,{ready:ready,closed:closed});
+    _api.connect(server,{ready:ready,closed:closed});
     _visuals = api.createVisuals(parms);
     _visuals.dateformat = {dateStyle:"short",timeStyle:"long",timeZone:"UTC"};
 
@@ -52,8 +52,10 @@ esp(api)
 }
 
 function
-ready()
+ready(connection)
 {
+    _conn = connection;
+
     if (_api.getParm("load",true))
     {
         _api.showStatus("Loading project...");
