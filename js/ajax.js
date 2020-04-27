@@ -205,14 +205,20 @@ define([
 				{
 					var	contentType = this.getResponseHeader("content-type");
 
-					if (this.responseXML != null)
+                    if (_node != null)
+                    {
+                        if (contentType.indexOf("text/xml") != -1 || contentType.indexOf("application/xml") != -1)
+                        {
+                            this._ajax._xml = xpath.createXml(this.responseText);
+                        }
+                    }
+					else if (this.responseXML != null)
 					{
 						this._ajax._xml = this.responseXML;
 					}
-					else if (contentType == "text/xml" || contentType == "application/xml")
+                    else if (contentType.indexOf("text/xml") != -1 || contentType.indexOf("application/xml") != -1)
 					{
-						var	dom = new DOMParser();
-						this._ajax._xml = dom.parseFromString(this.responseText,"application/xml");
+                        this._ajax._xml = xpath.createXml(this.responseText);
 					}
 
 					if (this.status == 0)

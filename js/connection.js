@@ -250,6 +250,22 @@ define([
         Object.defineProperty(this,"url", {
             get() {
                 var	url = "";
+                url += this.protocol;
+                url += "://";
+                url += this.host;
+                url += ":";
+                url += this.port;
+                if (this._path != null && this._path.length > 0)
+                {
+                    url += this._path;
+                }
+		        return(url);
+            }
+        });
+
+        Object.defineProperty(this,"httpurl", {
+            get() {
+                var	url = "";
                 url += this.httpProtocol;
                 url += "://";
                 url += this.host;
@@ -590,6 +606,92 @@ define([
     {
         var url = this.getUrl();
         return(_websockets.established(url));
+    }
+
+	function
+    DelegateConnection(delegate,host,port,path,secure,options)
+    {
+		Connection.call(this,host,port,path,secure,options);
+        this._delegate = delegate;
+    }
+
+	DelegateConnection.prototype = Object.create(Connection.prototype);
+	DelegateConnection.prototype.constructor = DelegateConnection;
+
+	DelegateConnection.prototype.ready =
+	function()
+	{
+        if (tools.supports(this._delegate,"ready"))
+        {
+            this._delegate.ready();
+        }
+	}
+
+	DelegateConnection.prototype.closed =
+	function()
+	{
+        if (tools.supports(this._delegate,"closed"))
+        {
+            this._delegate.closed();
+        }
+	}
+
+	DelegateConnection.prototype.error =
+	function()
+	{
+        if (tools.supports(this._delegate,"error"))
+        {
+            this._delegate.error();
+        }
+	}
+
+	DelegateConnection.prototype.handshakeComplete =
+	function()
+	{
+        if (tools.supports(this._delegate,"handshakeComplete"))
+        {
+            this._delegate.handshakeComplete();
+        }
+	}
+
+	DelegateConnection.prototype.message =
+	function(data)
+	{
+		if (this.isHandshakeComplete() == false)
+		{
+			Connection.prototype.message.call(this,data);
+			return;
+		}
+
+        if (tools.supports(this._delegate,"message"))
+        {
+            this._delegate.message(data);
+        }
+	}
+
+	DelegateConnection.prototype.data =
+	function(o)
+	{
+        if (tools.supports(this._delegate,"data"))
+        {
+            this._delegate.data(o);
+        }
+	}
+
+    Connection.create =
+    function(url,options)
+    {
+        var u = tools.createUrl(decodeURI(url));
+        var conn = new Connection(u["host"],u["port"],u["path"],u["secure"],options);
+        return(conn);
+    }
+
+    Connection.createDelegateConnection =
+    function(delegate,url,options)
+    {
+        var u = tools.createUrl(decodeURI(url));
+        var conn = new DelegateConnection(delegate,u["host"],u["port"],u["path"],u["secure"],options);
+        return(conn);
     }
 
     return(Connection);

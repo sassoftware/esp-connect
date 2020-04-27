@@ -172,6 +172,14 @@ define([
     {
     }
 
+	Options.prototype.clone =
+    function()
+    {
+        var o = {};
+        this.addOpts(o);
+        return(o);
+    }
+
 	Options.prototype.toString =
     function()
     {

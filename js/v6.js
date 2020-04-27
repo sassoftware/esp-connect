@@ -70,6 +70,44 @@ define([
         this._gets = {};
     }
 
+    Api.prototype.formUrl =
+    function(base,path,options)
+    {
+        var url = base;
+        url += "eventStreamProcessing/v1/";
+        url += path;
+
+        var parms = "";
+
+        if (options != null)
+        {
+            for (var name in options)
+            {
+                parms += (parms.length > 0) ? "&" : "?";
+                parms += name + "=" + options[name];
+            }
+        }
+
+        if (parms.length > 0)
+        {
+            url += parms;
+        }
+
+        return(url);
+    }
+
+    Api.prototype.getUrl =
+    function(path,options)
+    {
+        return(this.formUrl(this._connection.url,path,options));
+    }
+
+    Api.prototype.getHttpUrl =
+    function(path,options)
+    {
+        return(this.formUrl(this._connection.httpurl,path,options));
+    }
+
     Api.prototype.closed =
     function()
     {
@@ -661,15 +699,26 @@ define([
             throw "The delegate must implement the modelLoaded method";
         }
 
-        var id = tools.guid();
-        var opts = new Options(options);
-        var request = {"model":{}};
-        var o = request["model"];
-        o["id"] = id;
-        o["schema"] = opts.getOpt("schema",false);
-        o["index"] = opts.getOpt("index",true);
-        o["xml"] = opts.getOpt("xml",false);
-        this._modelDelegates[id] = new ModelDelegate(this,delegate,request);
+        var url = this.getHttpUrl("projects",options);
+        var conn = this;
+
+        var o = {
+            response:function(request,text,data) {
+                if (tools.supports(delegate,"modelLoaded"))
+                {
+                    var model = new Model(data);
+                    delegate.modelLoaded(model,conn);
+                }
+            },
+            error:function(request,error) {
+                if (tools.supports(delegate,"error"))
+                {
+                    delegate.error(request.getName(),error);
+                }
+            }
+        };
+
+		ajax.create("load",url,o).get();
     }
 
     Api.prototype.loadUrl =
@@ -802,31 +851,48 @@ define([
             throw "The delegate must implement the response method";
         }
 
-        var id = tools.guid();
-        this._responseDelegates[id] = new ResponseDelegate(this,delegate);
+        var o = {
+            response:function(request,text,data) {
+                var loggers = [];
+                xpath.getNodes("//loggers/logger",data).forEach((n) =>
+                {
+                    loggers.push({"@level":n.getAttribute("level"),"@name":n.getAttribute("name")});
+                });
+                delegate.response(this,loggers);
+            },
+            error:function(request,error) {
+	            if (tools.supports(delegate,"error"))
+                {
+                    console.log("error: " + error);
+                    delegate.error(request.getName(),error);
+                }
+            }
+        };
 
-        var request = {"loggers":{}};
-        var o = request["loggers"];
-        o["id"] = id;
-        this.sendObject(request);
+        var url = this.getHttpUrl("loggers");
+		ajax.create("load",url,o).get();
     }
 
     Api.prototype.setLogger =
     function(context,level,delegate)
     {
-        var id = tools.guid();
+        var o = {
+            response:function(request,text,data) {
+                var message = xpath.getString("//message",data);
+                delegate.response(this,message);
+            },
+            error:function(request,error) {
+	            if (tools.supports(delegate,"error"))
+                {
+                    console.log("error: " + error);
+                    delegate.error(request.getName(),error);
+                }
+            }
+        };
 
-        if (delegate != null)
-        {
-            this._responseDelegates[id] = new ResponseDelegate(this,delegate);
-        }
+        var url = this.getHttpUrl("loggers/" + context + "/level",{value:level});
 
-        var request = {"loggers":{}};
-        var o = request["loggers"];
-        o["id"] = id;
-        o["context"] = context;
-        o["level"] = level;
-        this.sendObject(request);
+		ajax.create("setLogger",url,o).put();
     }
 
     Api.prototype.createModel =
@@ -878,10 +944,10 @@ define([
     }
 
     function
-    Datasource(conn,options)
+    Datasource(api,options)
     {
 		Options.call(this,options);
-        this._conn = conn;
+        this._api = api;
         this._id = this.getOpt("id",tools.guid());
         this._path = this.getOpt("window");
         this._schema = new Schema();
@@ -893,9 +959,9 @@ define([
             }
         });
 
-        Object.defineProperty(this,"connection", {
+        Object.defineProperty(this,"api", {
             get() {
-                return(this._conn);
+                return(this._api);
             }
         });
 
@@ -975,9 +1041,9 @@ define([
         {
             interval = this.getOpt("interval");
         }
-        else if (this._conn.hasOpt("interval"))
+        else if (this._api.hasOpt("interval"))
         {
-            interval = this._conn.getOpt("interval");
+            interval = this._api.getOpt("interval");
         }
 
         if (interval == null)
@@ -1728,10 +1794,12 @@ define([
     }
 
     function
-    EventCollection(conn,options)
+    EventCollection(api,options)
     {
-		Datasource.call(this,conn,options);
-        this.setOpt("format","ubjson");
+		Datasource.call(this,api,options);
+        this._window = this.getOpt("window");
+        this.clearOpts(["window"]);
+        this.setOpt("format","xml");
         this._data = {};
         this._list = [];
         this._page = 0;
@@ -1746,30 +1814,37 @@ define([
     EventCollection.prototype.open =
     function()
     {
-        var request = {"event-collection":{}};
-        var o = request["event-collection"];
-        o["id"]= this._id;
-        o["action"]= "set";
-        o["window"]= this._path;
-        o["schema"]= true;
-        o["load"]= true;
-        o["info"] = 5;
-        o["format"]= "xml";
-
+        //var url = this._api.getUrl("subscribers/" + this._path,this.getOpts());
+        var opts = {mode:"updating",schema:true,format:"xml"};
+        var url = this._api.getUrl("subscribers/" + this._path,opts);
+        this._conn = Connection.createDelegateConnection(this,url);
+        this._conn.start();
         this.setIntervalProperty();
 
         var options = this.getOpts();
-        for (var x in options)
-        {
-            o[x] = options[x];
-        }
 
+        /*
         if (this.hasOpt("filter") == false)
         {
             o["filter"] = "";
         }
+        this._api.sendObject(request);
+        */
+    }
 
-        this._conn.sendObject(request);
+    EventCollection.prototype.message =
+    function(data)
+    {
+		var	xml = xpath.createXml(data);
+        var root = xml.documentElement;
+        if (root.tagName == "schema")
+        {
+            this.setSchemaFromXml(xml);
+        }
+        else if (root.tagName == "events")
+        {
+            this.eventsXml(xml.documentElement);
+        }
     }
 
     EventCollection.prototype.set =
@@ -1795,7 +1870,7 @@ define([
 
         o["load"] = (load == true);
 
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
     }
 
     EventCollection.prototype.close =
@@ -1805,7 +1880,7 @@ define([
         var o = request["event-collection"];
         o["id"] = this._id;
         o["action"] = "close";
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
     }
 
     EventCollection.prototype.play =
@@ -1815,7 +1890,7 @@ define([
         var o = request["event-collection"];
         o["id"] = this._id;
         o["action"] = "play";
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
 		Datasource.prototype.play.call(this);
     }
 
@@ -1826,7 +1901,7 @@ define([
         var o = request["event-collection"];
         o["id"] = this._id;
         o["action"] = "pause";
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
 		Datasource.prototype.play.call(this);
     }
 
@@ -1879,7 +1954,7 @@ define([
         {
             o["page"] = page;
         }
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
     }
 
     EventCollection.prototype.setSchemaFromXml =
@@ -1954,14 +2029,13 @@ define([
         }
 
         var data = [];
-        var	nodes = xpath.getNodes("//entries/event",xml);
         var datatype;
         var content;
         var values;
         var opcode;
         var s;
 
-        xpath.getNodes("//entries/event",xml).forEach((n) =>
+        xpath.getNodes("//events/event",xml).forEach((n) =>
         {
             opcode = n.getAttribute("opcode");
             if (opcode == null || opcode.length == 0)
@@ -2007,7 +2081,7 @@ define([
             this.info(xml);
         }
 
-        //console.log(JSON.stringify(data));
+        console.log(JSON.stringify(data));
     }
 
 	EventCollection.prototype.info =
@@ -2103,7 +2177,9 @@ define([
     EventStream(conn,options)
     {
 		Datasource.call(this,conn,options);
-        this.setOpt("format","ubjson");
+        this._window = this.getOpt("window");
+        this.clearOpts(["window"]);
+        this.setOpt("format","xml");
         this._data = [];
         this._counter = 1;
     }
@@ -2114,29 +2190,37 @@ define([
     EventStream.prototype.open =
     function()
     {
-        var request = {"event-stream":{}};
-        var o = request["event-stream"];
-        o["id"] = this._id;
-        o["action"] = "set";
-        o["window"] = this._path;
-        o["schema"] = true;
-        o["load"]= true;
-        o["format"] = "xml";
-
+        var opts = {mode:"streaming",schema:true,format:"xml"};
         this.setIntervalProperty();
 
-        var options = this.getOpts();
-        for (var x in options)
-        {
-            o[x] = options[x];
-        }
+        var url = this._api.getUrl("subscribers/" + this._path,opts);
 
+        this._conn = Connection.createDelegateConnection(this,url);
+        this._conn.start();
+
+        /*
         if (this.hasOpt("filter") == false)
         {
             o["filter"] = "";
         }
 
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
+        */
+    }
+
+    EventStream.prototype.message =
+    function(data)
+    {
+		var	xml = xpath.createXml(data);
+        var root = xml.documentElement;
+        if (root.tagName == "schema")
+        {
+            this.setSchemaFromXml(xml);
+        }
+        else if (root.tagName == "events")
+        {
+            this.eventsXml(xml.documentElement);
+        }
     }
 
     EventStream.prototype.set =
@@ -2162,7 +2246,7 @@ define([
 
         o["load"] = (load == true);
 
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
     }
 
     EventStream.prototype.close =
@@ -2172,7 +2256,7 @@ define([
         var o = request["event-stream"];
         o["id"] = this._id;
         o["action"] = "close";
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
     }
 
     EventStream.prototype.play =
@@ -2182,7 +2266,7 @@ define([
         var o = request["event-stream"];
         o["id"] = this._id;
         o["action"] = "play";
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
 		Datasource.prototype.play.call(this);
     }
 
@@ -2193,7 +2277,7 @@ define([
         var o = request["event-stream"];
         o["id"] = this._id;
         o["action"] = "pause";
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
 		Datasource.prototype.play.call(this);
     }
 
@@ -2296,7 +2380,7 @@ define([
 		    console.log(xpath.format(xml));
         }
 
-        var	nodes = xpath.getNodes("//entries/event",xml);
+        var	nodes = xpath.getNodes("//events/event",xml);
         var	data = new Array();
         var	content;
         var	values;
@@ -2711,7 +2795,7 @@ define([
     }
 
 	function
-	Log(api)
+    Log(api)
 	{
         this._api = api;
         this._delegates = [];
@@ -2732,34 +2816,33 @@ define([
         });
     }
 
-    Log.prototype.process =
-    function(xml)
-    {
-        var message = xpath.nodeText(xml.documentElement);
-
-        for (var i = 0; i < this._delegates.length; i++)
-        {
-            this._delegates[i].handleLog(this,message);
-        }
-    }
-
     Log.prototype.start =
     function()
     {
-        var request = {"logs":{}};
-        var o = request["logs"];
-        o["capture"] = true;
-        this._api.sendObject(request);
+        if (this._conn == null)
+        {
+            var url = this._api.getUrl("logs");
+            this._conn = Connection.createDelegateConnection(this,url);
+            this._conn.start();
+        }
     }
 
     Log.prototype.stop =
     function()
     {
-        var request = {"logs":{}};
-        var o = request["logs"];
-        o["capture"] = true;
-        o["capture"] = false;
-        this._api.sendObject(request);
+        if (this._conn != null)
+        {
+            this._conn.stop();
+            this._conn = null;
+        }
+    }
+
+    Log.prototype.message =
+    function(data)
+    {
+        this._delegates.forEach((d) => {
+            d.handleLog(this,data);
+        });
     }
 
     Log.prototype.addDelegate =

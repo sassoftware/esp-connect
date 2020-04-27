@@ -20,9 +20,10 @@ catch (e)
 
 define([
     "./connection",
+    "./v6",
     "./v7",
     "./tools"
-], function(Connection,v7,tools)
+], function(Connection,v6,v7,tools)
 {
     function
     ServerConnection(host,port,path,secure,delegate,options)
@@ -53,6 +54,11 @@ define([
             {
                 this._impl = new v7(this);
             }
+        }
+
+        if (this._impl == null)
+        {
+            this._impl = new v6(this);
         }
 
         if (this._impl != null)
