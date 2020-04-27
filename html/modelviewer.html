@@ -347,17 +347,20 @@ connect(server)
 
     _api.getDialogs().clearModals();
 
-    _connection = _api.connect(server,{ready:ready,closed:closed});
     _api.size();
 
     document.getElementById("bannerTitle").innerHTML = "ESP Model Viewer (" + server + ")";
 
     _storage.setOpt("server",server);
+
+    _api.connect(server,{ready:ready,closed:closed});
 }
 
 function
 ready(connection)
 {
+    _conn = connection;
+
     if (_viewer == null)
     {
         _viewer = _visuals.createModelViewer("viewer",null,_parms);

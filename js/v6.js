@@ -775,47 +775,53 @@ define([
     Api.prototype.loadProject =
     function(name,data,delegate,options)
     {
-        var id = tools.guid();
-        var request = {"project":{}};
-        var o = request["project"];
-        o["name"] = name;
-        o["id"] = id;
-        o["action"] = "load";
-        if (options != null)
-        {
-            for (var x in options)
-            {
-                o[x] = options[x];
+        var o = {
+            response:function(request,text,data) {
+	            if (tools.supports(delegate,"loaded"))
+                {
+                    var message = xpath.getString("//message",data);
+                    delegate.loaded(this,message);
+                }
+            },
+            error:function(request,error,data) {
+	            if (tools.supports(delegate,"error"))
+                {
+                    var message = xpath.getString("//message",data);
+                    delegate.error(this,request.getName(),message);
+                }
             }
-        }
-        o["data"] = tools.b64Encode(data);
+        };
 
-		this._loadDelegates[id] = {connection:this,request:request,delegate:delegate};
-
-        this.sendObject(request);
+        var url = this.getHttpUrl("projects/" + name,options);
+		var request = ajax.create("loadProject",url,o);
+        request.setData(data);
+        request.put();
     }
 
     Api.prototype.loadRouter =
     function(name,data,delegate,options)
     {
-        var id = tools.guid();
-        var request = {"router":{}};
-        var o = request["router"];
-        o["name"] = name;
-        o["id"] = id;
-        o["action"] = "load";
-        if (options != null)
-        {
-            for (var x in options)
-            {
-                o[x] = options[x];
+        var o = {
+            response:function(request,text,data) {
+	            if (tools.supports(delegate,"loaded"))
+                {
+                    var message = xpath.getString("//message",data);
+                    delegate.loaded(this,message);
+                }
+            },
+            error:function(request,error,data) {
+	            if (tools.supports(delegate,"error"))
+                {
+                    var message = xpath.getString("//message",data);
+                    delegate.error(this,request.getName(),message);
+                }
             }
-        }
-        o["data"] = tools.b64Encode(data);
+        };
 
-		this._loadDelegates[id] = {connection:this,request:request,delegate:delegate};
-
-        this.sendObject(request);
+        var url = this.getHttpUrl("routers/" + name,options);
+		var request = ajax.create("loadRouter",url,o);
+        request.setData(data);
+        request.put();
     }
 
     Api.prototype.deleteProject =
@@ -1814,7 +1820,6 @@ define([
     EventCollection.prototype.open =
     function()
     {
-        //var url = this._api.getUrl("subscribers/" + this._path,this.getOpts());
         var opts = {mode:"updating",schema:true,format:"xml"};
         var url = this._api.getUrl("subscribers/" + this._path,opts);
         this._conn = Connection.createDelegateConnection(this,url);
@@ -1830,21 +1835,6 @@ define([
         }
         this._api.sendObject(request);
         */
-    }
-
-    EventCollection.prototype.message =
-    function(data)
-    {
-		var	xml = xpath.createXml(data);
-        var root = xml.documentElement;
-        if (root.tagName == "schema")
-        {
-            this.setSchemaFromXml(xml);
-        }
-        else if (root.tagName == "events")
-        {
-            this.eventsXml(xml.documentElement);
-        }
     }
 
     EventCollection.prototype.set =
@@ -1876,11 +1866,23 @@ define([
     EventCollection.prototype.close =
     function()
     {
-        var request = {"event-collection":{}};
-        var o = request["event-collection"];
-        o["id"] = this._id;
-        o["action"] = "close";
-        this._api.sendObject(request);
+        this._conn.stop();
+        this._conn = null;
+    }
+
+    EventCollection.prototype.message =
+    function(data)
+    {
+		var	xml = xpath.createXml(data);
+        var root = xml.documentElement;
+        if (root.tagName == "schema")
+        {
+            this.setSchemaFromXml(xml);
+        }
+        else if (root.tagName == "events")
+        {
+            this.eventsXml(xml.documentElement);
+        }
     }
 
     EventCollection.prototype.play =
@@ -2906,35 +2908,34 @@ define([
 
         this.addOpts(o);
 
-        var request = {"publisher":{}};
-        var o = request["publisher"];
-        o["id"] = this._id;
-        o["action"] = "set";
-        o["window"] = this._path;
-        o["schema"] = true;
-
-        if (this._api._publishers.hasOwnProperty(this._id) == false)
-        {
-            this._api._publishers[this._id] = this;
-        }
-
-        this._api.sendObject(request);
+        var opts = {schema:true};
+        var url = this._api.getUrl("publishers/" + this._path,opts);
+console.log("URL: " + url);
+        this._conn = Connection.createDelegateConnection(this,url);
+        this._conn.start();
     }
 
 	Publisher.prototype.close =
 	function()
     {
-        var request = {"publisher":{}};
-        var o = request["publisher"];
-        o["id"] = this._id;
-        o["action"] = "delete";
+        this._conn.stop();
+        this._conn = null;
+    }
 
-        if (this._api._publishers.hasOwnProperty(this._id))
+    Publisher.prototype.message =
+    function(data)
+    {
+console.log(data);
+		var	xml = xpath.createXml(data);
+        var root = xml.documentElement;
+        if (root.tagName == "schema")
         {
-            delete this._api._publishers[this._id];
+            this.setSchemaFromXml(xml);
         }
-
-        this._api.sendObject(request);
+        else if (root.tagName == "events")
+        {
+            this.eventsXml(xml.documentElement);
+        }
     }
 
     Publisher.prototype.addSchemaDelegate =

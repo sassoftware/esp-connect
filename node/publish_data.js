@@ -55,8 +55,4 @@ showUsage()
     console.log("\t-window\t\tESP source window in the form of project/contquery/window");
     console.log("\t-events\t\tfile containing the ESP events");
     console.log("");
-
-    /*
-    console.log("\t-\t\t");
-    */
 }

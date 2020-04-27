@@ -105,8 +105,6 @@ loaded()
 {
     _api.clearStatus();
 
-    _publisher = _conn.getPublisher({window:"myproject/cq/clicks"});
-
     _visuals.createLogViewer("logs",_conn,{header:"Log Viewer"});
     _viewer = _visuals.createModelViewer("model",_conn,{header:"Model Viewer",cpu:true,counts:true,schema:true,type:true,index:true,memory:true});
     _viewer.addDelegate({modelLoaded:function(viewer){viewer.project = "myproject"}});
@@ -117,6 +115,8 @@ loaded()
     _visuals.createGauge("gauges",clicks,{value:"count",segments:5,header:"Clicks Indicators",width:200,range:[0,100],bar_color:"rgba(255,255,255,.7)"});
 
     _conn.getProjectXml("myproject",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
+
+    _publisher = _conn.getPublisher({window:"myproject/cq/clicks"});
 
     _api.size(1000);
 }

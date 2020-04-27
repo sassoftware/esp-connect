@@ -25,6 +25,8 @@ if (server == null || opts.hasOpts(["name","model"]) == false)
     process.exit(0);
 }
 
+opts.clearOpt("server");
+
 var fs = require("fs");
 
 api.connect(server,{ready:ready});
@@ -45,6 +47,8 @@ ready(connection)
             process.exit(0);
         }
     };
+
+    opts.clearOpts(["name","model"]);
 
     connection.loadRouter(name,data,delegate,opts.getOpts());
 }

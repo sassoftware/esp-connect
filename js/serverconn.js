@@ -48,17 +48,13 @@ define([
     {
         var version = this.getHeader("version");
 
-        if (version != null)
-        {
-            if (version == "7.1")
-            {
-                this._impl = new v7(this);
-            }
-        }
-
-        if (this._impl == null)
+        if (version == null)
         {
             this._impl = new v6(this);
+        }
+        else
+        {
+            this._impl = new v7(this);
         }
 
         if (this._impl != null)
