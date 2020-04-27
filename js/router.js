@@ -162,6 +162,7 @@ define([
     Router.prototype.ready =
     function(connection)
     {
+        this._connections[connection.getOpt("name")] = connection;
         connection.loadModel(this);
     }
 
@@ -232,7 +233,6 @@ define([
             var url = this._servers[name];
             var u = tools.createUrl(decodeURI(url));
             var conn = connections.connect(u["host"],u["port"],u["path"],u["secure"],this,{name:name});
-            this._connections[name] = conn;
             conn.start();
         });
     }

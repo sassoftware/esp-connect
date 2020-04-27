@@ -50,11 +50,11 @@ define([
 
         if (version == null)
         {
-            this._impl = new v6(this);
+            this._impl = new v6(this,this.getOpts());
         }
         else
         {
-            this._impl = new v7(this);
+            this._impl = new v7(this,this.getOpts());
         }
 
         if (this._impl != null)

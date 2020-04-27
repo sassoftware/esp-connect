@@ -2958,8 +2958,23 @@ define([
         var o = JSON.parse(data);
         if (o.hasOwnProperty("schema"))
         {
-console.log(JSON.stringify(o,null,"\t"));
-            this.setSchemaFromJson(o.schema);
+            var schema = {};
+            var field;
+            schema.fields = [];
+            o.schema[0].fields.forEach((f) => {
+console.log(JSON.stringify(f,null,"\t"));
+                field = {};
+                field.name = f.field.attributes.name;
+                field.type = f.field.attributes.type;
+                if (f.field.attributes.hasOwnProperty("key"))
+                {
+                    field.key = f.field.attributes.key;
+                }
+console.log(JSON.stringify(field,null,"\t"));
+                schema.fields.push(field);
+            });
+console.log(JSON.stringify(schema,null,"\t"));
+            this.setSchemaFromJson(schema);
         }
     }
 
@@ -3002,8 +3017,8 @@ console.log(JSON.stringify(o,null,"\t"));
 	Publisher.prototype.setSchemaFromJson =
 	function(json)
     {
-console.log(JSON.stringify(json.fields,null,"\t"));
         this._schema.fromJson(json);
+console.log("HERE: " + this._schema.toString());
         this.deliverSchemaSet();
 
         if (this._csv != null)
