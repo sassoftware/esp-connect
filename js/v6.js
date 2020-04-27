@@ -39,6 +39,36 @@ define([
 
         this._connection = connection;
 
+        Object.defineProperty(this,"protocol", {
+            get() {
+		        return(this._connection.protocol);
+            }
+        });
+
+        Object.defineProperty(this,"httpProtocol", {
+            get() {
+		        return(this._connection.httpProtocol);
+            }
+        });
+
+        Object.defineProperty(this,"host", {
+            get() {
+		        return(this._connection.host);
+            }
+        });
+
+        Object.defineProperty(this,"port", {
+            get() {
+		        return(this._connection.port);
+            }
+        });
+
+        Object.defineProperty(this,"isSecure", {
+            get() {
+		        return(this._connection.isSecure);
+            }
+        });
+
         /*
         this._delegates = [];
 
@@ -595,31 +625,32 @@ define([
 	function(path,data,delegate,options)
 	{
         var opts = new Options(options);
-        var blocksize = opts.getOpt("blocksize",1);
+        opts.setOpt("format","csv");
+
         var times = opts.getOpt("times",1);
-        var id = opts.getOpt("id",tools.guid());
-        var	o = {};
 
-        var request = {"data-publisher":{}};
-        var o = request["data-publisher"];
-        o["id"] = id;
-        o["window"] = path;
-        o["data"] = tools.b64Encode(data);
-        o["blocksize"] = blocksize;
-        o["times"] = times;
-        o["informat"] = opts.getOpt("informat","csv");
-
-        if (delegate != null)
-        {
-            if (tools.supports(delegate,"publishComplete") == false)
+        var o = {
+            ready:function()
             {
-                throw "The publisher delegate must implement the publishComplete method";
-            }
+                for (var i = 0; i < times; i++)
+                {
+                    conn.send(data);
+                }
 
-            this._publisherDelegates[id] = {request:o,delegate:delegate};
+                setTimeout(function() {
+                    if (delegate != null && tools.supports(delegate,"publishComplete"))
+                    {
+                        delegate.publishComplete();
+                    }
+
+                    conn.close();
+                },1000);
+            }
         }
 
-        this.sendObject(request);
+        var url = this.getUrl("publishers/" + path,opts.getOpts());
+        var conn = Connection.createDelegateConnection(o,url);
+        conn.start();
     }
 
 	Api.prototype.publishUrl =
@@ -2908,9 +2939,8 @@ define([
 
         this.addOpts(o);
 
-        var opts = {schema:true};
+        var opts = {schema:true,format:"json"};
         var url = this._api.getUrl("publishers/" + this._path,opts);
-console.log("URL: " + url);
         this._conn = Connection.createDelegateConnection(this,url);
         this._conn.start();
     }
@@ -2925,16 +2955,11 @@ console.log("URL: " + url);
     Publisher.prototype.message =
     function(data)
     {
-console.log(data);
-		var	xml = xpath.createXml(data);
-        var root = xml.documentElement;
-        if (root.tagName == "schema")
+        var o = JSON.parse(data);
+        if (o.hasOwnProperty("schema"))
         {
-            this.setSchemaFromXml(xml);
-        }
-        else if (root.tagName == "events")
-        {
-            this.eventsXml(xml.documentElement);
+console.log(JSON.stringify(o,null,"\t"));
+            this.setSchemaFromJson(o.schema);
         }
     }
 
@@ -2977,6 +3002,7 @@ console.log(data);
 	Publisher.prototype.setSchemaFromJson =
 	function(json)
     {
+console.log(JSON.stringify(json.fields,null,"\t"));
         this._schema.fromJson(json);
         this.deliverSchemaSet();
 
@@ -3046,19 +3072,12 @@ console.log(data);
 	{
 		if (this._data.length > 0)
 		{
-            var request = {"publisher":{}};
-            var o = request["publisher"];
-            o["id"] = this._id;
-            o["action"] = "publish";
-            o["data"] = this._data;
-            if (this.getOpt("binary",false))
-            {
-                this._api.sendBinary(request);
-            }
-            else
-            {
-                this._api.sendObject(request);
-            }
+            var a = [];
+            a.push(this._data);
+            this._conn.send(a);
+console.log(JSON.stringify(a,null,"\t"));
+            this._data.forEach((item) => {
+            });
 			this._data = new Array();
 		}
 	}

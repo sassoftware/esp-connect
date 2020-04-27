@@ -39,6 +39,36 @@ define([
 
         this._connection = connection;
 
+        Object.defineProperty(this,"protocol", {
+            get() {
+		        return(this._connection.protocol);
+            }
+        });
+
+        Object.defineProperty(this,"httpProtocol", {
+            get() {
+		        return(this._connection.httpProtocol);
+            }
+        });
+
+        Object.defineProperty(this,"host", {
+            get() {
+		        return(this._connection.host);
+            }
+        });
+
+        Object.defineProperty(this,"port", {
+            get() {
+		        return(this._connection.port);
+            }
+        });
+
+        Object.defineProperty(this,"isSecure", {
+            get() {
+		        return(this._connection.isSecure);
+            }
+        });
+
         /*
         this._delegates = [];
 
