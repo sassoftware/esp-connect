@@ -48,11 +48,13 @@ function
 showUsage()
 {
     console.log("");
-    console.log("usage: node publish_data -server -window -events");
+    console.log("usage: node publish_data -server -window -events [-dataformat] [-blocksize]");
     console.log("");
     console.log("options:");
     console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
     console.log("\t-window\t\tESP source window in the form of project/contquery/window");
     console.log("\t-events\t\tfile containing the ESP events");
+    console.log("\t-blocksize\tevent block size (defaults to 1)");
+    console.log("\t-dateformat\tevent date format");
     console.log("");
 }

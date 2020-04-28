@@ -601,6 +601,11 @@ define([
         o["times"] = times;
         o["informat"] = opts.getOpt("informat","csv");
 
+        if (opts.hasOpt("dateformat"))
+		{
+        	o["dateformat"] = opts.getOpt("dateformat");
+		}
+
         if (delegate != null)
         {
             if (tools.supports(delegate,"publishComplete") == false)
@@ -619,6 +624,7 @@ define([
 	{
         var opts = new Options(options);
         var blocksize = opts.getOpt("blocksize",1);
+        var dateformat = opts.getOpt("dateformat");
         var times = opts.getOpt("times",1);
         var	o = {};
         var id = tools.guid();
@@ -635,6 +641,11 @@ define([
         {
             o["informat"] = opts.getOpt("informat");
         }
+
+        if (opts.hasOpt("dateformat"))
+		{
+        	o["dateformat"] = opts.getOpt("dateformat");
+		}
 
         if (delegate != null)
         {
