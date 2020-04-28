@@ -57,7 +57,7 @@ function
 showUsage()
 {
     console.log("");
-    console.log("usage: node load_project -server -name -model [-connectors] [-overwrite] [-validate] [-start] [-auth] [-access_token] [-help]");
+    console.log("usage: node load_project -server -name -model [-connectors] [-overwrite] [-validate] [-start]");
     console.log("");
     console.log("options:");
     console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
@@ -67,12 +67,5 @@ showUsage()
     console.log("\t-overwrite\ttrue | false (overwrite project if it exists, defaults to false)");
     console.log("\t-validate\ttrue | false (validate the project, defaults to true)");
     console.log("\t-start\t\ttrue | false (start the project, defaults to true)");
-    console.log("\t-auth\t\tauthentication information to send to the server, i.e. Bearer <token> or Basic <credentials>");
-    console.log("\t-access_token\tOAuth token to send to the server");
-    console.log("\t-help\t\tshow usage information");
     console.log("");
-
-    /*
-    console.log("\t-\t\t");
-    */
 }

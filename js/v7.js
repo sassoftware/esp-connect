@@ -841,9 +841,18 @@ define([
         var request = {"xml":{}};
         var o = request["xml"];
         o["id"] = id;
-        o["name"] = name;
+        if (name != null)
+        {
+            o["name"] = name;
+        }
 
         this.sendObject(request);
+    }
+
+    Api.prototype.getXml =
+    function(name,delegate)
+    {
+        this.getProjectXml(null,delegate);
     }
 
     Api.prototype.getLoggers =

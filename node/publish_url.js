@@ -57,8 +57,4 @@ showUsage()
     console.log("\t-dateformat\tevent date format");
     console.log("\t-times\t\tnumber of times to publish (defaults to 1)");
     console.log("");
-
-    /*
-    console.log("\t-\t\t");
-    */
 }

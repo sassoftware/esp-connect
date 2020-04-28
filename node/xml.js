@@ -30,11 +30,11 @@ api.connect(server,{ready:ready});
 function
 ready(connection)
 {
-    var delegate = {modelLoaded:function(model,conn) {
-        console.log("" + model.xml);
+    var delegate = {response:function(connection,data,xml) {
+        console.log("" + xml);
         process.exit(0);
     }};
-    connection.loadModel(delegate,opts.getOpts());
+    connection.getProjectXml(opts.getOpt("name"),delegate);
 }
 
 function

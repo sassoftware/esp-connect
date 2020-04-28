@@ -44,17 +44,10 @@ function
 showUsage()
 {
     console.log("");
-    console.log("usage: node logs -server [-context] [-level] [-format] [-auth] [-access_token] [-help]");
+    console.log("usage: node logs -server [-context] [-level] [-format]");
     console.log("");
     console.log("options:");
     console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
     console.log("\t-format\t\txml | json | text (defaults to xml)");
-    console.log("\t-auth\t\tauthentication information to send to the server, i.e. Bearer <token> or Basic <credentials>");
-    console.log("\t-access_token\tOAuth token to send to the server");
-    console.log("\t-help\t\tshow usage information");
     console.log("");
-
-    /*
-    console.log("\t-\t\t");
-    */
 }

@@ -494,29 +494,48 @@ define([
                 else
                 {
                     var	scheme = this.getHeader("www-authenticate","").toLowerCase();
-
-                    if (scheme.indexOf("bearer") == 0)
+                    var a = scheme.split(" ");
+                    if (a.length > 1)
                     {
-                        var values = [{name:"token",label:"OAuth Token",type:"textarea"}];
-                        var conn = this;
-                        dialogs.showDialog({ok:function(data){conn.setBearer(data)},cancel:dialogs.hideDialog,header:"Enter Token",values:values});
-                    }
-                    else if (scheme.indexOf("basic") == 0)
-                    {
-                        var values = [{name:"user",label:"User"},{name:"password",label:"Password",type:"password"}];
-                        var conn = this;
-                        dialogs.showDialog({ok:function(data){conn.setBasic(data)},cancel:dialogs.hideDialog,header:"Enter User and Password",values:values});
+                        scheme = a[0];
                     }
 
-                    /*
-                    for (var d of this._delegates)
+                    if (_isNode)
                     {
-                        if (tools.supports(d,"authenticate"))
+                        var code = false;
+
+                        this._delegates.forEach((d) => {
+                            if (tools.supports(d,"authenticate"))
+                            {
+                                d.authenticate(this,scheme);
+                                code = true;
+                            }
+                        });
+
+                        if (code == false)
                         {
-                            d.authenticate(this,scheme);
+                            var message = this.getHeader("status");
+                            message += "\n";
+                            message += this.getHeader("www-authenticate","");
+                            message += "\n";
+                            throw new Error(message);
                         }
                     }
-                    */
+                    else
+                    {
+                        if (scheme == "bearer")
+                        {
+                            var values = [{name:"token",label:"OAuth Token",type:"textarea"}];
+                            var conn = this;
+                            dialogs.showDialog({ok:function(data){conn.setBearer(data)},cancel:dialogs.hideDialog,header:"Enter Token",values:values});
+                        }
+                        else if (scheme == "basic")
+                        {
+                            var values = [{name:"user",label:"User"},{name:"password",label:"Password",type:"password"}];
+                            var conn = this;
+                            dialogs.showDialog({ok:function(data){conn.setBasic(data)},cancel:dialogs.hideDialog,header:"Enter User and Password",values:values});
+                        }
+                    }
                 }
 			}
 		}
@@ -526,7 +545,10 @@ define([
 	function(data)
     {
         this.setAuthorization("Bearer " + data.token);
-        dialogs.hideDialog();
+        if (_isNode == false)
+        {
+            dialogs.hideDialog();
+        }
     }
 
 	Connection.prototype.setBasic =
@@ -534,7 +556,10 @@ define([
     {
         var credentials = tools.b64Encode(data.user + ":" + data.password);
         this.setAuthorization("Basic " + credentials);
-        dialogs.hideDialog();
+        if (_isNode == false)
+        {
+            dialogs.hideDialog();
+        }
     }
 
 	Connection.prototype.data =

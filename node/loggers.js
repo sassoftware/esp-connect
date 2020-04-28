@@ -60,8 +60,4 @@ showUsage()
     console.log("\t-context\tthe logging context to return (defaults to ALL)");
     console.log("\t-level\t\ttrace | debug | info | warn | error | fatal | none (defaults to empty, do not set the log level)");
     console.log("");
-
-    /*
-    console.log("\t-\t\t");
-    */
 }

@@ -19,7 +19,7 @@ catch (e)
 }
 
 define([
-    "./connections",
+    "./serverconn",
     "./ajax",
     "./xpath",
     "./resources",
@@ -32,7 +32,7 @@ define([
 	"./router",
 	"./splitter",
 	"./tabs"
-], function(connections,ajax,xpath,resources,dialogs,StoredData,Visuals,tools,codec,Options,Router,splitter,Tabs)
+], function(ServerConnection,ajax,xpath,resources,dialogs,StoredData,Visuals,tools,codec,Options,Router,splitter,Tabs)
 {
 	var	__api =
 	{
@@ -49,8 +49,7 @@ define([
 
 		connect:function(url,delegate,options)
 		{
-            var u = tools.createUrl(decodeURI(url));
-            var conn = connections.connect(u["host"],u["port"],u["path"],u["secure"],delegate,options);
+            var conn = ServerConnection.create(url,delegate,options);
             conn.addDelegate(this);
             conn.start();
             return(conn);

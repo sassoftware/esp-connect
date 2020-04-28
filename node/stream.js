@@ -51,7 +51,7 @@ function
 showUsage()
 {
     console.log("");
-    console.log("usage: node stream -server -window [-format] [-interval] [-maxevents] [-schema] [-auth] [-access_token] [-help]");
+    console.log("usage: node stream -server -window [-format] [-interval] [-maxevents] [-schema]");
     console.log("");
     console.log("options:");
     console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
@@ -61,12 +61,5 @@ showUsage()
     console.log("\t-maxevents\tthe maximum number of events to deliver at any one time (delivers to 0 which means no maximum)");
     console.log("\t-schema\t\ttrue | false (return schema on start, defaults to true)");
     console.log("\t-sort\t\tsort field");
-    console.log("\t-auth\t\tauthentication information to send to the server, i.e. Bearer <token> or Basic <credentials>");
-    console.log("\t-access_token\tOAuth token to send to the server");
-    console.log("\t-help\t\tshow usage information");
     console.log("");
-
-    /*
-    console.log("\t-\t\t");
-    */
 }

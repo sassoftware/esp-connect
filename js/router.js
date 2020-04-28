@@ -9,11 +9,11 @@ if (typeof(define) !== "function")
 }
 
 define([
-    "./connections",
+    "./serverconn",
     "./xpath",
     "./tools",
     "./options"
-], function(connections,xpath,tools,Options)
+], function(ServerConnection,xpath,tools,Options)
 {
     function
     Router()
@@ -231,8 +231,7 @@ define([
 
         Object.keys(this._servers).forEach((name) => {
             var url = this._servers[name];
-            var u = tools.createUrl(decodeURI(url));
-            var conn = connections.connect(u["host"],u["port"],u["path"],u["secure"],this,{name:name});
+            var conn = ServerConnection.create(url,this,{name:name});
             conn.start();
         });
     }

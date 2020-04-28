@@ -204,8 +204,22 @@ define([
             url += "/";
         }
 		url += "eventStreamProcessing/v2/connect";
+
+        if (this.hasOpt("access_token"))
+        {
+            url += "?";
+            url += "access_token=" + this.getOpt("access_token");
+        }
+
 		return(url);
 	}
+
+    ServerConnection.create =
+    function(url,delegate,options)
+    {
+        var u = tools.createUrl(decodeURI(url));
+        return(new ServerConnection(u["host"],u["port"],u["path"],u["secure"],delegate,options));
+    }
 
     return(ServerConnection);
 });

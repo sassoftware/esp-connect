@@ -555,15 +555,15 @@ define([
     Api.prototype.getProjectXml =
     function(name,delegate)
     {
-        var id = tools.guid();
-        this._responseDelegates[id] = new ResponseDelegate(this,delegate);
+        var opts = (name != null) ? {name:name} : {};
+        var url = this.getHttpUrl("projectXml",opts);
+		ajax.create("load",url,delegate).get();
+    }
 
-        var request = {"xml":{}};
-        var o = request["xml"];
-        o["id"] = id;
-        o["name"] = name;
-
-        this.sendObject(request);
+    Api.prototype.getXml =
+    function(name,delegate)
+    {
+        this.getProjectXml(null,delegate);
     }
 
     Api.prototype.getLoggers =

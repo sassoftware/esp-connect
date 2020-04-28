@@ -51,7 +51,7 @@ function
 showUsage()
 {
     console.log("");
-    console.log("usage: node collection -server -window [-pagesize] [-format] [-schema]");
+    console.log("usage: node collection -server -window [-pagesize] [-format] [-schema] [-sort]");
     console.log("");
     console.log("options:");
     console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
@@ -61,12 +61,4 @@ showUsage()
     console.log("\t-schema\t\ttrue | false (return schema on start, defaults to true)");
     console.log("\t-sort\t\tsort field");
     console.log("");
-    console.log("authentication:");
-    console.log("\t-auth\t\tauthentication information to send to the server, i.e. Bearer <token> or Basic <credentials>");
-    console.log("\t-access_token\tOAuth token to send to the server");
-    console.log("");
-
-    /*
-    console.log("\t-\t\t");
-    */
 }

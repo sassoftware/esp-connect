@@ -25,7 +25,9 @@ if (server == null)
     process.exit(0);
 }
 
-api.connect(server,{ready:ready});
+var o = (opts.hasOpt("access_token")) ? {access_token:opts.getOpt("access_token")} : {};
+
+api.connect(server,{ready:ready},o);
 
 function
 ready(connection)
@@ -41,19 +43,12 @@ function
 showUsage()
 {
     console.log("");
-    console.log("usage: node model -server [-name] [-format] [-auth] [-access_token] [-help]");
+    console.log("usage: node model -server [-name] [-format]");
     console.log("");
     console.log("options:");
     console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
     console.log("\t-name\t\tname of the project for which to retrieve the model (defaults to all)");
     console.log("\t-format\t\txml | json | ubjson (defaults to xml)");
     console.log("\t-schema\t\ttrue | false (return schema, defaults to false)");
-    console.log("\t-auth\t\tauthentication information to send to the server, i.e. Bearer <token> or Basic <credentials>");
-    console.log("\t-access_token\tOAuth token to send to the server");
-    console.log("\t-help\t\tshow usage information");
     console.log("");
-
-    /*
-    console.log("\t-\t\t");
-    */
 }

@@ -57,19 +57,12 @@ function
 showUsage()
 {
     console.log("");
-    console.log("usage: node load_router -server -name -model [-overwrite] [-auth] [-access_token] [-help]");
+    console.log("usage: node load_router -server -name -model [-overwrite]");
     console.log("");
     console.log("options:");
     console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
     console.log("\t-name\t\tname of the ESP router");
     console.log("\t-model\t\tfile containing the ESP router configuration");
     console.log("\t-overwrite\ttrue | false (overwrite router if it exists, defaults to false)");
-    console.log("\t-auth\t\tauthentication information to send to the server, i.e. Bearer <token> or Basic <credentials>");
-    console.log("\t-access_token\tOAuth token to send to the server");
-    console.log("\t-help\t\tshow usage information");
     console.log("");
-
-    /*
-    console.log("\t-\t\t");
-    */
 }
