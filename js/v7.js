@@ -69,6 +69,18 @@ define([
             }
         });
 
+        Object.defineProperty(this,"url", {
+            get() {
+		        return(this._connection.url);
+            }
+        });
+
+        Object.defineProperty(this,"httpurl", {
+            get() {
+		        return(this._connection.httpurl);
+            }
+        });
+
         /*
         this._delegates = [];
 
@@ -602,9 +614,9 @@ define([
         o["informat"] = opts.getOpt("informat","csv");
 
         if (opts.hasOpt("dateformat"))
-		{
-        	o["dateformat"] = opts.getOpt("dateformat");
-		}
+        {
+            o["dateformat"] = opts.getOpt("dateformat");
+        }
 
         if (delegate != null)
         {
@@ -624,7 +636,6 @@ define([
 	{
         var opts = new Options(options);
         var blocksize = opts.getOpt("blocksize",1);
-        var dateformat = opts.getOpt("dateformat");
         var times = opts.getOpt("times",1);
         var	o = {};
         var id = tools.guid();
@@ -643,9 +654,9 @@ define([
         }
 
         if (opts.hasOpt("dateformat"))
-		{
-        	o["dateformat"] = opts.getOpt("dateformat");
-		}
+        {
+            o["dateformat"] = opts.getOpt("dateformat");
+        }
 
         if (delegate != null)
         {
@@ -919,10 +930,10 @@ define([
     }
 
     function
-    Datasource(conn,options)
+    Datasource(api,options)
     {
 		Options.call(this,options);
-        this._conn = conn;
+        this._api = api;
         this._id = this.getOpt("id",tools.guid());
         this._path = this.getOpt("window");
         this._schema = new Schema();
@@ -934,9 +945,9 @@ define([
             }
         });
 
-        Object.defineProperty(this,"connection", {
+        Object.defineProperty(this,"api", {
             get() {
-                return(this._conn);
+                return(this._api);
             }
         });
 
@@ -996,7 +1007,7 @@ define([
         {
             if (tools.supports(d,"schemaReady"))
             {
-                d.schemaReady(this._conn,this);
+                d.schemaReady(this._api,this);
             }
         });
     }
@@ -1016,9 +1027,9 @@ define([
         {
             interval = this.getOpt("interval");
         }
-        else if (this._conn.hasOpt("interval"))
+        else if (this._api.hasOpt("interval"))
         {
-            interval = this._conn.getOpt("interval");
+            interval = this._api.getOpt("interval");
         }
 
         if (interval == null)
@@ -1810,7 +1821,7 @@ define([
             o["filter"] = "";
         }
 
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
     }
 
     EventCollection.prototype.set =
@@ -1836,7 +1847,7 @@ define([
 
         o["load"] = (load == true);
 
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
     }
 
     EventCollection.prototype.close =
@@ -1846,7 +1857,7 @@ define([
         var o = request["event-collection"];
         o["id"] = this._id;
         o["action"] = "close";
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
     }
 
     EventCollection.prototype.play =
@@ -1856,7 +1867,7 @@ define([
         var o = request["event-collection"];
         o["id"] = this._id;
         o["action"] = "play";
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
 		Datasource.prototype.play.call(this);
     }
 
@@ -1867,7 +1878,7 @@ define([
         var o = request["event-collection"];
         o["id"] = this._id;
         o["action"] = "pause";
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
 		Datasource.prototype.play.call(this);
     }
 
@@ -1920,7 +1931,7 @@ define([
         {
             o["page"] = page;
         }
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
     }
 
     EventCollection.prototype.setSchemaFromXml =
@@ -2177,7 +2188,7 @@ define([
             o["filter"] = "";
         }
 
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
     }
 
     EventStream.prototype.set =
@@ -2203,7 +2214,7 @@ define([
 
         o["load"] = (load == true);
 
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
     }
 
     EventStream.prototype.close =
@@ -2213,7 +2224,7 @@ define([
         var o = request["event-stream"];
         o["id"] = this._id;
         o["action"] = "close";
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
     }
 
     EventStream.prototype.play =
@@ -2223,7 +2234,7 @@ define([
         var o = request["event-stream"];
         o["id"] = this._id;
         o["action"] = "play";
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
 		Datasource.prototype.play.call(this);
     }
 
@@ -2234,7 +2245,7 @@ define([
         var o = request["event-stream"];
         o["id"] = this._id;
         o["action"] = "pause";
-        this._conn.sendObject(request);
+        this._api.sendObject(request);
 		Datasource.prototype.play.call(this);
     }
 

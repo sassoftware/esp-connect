@@ -42,7 +42,7 @@ define([
     ViewerBase(visuals,container,connection,options)
     {
         Chart.call(this,visuals,container,null,options);
-        this._conn = connection;
+        this._connection = connection;
     }
 
 	ViewerBase.prototype = Object.create(Chart.prototype);
@@ -51,7 +51,7 @@ define([
     ViewerBase.prototype.usesConnection =
     function(connection)
     {
-        var code = (this._conn == connection);
+        var code = (this._connection == connection);
         return(code);
     }
 
@@ -80,7 +80,7 @@ define([
 
         Object.defineProperty(this,"connection", {
             get() {
-                return(this._conn);
+                return(this._connection);
             },
 
             set(value) {
@@ -95,20 +95,20 @@ define([
                     this._resident.innerText = "";
                 }
 
-                if (this._conn != null)
+                if (this._connection != null)
                 {
-                    this._conn.getStats().removeDelegate(this);
+                    this._connection.getStats().removeDelegate(this);
                 }
 
-                this._conn = value;
+                this._connection = value;
                 this._model = null;
                 this.draw();
 
-                if (this._conn != null)
+                if (this._connection != null)
                 {
-                    this._stats = this._conn.getStats();
+                    this._stats = this._connection.getStats();
                     this.setStats();
-                    this._conn.loadModel(this,{schema:true,index:true,xml:true});
+                    this._connection.loadModel(this,{schema:true,index:true,xml:true});
                 }
             }
         });
@@ -182,9 +182,9 @@ define([
     ModelViewer.prototype.reload =
     function()
     {
-        if (this._conn != null)
+        if (this._connection != null)
         {
-            this._conn.loadModel(this,{schema:true,index:true,xml:true});
+            this._connection.loadModel(this,{schema:true,index:true,xml:true});
         }
     }
 
@@ -1116,25 +1116,25 @@ define([
 
         Object.defineProperty(this,"connection", {
             get() {
-                return(this._conn);
+                return(this._connection);
             },
 
             set(value) {
-                if (this._conn != null)
+                if (this._connection != null)
                 {
-                    this._conn.getLog().removeDelegate(this);
+                    this._connection.getLog().removeDelegate(this);
                 }
 
-                this._conn = value;
+                this._connection = value;
 
-                if (this._conn != null)
+                if (this._connection != null)
                 {
                     if (this.hasOpt("filter"))
                     {
-                        this._conn.getLog().filter = this.getOpt("filter");
+                        this._connection.getLog().filter = this.getOpt("filter");
                     }
 
-                    this._conn.getLog().addDelegate(this);
+                    this._connection.getLog().addDelegate(this);
                 }
 
                 this._messages = [];
@@ -1260,14 +1260,14 @@ define([
         if (this._paused)
         {
             this._paused = false;
-            this._conn.getLog().addDelegate(this);
+            this._connection.getLog().addDelegate(this);
             this._playPause.innerHTML = "&#xf4f4;";
             code = true;
         }
         else
         {
             this._paused = true;
-            this._conn.getLog().removeDelegate(this);
+            this._connection.getLog().removeDelegate(this);
             this._playPause.innerHTML = "&#xf513;";
         }
 

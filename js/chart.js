@@ -447,7 +447,7 @@ define([
 
         if (this._datasource != null)
         {
-            code = (this._datasource._conn == connection);
+            code = (this._datasource._api == connection);
         }
 
         return(code);
@@ -465,12 +465,12 @@ define([
         var url = "../../html/visual.html";
         if (this._datasource != null)
         {
-            url += "?server=" + this._datasource._conn.url;
+            url += "?server=" + this._datasource._api.httpurl;
             url += "&datasource=" + this._datasource;
         }
-        else if (this.hasOwnProperty("_conn") && this._conn != null)
+        else if (this.hasOwnProperty("_connection") && this._connection != null)
         {
-            url += "?server=" + this._conn.url;
+            url += "?server=" + this._connection.url;
         }
         url += "&visual=" + this.type;
 

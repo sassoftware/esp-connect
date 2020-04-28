@@ -644,7 +644,7 @@ define([
         }
         else
         {
-            datasource = this._datasource._conn.getDatasource(opts.getOpts());
+            datasource = this._datasource._api.getDatasource(opts.getOpts());
         }
 
         var o = {};
@@ -770,7 +770,7 @@ define([
         }
         else
         {
-            datasource = this._datasource._conn.getDatasource(opts.getOpts());
+            datasource = this._datasource._api.getDatasource(opts.getOpts());
         }
 
         if (opts.hasOpt("coords") == false)

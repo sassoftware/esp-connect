@@ -69,6 +69,18 @@ define([
             }
         });
 
+        Object.defineProperty(this,"url", {
+            get() {
+		        return(this._connection.url);
+            }
+        });
+
+        Object.defineProperty(this,"httpurl", {
+            get() {
+		        return(this._connection.httpurl);
+            }
+        });
+
         /*
         this._delegates = [];
 
@@ -113,8 +125,21 @@ define([
         {
             for (var name in options)
             {
-                parms += (parms.length > 0) ? "&" : "?";
-                parms += name + "=" + options[name];
+                var value = options[name];
+
+                if (typeof(value) == "object")
+                {
+                    for (var n in value)
+                    {
+                        parms += (parms.length > 0) ? "&" : "?";
+                        parms += n + "=" + value[n];
+                    }
+                }
+                else
+                {
+                    parms += (parms.length > 0) ? "&" : "?";
+                    parms += name + "=" + value;
+                }
             }
         }
 
@@ -207,325 +232,6 @@ define([
         this.processJson(o);
     }
 
-	Api.prototype.processJson =
-	function(json)
-    {
-        if (this.getOpt("debug",false))
-        {
-            console.log(tools.stringify(json));
-        }
-
-        if (json.hasOwnProperty("events"))
-        {
-            var o = json["events"];
-
-            if (o.hasOwnProperty("@id"))
-            {
-                var id = o["@id"];
-                var datasource = this._datasources[id];
-
-                if (datasource != null)
-                {
-                    datasource.events(o);
-                }
-            }
-        }
-        else if (json.hasOwnProperty("info"))
-        {
-            var o = json["info"];
-
-            if (o.hasOwnProperty("@id"))
-            {
-                var id = o["@id"];
-                var datasource = this._datasources[id];
-
-                if (datasource != null)
-                {
-                    if (o.hasOwnProperty("page"))
-                    {
-                        datasource._page = parseInt(o["page"]);
-                        datasource._pages = parseInt(o["pages"]);
-                        datasource.deliverInfoChange();
-                    }
-                }
-            }
-
-        }
-        else if (json.hasOwnProperty("schema"))
-        {
-            var o = json["schema"];
-            var id = o["@id"];
-
-            if (this._datasources.hasOwnProperty(id))
-            {
-                this._datasources[id].setSchemaFromJson(o);
-            }
-            else if (this._publishers.hasOwnProperty(id))
-            {
-                this._publishers[id].setSchemaFromJson(o);
-            }
-        }
-        else if (json.hasOwnProperty("load-project") || json.hasOwnProperty("load-router"))
-        {
-            var o = json.hasOwnProperty("load-project") ? json["load-project"] : json["load-router"] ;
-            var id = o["@id"];
-
-            if (this._loadDelegates.hasOwnProperty(id))
-            {
-                var d = this._loadDelegates[id];
-                var code = o["@code"];
-
-                if (code == 0)
-                {
-                    if (tools.supports(d.delegate,"loaded"))
-                    {
-                        var name = json.hasOwnProperty("load-project") ? d.request.project.name : d.request.router.name;
-                        d.delegate.loaded(this,name);
-                    }
-                }
-                else if (tools.supports(d.delegate,"error"))
-                {
-                    var message = "";
-
-                    if (o.hasOwnProperty("text"))
-                    {
-                        message += o["text"];
-                    }
-
-                    if (o.hasOwnProperty("details"))
-                    {
-                        var details = o["details"];
-                        for (var detail of details)
-                        {
-                            message += "\n";
-                            message += detail["detail"];
-                        }
-                    }
-
-                    d.delegate.error(this,d.request.name,message);
-                }
-
-                delete this._loadDelegates[id];
-            }
-        }
-        else if (json.hasOwnProperty("stats"))
-        {
-            var o = json["stats"];
-            this._stats.processJson(o);
-        }
-        else if (json.hasOwnProperty("response"))
-        {
-            var o = json["response"];
-            var id = o["@id"];
-            var get = this._gets[id];
-
-            if (get != null)
-            {
-                delete this._gets[id];
-
-                if (o.hasOwnProperty("data"))
-                {
-                    var delegate = get["delegate"];
-                    var options = get["options"];
-
-                    if (tools.supports(delegate,"response"))
-                    {
-                        var data = o["data"];
-
-                        if (options.getOpt("decode",true))
-                        {
-                            data = tools.b64Decode(data);
-                        }
-
-                        delegate.response(data);
-                    }
-                }
-            }
-        }
-        else if (json.hasOwnProperty("url-publisher") || json.hasOwnProperty("data-publisher"))
-        {
-            var o = (json.hasOwnProperty("url-publisher")) ? json["url-publisher"] : json["data-publisher"];
-            var id = o["@id"];
-
-            if (this._publisherDelegates.hasOwnProperty(id))
-            {
-                var o = this._publisherDelegates[id];
-                o.delegate.publishComplete(o.request.url);
-                delete this._publisherDelegates[id];
-            }
-        }
-        else if (json.hasOwnProperty("loggers"))
-        {
-            var o = json["loggers"];
-            var id = o["@id"];
-
-            if (this._responseDelegates.hasOwnProperty(id))
-            {
-                var contexts = o["contexts"];
-                this._responseDelegates[id].deliver(contexts);
-                delete this._responseDelegates[id];
-            }
-        }
-    }
-
-	Api.prototype.processXml =
-	function(xml,data)
-    {
-        var	root = xml.documentElement;
-        var	tag = root.nodeName;
-
-        if (this.getOpt("debug",false))
-        {
-            console.log(xpath.format(xml.documentElement));
-        }
-
-        if (tag == "events" || tag == "info")
-        {
-            var id = root.getAttribute("id");
-
-            if (this._datasources.hasOwnProperty(id))
-            {
-                var datasource = this._datasources[id];
-
-                if (tag == "events")
-                {
-                    datasource.eventsXml(root);
-                }
-                else if (tag == "info")
-                {
-                    datasource.info(root);
-                }
-            }
-        }
-        else if (tag == "schema")
-        {
-            if (root.hasAttribute("id"))
-            {
-                var id = root.getAttribute("id");
-
-                if (this._datasources.hasOwnProperty(id))
-                {
-                    this._datasources[id].setSchemaFromXml(root);
-                }
-            }
-            else if (root.hasAttribute("publisher"))
-            {
-                var id = root.getAttribute("publisher");
-
-                if (this._publishers.hasOwnProperty(id))
-                {
-                    this._publishers[id].setSchemaFromXml(root);
-                }
-            }
-        }
-        else if (tag == "stats")
-        {
-            this._stats.processXml(xml);
-        }
-        else if (tag == "log")
-        {
-            this._log.process(xml);
-        }
-        else if (tag == "model")
-        {
-            var id = root.getAttribute("id");
-
-            if (this._modelDelegates.hasOwnProperty(id))
-            {
-                var delegate = this._modelDelegates[id];
-                delegate.deliver(xml);
-                delete this._modelDelegates[id];
-            }
-        }
-        else if (tag == "url-publisher")
-        {
-            var id = root.getAttribute("id");
-
-            if (this._publisherDelegates.hasOwnProperty(id))
-            {
-                var o = this._publisherDelegates[id];
-                o.delegate.publishComplete(o.request.url);
-                delete this._publisherDelegates[id];
-            }
-        }
-        else if (tag == "guids")
-        {
-            var id = root.getAttribute("id");
-
-            if (this._guidDelegates.hasOwnProperty(id))
-            {
-                var delegate = this._guidDelegates[id];
-                delegate.deliver(root);
-                delete this._guidDelegates[id];
-            }
-        }
-        else if (tag == "publisher")
-        {
-            var id = root.getAttribute("id");
-
-            if (this._publishers.hasOwnProperty(id))
-            {
-                var publisher = this._publishers[id];
-
-                if (root.getAttribute("complete") == "true")
-                {
-                    publisher._complete = true;
-                }
-            }
-        }
-        else if (tag == "load-project" || tag == "load-router")
-        {
-            var id = root.getAttribute("id");
-
-            if (this._loadDelegates.hasOwnProperty(id))
-            {
-                var d = this._loadDelegates[id];
-                var code = parseInt(root.getAttribute("code"));
-
-                if (code == 0)
-                {
-                    if (tools.supports(d.delegate,"loaded"))
-                    {
-                        d.delegate.loaded(this,d.request.name);
-                    }
-                }
-                else if (tools.supports(d.delegate,"error"))
-                {
-                    var message = xpath.getString("text",root);
-                    d.delegate.error(this,d.request.name,message);
-                }
-
-                delete this._loadDelegates[id];
-            }
-        }
-        else if (tag == "xml")
-        {
-            var id = root.getAttribute("id");
-
-            if (this._responseDelegates.hasOwnProperty(id))
-            {
-                var code = parseInt(root.getAttribute("code"));
-                var node = xml;
-                var s = data;
-                if (code == 0)
-                {
-                    node = xpath.getNode(".//project",xml);
-                    s = xpath.format(node);
-                }
-                this._responseDelegates[id].deliver(s,node);
-                delete this._responseDelegates[id];
-            }
-        }
-        else if (tag == "connection")
-        {
-            console.log(xpath.format(root));
-        }
-        else
-        {
-            //console.log(xpath.format(root));
-        }
-    }
-
     Api.prototype.addDelegate =
     function(delegate)
     {
@@ -609,10 +315,10 @@ define([
 	Api.prototype.publishDataFrom =
 	function(path,url,delegate,options)
     {
-        var conn = this;
+        var api = this;
         var o = {
             response:function(request,text,data) {
-                conn.publishData(path,text,delegate,options);
+                api.publishData(path,text,delegate,options);
             },
             error:function(request,error) {
                 console.log("error: " + error);
@@ -643,49 +349,29 @@ define([
                         delegate.publishComplete();
                     }
 
-                    conn.close();
+                    conn.stop();
                 },1000);
             }
         }
 
-        var url = this.getUrl("publishers/" + path,opts.getOpts());
-        var conn = Connection.createDelegateConnection(o,url);
+        var url = this.getUrl("publishers/" + path);
+        var conn = Connection.createDelegateConnection(o,url,opts.getOpts());
         conn.start();
     }
 
 	Api.prototype.publishUrl =
 	function(path,url,delegate,options)
 	{
-        var opts = new Options(options);
-        var blocksize = opts.getOpt("blocksize",1);
-        var times = opts.getOpt("times",1);
-        var	o = {};
-        var id = tools.guid();
-
-        var request = {"url-publisher":{}};
-        var o = request["url-publisher"];
-        o["id"] = id;
-        o["window"] = path;
-        o["url"] = url;
-        o["blocksize"] = blocksize;
-        o["times"] = times;
-
-        if (opts.hasOpt("informat"))
-        {
-            o["informat"] = opts.getOpt("informat");
-        }
-
-        if (delegate != null)
-        {
-            if (tools.supports(delegate,"publishComplete") == false)
-            {
-                throw "The url publisher delegate must implement the publishComplete method";
+        var api = this;
+        var o = {
+            response:function(request,text,data) {
+                api.publishData(path,text,delegate,options);
+            },
+            error:function(request,error) {
+                console.log("error: " + error);
             }
-
-            this._publisherDelegates[id] = {request:o,delegate:delegate};
-        }
-
-        this.sendObject(request);
+        };
+		ajax.create("load",url,o).get();
     }
 
     Api.prototype.getStats =
@@ -1058,7 +744,7 @@ define([
         {
             if (tools.supports(d,"schemaReady"))
             {
-                d.schemaReady(this._conn,this);
+                d.schemaReady(this._api,this);
             }
         });
     }
@@ -1835,7 +1521,6 @@ define([
     {
 		Datasource.call(this,api,options);
         this._window = this.getOpt("window");
-        this.clearOpts(["window"]);
         this.setOpt("format","xml");
         this._data = {};
         this._list = [];
@@ -1851,10 +1536,14 @@ define([
     EventCollection.prototype.open =
     function()
     {
-        var opts = {mode:"updating",schema:true,format:"xml"};
-        var url = this._api.getUrl("subscribers/" + this._path,opts);
-        this._conn = Connection.createDelegateConnection(this,url);
-        this._conn.start();
+        var url = this._api.getUrl("subscribers/" + this._path);
+        var opts = {mode:"updating",schema:true,format:"xml",snapshot:true};
+        if (this.hasOpt("pagesize"))
+        {
+            opts.pagesize = this.getOpt("pagesize");
+        }
+        this._connection = Connection.createDelegateConnection(this,url,opts);
+        this._connection.start();
         this.setIntervalProperty();
 
         var options = this.getOpts();
@@ -1897,8 +1586,8 @@ define([
     EventCollection.prototype.close =
     function()
     {
-        this._conn.stop();
-        this._conn = null;
+        this._connection.stop();
+        this._connection = null;
     }
 
     EventCollection.prototype.message =
@@ -2113,8 +1802,6 @@ define([
         {
             this.info(xml);
         }
-
-        console.log(JSON.stringify(data));
     }
 
 	EventCollection.prototype.info =
@@ -2211,7 +1898,6 @@ define([
     {
 		Datasource.call(this,conn,options);
         this._window = this.getOpt("window");
-        this.clearOpts(["window"]);
         this.setOpt("format","xml");
         this._data = [];
         this._counter = 1;
@@ -2223,13 +1909,12 @@ define([
     EventStream.prototype.open =
     function()
     {
-        var opts = {mode:"streaming",schema:true,format:"xml"};
         this.setIntervalProperty();
 
-        var url = this._api.getUrl("subscribers/" + this._path,opts);
-
-        this._conn = Connection.createDelegateConnection(this,url);
-        this._conn.start();
+        var url = this._api.getUrl("subscribers/" + this._path);
+        var opts = {mode:"streaming",schema:true,format:"xml"};
+        this._connection = Connection.createDelegateConnection(this,url,opts);
+        this._connection.start();
 
         /*
         if (this.hasOpt("filter") == false)
@@ -2524,7 +2209,9 @@ define([
 	Stats(api,options)
 	{
 		Options.call(this,options);
+
         this._api = api;
+        this._connection = null;
 
 		var	projectLabel = resources.getString("Project");
 		var	contqueryLabel = resources.getString("Contquery");
@@ -2574,98 +2261,10 @@ define([
 	Stats.prototype = Object.create(Options.prototype);
 	Stats.prototype.constructor = Stats;
 
-    Stats.prototype.process =
-    function(o)
+    Stats.prototype.message =
+    function(data)
     {
-    }
-
-    Stats.prototype.processJson =
-    function(json)
-    {
-        this._windows = [];
-
-        if (json.hasOwnProperty("projects"))
-        {
-            var	projects = json["projects"];
-
-            for (var i = 0; i < projects.length; i++)
-            {
-                var project = projects[i];
-
-                if (project.hasOwnProperty("contqueries") == false)
-                {
-                    continue;
-                }
-
-                var p = project["@name"];
-                var contqueries = project["contqueries"];
-
-                for (var j = 0; j < contqueries.length; j++)
-                {
-                    var contquery = contqueries[j];
-
-                    if (contquery.hasOwnProperty("windows") == false)
-                    {
-                        continue;
-                    }
-
-                    var cq = contquery["@name"];
-                    var	windows = contquery["windows"];
-
-                    for (var k = 0; k < windows.length; k++)
-                    {
-                        var w = windows[k];
-                        var o = new Object();
-                        o["project"] = p;
-                        o["contquery"] = cq;
-                        o["window"] = w["@name"];
-                        o["cpu"] = new Number(w["@cpu"]);
-                        o["interval"] = new Number(w["@interval"]);
-                        o["count"] = w.hasOwnProperty("@count") ? new Number(w["@count"]) : 0;
-                        o["@key"] = p + "." + cq + "." + w["@name"];
-                        this._windows.push(o);
-                    }
-                }
-            }
-        }
-
-        this._windows.sort(this.sort);
-
-        this._memory = {};
-
-        if (json.hasOwnProperty("server-memory"))
-        {
-		    var	memory = json["server-memory"];
-            this._memory["system"] = memory["system"];
-            this._memory["virtual"] = memory["virtual"];
-            this._memory["resident"] = memory["resident"];
-        }
-
-        this._config = {};
-
-        if (json.hasOwnProperty("properties"))
-        {
-		    var	properties = json["properties"];
-            var name;
-            var value;
-
-            for (var i = 0; i < properties.length; i++)
-            {
-                name = properties[i]["@name"];
-                value = properties[i]["*value"];
-                this._config[name] = (value != null && value.length > 0) ? value : true;
-            }
-        }
-
-        for (var i = 0; i < this._delegates.length; i++)
-        {
-            this._delegates[i].handleStats(this);
-        }
-    }
-
-    Stats.prototype.processXml =
-    function(xml)
-    {
+        var xml = xpath.createXml(data);
         this._windows = [];
 
 		var	projects = xpath.getNodes(".//project",xml);
@@ -2738,6 +2337,39 @@ define([
         }
     }
 
+    Stats.prototype.process =
+    function(o)
+    {
+    }
+
+    Stats.prototype.start =
+    function()
+    {
+        if (this._connection == null)
+        {
+            var opts = {};
+            opts["minCpu"] = this.getOpt("mincpu",5);
+            opts["counts"] = this.getOpt("counts",true);
+            opts["config"] = this.getOpt("config",true);
+            opts["memory"] = this.getOpt("memory",true);
+            opts["format"] = "xml";
+
+            var url = this._api.getUrl("projectStats");
+            this._connection = Connection.createDelegateConnection(this,url,opts);
+            this._connection.start();
+        }
+    }
+
+    Stats.prototype.stop =
+    function()
+    {
+        if (this._connection != null)
+        {
+            this._connection.stop();
+            this._connection = null;
+        }
+    }
+
     Stats.prototype.sort =
     function(a,b)
     {
@@ -2756,28 +2388,6 @@ define([
     Stats.prototype.set =
     function()
     {
-        var request = {"stats":{}};
-        var o = request["stats"];
-        o["action"] = "set";
-        o["interval"] = this.getOpt("interval",1);
-
-        o["minCpu"] = this.getOpt("mincpu",5);
-        o["counts"] = this.getOpt("counts",false);
-        o["config"] = this.getOpt("config",false);
-        o["memory"] = this.getOpt("memory",true);
-        o["format"] = "xml";
-        o["format"] = "ubjson";
-
-        this._api.sendObject(request);
-    }
-
-    Stats.prototype.stop =
-    function()
-    {
-        var request = {"stats":{}};
-        var o = request["stats"];
-        o["action"] = "stop";
-        this._api.sendObject(request);
     }
 
     Stats.prototype.addDelegate =
@@ -2792,7 +2402,7 @@ define([
         {
             if (this._delegates.length == 1)
             {
-                this.set();
+                this.start();
             }
         }
     }
@@ -2833,6 +2443,7 @@ define([
         this._api = api;
         this._delegates = [];
 
+        this._connection = null;
         this._filter = null;
 
         Object.defineProperty(this,"filter", {
@@ -2852,21 +2463,21 @@ define([
     Log.prototype.start =
     function()
     {
-        if (this._conn == null)
+        if (this._connection == null)
         {
             var url = this._api.getUrl("logs");
-            this._conn = Connection.createDelegateConnection(this,url);
-            this._conn.start();
+            this._connection = Connection.createDelegateConnection(this,url);
+            this._connection.start();
         }
     }
 
     Log.prototype.stop =
     function()
     {
-        if (this._conn != null)
+        if (this._connection != null)
         {
-            this._conn.stop();
-            this._conn = null;
+            this._connection.stop();
+            this._connection = null;
         }
     }
 
@@ -2941,15 +2552,21 @@ define([
 
         var opts = {schema:true,format:"json"};
         var url = this._api.getUrl("publishers/" + this._path,opts);
-        this._conn = Connection.createDelegateConnection(this,url);
-        this._conn.start();
+        this._connection = Connection.createDelegateConnection(this,url,opts);
+        this._connection.start();
     }
 
 	Publisher.prototype.close =
 	function()
     {
-        this._conn.stop();
-        this._conn = null;
+        this._connection.stop();
+        this._connection = null;
+    }
+
+    Publisher.prototype.ready =
+    function()
+    {
+        this.publish();
     }
 
     Publisher.prototype.message =
@@ -2962,18 +2579,16 @@ define([
             var field;
             schema.fields = [];
             o.schema[0].fields.forEach((f) => {
-console.log(JSON.stringify(f,null,"\t"));
                 field = {};
-                field.name = f.field.attributes.name;
-                field.type = f.field.attributes.type;
+                field["@name"] = f.field.attributes.name;
+                field["@type"] = f.field.attributes.type;
                 if (f.field.attributes.hasOwnProperty("key"))
                 {
-                    field.key = f.field.attributes.key;
+                    field["@key"] = f.field.attributes.key;
                 }
-console.log(JSON.stringify(field,null,"\t"));
                 schema.fields.push(field);
             });
-console.log(JSON.stringify(schema,null,"\t"));
+
             this.setSchemaFromJson(schema);
         }
     }
@@ -3018,7 +2633,6 @@ console.log(JSON.stringify(schema,null,"\t"));
 	function(json)
     {
         this._schema.fromJson(json);
-console.log("HERE: " + this._schema.toString());
         this.deliverSchemaSet();
 
         if (this._csv != null)
@@ -3085,14 +2699,16 @@ console.log("HERE: " + this._schema.toString());
 	Publisher.prototype.publish =
 	function()
 	{
+        if (this._connection.isConnected() == false)
+        {
+            return;
+        }
+
 		if (this._data.length > 0)
 		{
             var a = [];
             a.push(this._data);
-            this._conn.send(a);
-console.log(JSON.stringify(a,null,"\t"));
-            this._data.forEach((item) => {
-            });
+            this._connection.sendObject(a);
 			this._data = new Array();
 		}
 	}
@@ -3182,7 +2798,7 @@ console.log(JSON.stringify(a,null,"\t"));
 	Publisher.prototype.isBinary =
 	function()
     {
-        return(this.getOpt("binary",false));
+        return(false);
     }
 
 	/* Delegates */

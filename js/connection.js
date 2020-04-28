@@ -247,6 +247,24 @@ define([
             }
         });
 
+        Object.defineProperty(this,"parms", {
+            get() {
+                var parms = "";
+                var opts = this.getOpts();
+
+                for (var x in opts)
+                {
+                    if (parms.length > 0)
+                    {
+                        parms += "&";
+                    }
+                    parms += x + "=" + opts[x];
+                }
+
+                return(parms);
+            }
+        });
+
         Object.defineProperty(this,"url", {
             get() {
                 var	url = "";
@@ -259,6 +277,13 @@ define([
                 {
                     url += this._path;
                 }
+
+                if (this.numOpts > 0)
+                {
+                    url += "?";
+                    url += this.parms;
+                }
+
 		        return(url);
             }
         });
@@ -275,6 +300,13 @@ define([
                 {
                     url += this._path;
                 }
+
+                if (this.numOpts > 0)
+                {
+                    url += "?";
+                    url += this.parms;
+                }
+
 		        return(url);
             }
         });

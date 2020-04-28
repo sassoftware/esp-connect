@@ -53,16 +53,12 @@ function
 showUsage()
 {
     console.log("");
-    console.log("usage: node loggers -server [-context] [-level] [-format] [-auth] [-access_token] [-help]");
+    console.log("usage: node loggers -server [-context] [-level]");
     console.log("");
     console.log("options:");
     console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
-    console.log("\t-context\t\tthe logging context to return (defaults to ALL)");
+    console.log("\t-context\tthe logging context to return (defaults to ALL)");
     console.log("\t-level\t\ttrace | debug | info | warn | error | fatal | none (defaults to empty, do not set the log level)");
-    console.log("\t-format\t\txml | json (defaults to json)");
-    console.log("\t-auth\t\tauthentication information to send to the server, i.e. Bearer <token> or Basic <credentials>");
-    console.log("\t-access_token\tOAuth token to send to the server");
-    console.log("\t-help\t\tshow usage information");
     console.log("");
 
     /*

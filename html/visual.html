@@ -69,9 +69,9 @@ esp(api)
 
     _visuals = _api.createVisuals(_parms);
 
-    _api.connect(server,{ready:ready,closed:closed});
-
     _api.handleLayout();
+
+    _api.connect(server,{ready:ready,closed:closed});
 }
 
 function
@@ -91,6 +91,7 @@ ready(connection)
     else
     {
         var datasource = connection.getDatasource(_ds);
+console.log("DS: " + datasource);
 
         if (_type == "pie")
         {

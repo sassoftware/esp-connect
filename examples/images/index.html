@@ -40,7 +40,6 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
-    _api.connect(server,{ready:ready,closed:closed});
     _visuals = _api.createVisuals(parms);
 
     _visuals.createWrapper("video",{header:"<br/>The video plays here",style:{width:"45%",height:"40%"}});
@@ -51,6 +50,8 @@ esp(api)
     _visuals.addDelegate({selectionChanged:select});
 
     _api.handleLayout({layout:layout});
+
+    _api.connect(server,{ready:ready,closed:closed});
 }
 
 function

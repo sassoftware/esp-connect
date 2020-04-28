@@ -1,13 +1,14 @@
 <project name='p' pubsub='auto' threads='4' index='pi_EMPTY'>
     <contqueries>
 
+        <contquery name='cq' trace='circles_in'>
         <!--
-        <contquery name='cq' trace='geofence_poly geofence_circles'>
         <contquery name='cq' trace='tracker'>
+        <contquery name='cq' trace='geofence_poly geofence_circles'>
         <contquery name='cq' trace='position_in tracker'>
         <contquery name='cq' trace='circles_in'>
-        -->
         <contquery name='cq'>
+        -->
 
             <windows>
 
