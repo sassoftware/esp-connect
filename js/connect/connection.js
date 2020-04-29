@@ -500,40 +500,29 @@ define([
                         scheme = a[0];
                     }
 
-                    if (_isNode)
-                    {
-                        var code = false;
+                    var code = false;
 
-                        this._delegates.forEach((d) => {
-                            if (tools.supports(d,"authenticate"))
-                            {
-                                d.authenticate(this,scheme);
-                                code = true;
-                            }
-                        });
-
-                        if (code == false)
+                    this._delegates.forEach((d) => {
+                        if (tools.supports(d,"authenticate"))
                         {
-                            var message = this.getHeader("status");
-                            message += "\n";
-                            message += this.getHeader("www-authenticate","");
-                            message += "\n";
+                            d.authenticate(this,scheme);
+                            code = true;
+                        }
+                    });
+
+                    if (code == false)
+                    {
+                        var message = this.getHeader("status");
+                        message += "\n";
+                        message += this.getHeader("www-authenticate","");
+                        message += "\n";
+                        if (_isNode)
+                        {
                             throw new Error(message);
                         }
-                    }
-                    else
-                    {
-                        if (scheme == "bearer")
+                        else
                         {
-                            var values = [{name:"token",label:"OAuth Token",type:"textarea"}];
-                            var conn = this;
-                            dialogs.showDialog({ok:function(data){conn.setBearer(data)},cancel:dialogs.hideDialog,header:"Enter Token",values:values});
-                        }
-                        else if (scheme == "basic")
-                        {
-                            var values = [{name:"user",label:"User"},{name:"password",label:"Password",type:"password"}];
-                            var conn = this;
-                            dialogs.showDialog({ok:function(data){conn.setBasic(data)},cancel:dialogs.hideDialog,header:"Enter User and Password",values:values});
+                            throw(message);
                         }
                     }
                 }
@@ -545,10 +534,6 @@ define([
 	function(data)
     {
         this.setAuthorization("Bearer " + data.token);
-        if (_isNode == false)
-        {
-            dialogs.hideDialog();
-        }
     }
 
 	Connection.prototype.setBasic =
@@ -556,10 +541,6 @@ define([
     {
         var credentials = tools.b64Encode(data.user + ":" + data.password);
         this.setAuthorization("Basic " + credentials);
-        if (_isNode == false)
-        {
-            dialogs.hideDialog();
-        }
     }
 
 	Connection.prototype.data =

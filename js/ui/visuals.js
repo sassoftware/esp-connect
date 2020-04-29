@@ -3,21 +3,6 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
-
-var _isNode = false;
-
-try
-{
-    _isNode = (require("detect-node") != null);
-}
-catch (e)
-{
-}
-
 define([
     "../connect/options",
     "../connect/tools",
@@ -42,17 +27,14 @@ define([
 
         this._languages = null;
 
-        if (_isNode == false)
+        if (navigator.hasOwnProperty("language"))
         {
-            if (navigator.hasOwnProperty("language"))
-            {
-                this._languages = [navigator.language];
-            }
+            this._languages = [navigator.language];
+        }
 
-            if (this._languages == null)
-            {
-                this._languages = navigator.languages;
-            }
+        if (this._languages == null)
+        {
+            this._languages = navigator.languages;
         }
 
         this._dateformat = null;

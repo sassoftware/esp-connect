@@ -20,11 +20,6 @@ define([
         _layoutDelegate:null,
 		_parms:null,
 
-		isNode:function()
-        {
-            return(connect.isNode());
-        },
-
 		connect:function(url,delegate,options)
 		{
             var conn = connect.connect(url,delegate,options,false);
@@ -32,6 +27,22 @@ define([
             conn.start();
             return(conn);
 		},
+
+        authenticate:function(connection,scheme)
+        {
+            if (scheme == "bearer")
+            {
+                var values = [{name:"token",label:"OAuth Token",type:"textarea"}];
+                var conn = this;
+                dialogs.showDialog({ok:function(data){connection.setBearer(data);dialogs.hideDialog()},cancel:dialogs.hideDialog,header:"Enter Token",values:values});
+            }
+            else if (scheme == "basic")
+            {
+                var values = [{name:"user",label:"User"},{name:"password",label:"Password",type:"password"}];
+                var conn = this;
+                dialogs.showDialog({ok:function(data){connection.setBasic(data);dialogs.hideDialog()},cancel:dialogs.hideDialog,header:"Enter User and Password",values:values});
+            }
+        },
 
         closed:function(connection)
         {

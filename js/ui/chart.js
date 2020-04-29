@@ -3,27 +3,12 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
-
-var _isNode = false;
-
-try
-{
-    _isNode = (require("detect-node") != null);
-}
-catch (e)
-{
-}
-
 define([
     "../connect/options",
     "../connect/tools"
 ], function(Options,tools)
 {
-    var _windows = (_isNode == false) ? (navigator.platform.toLowerCase().indexOf("win") != -1) : false;
+    var _windows = navigator.platform.toLowerCase().indexOf("win") != -1);
     var _input = null;
 
     function
