@@ -9,7 +9,7 @@ if (typeof(define) !== "function")
 }
 
 define([
-    "./tools"
+    "../connect/tools"
 ], function(tools)
 {
     function

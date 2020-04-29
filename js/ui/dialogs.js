@@ -11,8 +11,8 @@ if (typeof(define) !== "function")
 var	_dialogs_ = null;
 
 define([
-    "./tools",
-    "./options"
+    "../connect/tools",
+    "../connect/options"
 ], function(tools,Options)
 {
 	var	__dialogs =

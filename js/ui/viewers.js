@@ -9,11 +9,11 @@ if (typeof(define) !== "function")
 }
 
 define([
-    "./chart",
-    "./model",
-    "./options",
-    "./tools"
-], function(Chart,Model,Options,tools)
+    "../connect/model",
+    "../connect/options",
+    "../connect/tools",
+    "./chart"
+], function(Model,Options,tools,Chart)
 {
     function
     Viewers(options)

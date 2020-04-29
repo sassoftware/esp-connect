@@ -19,8 +19,8 @@ catch (e)
 }
 
 define([
-    "./options",
-    "./tools"
+    "../connect/options",
+    "../connect/tools"
 ], function(Options,tools)
 {
     var _windows = (_isNode == false) ? (navigator.platform.toLowerCase().indexOf("win") != -1) : false;

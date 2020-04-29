@@ -2,7 +2,7 @@
   "name": "@sassoftware/esp-connect",
   "version": "7.1.0",
   "description": "Package used to connect to an ESP server",
-  "main": "api.js",
+  "main": "connect.js",
   "keywords": [
     "SAS",
     "ESP",

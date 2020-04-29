@@ -3,53 +3,31 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
-
-var _isNode = false;
-
-try
-{
-    _isNode = (require("detect-node") != null);
-}
-catch (e)
-{
-}
-
 define([
-    "./serverconn",
-    "./ajax",
-    "./xpath",
-    "./resources",
-	"./dialogs",
-	"./storage",
-	"./visuals",
-	"./tools",
-	"./codec",
-	"./options",
-	"./router",
-	"./splitter",
-	"./tabs"
-], function(ServerConnection,ajax,xpath,resources,dialogs,StoredData,Visuals,tools,codec,Options,Router,splitter,Tabs)
+    "../connect/connect",
+    "./tools",
+    "./dialogs",
+    "./storage",
+    "./splitter",
+	"./tabs",
+    "./visuals"
+], function(connect,tools,dialogs,StoredData,splitter,Tabs,Visuals)
 {
 	var	__api =
 	{
-		_parms:null,
-		_args:null,
         _visuals:[],
         _statusTimer:null,
         _layoutDelegate:null,
+		_parms:null,
 
 		isNode:function()
         {
-            return(_isNode);
+            return(connect.isNode());
         },
 
 		connect:function(url,delegate,options)
 		{
-            var conn = ServerConnection.create(url,delegate,options);
+            var conn = connect.connect(url,delegate,options,false);
             conn.addDelegate(this);
             conn.start();
             return(conn);
@@ -72,77 +50,52 @@ define([
 
 		getAjax:function()
 		{
-			return(ajax);
+			return(connect.getAjax());
 		},
 
 		getTools:function()
 		{
-			return(tools);
+			return(connect.getTools());
 		},
 
 		getXPath:function()
 		{
-			return(xpath);
+			return(connect.getXPath());
 		},
 
 		getResources:function()
 		{
-			return(resources);
-		},
-
-		getDialogs:function()
-		{
-			return(dialogs);
+			return(connect.getResources());
 		},
 
 		createRouter:function()
 		{
-			return(new Router());
-		},
-
-		getSplitter:function()
-		{
-			return(splitter);
-		},
-
-		createTabs:function()
-		{
-			return(new Tabs());
+			return(connect.createRouter());
 		},
 
 		createOptions:function(o)
 		{
-			return(new Options(o));
+			return(connect.createOptions());
 		},
 
 		createOptionsFromArgs:function()
 		{
-			return(new Options(this.getArgs()));
-		},
-
-		getStorage:function(name)
-		{
-			return(new StoredData(name));
+			return(connect.createOptionsFromArgs());
 		},
 
 		getArgs:function()
         {
-			if (this._args == null)
-            {
-                this._args = tools.createCommandLineOpts();
-            }
-
-            return(this._args);
+			return(connect.getArgs());
         },
 
         getArg:function(name,dv)
         {
-            return(args.getOpt(name,dv));
+            return(connect.getArg(name,dv));
         },
 
         hasArg:function(name)
         {
-            return(this.getArgs().hasOpt(name));
+            return(connect.hasArg(name));
         },
 
 		getParms:function()
@@ -248,7 +201,7 @@ define([
 
             if (delegate != null)
             {
-                if (tools.supports(delegate,"layout") == false)
+                if (connect.getTools().supports(delegate,"layout") == false)
                 {
                     throw "The layout delegate must implement the layout method";
                 }
@@ -293,27 +246,27 @@ define([
 
         guid:function()
         {
-            return(tools.guid());
+            return(connect.guid());
         },
 
         formatDate:function(date,format)
         {
-            return(tools.formatDate(date,format));
+            return(connect.formatDate(date,format));
         },
 
         encode:function(o)
         {
-            return(codec.encode(o));
+            return(connect.encode(o));
         },
 
         decode:function(data)
         {
-            return(codec.decode(data));
+            return(connect.decode(data));
         },
 
         createBuffer:function(s)
         {
-            return(tools.createBuffer(s));
+            return(connect.createBuffer(s));
         },
 
         refresh:function(after)
@@ -333,17 +286,37 @@ define([
 
         b64Encode:function(o)
         {
-            return(tools.b64Encode(o));
+            return(connect.b64Encode(o));
         },
 
         b64Decode:function(o)
         {
-            return(tools.b64Decode(o));
+            return(connect.b64Decode(o));
         },
 
         stringify:function(o)
         {
-            return(tools.stringify(o));
+            return(connect.stringify(o));
+        },
+
+		getStorage:function(name)
+		{
+			return(new StoredData(name));
+		},
+
+		getSplitter:function()
+		{
+			return(splitter);
+		},
+
+		createTabs:function()
+		{
+			return(new Tabs());
+		},
+
+        getDialogs:function()
+        {
+            return(dialogs);
         }
 	};
 

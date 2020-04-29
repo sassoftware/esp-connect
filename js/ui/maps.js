@@ -9,9 +9,9 @@ if (typeof(define) !== "function")
 }
 
 define([
-    "./chart",
-    "./options"
-], function(Chart,Options)
+    "../connect/options",
+    "./chart"
+], function(Options,Chart)
 {
     function
     Maps(options)

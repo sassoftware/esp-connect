@@ -19,15 +19,15 @@ catch (e)
 }
 
 define([
+    "../connect/options",
+    "../connect/tools",
     "./chart",
-    "./options",
     "./viewers",
     "./maps",
     "./colors",
-    "./tools",
     "./dialogs",
     "./simpletable"
-], function(Chart,Options,Viewers,Maps,Colors,tools,dialogs,SimpleTable)
+], function(Options,tools,Chart,Viewers,Maps,Colors,dialogs,SimpleTable)
 {
     var _dataHeader = "_data://";
 
@@ -756,7 +756,7 @@ define([
 
         document.getElementById("_filtertext_").value = _filterDelegate.getFilter();
 
-        _api.getDialogs().pushModal("_editfilter_");
+        dialogs.pushModal("_editfilter_");
     }
 
     /* Bar Chart */

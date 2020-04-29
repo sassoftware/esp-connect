@@ -9,8 +9,8 @@ if (typeof(define) !== "function")
 }
 
 define([
-    "./options",
-    "./tools",
+    "../connect/options",
+    "../connect/tools",
     "./scales"
 ], function(Options,tools,scales)
 {

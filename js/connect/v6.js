@@ -27,10 +27,8 @@ define([
     "./ajax",
     "./tools",
     "./codec",
-    "./options",
-    "./visuals",
-    "./dialogs"
-], function(Connection,resources,Model,Schema,xpath,ajax,tools,codec,Options,Visuals,dialogs)
+    "./options"
+], function(Connection,resources,Model,Schema,xpath,ajax,tools,codec,Options)
 {
     function
     Api(connection,options)
