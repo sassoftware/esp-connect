@@ -8,7 +8,7 @@ define([
     "../connect/tools"
 ], function(Options,tools)
 {
-    var _windows = navigator.platform.toLowerCase().indexOf("win") != -1);
+    var _windows = (navigator.platform.toLowerCase().indexOf("win") != -1);
     var _input = null;
 
     function
