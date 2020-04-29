@@ -2,7 +2,7 @@
 
 The esp-connect package enables you to communicate with a SAS Event Stream Processing (ESP) server using Javascript objects.
 
-**NOTE** This version of esp-connect works with the ESP 7.1 server.
+**NOTE** While esp-connect should work with an ESP 6.2 server, it was designed specifically to work with the ESP 7.1 websocket interface.
 
 ## Table of Contents
 
@@ -67,7 +67,7 @@ in the API, you must perform an *npm install* of the connect API (the *work* dir
 * change to your HOME directory.
 * Install the Connect API from the directory where you cloned it (the module name is <i>esp-connect</i>):
 ```
-$ npm install @work@/js
+$ npm install @work@/js/connect
 ```
 * change directory to *@work@/node*.
 * run a test using the following command (use your own ESP server):
