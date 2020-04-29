@@ -40,12 +40,37 @@ define([
 
 		connect:function(url,delegate,options,start)
 		{
-            var conn = ServerConnection.create(url,delegate,options);
+            var opts = new Options(options);
+            var token = null;
+            var credentials = null;
+
+            if (opts.hasOpt("token"))
+            {
+                token = opts.getOptAndClear("token");
+            }
+
+            if (opts.hasOpt("credentials"))
+            {
+                credentials = opts.getOptAndClear("credentials");
+            }
+
+            var connection = ServerConnection.create(url,delegate,opts.getOpts());
+
+            if (token != null)
+            {
+                connection.setBearer(token);
+            }
+            else if (credentials != null)
+            {
+                connection.setBasic(credentials);
+            }
+
             if (start == null || start)
             {
-                conn.start();
+                connection.start();
             }
-            return(conn);
+
+            return(connection);
 		},
 
         closed:function(connection)

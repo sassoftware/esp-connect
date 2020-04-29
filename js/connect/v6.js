@@ -161,6 +161,17 @@ define([
         return(this.formUrl(this._connection.httpurl,path,options));
     }
 
+    Api.prototype.createRequest =
+    function(name,url,delegate)
+    {
+		var request = ajax.create(name,url,delegate);
+        if (this._connection.hasAuthorization)
+        {
+			request.setRequestHeader("authorization",this._connection.authorization);
+        }
+        return(request);
+    }
+
     Api.prototype.closed =
     function()
     {
@@ -338,7 +349,7 @@ define([
             {
                 for (var i = 0; i < times; i++)
                 {
-                    conn.send(data);
+                    connection.send(data);
                 }
 
                 setTimeout(function() {
@@ -347,14 +358,15 @@ define([
                         delegate.publishComplete();
                     }
 
-                    conn.stop();
+                    connection.stop();
                 },1000);
             }
         }
 
         var url = this.getUrl("publishers/" + path);
-        var conn = Connection.createDelegateConnection(o,url,opts.getOpts());
-        conn.start();
+        var connection = Connection.createDelegateConnection(o,url,opts.getOpts());
+        connection.authorization = this._connection.authorization;
+        connection.start();
     }
 
 	Api.prototype.publishUrl =
@@ -415,14 +427,14 @@ define([
         }
 
         var url = this.getHttpUrl("projects",options);
-        var conn = this;
+        var api = this;
 
         var o = {
             response:function(request,text,data) {
                 if (tools.supports(delegate,"modelLoaded"))
                 {
                     var model = new Model(data);
-                    delegate.modelLoaded(model,conn);
+                    delegate.modelLoaded(model,api);
                 }
             },
             error:function(request,error) {
@@ -433,13 +445,12 @@ define([
             }
         };
 
-		ajax.create("load",url,o).get();
+		this.createRequest("load",url,o).get();
     }
 
     Api.prototype.loadUrl =
     function(name,url,delegate)
     {
-        var conn = this;
         var o = {
             response:function(request,text,data) {
                 if (tools.supports(delegate,"loaded"))
@@ -460,10 +471,10 @@ define([
     Api.prototype.loadProjectFrom =
     function(name,url,delegate,options)
     {
-        var conn = this;
+        var api = this;
         var o = {
             response:function(request,text,data) {
-                conn.loadProject(name,text,delegate,options);
+                api.loadProject(name,text,delegate,options);
             },
             error:function(request,error) {
                 console.log("error: " + error);
@@ -475,10 +486,10 @@ define([
     Api.prototype.loadRouterFrom =
     function(name,url,delegate,options)
     {
-        var conn = this;
+        var api = this;
         var o = {
             response:function(request,text,data) {
-                conn.loadRouter(name,text,delegate,options);
+                api.loadRouter(name,text,delegate,options);
             },
             error:function(request,error) {
                 console.log("error: " + error);
@@ -508,7 +519,7 @@ define([
         };
 
         var url = this.getHttpUrl("projects/" + name,options);
-		var request = ajax.create("loadProject",url,o);
+		var request = this.createRequest("loadProject",url,o);
         request.setData(data);
         request.put();
     }
@@ -534,7 +545,7 @@ define([
         };
 
         var url = this.getHttpUrl("routers/" + name,options);
-		var request = ajax.create("loadRouter",url,o);
+		var request = this.createRequest("loadRouter",url,o);
         request.setData(data);
         request.put();
     }
@@ -555,7 +566,7 @@ define([
     {
         var opts = (name != null) ? {name:name} : {};
         var url = this.getHttpUrl("projectXml",opts);
-		ajax.create("load",url,delegate).get();
+		this.createRequest("load",url,delegate).get();
     }
 
     Api.prototype.getXml =
@@ -591,7 +602,7 @@ define([
         };
 
         var url = this.getHttpUrl("loggers");
-		ajax.create("load",url,o).get();
+		this.createRequest("loggers",url,o).get();
     }
 
     Api.prototype.setLogger =
@@ -613,7 +624,7 @@ define([
 
         var url = this.getHttpUrl("loggers/" + context + "/level",{value:level});
 
-		ajax.create("setLogger",url,o).put();
+		this.createRequest("setLogger",url,o).put();
     }
 
     Api.prototype.createModel =
@@ -1541,6 +1552,7 @@ define([
             opts.pagesize = this.getOpt("pagesize");
         }
         this._connection = Connection.createDelegateConnection(this,url,opts);
+        this._connection.authorization = this._api._connection.authorization;
         this._connection.start();
         this.setIntervalProperty();
 
@@ -1892,9 +1904,9 @@ define([
     }
 
     function
-    EventStream(conn,options)
+    EventStream(api,options)
     {
-		Datasource.call(this,conn,options);
+		Datasource.call(this,api,options);
         this._window = this.getOpt("window");
         this.setOpt("format","xml");
         this._data = [];
@@ -1912,6 +1924,7 @@ define([
         var url = this._api.getUrl("subscribers/" + this._path);
         var opts = {mode:"streaming",schema:true,format:"xml"};
         this._connection = Connection.createDelegateConnection(this,url,opts);
+        this._connection.authorization = this._api._connection.authorization;
         this._connection.start();
 
         /*
@@ -2354,6 +2367,7 @@ define([
 
             var url = this._api.getUrl("projectStats");
             this._connection = Connection.createDelegateConnection(this,url,opts);
+            this._connection.authorization = this._api._connection.authorization;
             this._connection.start();
         }
     }
@@ -2465,6 +2479,7 @@ define([
         {
             var url = this._api.getUrl("logs");
             this._connection = Connection.createDelegateConnection(this,url);
+            this._connection.authorization = this._api._connection.authorization;
             this._connection.start();
         }
     }
@@ -2551,6 +2566,7 @@ define([
         var opts = {schema:true,format:"json"};
         var url = this._api.getUrl("publishers/" + this._path,opts);
         this._connection = Connection.createDelegateConnection(this,url,opts);
+        this._connection.authorization = this._api._connection.authorization;
         this._connection.start();
     }
 

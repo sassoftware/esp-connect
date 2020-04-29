@@ -92,6 +92,14 @@ define([
         return(value);
     }
 
+	Options.prototype.getOptAndClear =
+    function(name,dv)
+    {
+        var value = this.getOpt(name,dv);
+        this.clearOpt(name);
+        return(value);
+    }
+
 	Options.prototype.getInt =
     function(name,dv)
     {
@@ -154,11 +162,23 @@ define([
     }
 
 	Options.prototype.addOpts =
-    function(to)
+    function(to,names)
     {
-        for (var x in this._options)
+        if (names != null)
         {
-            to[x] = this._options[x];
+            names.forEach((name) => {
+                if (this._options.hasOwnProperty(name))
+                {
+                    to[name] = this._options[name];
+                }
+            });
+        }
+        else
+        {
+            for (var x in this._options)
+            {
+                to[x] = this._options[x];
+            }
         }
     }
 
@@ -173,10 +193,10 @@ define([
     }
 
 	Options.prototype.clone =
-    function()
+    function(names)
     {
         var o = {};
-        this.addOpts(o);
+        this.addOpts(o,names);
         return(o);
     }
 

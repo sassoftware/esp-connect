@@ -32,15 +32,36 @@ define([
         {
             if (scheme == "bearer")
             {
-                var values = [{name:"token",label:"OAuth Token",type:"textarea"}];
                 var conn = this;
-                dialogs.showDialog({ok:function(data){connection.setBearer(data);dialogs.hideDialog()},cancel:dialogs.hideDialog,header:"Enter Token",values:values});
+                var o =
+                {
+                    ok:function(data)
+                    {
+                        connection.setBearer(data.token);
+                        dialogs.hideDialog();
+                    },
+                    cancel:dialogs.hideDialog,
+                    header:"Enter Token",
+                    values:[{name:"token",label:"OAuth Token",type:"textarea"}]
+                };
+                dialogs.showDialog(o);
             }
             else if (scheme == "basic")
             {
-                var values = [{name:"user",label:"User"},{name:"password",label:"Password",type:"password"}];
                 var conn = this;
-                dialogs.showDialog({ok:function(data){connection.setBasic(data);dialogs.hideDialog()},cancel:dialogs.hideDialog,header:"Enter User and Password",values:values});
+                var o =
+                {
+                    ok:function(data)
+                    {
+                        var credentials = connect.b64Encode(data.user + ":" + data.password);
+                        connection.setBasic(credentials);
+                        dialogs.hideDialog();
+                    },
+                    cancel:dialogs.hideDialog,
+                    header:"Enter User and Password",
+                    values:[{name:"user",label:"User"},{name:"password",label:"Password",type:"password"}]
+                };
+                dialogs.showDialog(o);
             }
         },
 

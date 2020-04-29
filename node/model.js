@@ -12,7 +12,7 @@ if (opts.getOpt("help",false))
     process.exit(1);
 }
 
-var server = opts.getOpt("server");
+var server = opts.getOptAndClear("server");
 
 if (server == null)
 {
@@ -25,7 +25,9 @@ if (server == null)
     process.exit(0);
 }
 
-var o = (opts.hasOpt("access_token")) ? {access_token:opts.getOpt("access_token")} : {};
+var names = ["access_token","token","credentials"];
+var o = opts.clone(names);
+opts.clearOpts(names);
 
 api.connect(server,{ready:ready},o);
 

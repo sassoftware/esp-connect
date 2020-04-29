@@ -310,6 +310,29 @@ define([
 		        return(url);
             }
         });
+
+        Object.defineProperty(this,"hasAuthorization", {
+            get() {
+                return(this._authorization != null && this._authorization.length > 0);
+            }
+        });
+
+        Object.defineProperty(this,"authorization", {
+            get() {
+                return(this._authorization);
+            },
+            set(value) {
+                this._authorization = value;
+
+                if (this._authorization != null)
+                {
+                    if (this.isConnected() && this.isHandshakeComplete() == false)
+                    {
+                        this._websocket.send(this._authorization);
+                    }
+                }
+            }
+        });
 	}
 
 	Connection.prototype = Object.create(Options.prototype);
@@ -489,7 +512,6 @@ define([
 				if (this._authorization != null)
 				{
 					this._websocket.send(this._authorization);
-                    this._authorization = null;
 				}
                 else
                 {
@@ -531,16 +553,15 @@ define([
 	}
 
 	Connection.prototype.setBearer =
-	function(data)
+	function(token)
     {
-        this.setAuthorization("Bearer " + data.token);
+        this.authorization = "Bearer " + token;
     }
 
 	Connection.prototype.setBasic =
-    function(data)
+    function(credentials)
     {
-        var credentials = tools.b64Encode(data.user + ":" + data.password);
-        this.setAuthorization("Basic " + credentials);
+        this.authorization = "Basic " + credentials;
     }
 
 	Connection.prototype.data =
@@ -621,17 +642,6 @@ define([
 	{
 		return(this._websocket != null);
 	}
-
-	Connection.prototype.setAuthorization =
-	function(value)
-    {
-        this._authorization = value;
-
-		if (this.isConnected() && this.isHandshakeComplete() == false)
-        {
-		    this._websocket.send(this._authorization);
-        }
-    }
 
 	Connection.prototype.getUrl =
 	function()

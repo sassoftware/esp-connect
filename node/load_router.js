@@ -12,7 +12,7 @@ if (opts.getOpt("help",false))
     process.exit(1);
 }
 
-var server = opts.getOpt("server");
+var server = opts.getOptAndClear("server");
 
 if (server == null)
 {
@@ -25,11 +25,13 @@ if (server == null || opts.hasOpts(["name","model"]) == false)
     process.exit(0);
 }
 
-opts.clearOpt("server");
-
 var fs = require("fs");
 
-api.connect(server,{ready:ready});
+var names = ["access_token","token","credentials"];
+var o = opts.clone(names);
+opts.clearOpts(names);
+
+api.connect(server,{ready:ready},o);
 
 function
 ready(connection)
