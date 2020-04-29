@@ -3,8 +3,8 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-var api = require("@sassoftware/esp-connect");
-var opts = api.getArgs();
+var esp = require("@sassoftware/esp-connect");
+var opts = esp.getArgs();
 
 if (opts.getOpt("help",false))
 {
@@ -29,7 +29,7 @@ var names = ["access_token","token","credentials"];
 var o = opts.clone(names);
 opts.clearOpts(names);
 
-api.connect(server,{ready:ready},o);
+esp.connect(server,{ready:ready},o);
 
 function
 ready(connection)
@@ -38,7 +38,7 @@ ready(connection)
     var delegate = {
         response:function(connection,data)
         {
-            console.log(api.getTools().stringify(data));
+            console.log(esp.getTools().stringify(data));
             process.exit(0);
         }
     };

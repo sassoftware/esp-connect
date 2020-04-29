@@ -19,14 +19,14 @@ var _visuals = null;
 var _visual = null;
 var _appid = "";
 var _conn = null;
-var _api = null;
+var _esp = null;
 
 function
 esp(api)
 {
-    _api = api;
+    _esp = api;
 
-    var parms = _api.getParms();
+    var parms = _esp.getParms();
 
     if (parms.hasOwnProperty("server") == false)
     {
@@ -43,11 +43,11 @@ esp(api)
 
     document.getElementById("appid").value = _appid;
 
-    _visuals = _api.createVisuals(parms);
+    _visuals = _esp.createVisuals(parms);
 
-    _api.handleLayout();
+    _esp.handleLayout();
 
-    _api.connect(server,{ready:ready});
+    _esp.connect(server,{ready:ready});
 }
 
 function
@@ -61,12 +61,10 @@ ready(connection)
     }
     else
     {
-        _api.getDialogs().pushModal("help");
+        _esp.getDialogs().pushModal("help");
     }
 
-    _api.size();
-
-    _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
+    _esp.size();
 }
 
 function
@@ -88,7 +86,9 @@ loaded()
     _visuals.createCompass("direction",weather,{value:"windDirection",size:225,header:"Wind Direction",show_controls:false})
     _visuals.createBarChart("highsAndLows",aggr,{y:["high","low"],header:"High and Low Temperatures",line_width:2,fillx:true});
 
-    _api.size();
+    _esp.size();
+
+    _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
 }
 
 function
@@ -110,16 +110,13 @@ weatherError()
 function
 done()
 {
-    _api.getDialogs().popModal("help");
+    _esp.getDialogs().popModal("help");
     _appid = document.getElementById("appid").value;
 
     if (_appid.length > 0)
     {
-        var url = new URL("config.xml",document.URL);
-        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true,appid:_appid,config:url.href});
+        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true,parms:{appid:_appid,config:new URL("config.xml",document.URL).toString()}});
     }
-
-    ready();
 }
 
 </script>
@@ -133,8 +130,8 @@ done()
             <tr>
                 <td id="bannerTitle"></td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_api.getDialogs().pushModal('espModel')">&#xf426;</a>
-                    <a class="icon" href="javascript:_api.getDialogs().pushModal('help')">&#xf30b;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf426;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
                 </td>
             </tr>
         </table>
@@ -153,7 +150,7 @@ done()
 
     <div id="help" class="dialog" style="width:60%">
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
         </table>
 
         <div class="dialogTop">
@@ -195,7 +192,7 @@ done()
     <div id="espModel" class="dialog" style="width:90%;height:90%">
 
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
         </table>
 
         <div class="dialogTop">

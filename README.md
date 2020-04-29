@@ -124,22 +124,22 @@ As an example, consider a web page that displays some colored areas and publishe
 might look like the following (be sure to enclose in the &lt;script&gt; tag):
 
 ```javascript
-var _api = null;
+var _esp = null;
 var _conn = null;
 var _visuals = null;
 
 function
 esp(api)
 {
-    _api = api;
+    _esp = api;
 
-    var server = _api.getParm("server");
+    var server = _esp.getParm("server");
  
-    _visuals = _api.createVisuals(parms);
+    _visuals = _esp.createVisuals(parms);
 
-    _api.handleLayout({layout:layout});
+    _esp.handleLayout({layout:layout});
 
-    _api.connect(server,{ready:ready});
+    _esp.connect(server,{ready:ready});
 }
 
 function
@@ -172,7 +172,7 @@ ready(connection)
                    </contqueries>\
                 </project>";
 
-    _api.showStatus("Loading project...");
+    _esp.showStatus("Loading project...");
 
     _conn.loadProject("myproject",model,{loaded:loaded},{overwrite:true});
 }
@@ -200,7 +200,7 @@ The API will invoke the *loaded* delegate function when the server returns. Sinc
 function
 loaded()
 {
-    _api.clearStatus();
+    _esp.clearStatus();
 
     var clicks  = _conn.getEventCollection({window:"myproject/cq/clicksAggr"});
 

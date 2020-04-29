@@ -52,24 +52,20 @@ options:
 	-pagesize   page size of the collection (defaults to 50)
 	-schema     true | false (return schema on start, defaults to true)
 	-sort       sort field
-
-authentication:
-	-auth		    authentication information to send to the server, i.e. Bearer <token> or Basic <credentials>
-	-access_token	OAuth token to send to the server
 ```
 
 To write your own Node.js programs you will need to follow a couple simple steps. Begin your javascript file with the following code to get a 
 handle to the Connect API:
 
 ```javascript
-var api = require("@sassoftware/espconnect");
+var esp = require("@sassoftware/esp-connect");
 ```
 
 Then you just use the API handle as you would in a web page. The following code is the *basic.js* program included in the package. You can 
 use this as a starting point for NodeJS programs.
 ```javascript
-var api = require("@sassoftware/espconnect");
-var opts = api.getArgs();
+var esp = require("@sassoftware/esp-connect");
+var opts = esp.getArgs();
 var server = opts.getOpt("server");
 
 if (server == null)
@@ -78,7 +74,7 @@ if (server == null)
     process.exit(0);
 }
 
-api.connect(server,{ready:ready});
+esp.connect(server,{ready:ready});
 
 function
 ready(connection)

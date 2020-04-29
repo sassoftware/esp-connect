@@ -3,8 +3,8 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-var api = require("@sassoftware/esp-connect");
-var opts = api.getArgs();
+var esp = require("@sassoftware/esp-connect");
+var opts = esp.getArgs();
 var config = opts.getOpt("config");
 
 if (config == null)
@@ -15,7 +15,7 @@ if (config == null)
 
 var fs = require('fs');
 var filedata = fs.readFileSync(config);
-var router = api.createRouter();
+var router = esp.createRouter();
 
 router.configure(filedata.toString());
 router.start();

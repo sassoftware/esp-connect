@@ -5,8 +5,8 @@ using the API handle delivered upon startup:
 function
 esp(api)
 {
-    _api = api;
-    _visuals = _api.createVisuals(_api.getParms());
+    _esp = api;
+    _visuals = _esp.createVisuals(_esp.getParms());
     ...
 }
 ```
@@ -65,11 +65,9 @@ The call to create the Visuals instance might look like this:
 function
 esp(api)
 {
-    _api = api;
-
-    var parms = _api.getParms();
-
-    _visuals = _api.createVisuals(parms);
+    _esp = api;
+    var parms = _esp.getParms();
+    _visuals = _esp.createVisuals(parms);
 }
 ```
 
@@ -399,7 +397,7 @@ Since all you need to render the visualizations provided in this package is an H
 However, the [Flexbox Layout](https://css-tricks.com/snippets/css/a-guide-to-flexbox) makes it very easy to create a simple
 page that will have a responsive behavior and will present your visuals in an optimal fashion.
 
-All of the Connect API examples use this layout mechanism. Also, the package provides some sizing support for a standard layout through the api.size() method.
+All of the Connect API examples use this layout mechanism. Also, the package provides some sizing support for a standard layout through the esp.size() method.
 
 As an example, we will look at the body of the *symbols* example.
 ```
@@ -489,14 +487,14 @@ To write your own Node.js programs you will need to follow a couple simple steps
 handle to the Connect API:
 
 ```
-var api = require('espconnect');
+var esp = require("@sassoftware/esp-connect");
 ```
 
 Then you just use the API handle as you would in a web page. The following code is the *basic.js* program included in the package. You can 
 use this as a starting point for NodeJS programs.
 ```
-var api = require("espconnect");
-var opts = api.getArgs();
+var esp = require("@sassoftware/esp-connect");
+var opts = esp.getArgs();
 var server = opts.getOpt("server");
 
 if (server == null)
@@ -505,7 +503,7 @@ if (server == null)
     process.exit(0);
 }
 
-api.connect(server,{ready:ready});
+esp.connect(server,{ready:ready});
 
 function
 ready(connection)
@@ -623,8 +621,8 @@ This will route events for brokers *Joe* and *Sally* to server *to_1* and events
 
 To create run a router from a configuration your code would look something like this (this is from *router.js* which is supplied with the package):
 ```
-var api = require("espconnect");
-var opts = api.getArgs();
+var esp = require("@sassoftware/esp-connect");
+var opts = esp.getArgs();
 var config = opts.getOpt("config");
 
 if (config == null)
@@ -635,7 +633,7 @@ if (config == null)
 
 var fs = require("fs");
 var filedata = fs.readFileSync(config);
-var router = api.createRouter();
+var router = esp.createRouter();
 
 router.configure(filedata.toString());
 router.start();
@@ -655,7 +653,7 @@ showUsage()
 You can also create a router from scratch by using API calls.
 
 ```
-var router = api.createRouter();
+var router = esp.createRouter();
 router.addServer("esp","http://espsrv01:7777");
 
 var dest = router.addPublishDestination("to");

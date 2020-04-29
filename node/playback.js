@@ -3,11 +3,11 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-const   api = require("@sassoftware/esp-connect");
+const   esp = require("@sassoftware/esp-connect");
 const   fs = require("fs");
 const   url = require("url");
 
-var opts = api.getArgs();
+var opts = esp.getArgs();
 var server = opts.getOpt("server");
 var logfile = opts.getOpt("logfile");
 
@@ -202,7 +202,7 @@ function()
 
                 if (this._wsdata._type == "binary")
                 {
-                    var data = api.getTools().b64Decode(this._wsdata._data);
+                    var data = esp.getTools().b64Decode(this._wsdata._data);
                     this._wsdata._websocket.send(data);
                 }
                 else
@@ -387,7 +387,7 @@ function()
         return;
     }
 
-    var request = api.getAjax().create("request",this._url.toString(),this);
+    var request = esp.getAjax().create("request",this._url.toString(),this);
 
     request.setRequestHeaders(this._headers);
 
@@ -495,8 +495,8 @@ function(message)
                view[i] = message[i];
             }
 
-            var o = api.decode(buffer);
-            console.log(api.getTools().stringify(o));
+            var o = esp.decode(buffer);
+            console.log(esp.getTools().stringify(o));
         }
     }
 }

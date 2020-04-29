@@ -20,16 +20,16 @@
 
 <script type="text/javascript">
 
-var _api = null;
+var _esp = null;
 var _conn = null;
 var _visuals = null;
 
 function
 esp(api)
 {
-    _api = api;
+    _esp = api;
 
-    var parms = api.getParms();
+    var parms = _esp.getParms();
 
     if (parms.hasOwnProperty("server") == false)
     {
@@ -42,10 +42,10 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
-    _api.connect(server,{ready:ready,closed:closed});
-    _visuals = _api.createVisuals(_api.getParms());
+    _esp.connect(server,{ready:ready,closed:closed});
+    _visuals = _esp.createVisuals(_esp.getParms());
 
-    _api.handleLayout();
+    _esp.handleLayout();
 }
 
 function
@@ -53,9 +53,9 @@ ready(connection)
 {
     _conn = connection;
 
-    if (_api.getParm("load",true))
+    if (_esp.getParm("load",true))
     {
-        _api.showStatus("Loading project...");
+        _esp.showStatus("Loading project...");
         _conn.loadProjectFrom("primary","primary.xml",{loaded:projectLoaded,error:error},{overwrite:true});
         _conn.loadProjectFrom("secondary","secondary.xml",{loaded:projectLoaded,error:error},{overwrite:true});
     }
@@ -64,7 +64,7 @@ ready(connection)
         loaded();
     }
 
-    _api.size();
+    _esp.size();
 }
 
 var _primaryLoaded = false;
@@ -116,7 +116,7 @@ showModel()
     s += "\n\n";
     s += _secondaryXml;
     document.getElementById("espModelXml").innerText = s;
-    _api.getDialogs().pushModal("espModel");
+    _esp.getDialogs().pushModal("espModel");
 }
 
 function
@@ -127,7 +127,7 @@ error()
 function
 createVisuals()
 {
-    _api.clearStatus();
+    _esp.clearStatus();
 
     var alerts = _conn.getEventCollection({window:"secondary/cq/brokerAlertsAggr"});
     /*
@@ -156,7 +156,7 @@ createVisuals()
     _visuals.createGauge("totalCount",rates,{value:"totalCount",range:[0,50000000],segments:5,border:0,colors:colors,show_title:false,header:"Events Processed",width:300,height:300,bar_color:barColor});
     _visuals.createGauge("totalRate",rates,{value:"totalRate",range:[0,1000000],segments:5,width:300,height:300,colors:colors,delta:false,border:0,show_title:false,header:"Total Rate",bar_color:barColor});
 
-    _api.size();
+    _esp.size();
 }
 
 function
@@ -178,7 +178,7 @@ publish()
                 <td class="icon">
                     <a class="icon" href="javascript:publish()">&#xf539;</a>
                     <a class="icon" href="javascript:showModel()">&#xf426;</a>
-                    <a class="icon" href="javascript:_api.getDialogs().pushModal('help')">&#xf30b;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
                 </td>
             </tr>
         </table>
@@ -210,7 +210,7 @@ publish()
 
     <div id="help" class="dialog" style="width:60%">
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
         </table>
 
         <div class="dialogTop">
@@ -234,7 +234,7 @@ publish()
             <table style="width:100%">
                 <tr>
                     <td class="dialogButton">
-                        <span><button class="close" onclick="javascript:_api.getDialogs().popModal('help')">Done</button></span>
+                        <span><button class="close" onclick="javascript:_esp.getDialogs().popModal('help')">Done</button></span>
                     </td>
                 </tr>
             </table>
@@ -244,7 +244,7 @@ publish()
     <div id="espModel" class="dialog" style="width:90%;height:90%">
 
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
         </table>
 
         <div class="dialogTop">

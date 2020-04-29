@@ -30,15 +30,15 @@ var _visuals = null;
 var _visual = null;
 var _parms = null;
 var _type = "bar";
-var _api = null;
+var _esp = null;
 var _ds = null;
 
 function
 esp(api)
 {
-    _api = api;
+    _esp = api;
 
-    _parms = _api.getParms();
+    _parms = _esp.getParms();
 
     if (_parms.hasOwnProperty("server") == false)
     {
@@ -67,11 +67,11 @@ esp(api)
         delete _parms["datasource"];
     }
 
-    _visuals = _api.createVisuals(_parms);
+    _visuals = _esp.createVisuals(_parms);
 
-    _api.handleLayout();
+    _esp.handleLayout();
 
-    _api.connect(server,{ready:ready,closed:closed});
+    _esp.connect(server,{ready:ready,closed:closed});
 }
 
 function
@@ -138,7 +138,7 @@ ready(connection)
         }
     }
 
-    _api.size();
+    _esp.size();
 }
 
 function

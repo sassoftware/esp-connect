@@ -17,16 +17,16 @@
 
 <script type="text/javascript">
 
-var _api = null;
+var _esp = null;
 var _conn = null;
 var _visuals = null;
 
 function
 esp(api)
 {
-    _api = api;
+    _esp = api;
 
-    var parms = api.getParms();
+    var parms = _esp.getParms();
 
     if (parms.hasOwnProperty("server") == false)
     {
@@ -39,18 +39,18 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
-    _conn = _api.connect(server,{ready:ready},{debug:false});
-    _visuals = _api.createVisuals(parms);
+    _conn = _esp.connect(server,{ready:ready},{debug:false});
+    _visuals = _esp.createVisuals(parms);
 
-    _api.handleLayout();
+    _esp.handleLayout();
 }
 
 function
 ready()
 {
-    if (_api.getParm("load",true))
+    if (_esp.getParm("load",true))
     {
-        _api.showStatus("Loading project...");
+        _esp.showStatus("Loading project...");
         _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true,parms:{config:new URL("config.xml",document.URL).toString()}});
     }
     else
@@ -62,7 +62,7 @@ ready()
 function
 loaded()
 {
-    _api.clearStatus();
+    _esp.clearStatus();
 
     _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
 
@@ -70,7 +70,7 @@ loaded()
 
     _visuals.createTable("mytable",coll);
 
-    _api.size();
+    _esp.size();
 }
 
 function
@@ -89,8 +89,8 @@ error()
             <tr>
                 <td id="bannerTitle"></td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_api.getDialogs().pushModal('espModel')">&#xf426;</a>
-                    <a class="icon" href="javascript:_api.getDialogs().pushModal('help')">&#xf30b;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf426;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
                 </td>
             </tr>
         </table>
@@ -104,7 +104,7 @@ error()
 
     <div id="help" class="dialog" style="width:60%">
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
         </table>
 
         <div class="dialogTop">
@@ -128,7 +128,7 @@ error()
             <table style="width:100%">
                 <tr>
                     <td class="dialogButton">
-                        <span><button class="close" onclick="javascript:_api.getDialogs().popModal('help')">Done</button></span>
+                        <span><button class="close" onclick="javascript:_esp.getDialogs().popModal('help')">Done</button></span>
                     </td>
                 </tr>
             </table>
@@ -138,7 +138,7 @@ error()
     <div id="espModel" class="dialog" style="width:90%;height:90%">
 
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
         </table>
 
         <div class="dialogTop">

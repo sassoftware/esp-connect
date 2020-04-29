@@ -41,14 +41,14 @@ var _parms = null;
 var _tabs = null;
 var _logs = null;
 var _init = false;
-var _api = null;
+var _esp = null;
 
 var _viewerSplit = "70%";
 
 function
 esp(api)
 {
-    _api = api;
+    _esp = api;
     setup();
 }
 
@@ -62,31 +62,31 @@ init()
 function
 setup()
 {
-    if (_api == null || _init == false)
+    if (_esp == null || _init == false)
     {
         return;
     }
 
-    _storage = _api.getStorage("modelviewer");
+    _storage = _esp.getStorage("modelviewer");
 
     var viewer = document.getElementById("viewer");
 	viewer.addEventListener("dragover",over,false);
 	viewer.addEventListener("drop",drop,false);
 
-    _parms = _api.getParms();
+    _parms = _esp.getParms();
 
-    if (_api.hasParm("server") == false && _storage.hasOpt("server"))
+    if (_esp.hasParm("server") == false && _storage.hasOpt("server"))
     {
-        _api.setParm("server",_storage.getOpt("server"));
+        _esp.setParm("server",_storage.getOpt("server"));
     }
     else if (_storage.hasOpt("xml"))
     {
-        _api.setParm("xml",_storage.getOpt("xml"));
+        _esp.setParm("xml",_storage.getOpt("xml"));
     }
 
-    if (_api.hasParm("project") == false && _storage.hasOpt("project"))
+    if (_esp.hasParm("project") == false && _storage.hasOpt("project"))
     {
-        _api.setParm("project",_storage.getOpt("project"));
+        _esp.setParm("project",_storage.getOpt("project"));
     }
 
     if (_parms.hasOwnProperty("theme") == false && _storage.hasOpt("theme"))
@@ -95,7 +95,7 @@ setup()
         document.getElementById("theme").value = _parms["theme"];
     }
 
-    _visuals = _api.createVisuals(_parms);
+    _visuals = _esp.createVisuals(_parms);
 
     ["cpu","counts","type","indices","memory"].forEach((s) =>
     {
@@ -111,18 +111,18 @@ setup()
     _viewer = _visuals.createModelViewer("viewer",null,_parms);
     _viewer.addDelegate({nodeSelected:nodeHandler,deselected:clear,projectLoaded:projectLoaded,modelLoaded:modelLoaded,handleStats:handleStats,propertyChanged:propertyChanged});
 
-    if (_api.hasParm("server"))
+    if (_esp.hasParm("server"))
     {
-        document.getElementById("server").value = _api.getParm("server");
-        connect(encodeURI(_api.getParm("server")));
+        document.getElementById("server").value = _esp.getParm("server");
+        connect(encodeURI(_esp.getParm("server")));
     }
-    else if (_api.hasParm("xml"))
+    else if (_esp.hasParm("xml"))
     {
-        loadModel(_api.getParm("xml"));
+        loadModel(_esp.getParm("xml"));
     }
     else
     {
-        _api.getDialogs().pushModal("connect");
+        _esp.getDialogs().pushModal("connect");
     }
 
     _opcodes = document.createElement("select");
@@ -140,7 +140,7 @@ setup()
     _genGuid = document.createElement("input");
     _genGuid.type = "checkbox";
 
-	_splitter = _api.getSplitter().create();
+	_splitter = _esp.getSplitter().create();
 	_splitter.sized = sized;
 
 	_splitter.addCell("viewer",document.getElementById("viewer"));
@@ -152,7 +152,7 @@ setup()
 	_splitter.setRowHeightPercentage(0,95);
 	_splitter.size();
 
-    _api.handleLayout({layout:layout});
+    _esp.handleLayout({layout:layout});
 
     loadDocumentUrls();
 
@@ -201,7 +201,7 @@ setup()
 
     _detail.appendChild(content.children[0]);
 
-    _tabs = _api.createTabs();
+    _tabs = _esp.createTabs();
 
     _publish = document.getElementById("publish");
 
@@ -257,7 +257,7 @@ tabSelected()
 {
     var index = this.selectDiv();
     _storage.setOpt("publish-index",index);
-    _api.size();
+    _esp.size();
 }
 
 function
@@ -299,7 +299,7 @@ loadEventCollection()
         _splitter.addCell(ds.id,div);
         table.size();
         _splitter.size();
-        _api.size();
+        _esp.size();
     }
 }
 
@@ -323,7 +323,7 @@ loadEventStream()
         _splitter.addCell(ds.id,div);
         table.size();
         _splitter.size();
-        _api.size();
+        _esp.size();
     }
 }
 
@@ -345,15 +345,15 @@ connect(server)
 
     close();
 
-    _api.getDialogs().clearModals();
+    _esp.getDialogs().clearModals();
 
-    _api.size();
+    _esp.size();
 
     document.getElementById("bannerTitle").innerHTML = "ESP Model Viewer (" + server + ")";
 
     _storage.setOpt("server",server);
 
-    _api.connect(server,{ready:ready,closed:closed});
+    _esp.connect(server,{ready:ready,closed:closed});
 }
 
 function
@@ -370,12 +370,12 @@ ready(connection)
     _viewer.connection = connection;
     _visuals.createLogViewer(_logs,_connection,{show_header:false});
 
-    detail(_api.getTools().setCbState("detailCb",{enabled:true}));
-    stats(_api.getTools().setCbState("statsCb",{enabled:true}));
-    xml(_api.getTools().setCbState("windowXmlCb",{enabled:true}));
-    schema(_api.getTools().setCbState("schemaCb",{enabled:true}));
-    logs(_api.getTools().setCbState("logsCb",{enabled:true}));
-    publish(_api.getTools().setCbState("publishCb",{enabled:true}));
+    detail(_esp.getTools().setCbState("detailCb",{enabled:true}));
+    stats(_esp.getTools().setCbState("statsCb",{enabled:true}));
+    xml(_esp.getTools().setCbState("windowXmlCb",{enabled:true}));
+    schema(_esp.getTools().setCbState("schemaCb",{enabled:true}));
+    logs(_esp.getTools().setCbState("logsCb",{enabled:true}));
+    publish(_esp.getTools().setCbState("publishCb",{enabled:true}));
 
     /*
     _viewer.setNetworkOptions({layout:{hierarchical:{direction: "DU"}}});
@@ -451,15 +451,15 @@ loadModel(xml)
     _viewer.setOpt("cpu",false);
     _viewer.setOpt("counts",false);
 
-	_modelXml = _api.getXPath().createXml(xml);
+	_modelXml = _esp.getXPath().createXml(xml);
     _viewer.load(_modelXml);
 
-    _api.getTools().setCbState("detailCb",{enabled:true});
-    _api.getTools().setCbState("windowXmlCb",{enabled:true});
-    _api.getTools().setCbState("statsCb",{enabled:false});
-    _api.getTools().setCbState("schemaCb",{enabled:false});
-    _api.getTools().setCbState("logsCb",{enabled:false});
-    _api.getTools().setCbState("publishCb",{enabled:false});
+    _esp.getTools().setCbState("detailCb",{enabled:true});
+    _esp.getTools().setCbState("windowXmlCb",{enabled:true});
+    _esp.getTools().setCbState("statsCb",{enabled:false});
+    _esp.getTools().setCbState("schemaCb",{enabled:false});
+    _esp.getTools().setCbState("logsCb",{enabled:false});
+    _esp.getTools().setCbState("publishCb",{enabled:false});
 
     if (_splitter != null)
     {
@@ -490,7 +490,7 @@ function
 sized()
 {
     _fromSplitter = true;
-    _api.size();
+    _esp.size();
 }
 
 function
@@ -558,9 +558,9 @@ nodeHandler(w)
 function
 loadDetail()
 {
-    _api.getTools().setLinkState("loadCollection",_selected != null);
-    _api.getTools().setLinkState("loadStream",_selected != null);
-    _api.getTools().setLinkState("userguide",_selected != null);
+    _esp.getTools().setLinkState("loadCollection",_selected != null);
+    _esp.getTools().setLinkState("loadStream",_selected != null);
+    _esp.getTools().setLinkState("userguide",_selected != null);
 
     if (_splitter == null || _splitter.hasCell("detail") == false)
     {
@@ -634,10 +634,10 @@ modelLoaded(viewer,model)
 function
 setProject()
 {
-    if (_api.hasParm("project"))
+    if (_esp.hasParm("project"))
     {
-        _viewer.project = _api.getParm("project");
-        _api.removeParm("project");
+        _viewer.project = _esp.getParm("project");
+        _esp.removeParm("project");
     }
     else
     {
@@ -778,7 +778,7 @@ setGuid()
             }
             var tr = table.rows[i];
             var input = tr.cells[1].firstChild;
-            input.value = _api.guid();
+            input.value = _esp.guid();
             break;
         }
     }
@@ -843,9 +843,9 @@ xml(on)
     }
 
     _splitter.size();
-    _api.size();
+    _esp.size();
 
-    _api.getTools().setCbState("windowXmlCb",{checked:on});
+    _esp.getTools().setCbState("windowXmlCb",{checked:on});
 }
 
 function
@@ -872,9 +872,9 @@ detail(on)
     }
 
     _splitter.size();
-    _api.size();
+    _esp.size();
 
-    _api.getTools().setCbState("detailCb",{checked:on});
+    _esp.getTools().setCbState("detailCb",{checked:on});
 
     loadDetail();
 }
@@ -913,9 +913,9 @@ stats(on)
     }
 
     _splitter.size();
-    _api.size();
+    _esp.size();
 
-    _api.getTools().setCbState("statsCb",{checked:on});
+    _esp.getTools().setCbState("statsCb",{checked:on});
 }
 
 function
@@ -944,9 +944,9 @@ schema(on)
     }
 
     _splitter.size();
-    _api.size();
+    _esp.size();
 
-    _api.getTools().setCbState("schemaCb",{checked:on});
+    _esp.getTools().setCbState("schemaCb",{checked:on});
 }
 
 function
@@ -974,9 +974,9 @@ publish(on)
     }
 
     _splitter.size();
-    _api.size();
+    _esp.size();
 
-    _api.getTools().setCbState("publishCb",{checked:on});
+    _esp.getTools().setCbState("publishCb",{checked:on});
 }
 
 function
@@ -1004,9 +1004,9 @@ logs(on)
     }
 
     _splitter.size();
-    _api.size();
+    _esp.size();
 
-    _api.getTools().setCbState("logsCb",{checked:on});
+    _esp.getTools().setCbState("logsCb",{checked:on});
 }
 
 function
@@ -1051,7 +1051,7 @@ publishData()
                 input = tr.cells[1].firstChild;
                 if (f.isKey)
                 {
-                    o[f.name] = (_genGuid.checked) ? _api.guid() : input.value;
+                    o[f.name] = (_genGuid.checked) ? _esp.guid() : input.value;
                 }
                 else
                 {
@@ -1462,7 +1462,7 @@ div#banner td.icon
                     </select>
                 </td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_api.getDialogs().pushModal('connect')">&#xf137;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('connect')">&#xf137;</a>
                 </td>
             </tr>
         </table>
@@ -1505,7 +1505,7 @@ div#banner td.icon
     <div id="connect" class="dialog" style="width:50%">
 
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('connect')">&#xf10c;</a></td></tr>
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('connect')">&#xf10c;</a></td></tr>
         </table>
 
         <div class="dialogTop">

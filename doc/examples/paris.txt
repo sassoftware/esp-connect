@@ -21,14 +21,14 @@
 var _visuals = null;
 var _trip = null;
 var _conn = null;
-var _api = null;
+var _esp = null;
 
 function
 esp(api)
 {
-    _api = api;
+    _esp = api;
 
-    var parms = _api.getParms();
+    var parms = _esp.getParms();
 
     if (parms.hasOwnProperty("server") == false)
     {
@@ -41,10 +41,10 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
-    _api.connect(server,{ready:ready});
-    _visuals = _api.createVisuals(_api.getParms());
+    _esp.connect(server,{ready:ready});
+    _visuals = _esp.createVisuals(_esp.getParms());
 
-    _api.handleLayout();
+    _esp.handleLayout();
 }
 
 function
@@ -52,10 +52,10 @@ ready(connection)
 {
     _conn = connection;
 
-    _api.showStatus("Loading project...");
+    _esp.showStatus("Loading project...");
     _conn.loadUrl("model","model.xml",{loaded:sendModel});
     _conn.loadUrl("trip","paris_trip.csv",{loaded:function(name,text){_trip = text;}});
-    _api.size();
+    _esp.size();
 }
 
 var _model = null;
@@ -75,7 +75,7 @@ loaded(p,conn)
     setTimeout(createVisuals,1000);
     _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
 
-    _api.clearStatus();
+    _esp.clearStatus();
 }
 
 function
@@ -109,7 +109,7 @@ createVisuals()
 
     _visuals.createGauge("speed",tracker,{value:"speed",width:250,colors:colors,segments:5,header:"Speed",range:[0,40],delta:true,decimals:false,bar_color:barColor});
 
-    _api.size();
+    _esp.size();
 }
 
 function
@@ -135,7 +135,7 @@ function
 sendTrip(name)
 {
     new Trip(name);
-    _api.getDialogs().clearModals();
+    _esp.getDialogs().clearModals();
 }
 
 function
@@ -194,9 +194,9 @@ function()
             <tr>
                 <td id="bannerTitle"></td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_api.getDialogs().pushModal('publish')">&#xf360;</a>
-                    <a class="icon" href="javascript:_api.getDialogs().pushModal('espModel')">&#xf426;</a>
-                    <a class="icon" href="javascript:_api.getDialogs().pushModal('help')">&#xf30b;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('publish')">&#xf360;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf426;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
                 </td>
             </tr>
         </table>
@@ -221,7 +221,7 @@ function()
     <div id="publish" class="dialog" style="width:400px">
 
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('publish')">&#xf10c;</a></td></tr>
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('publish')">&#xf10c;</a></td></tr>
         </table>
 
         <div class="dialogTop">
@@ -261,7 +261,7 @@ function()
     <div id="espModel" class="dialog" style="width:90%;height:90%">
 
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
         </table>
 
         <div class="dialogTop">
@@ -284,7 +284,7 @@ function()
 
     <div id="help" class="dialog" style="width:60%">
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
         </table>
 
         <div class="dialogTop">
@@ -310,7 +310,7 @@ function()
             <table style="width:100%">
                 <tr>
                     <td class="dialogButton">
-                        <span><button class="close" onclick="javascript:_api.getDialogs().popModal('help')">Done</button></span>
+                        <span><button class="close" onclick="javascript:_esp.getDialogs().popModal('help')">Done</button></span>
                     </td>
                 </tr>
             </table>

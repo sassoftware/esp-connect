@@ -81,8 +81,8 @@ This will route events for brokers *Joe* and *Sally* to server *to_1* and events
 
 To create run a router from a configuration your code would look something like this (this is from *router.js* which is supplied with the package):
 ```javascript
-var api = require("espconnect");
-var opts = api.getArgs();
+var esp = require("@sassoftware/esp-connect");
+var opts = esp.getArgs();
 var config = opts.getOpt("config");
 
 if (config == null)
@@ -93,7 +93,7 @@ if (config == null)
 
 var fs = require("fs");
 var filedata = fs.readFileSync(config);
-var router = api.createRouter();
+var router = esp.createRouter();
 
 router.configure(filedata.toString());
 router.start();
@@ -113,7 +113,7 @@ showUsage()
 You can also create a router from scratch by using API calls.
 
 ```javascript
-var router = api.createRouter();
+var router = esp.createRouter();
 router.addServer("esp","http://espsrv01:7777");
 
 var dest = router.addPublishDestination("to");

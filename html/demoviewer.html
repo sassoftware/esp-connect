@@ -37,7 +37,7 @@ esp(api)
 function
 openDemo()
 {
-    _demo.api.getDialogs().popModal("open");
+    _demo.esp.getDialogs().popModal("open");
     _demo.open(document.getElementById("_demourl").value);
 }
 
@@ -99,7 +99,7 @@ routerLoaded(connection,router)
 }
 
 function
-Demo(api)
+Demo(esp)
 {
     this._connections = {};
 
@@ -110,25 +110,25 @@ Demo(api)
     this._style = null;
     this._config = null;
 
-    this._api = api;
-    this._parms = this._api.getParms();
-    this._visuals = this._api.createVisuals(this._parms);
+    this._esp = esp;
+    this._parms = this._esp.getParms();
+    this._visuals = this._esp.createVisuals(this._parms);
 
-    this._api.handleLayout();
-    this._xpath = this._api.getXPath();
+    this._esp.handleLayout();
+    this._xpath = this._esp.getXPath();
 
-    this._storage = this._api.getStorage("espdemo");
+    this._storage = this._esp.getStorage("espdemo");
 
     var content = document.getElementById("content");
     content.addEventListener("dragover",over,false);
     content.addEventListener("drop",drop,false);
 
-    this._parms = this._api.getParms();
+    this._parms = this._esp.getParms();
     this._baseURL = document.URL;
 
     Object.defineProperty(this,"api", {
         get() {
-            return(this._api);
+            return(this._esp);
         }
     });
 
@@ -152,7 +152,7 @@ Demo.prototype.open =
 function(url)
 {
     this._baseURL = new URL(url,document.URL);
-    this._api.getAjax().create("config",url,{response:this.loadConfig,error:this.error}).get();
+    this._esp.getAjax().create("config",url,{response:this.loadConfig,error:this.error}).get();
     this._storage.setOpt("url",url);
     this._storage.clearOpt("config");
 }
@@ -183,7 +183,7 @@ function(config)
     this._connections = {};
 
     var rgx = new RegExp("@([A-z0-9_]*)@");
-    var parms = this._api.getParms();
+    var parms = this._esp.getParms();
     var values = [];
 
     while ((results = rgx.exec(this._config)) != null)
@@ -203,7 +203,7 @@ function(config)
     if (values.length > 0)
     {
         var demo = this;
-        this._api.getDialogs().showDialog({ok:function(data){demo.setValues(data)},cancel:demo._api.getDialogs().hideDialog,header:"Demo Values",values:values});
+        this._esp.getDialogs().showDialog({ok:function(data){demo.setValues(data)},cancel:demo._esp.getDialogs().hideDialog,header:"Demo Values",values:values});
         return;
     }
 
@@ -258,7 +258,7 @@ function(config)
     this._xpath.getNodes("//servers/server",this._xml.documentElement).forEach((server) => {
         var name = server.getAttribute("name");
         var url = server.getAttribute("url");
-        var connection = this._api.connect(url,this,{name:name,config:server,connected:false,projects:{},subscribers:{},publishers:{},routers:{}});
+        var connection = this._esp.connect(url,this,{name:name,config:server,connected:false,projects:{},subscribers:{},publishers:{},routers:{}});
         this._connections[name] = connection;
     });
 
@@ -282,7 +282,7 @@ Demo.prototype.setValues =
 function(data)
 {
     var rgx = new RegExp("%([A-z0-9_]*)%");
-    var parms = this._api.getParms();
+    var parms = this._esp.getParms();
     var values = [];
 
     while ((results = rgx.exec(this._config)) != null)
@@ -619,8 +619,8 @@ function()
         });
 
         this.addCell(this._xpath.getNode("./cells",this._xml.documentElement),document.getElementById("layout"));
-        this._api.size();
-        this._api.refresh(1000);
+        this._esp.size();
+        this._esp.refresh(1000);
         /*
         console.log(document.getElementById("layout").outerHTML);
         */
@@ -686,7 +686,7 @@ function(cell,to)
                 throw(error);
             };
             url = new URL(cell.getAttribute("url"),this._baseURL);
-            this._api.getAjax().create("header",url.toString(),o).get();
+            this._esp.getAjax().create("header",url.toString(),o).get();
         }
         else
         {
@@ -787,7 +787,7 @@ Demo.prototype.createDiv =
 function(cell,classname)
 {
     var div = document.createElement("div");
-    div.id = cell.hasAttribute("id") ? cell.getAttribute("id") : this._api.guid();
+    div.id = cell.hasAttribute("id") ? cell.getAttribute("id") : this._esp.guid();
 
     var classname = (classname != null) ? classname : "";
 

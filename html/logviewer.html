@@ -27,12 +27,12 @@ var	_storage = null;
 var _viewer = null;
 var _parms = null;
 var _init = false;
-var _api = null;
+var _esp = null;
 
 function
 esp(api)
 {
-    _api = api;
+    _esp = api;
     setup();
 }
 
@@ -46,12 +46,12 @@ init()
 function
 setup()
 {
-    if (_api == null || _init == false)
+    if (_esp == null || _init == false)
     {
         return;
     }
 
-    _storage = _api.getStorage("logviewer");
+    _storage = _esp.getStorage("logviewer");
 
     _maxentries = _storage.hasOpt("maxentries") ? _storage.getOpt("maxentries") : 0;
 
@@ -62,13 +62,13 @@ setup()
 
     document.getElementById("maxentries").value = _maxentries;
 
-    _parms = _api.getParms();
+    _parms = _esp.getParms();
 
-    _visuals = _api.createVisuals(_api.getParms());
+    _visuals = _esp.createVisuals(_esp.getParms());
 
-    if (_api.hasParm("server") == false && _storage.hasOpt("server"))
+    if (_esp.hasParm("server") == false && _storage.hasOpt("server"))
     {
-        _api.setParm("server",_storage.getOpt("server"));
+        _esp.setParm("server",_storage.getOpt("server"));
     }
 
     if (_parms.hasOwnProperty("filter") == false)
@@ -78,14 +78,14 @@ setup()
 
     _parms["header"] = "ESP Server Log";
 
-    if (_api.hasParm("server"))
+    if (_esp.hasParm("server"))
     {
-        document.getElementById("server").value = _api.getParm("server");
-        connect(encodeURI(_api.getParm("server")));
+        document.getElementById("server").value = _esp.getParm("server");
+        connect(encodeURI(_esp.getParm("server")));
     }
     else
     {
-        _api.getDialogs().pushModal("connect");
+        _esp.getDialogs().pushModal("connect");
     }
 
     var fields = new Array();
@@ -96,7 +96,7 @@ setup()
     _loggerTable.setFields(fields);
     _loggerTable.draw();
 
-    _api.handleLayout();
+    _esp.handleLayout();
 }
 
 function
@@ -124,13 +124,13 @@ connect(server)
         _viewer.setOpt("max",_maxentries);
     }
 
-    _api.connect(server,{ready:ready,closed:closed});
+    _esp.connect(server,{ready:ready,closed:closed});
 
-    _api.getDialogs().clearModals();
+    _esp.getDialogs().clearModals();
 
     document.getElementById("bannerTitle").innerHTML = "ESP Log Viewer (" + server + ")";
 
-    _api.size();
+    _esp.size();
 
     _storage.setOpt("server",server);
     _storage.setOpt("maxentries",_maxentries);
@@ -147,7 +147,7 @@ ready(connection)
         _parms.show_header = false;
         _parms.max = _maxentries;
         _viewer = _visuals.createLogViewer("viewer",null,_parms);
-        _api.size();
+        _esp.size();
     }
 
     _viewer.connection = _connection;
@@ -162,7 +162,7 @@ showLoggers()
 {
     document.getElementById("setLevel").disabled = true;
     _loggerTable.deselectAll();
-    _api.getDialogs().pushModal("contexts");
+    _esp.getDialogs().pushModal("contexts");
     _loggerTable.draw();
 }
 
@@ -228,7 +228,7 @@ select#loglevel
             <tr>
                 <td id="bannerTitle">ESP Log Viewer</td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_api.getDialogs().pushModal('connect')">&#xf137;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('connect')">&#xf137;</a>
                     <a class="icon" href="javascript:showLoggers()">&#xf3ca;</a>
                 </td>
             </tr>
@@ -244,7 +244,7 @@ select#loglevel
     <div id="connect" class="dialog" style="width:50%">
 
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('connect')">&#xf10c;</a></td></tr>
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('connect')">&#xf10c;</a></td></tr>
         </table>
 
         <div class="dialogTop">
@@ -282,7 +282,7 @@ select#loglevel
     <div id="contexts" class="dialog" style="width:50%">
 
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_api.getDialogs().popModal('contexts')">&#xf10c;</a></td></tr>
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('contexts')">&#xf10c;</a></td></tr>
         </table>
 
         <div class="dialogTop">
