@@ -130,6 +130,7 @@ define([
 
 			if (conn != null)
 			{
+                console.log(conn.getUrl() + ": " + e);
 				conn.clear();
                 conn.error();
 			}

@@ -29,10 +29,10 @@ called so that the client can use the new connection to perform initialization.
         * **Returns**
             * An EventCollection object
         * **Examples**
-```javascript
-var brokerAlerts = conn.getEventCollection({window:"secondary/cq/brokerAlertsAggr"})
-var venueAlerts = conn.getEventCollection({window:"secondary/cq/venueAlertsAggr",filter:"in($city,'raleigh','atlanta')})
-```
+            ```javascript
+            var brokerAlerts = conn.getEventCollection({window:"secondary/cq/brokerAlertsAggr"})
+            var venueAlerts = conn.getEventCollection({window:"secondary/cq/venueAlertsAggr",filter:"in($city,'raleigh','atlanta')})
+            ```
 
     * *getEventStream(options)*
         * **Description**
@@ -44,9 +44,10 @@ var venueAlerts = conn.getEventCollection({window:"secondary/cq/venueAlertsAggr"
         * **Returns**
             * An EventStream object
         * **Examples**
-```javascript
-var rates = conn.getEventStream({window:"primary/cq/counter",maxevents:20});
-```
+            ```javascript
+            var rates = conn.getEventStream({window:"primary/cq/counter",maxevents:20});
+            ```
+
     * *getPublisher(options)*
         * **Description**
             * Create and return a Publisher object
@@ -55,9 +56,10 @@ var rates = conn.getEventStream({window:"primary/cq/counter",maxevents:20});
         * **Returns**
             * A Publisher object 
         * **Examples**
-```javascript
-var publisher = conn.getPublisher({window:"primary/cq/rawTrades"});
-```
+            ```javascript
+            var publisher = conn.getPublisher({window:"primary/cq/rawTrades"});
+            ```
+
     * *getStats(options)*
         * **Description**
             * Return the Stats object for the connection.
@@ -70,9 +72,10 @@ var publisher = conn.getPublisher({window:"primary/cq/rawTrades"});
         * **Returns**
             * A Stats object 
         * **Examples**
-```javascript
-var stats = conn.getStats({mincpu:5,memory:true,counts:true});
-```
+            ```javascript
+            var stats = conn.getStats({mincpu:5,memory:true,counts:true});
+            ```
+
     * *getLog()*
         * **Description**
             * Return the Log object for the connection.
@@ -129,9 +132,9 @@ the *clear* parameter is set to *true*.
     * *setFilter(filter)*
         * **Description**
             * Set the functional filter to use on the events in the ESP window. For example, to see only stock trades with a price greater than 200:
-```javascript
-coll.setFilter("gt($price,200)");
-```
+            ```javascript
+            coll.setFilter("gt($price,200)");
+            ```
     * *load()*
         * **Description**
             * Load the current page of events from the server. The events are delivered to the delegates via *dataChanged()*.
