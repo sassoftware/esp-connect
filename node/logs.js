@@ -47,11 +47,18 @@ ready(connection)
 function
 showUsage()
 {
-    console.log("");
-    console.log("usage: node logs -server [-context] [-level] [-format]");
-    console.log("");
-    console.log("options:");
-    console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
-    console.log("\t-format\t\txml | json | text (defaults to xml)");
-    console.log("");
+    esp.usage({
+        name:"logs",
+        summary:"view realtime ESP server logs",
+        options:[
+            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true}
+        ],
+        description:"This command sets up a connection to an ESP server and reads the server logs. The logs are output to the screen.",
+        see_also:[
+        {
+            name:"ESP User Guide",
+            link:"https://go.documentation.sas.com/?cdcId=espcdc&cdcVersion=6.2&docsetId=espov&docsetTarget=home.htm&locale=en"
+        }
+        ]
+    });
 }

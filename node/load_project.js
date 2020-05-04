@@ -58,16 +58,24 @@ ready(connection)
 function
 showUsage()
 {
-    console.log("");
-    console.log("usage: node load_project -server -name -model [-connectors] [-overwrite] [-validate] [-start]");
-    console.log("");
-    console.log("options:");
-    console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
-    console.log("\t-name\t\tname of the ESP project");
-    console.log("\t-model\t\tfile containing the ESP model");
-    console.log("\t-connectors\ttrue | false (start connectors, defaults to true)");
-    console.log("\t-overwrite\ttrue | false (overwrite project if it exists, defaults to false)");
-    console.log("\t-validate\ttrue | false (validate the project, defaults to true)");
-    console.log("\t-start\t\ttrue | false (start the project, defaults to true)");
-    console.log("");
+    esp.usage({
+        name:"load_project",
+        summary:"Load an ESP project from a file",
+        options:[
+            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
+            {name:"name",arg:"project name",description:"name of the ESP project",required:true},
+            {name:"model",arg:"filename",description:"file containing the ESP model",required:true},
+            {name:"connectors",arg:"true | false",description:"start connectors, defaults to true",required:false},
+            {name:"overwrite",arg:"true | false",description:"overwrite project if it exists, defaults to false",required:false},
+            {name:"validate",arg:"true | false",description:"validate project, defaults to true",required:false},
+            {name:"start",arg:"true | false",description:"start the project, defaults to true",required:false}
+        ],
+        description:"This command sends an ESP model from a file to the ESP server.",
+        see_also:[
+        {
+            name:"ESP User Guide",
+            link:"https://go.documentation.sas.com/?cdcId=espcdc&cdcVersion=6.2&docsetId=espov&docsetTarget=home.htm&locale=en"
+        }
+        ]
+    });
 }

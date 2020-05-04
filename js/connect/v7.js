@@ -719,6 +719,10 @@ define([
         o["schema"] = opts.getOpt("schema",false);
         o["index"] = opts.getOpt("index",true);
         o["xml"] = opts.getOpt("xml",false);
+        if (opts.hasOpt("name"))
+        {
+            o["name"] = opts.getOpt("name");
+        }
         this._modelDelegates[id] = new ModelDelegate(this,delegate,request);
     }
 

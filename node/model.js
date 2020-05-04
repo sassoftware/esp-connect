@@ -44,13 +44,30 @@ ready(connection)
 function
 showUsage()
 {
-    console.log("");
-    console.log("usage: node model -server [-name] [-format]");
-    console.log("");
-    console.log("options:");
-    console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
-    console.log("\t-name\t\tname of the project for which to retrieve the model (defaults to all)");
-    console.log("\t-format\t\txml | json | ubjson (defaults to xml)");
-    console.log("\t-schema\t\ttrue | false (return schema, defaults to false)");
-    console.log("");
+    esp.usage({
+        name:"model",
+        summary:"display one or more ESP models from an ESP server",
+        options:[
+            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
+            {name:"name",arg:"project name",description:"name of the project for which to retrieve the model (defaults to all)"},
+            {name:"schema",arg:"true | false",description:"return schema information in data, defaults to true."}
+        ],
+        description:"This command subscribes to an ESP window for streaming events.",
+        examples:[
+        {
+            title:"Retrieve all models",
+            command:"-server http://espsrv01:7777"
+        },
+        {
+            title:"Retrieve specific model",
+            command:"-server http://espsrv01:7777 -name mymodel"
+        }
+        ],
+        see_also:[
+        {
+            name:"ESP User Guide",
+            link:"https://go.documentation.sas.com/?cdcId=espcdc&cdcVersion=6.2&docsetId=espov&docsetTarget=home.htm&locale=en"
+        }
+        ]
+    });
 }

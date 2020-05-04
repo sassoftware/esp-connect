@@ -58,13 +58,21 @@ ready(connection)
 function
 showUsage()
 {
-    console.log("");
-    console.log("usage: node load_router -server -name -model [-overwrite]");
-    console.log("");
-    console.log("options:");
-    console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
-    console.log("\t-name\t\tname of the ESP router");
-    console.log("\t-model\t\tfile containing the ESP router configuration");
-    console.log("\t-overwrite\ttrue | false (overwrite router if it exists, defaults to false)");
-    console.log("");
+    esp.usage({
+        name:"load_router",
+        summary:"Load an ESP router from a file",
+        options:[
+            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
+            {name:"name",arg:"router name",description:"name of the ESP router",required:true},
+            {name:"model",arg:"filename",description:"file containing the ESP router configuration",required:true},
+            {name:"overwrite",arg:"true | false",description:"overwrite router if it exists, defaults to false",required:false}
+        ],
+        description:"This command sends an ESP router from a file to the ESP server.",
+        see_also:[
+        {
+            name:"ESP User Guide",
+            link:"https://go.documentation.sas.com/?cdcId=espcdc&cdcVersion=6.2&docsetId=espov&docsetTarget=home.htm&locale=en"
+        }
+        ]
+    });
 }

@@ -54,15 +54,29 @@ ready(connection)
 function
 showUsage()
 {
-    console.log("");
-    console.log("usage: node collection -server -window [-pagesize] [-format] [-schema] [-sort]");
-    console.log("");
-    console.log("options:");
-    console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
-    console.log("\t-window\t\tESP window in the form of project/contquery/window");
-    console.log("\t-format\t\txml | json | ubjson (defaults to ubjson)");
-    console.log("\t-pagesize\tpage size of the collection (defaults to 50)");
-    console.log("\t-schema\t\ttrue | false (return schema on start, defaults to true)");
-    console.log("\t-sort\t\tsort field");
-    console.log("");
+    esp.usage({
+        name:"collection",
+        summary:"subscribe to an ESP event collection",
+        options:[
+            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
+            {name:"window",arg:"ESP window",description:"ESP window in the form of project/contquery/window",required:true},
+            {name:"format",arg:"xml | json | ubjson",description:"format of events sent to the client (defaults to ubjson)"},
+            {name:"pagesize",arg:"numevents",description:"page size of the collection (defaults to 50)."},
+            {name:"schema",arg:"true | false",description:"return schema on start, defaults to true."},
+            {name:"sort",arg:"field",description:"sort field"}
+        ],
+        description:"This command subscribes to an ESP window for events.",
+        examples:[
+        {
+            title:"Subscribe to events",
+            command:"-server http://espsrv01:7777 -window secondary/cq/brokerAlertsAggr"
+        }
+        ],
+        see_also:[
+        {
+            name:"ESP User Guide",
+            link:"https://go.documentation.sas.com/?cdcId=espcdc&cdcVersion=6.2&docsetId=espov&docsetTarget=home.htm&locale=en"
+        }
+        ]
+    });
 }

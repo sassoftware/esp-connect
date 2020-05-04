@@ -9,6 +9,7 @@ if (typeof(define) !== "function")
 }
 
 var _isNode = false;
+var _fs = null;
 
 try
 {
@@ -26,8 +27,9 @@ define([
 	"./tools",
 	"./codec",
 	"./options",
-	"./router"
-], function(ServerConnection,ajax,xpath,resources,tools,codec,Options,Router)
+	"./router",
+	"./formatter"
+], function(ServerConnection,ajax,xpath,resources,tools,codec,Options,Router,Formatter)
 {
 	var	__api =
 	{
@@ -181,6 +183,181 @@ define([
         stringify:function(o)
         {
             return(tools.stringify(o));
+        },
+
+        usage:function(doc)
+        {
+            var f = new Formatter();
+
+            var docopts = new Options(doc);
+            var command = docopts.getOpt("name","");
+            var summary = docopts.getOpt("summary","");
+
+            console.log("");
+            console.log("\x1b[1m\x1b[34m" + command + "(1)" + "\t\t\tESP Connect Node.js Commands\t\t\t" + command + "(1)\x1b[30m\x1b[0m");
+
+            console.log("");
+            console.log("\x1b[1m%s\x1b[0m","NAME");
+            console.log(f.tab() + "node " + command + " -- " + summary);
+
+            console.log("");
+            console.log("\x1b[1m%s\x1b[0m","SYNOPSIS");
+
+            var options = docopts.getOpt("options");
+            var maxoptlen = 0;
+
+            var s = "";
+
+            if (options != null)
+            {
+                options.forEach((o) => {
+
+                    s += " ";
+
+                    var opts = new Options(o);
+                    var name = opts.getOpt("name","");
+                    var arg = opts.getOpt("arg","");
+                    var tmp = name;
+                    if (arg.length > 0)
+                    {
+                        tmp += " " + arg;
+                    }
+
+                    if (tmp.length > maxoptlen)
+                    {
+                        maxoptlen = tmp.length;
+                    }
+
+                    if (opts.getOpt("required",false))
+                    {
+                        s += "-" + name;
+                    }
+                    else
+                    {
+                        s += "[-" + name + "]";
+                    }
+                });
+            }
+
+            console.log("%s\x1b[1m%s\x1b[0m",f.tab(),command + s);
+            console.log("");
+
+            console.log("\x1b[1m%s\x1b[0m","DESCRIPTION");
+
+            if (docopts.hasOpt("description"))
+            {
+                var desc = f.format(docopts.getOpt("description",""),80,f.tab(),f.tab());
+                console.log(desc);
+            }
+
+            if (options != null)
+            {
+                console.log("");
+                console.log("\x1b[1m%s\x1b[0m","OPTIONS");
+
+                maxoptlen = 10;
+
+                var index = 0;
+
+                options.forEach((o) => {
+                    var opts = new Options(o);
+                    var name = opts.getOpt("name","");
+                    var arg = opts.getOpt("arg","");
+                    s = name;
+                    if (arg.length > 0)
+                    {
+                        s += " " + arg;
+                    }
+
+                    var prefix = f.tab();
+
+                    for (var i = 0; i < maxoptlen; i++)
+                    {
+                        prefix += " ";
+                    }
+
+                    prefix += "   ";
+
+                    if (index > 0)
+                    {
+                        console.log("");
+                    }
+
+                    if (s.length > maxoptlen)
+                    {
+                        var desc = f.format(opts.getOpt("description"),50 + maxoptlen,f.tab(2),f.tab(2));
+                        console.log("%s-%s \x1b[4m%s\x1b[0m",f.tab(),name,arg);
+                        console.log(desc);
+                    }
+                    else
+                    {
+                        var spaces = f.spaces(maxoptlen - s.length + 2);
+                        var desc = f.format(opts.getOpt("description"),50,f.tab() + f.spaces(maxoptlen + 3),spaces);
+
+                        if (arg.length > 0)
+                        {
+                            console.log("%s-%s \x1b[4m%s\x1b[0m%s",f.tab(),name,arg,desc);
+                        }
+                        else
+                        {
+                            console.log("%s-%s%s%s",f.tab(),name,spaces,desc);
+                        }
+                    }
+
+                    index++;
+                });
+            }
+
+            if (docopts.hasOpt("examples"))
+            {
+                console.log("");
+                console.log("\x1b[1m%s\x1b[0m","EXAMPLES");
+                var index = 0;
+                docopts.getOpt("examples").forEach((example) => {
+                    var opts = new Options(example);
+                    var title = opts.getOpt("title","Example " + index);
+                    console.log("%s\x1b[1m%s\x1b[0m",f.tab(),title);
+                    console.log(f.tab(2) + "$ node " + command + " " + opts.getOpt("command",""));
+                    var output = f.format(opts.getOpt("output",""),null,f.tab(2),f.tab(2));
+                    console.log(output);
+                });
+            }
+
+            if (docopts.hasOpt("see_also"))
+            {
+                console.log("\x1b[1m%s\x1b[0m","SEE ALSO");
+
+                var maxlen = 0;
+
+                docopts.getOpt("see_also").forEach((see) => {
+                    var opts = new Options(see);
+                    var name = opts.getOpt("name","");
+                    if (name.length > maxlen)
+                    {
+                        maxlen = name.length;
+                    }
+                });
+
+                docopts.getOpt("see_also").forEach((see) => {
+                    var opts = new Options(see);
+                    var name = opts.getOpt("name","");
+                    var link = opts.getOpt("link","");
+                    var spaces = "";
+
+                    for (var i = 0; i < maxlen - name.length; i++)
+                    {
+                        spaces += " ";
+                    }
+
+                    spaces += "   ";
+
+                    console.log("%s\x1b[1m%s\x1b[0m%s%s",f.tab(),name,spaces,link);
+                });
+            }
+
+            console.log("");
+            console.log("\x1b[1m\x1b[34m%s\x1b[0m","SAS ESP Connect\t\t\t\t"+ new Date().toDateString() + "\t\t\t\tSAS ESP Connect\x1b[30m\x1b[0m");
+            console.log("");
         }
 	};
 

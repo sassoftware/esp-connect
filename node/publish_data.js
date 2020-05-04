@@ -51,14 +51,16 @@ ready(connection)
 function
 showUsage()
 {
-    console.log("");
-    console.log("usage: node publish_data -server -window -events [-dataformat] [-blocksize]");
-    console.log("");
-    console.log("options:");
-    console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
-    console.log("\t-window\t\tESP source window in the form of project/contquery/window");
-    console.log("\t-events\t\tfile containing the ESP events");
-    console.log("\t-blocksize\tevent block size (defaults to 1)");
-    console.log("\t-dateformat\tevent date format");
-    console.log("");
+    esp.usage({
+        name:"publish_data",
+        summary:"publish ESP events",
+        options:[
+            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
+            {name:"window",arg:"ESP window",description:"ESP window in the form of project/contquery/window",required:true},
+            {name:"events",arg:"filename",description:"file containing the ESP events",required:true},
+            {name:"blocksize",arg:"size",description:"event block size (defaults to 1)"},
+            {name:"dateformat",arg:"format",description:"event date format"}
+        ],
+        description:"This command publishes events from a file into an ESP source window."
+    });
 }
