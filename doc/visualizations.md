@@ -469,8 +469,6 @@ To run these utilities you run the *node* command to execute *connect.js* and su
 ```
 $ node connect -server http://espsr01:7777 -input collection.json
 ```
-**NOTE:** If you set the **ESP_SERVER** environment variable you can bypass specifying the *-server* parameter each time.
-
 If the utility requires arguments you will get a usage statement. For example, if you run *collection.json* without arguments you will see:
 
 ```

@@ -16,11 +16,6 @@ var server = opts.getOptAndClear("server");
 
 if (server == null)
 {
-    server = process.env.ESP_SERVER;
-}
-
-if (server == null)
-{
     showUsage();
     process.exit(0);
 }

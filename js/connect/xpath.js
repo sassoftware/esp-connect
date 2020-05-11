@@ -8,50 +8,33 @@ if (typeof(define) !== "function")
     var define = require("amdefine")(module);
 }
 
+var _isNode = false;
+
+try
+{
+    _isNode = (require("detect-node") != null);
+}
+catch (e)
+{
+}
+
 define([],
 function()
 {
-    var _node = null;
-
-    try
-    {
-        var xmldom = require("xmldom").DOMParser;
-        var xpath = require("xpath");
-
-        _node = {dom:xmldom,xpath:xpath};
-    }
-    catch (exception)
-    {
-    }
-
-    if (_node == null)
-    {
-        try
-        {
-            if (window == null)
-            {
-            }
-        }
-        catch (exception)
-        {
-            throw("Cannot load XML parsing code");
-        }
-    }
-
-	var __xpath =
+	var _api =
 	{
+        _xpath:null,
+
 		init:function()
 		{
-            if (_node != null)
+            if (_isNode)
             {
-                this._node = _node;
-                this._dom = new _node["dom"]();
+                this._dom = new require("xmldom").DOMParser();
             }
             else
             {
-                this._xs = new XMLSerializer();
                 this._dom = new DOMParser();
-                this._node = null;
+                this._xs = new XMLSerializer();
             }
 		},
 
@@ -59,9 +42,9 @@ function()
 		{
 			var	nodes = new Array();
 
-            if (_node != null)
+            if (_isNode)
             {
-                var results = _node["xpath"].select(expression,context);
+                var results = this.getXPath().select(expression,context);
 
                 if (results != null)
                 {
@@ -164,7 +147,7 @@ function()
 
 		xmlString:function(xml)
 		{
-            if (_node != null)
+            if (_isNode)
             {
                 return(xml);
             }
@@ -302,18 +285,43 @@ function()
 
 		createXml:function(s)
 		{
-            if (this._node != null)
+            var xml = null;
+
+            if (_isNode)
             {
-			    return(this._dom.parseFromString(s));
+                var DOMParser = require("xmldom").DOMParser;
+
+                xml = new DOMParser().parseFromString(s);
             }
             else
             {
-			    return(this._dom.parseFromString(s,"application/xml"));
+                xml = new DOMParser().parseFromString(s,"application/xml");
             }
-		}
+
+            return(xml);
+		},
+
+        addOpts:function(element,to)
+        {
+            this.getNodes("*",element).forEach((node) => {
+                var name = node.tagName;
+                var value = this.nodeText(node);
+                to.setOpt(name,value);
+            });
+        },
+
+        getXPath:function()
+        {
+            if (this._xpath == null)
+            {
+                this._xpath = require("xpath");
+            }
+
+            return(this._xpath);
+        }
 	}
 
-	__xpath.init();
+	_api.init();
 
-	return(__xpath);
+	return(_api);
 });

@@ -8,6 +8,16 @@ if (typeof(define) !== "function")
     var define = require("amdefine")(module);
 }
 
+var _isNode = false;
+
+try
+{
+    _isNode = (require("detect-node") != null);
+}
+catch (e)
+{
+}
+
 define([
     "./options",
 ], function(Options)
@@ -653,6 +663,18 @@ define([
             }
 
             return(enabled);
+        },
+
+        exception:function(message)
+        {
+            if (_isNode)
+            {
+                throw new Error(message);
+            }
+            else
+            {
+                throw(message);
+            }
         }
     };
 

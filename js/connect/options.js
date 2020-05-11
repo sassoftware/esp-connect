@@ -22,6 +22,19 @@ define([
             }
         });
 
+        Object.defineProperty(this,"keys", {
+            get() {
+                var keys = [];
+
+                for (var x in this._options)
+                {
+                    keys.push(x);
+                }
+
+                return(keys);
+            }
+        });
+
         this.setOpts(options);
     }
 
@@ -104,7 +117,7 @@ define([
     function(name,dv)
     {
         var num = 0;
-        var value = this.get(name,dv);
+        var value = this.getOpt(name,dv);
 
         if (value != null)
         {

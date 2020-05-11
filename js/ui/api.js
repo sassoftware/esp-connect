@@ -95,6 +95,11 @@ define([
 			return(connect.getXPath());
 		},
 
+		createDatasource:function(connection,config)
+        {
+			return(connect.createDatasource(connection,config));
+        },
+
 		getResources:function()
 		{
 			return(connect.getResources());

@@ -28,8 +28,9 @@ define([
 	"./codec",
 	"./options",
 	"./router",
+	"./datasources",
 	"./formatter"
-], function(ServerConnection,ajax,xpath,resources,tools,codec,Options,Router,Formatter)
+], function(ServerConnection,ajax,xpath,resources,tools,codec,Options,Router,datasources,Formatter)
 {
 	var	__api =
 	{
@@ -104,6 +105,11 @@ define([
 		{
 			return(xpath);
 		},
+
+		createDatasource:function(connection,options)
+        {
+			return(datasources.create(connection,options));
+        },
 
 		getResources:function()
 		{

@@ -25,14 +25,15 @@ define([
     Maps.prototype.createMap =
     function(visuals,container,datasource,options)
     {
-        var type = visuals.getOpt("maps","leaflet");
+        var opts = new Options(options);
+        var engine = opts.getOpt("engine","leaflet");
         var chart = null;
 
-        if (type == "plotly")
+        if (engine == "plotly")
         {
             chart = new PlotlyMap(visuals,container,datasource,options);
         }
-        else if (type == "choropleth")
+        else if (engine == "choropleth")
         {
             chart = new ChoroplethMap(visuals,container,datasource,options);
         }
@@ -45,6 +46,7 @@ define([
     }
 
     /* Map */
+
     function
     Map(visuals,container,datasource,options)
     {
@@ -1007,6 +1009,40 @@ define([
     {
         Map.call(this,visuals,container,datasource,options);
         this._type = "choropleth";
+        //this._geo = new Options({scope:"usa",projection:{type:"albers usa"}});
+        this._geo = new Options({scope:"usa"});
+        Object.defineProperty(this,"geo", {
+            get() {
+                return(this._geo);
+            }
+        });
+
+        Object.defineProperty(this,"center", {
+            get() {
+                var center = this._geo.getOpt("center");
+                return(center);
+            },
+            set(value) {
+                this._geo.setOpt("center",value);
+            }
+        });
+
+        Object.defineProperty(this,"zoom", {
+            get() {
+                var level = 1;
+                var projection = this._geo.getOpt("projection");
+                if (projection != null && projection.hasOwnProperty("scale"))
+                {
+                    level = projection.scale;
+                }
+                return(level);
+            },
+            set(value) {
+                var projection = this._geo.hasOpt("projection") ? this._geo.getOpt("projection") : {};
+                projection.scale = value;
+                this._geo.setOpt("projection",projection);
+            }
+        });
     }
 
     ChoroplethMap.prototype = Object.create(PlotlyMap.prototype);
@@ -1015,6 +1051,7 @@ define([
     ChoroplethMap.prototype.draw =
     function(data,clear)
     {
+console.log("DRAW: " + this.zoom);
         var mapdata = this.getData();
 
         if (mapdata == null)
@@ -1045,13 +1082,21 @@ define([
 
         var z = this._datasource.getValues(values[0]);
 
-        var data = [{
-            type: this._type,
-            mode: "markers",
+            /*
+            featureidkey:"properties.name",
             locations:locations,
             locationmode: "geojson-id",
+            locations:"fips",
+            geojson:"https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json",
             geojson: "https://raw.githubusercontent.com/shawnbot/topogram/master/data/us-states.geojson",
-            featureidkey:"properties.name",
+            mode: "markers",
+            */
+
+        var data = [{
+            type: this._type,
+            locations:locations,
+            geojson: this.getOpt("geojson"),
+            featureidkey:this.getOpt("key"),
             z:z,
             hoverinfo: "text",
             text: mapdata.tooltips,
@@ -1065,21 +1110,25 @@ define([
             }
         }];
 
-        this._layout.geo = {
-            scope: "usa"
-        };
-        /*
-        */
+        if (this._layout.hasOwnProperty("geo"))
+        {
+            if (this._layout.geo.hasOwnProperty("projection"))
+            {
+                console.log("ZOOM: " + this._layout.geo.projection.scale);
+            }
+        }
+
+        this._layout.geo = this._geo.getOpts();
 
         /*
         this._layout.geo = {
-            scope: "usa",
-            projection: {
-                type: "albers usa"
-            },
-            showland: true,
+            scope: "world",
+            showland:true,
+            showocean:true,
+            showrivers:true,
             landcolor: "rgb(217, 217, 217)",
             landcolor: "rgb(233, 233, 233)",
+            oceancolor: "#3399FF",
             subunitwidth: 1,
             countrywidth: 1,
             subunitcolor: "rgb(255,255,255)",

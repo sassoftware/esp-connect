@@ -14,11 +14,6 @@ if (opts.getOpt("help",false))
 
 var server = opts.getOptAndClear("server");
 
-if (server == null)
-{
-    server = process.env.ESP_SERVER;
-}
-
 if (server == null || opts.hasOpts(["window","events"]) == false)
 {
     showUsage();

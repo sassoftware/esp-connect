@@ -13,7 +13,7 @@ if (config == null)
     process.exit(0);
 }
 
-var fs = require('fs');
+var fs = require("fs");
 var filedata = fs.readFileSync(config);
 var router = esp.createRouter();
 

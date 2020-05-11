@@ -3030,7 +3030,7 @@ define([
             o["id"] = this._id;
             o["action"] = "publish";
             o["data"] = this._data;
-            if (this.getOpt("binary",false))
+            if (this.getOpt("binary",true))
             {
                 this._api.sendBinary(request);
             }
@@ -3127,7 +3127,7 @@ define([
 	Publisher.prototype.isBinary =
 	function()
     {
-        return(this.getOpt("binary",false));
+        return(this.getOpt("binary",true));
     }
 
 	/* Delegates */
