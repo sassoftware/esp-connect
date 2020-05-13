@@ -30,7 +30,7 @@ function
 ready(connection)
 {
     var delegate = {modelLoaded:function(model,conn) {
-        console.log("" + model.xml);
+        console.log("" + esp.getXPath().xmlString(model.xml));
         process.exit(0);
     }};
     connection.loadModel(delegate,opts.getOpts());

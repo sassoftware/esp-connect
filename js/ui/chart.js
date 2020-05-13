@@ -127,7 +127,10 @@ define([
             this._chart.info();
         }
 
-        this._chart._share.style.visibility = "visible";
+        if (this._chart._share != null)
+        {
+            this._chart._share.style.visibility = "visible";
+        }
     }
 
     function
@@ -153,7 +156,10 @@ define([
             this._chart._playPauseContainer.style.visibility = "hidden";
         }
 
-        this._chart._share.style.visibility = "hidden";
+        if (this._chart._share != null)
+        {
+            this._chart._share.style.visibility = "hidden";
+        }
     }
 
     function
@@ -388,8 +394,11 @@ define([
         this._content.id = this._id;
         this._div.appendChild(this._header);
         this._div.appendChild(this._content);
-        this._content.addEventListener("mouseover",over);
-        this._content.addEventListener("mouseout",out);
+        if (this.getType() != "wrapper")
+        {
+            this._content.addEventListener("mouseover",over);
+            this._content.addEventListener("mouseout",out);
+        }
 
         if (this.getOpt("append_chart",true))
         {

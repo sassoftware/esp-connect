@@ -30,7 +30,7 @@ function
 ready(connection)
 {
     var delegate = {response:function(connection,data,xml) {
-        console.log("" + xml);
+        console.log("" + esp.getXPath().xmlString(xml));
         process.exit(0);
     }};
     connection.getProjectXml(opts.getOpt("name"),delegate);
