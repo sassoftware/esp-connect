@@ -232,7 +232,7 @@ define([
         this._header = document.createElement("div");
         this._header._chart = this;
         this._header.className = "visualHeader"; 
-        this._header.style.overflow= "hidden";
+        this._header.style.overflow = "hidden";
         var table = document.createElement("table");
         table.style.width = "100%";
         var tr = document.createElement("tr");
@@ -382,11 +382,14 @@ define([
         }
 
         this._content = document.createElement("div");
+        this._content._chart = this;
         this._content.className = "visualContent"; 
         this._content.style.overflow = "auto";
         this._content.id = this._id;
         this._div.appendChild(this._header);
         this._div.appendChild(this._content);
+        this._content.addEventListener("mouseover",over);
+        this._content.addEventListener("mouseout",out);
 
         if (this.getOpt("append_chart",true))
         {
@@ -447,7 +450,7 @@ define([
     Chart.prototype.getUrl =
     function()
     {
-        var url = "../../html/visual.html";
+        var url = "/esp-connect/html/visual.html";
         if (this._datasource != null)
         {
             url += "?server=" + this._datasource._api.httpurl;

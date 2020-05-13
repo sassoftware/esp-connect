@@ -25,27 +25,19 @@ ready(connection)
 {
     var fs = require("fs");
     var filedata = fs.readFileSync(config);
-    var datasource = esp.createDatasource(connection,opts.getOpts());
-
-    if (datasource == null)
-    {
-        console.log("failed to create datasource");
-        process.exit(1);
-    }
-
-    datasource.configure(new String(filedata));
-
-    datasource.process();
-
-    setTimeout(function(){process.exit(0)},3000);
+    var configuration = new String(filedata);
+    var datasources = esp.createDatasources(connection,opts.getOpts());
+    datasources.configure(configuration);
+    datasources.process();
+    setTimeout(function(){process.exit(0)},10000);
 }
 
 function
 showUsage()
 {
     esp.usage({
-        name:"adapter",
-        summary:"Read data from a URL and publish it into ESP",
+        name:"datasource",
+        summary:"Read a configuration file and create datasources to publish data into an ESP server",
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777.",required:true},
             {name:"config",arg:"filename",description:"file containing the adapter configuration.",required:true}

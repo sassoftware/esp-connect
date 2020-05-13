@@ -355,6 +355,7 @@ div.visualHeader td.icons a
 {
     padding-left:5px;
     padding-right:5px;
+    font-size:12pt;
 }
 
 div.visualContent
@@ -736,22 +737,6 @@ div.layout
     align-items:flex-start;
     justify-content:space-around;
     margin:auto;
-}
-
-.chartsHeader
-{
-    width:100%;
-    padding:10px;
-    border:1px solid #d8d8d8;
-    border-radius:8px;
-    background:#f8f8f8;
-}
-
-div.chartsContainer
-{
-    display:flex;
-    flex-wrap:wrap;
-    justify-content:space-around;
 }
 
 button:focus

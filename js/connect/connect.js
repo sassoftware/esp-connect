@@ -106,9 +106,14 @@ define([
 			return(xpath);
 		},
 
+		createDatasources:function(connection,options)
+        {
+			return(datasources.createDatasources(connection,options));
+        },
+
 		createDatasource:function(connection,options)
         {
-			return(datasources.create(connection,options));
+			return(datasources.createDatasource(connection,options));
         },
 
 		getResources:function()

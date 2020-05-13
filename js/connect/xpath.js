@@ -18,25 +18,21 @@ catch (e)
 {
 }
 
+var _dom = null;
+
+if (_isNode)
+{
+    const   jsdom = require("jsdom");
+    const{JSDOM} = jsdom;
+    _dom = new JSDOM("");
+}
+
 define([],
 function()
 {
 	var _api =
 	{
         _xpath:null,
-
-		init:function()
-		{
-            if (_isNode)
-            {
-                this._dom = new require("xmldom").DOMParser();
-            }
-            else
-            {
-                this._dom = new DOMParser();
-                this._xs = new XMLSerializer();
-            }
-		},
 
 		getNodes:function(expression,context)
 		{
@@ -149,11 +145,12 @@ function()
 		{
             if (_isNode)
             {
-                return(xml);
+                const serialize = require("w3c-xmlserializer");
+			    return(serialize(xml));
             }
             else
             {
-			    return(this._xs.serializeToString(xml));
+			    return(new XMLSerializer().serializeToString(xml));
             }
 		},
 
@@ -289,9 +286,7 @@ function()
 
             if (_isNode)
             {
-                var DOMParser = require("xmldom").DOMParser;
-
-                xml = new DOMParser().parseFromString(s);
+                xml = new _dom.window.DOMParser().parseFromString(s,"application/xml");
             }
             else
             {
@@ -320,8 +315,6 @@ function()
             return(this._xpath);
         }
 	}
-
-	_api.init();
 
 	return(_api);
 });

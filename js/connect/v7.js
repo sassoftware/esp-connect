@@ -1290,6 +1290,27 @@ define([
         return(keys);
     }
 
+	Datasource.prototype.getSelectedItem =
+    function()
+    {
+        var a = this.getSelectedItems();
+        return(a.length > 0 ? a[0] : null);
+    }
+
+	Datasource.prototype.getSelectedIndex =
+    function()
+    {
+        var a = this.getSelectedIndices();
+        return(a.length > 0 ? a[0] : null);
+    }
+
+	Datasource.prototype.getSelectedKey =
+    function()
+    {
+        var a = this.getSelectedKeys();
+        return(a.length > 0 ? a[0] : null);
+    }
+
 	Datasource.prototype.getKeyValues =
     function()
     {

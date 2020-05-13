@@ -95,7 +95,7 @@ define([
 
         var mapdata = {};
         mapdata.keys = [];
-        mapdata.tooltips = [];
+        mapdata.tooltips = this.getOpt("show_tooltips",true) ? [] : null;
         mapdata.colors = [];
         mapdata.lat = [];
         mapdata.lon = [];
@@ -106,7 +106,7 @@ define([
         mapdata.html = (html != null) ? [] : null;
 
         var keys = this.getValues("keys");
-        var tooltips = this.getValues("tooltip");
+        var tooltips = (mapdata.tooltips != null) ? this.getValues("tooltip") : null;
         var tooltip;
         var value;
         var key;
@@ -221,19 +221,22 @@ define([
                 }
             }
 
-            for (var i = 0; i < tooltips.length; i++)
+            if (mapdata.tooltips != null)
             {
-                tooltip += "<br>";
-
-                s = tooltips[i];
-
-                if (item.hasOwnProperty(s))
+                for (var i = 0; i < tooltips.length; i++)
                 {
-                    tooltip += s + "=" + item[s];
-                }
-            }
+                    tooltip += "<br>";
 
-            mapdata.tooltips.push(tooltip);
+                    s = tooltips[i];
+
+                    if (item.hasOwnProperty(s))
+                    {
+                        tooltip += s + "=" + item[s];
+                    }
+                }
+
+                mapdata.tooltips.push(tooltip);
+            }
 
             mapdata.lat.push((item.hasOwnProperty(this._lat)) ? item[this._lat] : null);
             mapdata.lon.push((item.hasOwnProperty(this._lon)) ? item[this._lon] : null);
@@ -1009,7 +1012,6 @@ define([
     {
         Map.call(this,visuals,container,datasource,options);
         this._type = "choropleth";
-        //this._geo = new Options({scope:"usa",projection:{type:"albers usa"}});
         this._geo = new Options({scope:"usa"});
         Object.defineProperty(this,"geo", {
             get() {
@@ -1051,7 +1053,6 @@ define([
     ChoroplethMap.prototype.draw =
     function(data,clear)
     {
-console.log("DRAW: " + this.zoom);
         var mapdata = this.getData();
 
         if (mapdata == null)
@@ -1068,7 +1069,7 @@ console.log("DRAW: " + this.zoom);
 
         if (values.length == 0)
         {
-            throw("you must specify the locations property")
+            throw("you must specify the locations property");
         }
 
         var locations = this._datasource.getValues(values[0]);
@@ -1097,19 +1098,28 @@ console.log("DRAW: " + this.zoom);
             locations:locations,
             geojson: this.getOpt("geojson"),
             featureidkey:this.getOpt("key"),
+            showscale:this.getOpt("show_scale",true),
             z:z,
             hoverinfo: "text",
             text: mapdata.tooltips,
             marker: {
                 size: mapdata.sizes,
-                color:mapdata.colors,
+                color: mapdata.colors,
                 line: {
-                    color: "black",
-                    width: 1
+                    color: this.getOpt("boundary_color","black"),
+                    width: this.getOpt("boundary_width",1)
                 },
+            },
+            selected: {
+                marker: {
+                    color:"red"
+                }
             }
         }];
 
+        this._layout.geo = this._geo.getOpts();
+
+        /*
         if (this._layout.hasOwnProperty("geo"))
         {
             if (this._layout.geo.hasOwnProperty("projection"))
@@ -1118,9 +1128,6 @@ console.log("DRAW: " + this.zoom);
             }
         }
 
-        this._layout.geo = this._geo.getOpts();
-
-        /*
         this._layout.geo = {
             scope: "world",
             showland:true,
@@ -1140,6 +1147,17 @@ console.log("DRAW: " + this.zoom);
 
         this.setHandlers();
         this.setHeader();
+    }
+
+    ChoroplethMap.prototype.setCenter =
+    function(lat,lon,zoom)
+    {
+        this.center = {lat:lat,lon:lon};
+        if (zoom != null)
+        {
+            this.zoom = zoom;
+        }
+        this.draw();
     }
 
     /* End Choropleth Map */

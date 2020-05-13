@@ -21,7 +21,7 @@
   "dependencies": {
     "amdefine": "latest",
     "ws": "latest",
-    "xmldom": "latest",
+    "jsdom": "latest",
     "xpath": "latest",
     "xmlhttprequest": "latest",
     "readline-sync": "latest",

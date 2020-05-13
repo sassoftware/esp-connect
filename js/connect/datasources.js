@@ -15,6 +15,82 @@ define([
     "./tools"
 ], function(Options,ajax,xpath,tools)
 {
+    /* Datasources */
+
+    function
+    Datasources(connection,options)
+    {
+		Options.call(this,options);
+        this._connection = connection;
+        this._datasources = {};
+    }
+
+	Datasources.prototype = Object.create(Options.prototype);
+	Datasources.prototype.constructor = Datasources;
+
+    Datasources.prototype.configure =
+    function(config)
+    {
+        var xml = null;
+
+        if (config.hasOwnProperty("nodeType") == false)
+        {
+            var x = xpath.createXml(config);
+            xml = x.documentElement;
+        }
+        else
+        {
+            xml = config;
+        }
+
+        xpath.getNodes("./datasource",xml).forEach((node) => {
+            var name = node.hasAttribute("name") ? node.getAttribute("name") : "";
+            var type = node.hasAttribute("type") ? node.getAttribute("type") : "";
+            var w = node.hasAttribute("window") ? node.getAttribute("window") : "";
+
+            if (name.length == 0 || type.length == 0 || w.length == 0)
+            {
+                tools.exception("you must specify name, type, and window for each datasource");
+            }
+
+            var options = {name:name,type:type,window:w};
+            var datasource = null;
+
+            if (type == "url")
+            {
+                datasource = new UrlDatasource(this._connection,options);
+            }
+
+            if (datasource == null)
+            {
+                tools.exception("failed to create datasource from \n\n" + xpath.xmlString(node) + "\n");
+            }
+
+            datasource.configure(node);
+
+            this._datasources[name] = datasource;
+        });
+    }
+
+    Datasources.prototype.process =
+    function()
+    {
+        Object.values(this._datasources).forEach((ds) => {
+            ds.process();
+        });
+    }
+
+    Datasources.prototype.start =
+    function()
+    {
+        /*
+        var datasources = this;
+        setTimeout(function()
+        */
+    }
+
+    /* End Datasources */
+
     /* Datasource */
 
     function
@@ -28,8 +104,6 @@ define([
         {
             tools.exception("no window specified");
         }
-
-        this._fields = {};
 
         this._connection = connection;
         this._ready = false;
@@ -51,7 +125,7 @@ define([
     {
         var xml = null;
 
-        if (config.hasOwnProperty("nodeType") == false)
+        if (("nodeType" in config) == false)
         {
             var x = xpath.createXml(config);
             xml = x.documentElement;
@@ -67,7 +141,7 @@ define([
             this.setOpt(name,value);
         });
 
-        var data = xpath.getNode("//data",xml);
+        var data = xpath.getNode("./data",xml);
 
         if (data == null)
         {
@@ -76,34 +150,16 @@ define([
 
         if (data != null)
         {
-            xpath.getNodes("//fields/field",data).forEach((n) => {
-                this._fields[n.getAttribute("name")] = new Function("data",xpath.nodeText(n));
-            });
-
-            var n = xpath.getNode("//get-data",data);
+            var n = xpath.getNode("./javascript",data);
 
             if (n != null)
             {
-                if (n.hasAttribute("url"))
-                {
-                    var url = new URL(n.getAttribute("url"));
-
-                    if (url.protocol == "file:")
-                    {
-                        var fs = require("fs");
-                        var filedata = fs.readFileSync(url.pathname);
-                        this._getData = new Function("data",filedata);
-                    }
-                }
-                else
-                {
-                    this._getData = new Function("data",xpath.nodeText(n));
-                }
+                this._javascript = new Function("data",xpath.nodeText(n));
             }
 
-            if (this._getData == null)
+            if (this._javascript == null)
             {
-                tools.exception("no get-data function specified");
+                tools.exception("no javascript function specified");
             }
 
             this._opcode = "insert";
@@ -140,20 +196,8 @@ define([
         var value;
         var o;
 
-        data.forEach((d) => {
-
-            o = {};
-
+        data.forEach((o) => {
             o.opcode = this._opcode;
-
-            for (var name in this._fields)
-            {
-                if ((value = this._fields[name](d)) != null)
-                {
-                    o[name] = value;
-                }
-            }
-
             this._publisher.add(o);
             this._publisher.publish();
         });
@@ -195,26 +239,20 @@ define([
         if (url != null)
         {
             var datasource = this;
-            var format = this.getOpt("format","json");
             var o = {response:function(request,text,xml) {
 
-                var data = null;
-
-                if (format == "json")
-                {
-                    var o = JSON.parse(text);
-                    data = datasource._getData(o);
-                }
-                else
-                {
-                    data = datasource._getData(text);
-                }
+                var data = datasource._javascript(text);
 
                 if (data != null)
                 {
                     datasource.send(data);
                 }
-            }};
+            },
+
+            error(request,message) {
+                console.log("error: " + message);
+            }
+            };
 
             if (this.getOpt("use-connection",false))
             {
@@ -233,7 +271,13 @@ define([
 
     var _api =
     {
-        create:function(connection,options)
+        createDatasources:function(connection,options)
+        {
+            var datasources = new Datasources(connection,options);
+            return(datasources);
+        },
+
+        createDatasource:function(connection,options)
         {
             var opts = new Options(options);
             var type = opts.getOpt("type","");

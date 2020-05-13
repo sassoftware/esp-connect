@@ -64,8 +64,8 @@ define([
         this._titleStyle = new Options({fontsize:"14pt",font_family:"AvenirNextforSAS"});
         this._font = this.getOpt("font",{family:"AvenirNextforSAS",size:14});
         this._titleFont = this.getOpt("title_font",{family:"AvenirNextforSAS",size:18});
-        //this._selectedFont = this.getOpt("selected_font","font-family:AvenirNextforSAS;font-size:12pt;font-weight:bold;font-style:italic;text-decoration:underline");
-        this._selectedFont = this.getOpt("selected_font","font-family:AvenirNextforSAS;font-size:12pt;font-weight:normal;font-style:italic;text-decoration:underline");
+        //this._selectedFont = this.getOpt("selected_font","font-family:AvenirNextforSAS;font-size:12pt;font-weight:normal;font-style:italic;text-decoration:underline");
+        this._selectedFont = this.getOpt("selected_font","font-family:AvenirNextforSAS;font-size:12pt;font-weight:normal;font-style:italic");
 
         this._span = null;
 
@@ -2097,12 +2097,11 @@ define([
         var i = reversed ? (items.length - 1) : 0;
 
         var firstRow = true;
+        var classname;
 
         for (;;)
         {
             item = items[i];
-
-            selected = this._datasource.isSelected(item);
 
             style = "";
 
@@ -2110,9 +2109,20 @@ define([
 
             if (firstRow)
             {
-                tr.className = "first";
+                classname = "first";
                 firstRow = false;
             }
+            else
+            {
+                classname = "";
+            }
+
+            if (selected = this._datasource.isSelected(item))
+            {
+                classname += " selected";
+            }
+
+            tr.className = classname;
 
             tr["context"] = {visual:this,index:i};
             tr.addEventListener("click",function(e){visual.clicked(e);});
