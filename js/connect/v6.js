@@ -1572,14 +1572,17 @@ define([
         {
             opts.pagesize = this.getOpt("pagesize");
         }
+        if (this.hasOpt("filter"))
+        {
+            opts.filter = this.getOpt("filter");
+        }
         this._connection = Connection.createDelegateConnection(this,url,opts);
         this._connection.authorization = this._api._connection.authorization;
         this._connection.start();
         this.setIntervalProperty();
 
-        var options = this.getOpts();
-
         /*
+        var options = this.getOpts();
         if (this.hasOpt("filter") == false)
         {
             o["filter"] = "";
@@ -1591,27 +1594,17 @@ define([
     EventCollection.prototype.set =
     function(load)
     {
-        var request = {"event-collection":{}};
-        var o = request["event-collection"];
-        o["id"] = this._id;
-        o["action"] = "set";
+        var request = "";
 
-        this.setIntervalProperty();
+        request += "<properties>";
 
-        var options = this.getOpts();
-        for (var x in options)
-        {
-            o[x] = options[x];
-        }
+        request += "<filter>";
+        request += this.getOpt("filter");
+        request += "</filter>";
 
-        if (this.hasOpt("filter") == false)
-        {
-            o["filter"] = "";
-        }
+        request += "</properties>";
 
-        o["load"] = (load == true);
-
-        this._api.sendObject(request);
+        this._api.send(request);
     }
 
     EventCollection.prototype.close =
@@ -1944,6 +1937,14 @@ define([
 
         var url = this._api.getUrl("subscribers/" + this._path);
         var opts = {mode:"streaming",schema:true,format:"xml"};
+        if (this.hasOpt("filter"))
+        {
+            opts.filter = this.getOpt("filter");
+        }
+        if (this.hasOpt("maxevents"))
+        {
+            opts.maxevents = this.getOpt("maxevents");
+        }
         this._connection = Connection.createDelegateConnection(this,url,opts);
         this._connection.authorization = this._api._connection.authorization;
         this._connection.start();
@@ -1976,27 +1977,17 @@ define([
     EventStream.prototype.set =
     function(load)
     {
-        var request = {"event-stream":{}};
-        var o = request["event-stream"];
-        o["id"] = this._id;
-        o["action"] = "set";
+        var request = "";
 
-        this.setIntervalProperty();
+        request += "<properties>";
 
-        var options = this.getOpts();
-        for (var x in options)
-        {
-            o[x] = options[x];
-        }
+        request += "<filter>";
+        request += this.getOpt("filter");
+        request += "</filter>";
 
-        if (this.hasOpt("filter") == false)
-        {
-            o["filter"] = "";
-        }
+        request += "</properties>";
 
-        o["load"] = (load == true);
-
-        this._api.sendObject(request);
+        this._api.send(request);
     }
 
     EventStream.prototype.close =
