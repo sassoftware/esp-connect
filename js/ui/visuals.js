@@ -909,7 +909,7 @@ define([
     }
 
     LineChart.prototype.draw =
-    function(data,clear)
+    function()
     {
         if (this.isInitialized == false)
         {
@@ -1006,8 +1006,17 @@ define([
         {
             throw("must specify time field for a TimeSeries")
         }
- 
-        this.setOpt("x",this.getOpt("time"))
+
+        this._rendered = 0;
+        this._value = null;
+
+        this._continuous = this.getOpt("continuous",0);
+
+        if (this._continuous > 0)
+        {
+            var ts = this;
+            setTimeout(function(){ts.fired()},this._continuous);
+        }
     }
 
     TimeSeries.prototype = Object.create(LineChart.prototype);
@@ -1017,6 +1026,122 @@ define([
     function()
     {
         return("timeseries");
+    }
+
+    TimeSeries.prototype.fired =
+    function()
+    {
+        var current = new Date().getTime();
+
+        if ((current - this._rendered) > this._continuous)
+        {
+            var x = this.getValues("time");
+            var y = this.getValues("y");
+            var values = this._datasource.getValuesBy(x,y);
+            var date = new Date();
+            values["keys"].push(this._value["time"]);
+            for (var n in this._value["values"])
+            {
+                values["values"][n].push(this._value["values"][n]);
+            }
+            this.render(values,y);
+        }
+
+        this._continuous = this.getOpt("continuous",0);
+
+        if (this._continuous > 0)
+        {
+            var ts = this;
+            setTimeout(function(){ts.fired()},this._continuous);
+        }
+    }
+
+    TimeSeries.prototype.draw =
+    function()
+    {
+        var x = this.getValues("time");
+        var y = this.getValues("y");
+        var values = this._datasource.getValuesBy(x,y);
+        this.render(values,y);
+    }
+
+    TimeSeries.prototype.render =
+    function(values,y)
+    {
+        if (this.isInitialized == false)
+        {
+            Plotly.newPlot(this._id,[],this._layout,this._defaults);
+            this.isInitialized = true;
+        }
+
+        if (this._datasource.schema.size == 0)
+        {
+            return;
+        }
+
+        var width = this.getOpt("line_width",2);
+        var data = [];
+        var line = {};
+        var index = 0;
+
+        line["width"] = width;
+
+        if (this.getOpt("curved",false))
+        {
+            line["shape"] = "spline";
+        }
+
+        var colors = this.getOpt("colors");
+
+        if (colors == null)
+        {
+            colors = this._visuals.colors.colors;
+        }
+
+        y.forEach((v) => {
+            var o = {};
+            o["x"] = values["keys"];
+            o["y"] = values["values"][v];
+            o["type"] = "scatter";
+            o["line"] = line;
+            o["mode"] = "lines";
+            o["name"] = v;
+            if (this.getOpt("fill",false))
+            {
+                o["fill"] = "tonexty";
+            }
+            o["marker"] = {color:colors[index]};index++;
+            data.push(o);
+        });
+
+        Plotly.react(this._content,data,this._layout);
+
+        this.setHeader();
+        this.setHandlers();
+
+        var len = values["keys"].length;
+        var last = (len > 0) ? values["keys"][len - 1] : null;
+        var date = new Date();
+
+        this._value =  {};
+        this._value["time"] = date;
+        this._value["values"] = {};
+
+        if (last != null)
+        {
+            date.setTime(last.getTime() + this._continuous);
+            y.forEach((f) => {
+                this._value["values"][f] = values["values"][f][len - 1];
+            });
+        }
+        else
+        {
+            y.forEach((f) => {
+                this._value["values"][f] = 0;
+            });
+        }
+
+        this._rendered = new Date().getTime();
     }
 
     /* End Time Series */

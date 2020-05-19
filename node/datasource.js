@@ -26,10 +26,13 @@ ready(connection)
     var fs = require("fs");
     var filedata = fs.readFileSync(config);
     var configuration = new String(filedata);
-    var datasources = esp.createDatasources(connection,opts.getOpts());
+    var delegate = {complete:function() {
+        console.log("datasources complete");
+        process.exit(0);
+    }};
+    var datasources = esp.createDatasources(connection,delegate);
     datasources.configure(configuration);
-    datasources.process();
-    setTimeout(function(){process.exit(0)},10000);
+    datasources.start();
 }
 
 function
