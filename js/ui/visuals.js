@@ -1008,7 +1008,7 @@ define([
         }
 
         this._rendered = 0;
-        this._value = null;
+        this._value = {};
 
         this._continuous = this.getOpt("continuous",0);
 

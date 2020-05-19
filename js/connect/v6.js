@@ -188,6 +188,12 @@ define([
         this.sendObject(request);
     }
 
+	Api.prototype.send =
+	function(s)
+    {
+        this._connection.send(s);
+    }
+
 	Api.prototype.sendObject =
 	function(o)
     {
