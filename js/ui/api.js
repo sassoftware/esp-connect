@@ -80,6 +80,11 @@ define([
             return(visuals);
         },
 
+        createWebSocket:function(url,delegate)
+        {
+            return(connect.createWebSocket(url,delegate));
+        },
+
 		getAjax:function()
 		{
 			return(connect.getAjax());

@@ -378,16 +378,27 @@ define([
 	Api.prototype.publishUrl =
 	function(path,url,delegate,options)
 	{
+        if (options == null)
+        {
+            options = {};
+        }
+
+        options["value"] = "injected";
+        options["eventUrl"] = url;
+        var publish = this.getHttpUrl("windows/" + path + "/state",options);
         var api = this;
         var o = {
             response:function(request,text,data) {
-                api.publishData(path,text,delegate,options);
+                if (delegate != null && tools.supports(delegate,"publishComplete"))
+                {
+                    delegate.publishComplete();
+                }
             },
             error:function(request,error) {
                 console.log("error: " + error);
             }
         };
-		ajax.create("load",url,o).get();
+		ajax.create("publish",publish,o).put();
     }
 
     Api.prototype.getStats =
@@ -507,19 +518,20 @@ define([
     Api.prototype.loadProject =
     function(name,data,delegate,options)
     {
+        var connection = this;
+
         var o = {
             response:function(request,text,data) {
 	            if (tools.supports(delegate,"loaded"))
                 {
-                    var message = xpath.getString("//message",data);
-                    delegate.loaded(this,message);
+                    delegate.loaded(connection,name);
                 }
             },
             error:function(request,error,data) {
 	            if (tools.supports(delegate,"error"))
                 {
                     var message = xpath.getString("//message",data);
-                    delegate.error(this,request.getName(),message);
+                    delegate.error(connection,request.getName(),message);
                 }
             }
         };
@@ -1574,6 +1586,8 @@ define([
     {
         var url = this._api.getUrl("subscribers/" + this._path);
         var opts = {mode:"updating",schema:true,format:"xml",snapshot:true};
+        var interval = this.getInt("interval",0);
+
         if (this.hasOpt("pagesize"))
         {
             opts.pagesize = this.getOpt("pagesize");
@@ -1581,6 +1595,22 @@ define([
         if (this.hasOpt("filter"))
         {
             opts.filter = this.getOpt("filter");
+        }
+
+        if (this.hasOpt("sort"))
+        {
+            opts.sort = this.getOpt("sort");
+
+            if (interval == 0)
+            {
+                interval = 1000;
+            }
+
+            opts.interval = interval;
+        }
+        else if (interval > 0)
+        {
+            opts.interval = interval;
         }
         this._connection = Connection.createDelegateConnection(this,url,opts);
         this._connection.authorization = this._api._connection.authorization;
@@ -1935,6 +1965,12 @@ define([
 
 	EventStream.prototype = Object.create(Datasource.prototype);
 	EventStream.prototype.constructor = EventStream;
+
+    EventStream.prototype.ready =
+    function()
+    {
+        this.set();
+    }
 
     EventStream.prototype.open =
     function()

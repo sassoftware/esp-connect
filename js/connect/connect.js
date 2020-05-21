@@ -91,6 +91,58 @@ define([
             return(visuals);
         },
 
+        createWebSocket:function(url,delegate)
+        {
+            var ws = null;
+
+            if (this.isNode())
+            {
+                const   WS = require("ws");
+
+                ws = new WS(url);
+
+                if (tools.supports(delegate,"open"))
+                {
+                    ws.on("open",delegate.open);
+                }
+                if (tools.supports(delegate,"close"))
+                {
+                    ws.on("close",delegate.close);
+                }
+                if (tools.supports(delegate,"error"))
+                {
+                    ws.on("error",delegate.error);
+                }
+                if (tools.supports(delegate,"message"))
+                {
+                    ws.on("message",delegate.message);
+                }
+            }
+            else
+            {
+                ws = new WebSocket(url);
+
+                if (tools.supports(delegate,"open"))
+                {
+                    ws.onopen = delegate.open;
+                }
+                if (tools.supports(delegate,"close"))
+                {
+                    ws.onclose = delegate.close;
+                }
+                if (tools.supports(delegate,"error"))
+                {
+                    ws.onerror = delegate.error;
+                }
+                if (tools.supports(delegate,"message"))
+                {
+                    ws.onmessage = delegate.message;
+                }
+            }
+
+            return(ws);
+        },
+
 		getAjax:function()
 		{
 			return(ajax);
