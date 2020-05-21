@@ -233,6 +233,18 @@
                         <field-expr>ESP_aLastNonNull(TrackHealthPercent)</field-expr>
                     </output>
                 </window-aggregate>
+                <window-functional name="engineStatusFunc">
+                    <schema copy="engineStatus">
+                        <fields>
+                            <field name="speed" type="int32" />
+                        </fields>
+                    </schema>
+                    <function-context>
+                        <functions>
+                            <function name="speed">integer(speed)</function>
+                        </functions>
+                    </function-context>
+                </window-functional>
                 <window-pattern pubsub='true' name='anomaliesDetected'>
                     <schema>
                         <fields>
@@ -281,6 +293,7 @@
                 <edge source='outputData' target='latestTrackHealth'/>
                 <edge source='outputData' target='anomaliesDetected'/>
                 <edge source='outputData' target='engineStatus'/>
+                <edge source='engineStatus' target='engineStatusFunc'/>
             </edges>
         </contquery>
     </contqueries>

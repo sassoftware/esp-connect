@@ -118,7 +118,9 @@ loaded()
 
     _publisher = _conn.getPublisher({window:"myproject/cq/clicks"});
 
-    _esp.size(1000);
+    _esp.size(100);
+
+    setTimeout(function(){_viewer.fitNetwork()},500);
 }
 
 function

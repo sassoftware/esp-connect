@@ -1054,7 +1054,7 @@ define([
     ModelViewer.prototype.fitNetwork =
     function()
     {
-        this._viewer._network.fit();
+        this._network.fit();
     }
 
     ModelViewer.prototype.fit =

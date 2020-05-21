@@ -99,7 +99,7 @@ loadData()
 function
 createVisuals()
 {
-    var status = _conn.getEventCollection({window:"p/cq/engineStatus",exclude:["image_track_cropped"]});
+    var status = _conn.getEventCollection({window:"p/cq/engineStatusFunc",exclude:["image_track_cropped"]});
     var alerts = _conn.getEventCollection({window:"p/cq/anomaliesDetected",name:"alerts"});
     var image = _conn.getEventStream({window:"p/cq/displayResizeImage",include:["_image_"],maxevents:1});
 
