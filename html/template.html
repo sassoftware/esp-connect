@@ -39,15 +39,18 @@ esp(api)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
-    _conn = _esp.connect(server,{ready:ready},{debug:false});
     _visuals = _esp.createVisuals(parms);
 
     _esp.handleLayout();
+
+    _esp.connect(server,{ready:ready},{debug:false});
 }
 
 function
-ready()
+ready(connection)
 {
+    _conn = connection;
+
     if (_esp.getParm("load",true))
     {
         _esp.showStatus("Loading project...");

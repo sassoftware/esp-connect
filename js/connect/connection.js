@@ -29,7 +29,6 @@ define([
     var	_websockets =
 	{
         _established:new Object(),
-        _prompted:new Object(),
 
 		open:function(e)
 		{
@@ -87,12 +86,6 @@ define([
                 }
 			}
 		},
-
-        established:function(url)
-        {
-            return(this._established.hasOwnProperty(url));
-        },
-
         prompted:function(url)
         {
             return(this._prompted.hasOwnProperty(url));
@@ -741,6 +734,12 @@ define([
         var u = tools.createUrl(decodeURI(url));
         var conn = new DelegateConnection(delegate,u["host"],u["port"],u["path"],u["secure"],options);
         return(conn);
+    }
+
+    Connection.established =
+    function(url)
+    {
+        return(_websockets._established.hasOwnProperty(url));
     }
 
     return(Connection);

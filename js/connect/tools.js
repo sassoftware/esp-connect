@@ -231,7 +231,7 @@ define([
                 u["host"] = o["hostname"];
                 u["port"] = o["port"];
                 u["path"] = o["path"];
-                u["secure"] = (o["protocol"] == "https:");
+                u["secure"] = (o["protocol"] == "https:" || o["protocol"] == "wss:");
             }
             else
             {
@@ -240,7 +240,7 @@ define([
                 u["host"] = a.hostname;
                 u["port"] = a.port;
                 u["path"] = a.pathname;
-                u["secure"] = (a.protocol == "https:");
+                u["secure"] = (a["protocol"] == "https:" || a["protocol"] == "wss:");
             }
 
             return(u);

@@ -27,8 +27,9 @@ define([
     "./ajax",
     "./tools",
     "./codec",
+    "./eventsources",
     "./options"
-], function(Connection,resources,Model,Schema,xpath,ajax,tools,codec,Options)
+], function(Connection,resources,Model,Schema,xpath,ajax,tools,codec,eventsources,Options)
 {
     function
     Api(connection,options)
@@ -152,13 +153,15 @@ define([
     Api.prototype.getUrl =
     function(path,options)
     {
-        return(this.formUrl(this._connection.url,path,options));
+        var url = this.formUrl(this._connection.url,path,options);
+        return(url);
     }
 
     Api.prototype.getHttpUrl =
     function(path,options)
     {
-        return(this.formUrl(this._connection.httpurl,path,options));
+        var url = this.formUrl(this._connection.httpurl,path,options);
+        return(url);
     }
 
     Api.prototype.createRequest =
@@ -683,6 +686,12 @@ define([
     function()
     {
         this.sendObject({request:"status"});
+    }
+
+    Api.prototype.createEventSources =
+    function(delegate)
+    {
+        return(eventsources.createEventSources(this,delegate));
     }
 
     Api.prototype.toString =

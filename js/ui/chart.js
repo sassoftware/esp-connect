@@ -623,7 +623,6 @@ define([
     {
         if (this._navigation != null)
         {
-            //this._navigation.style.visibility = "hidden";
             this._navigation.style.display = "none";
         }
         if (this._playPauseContainer != null)

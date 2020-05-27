@@ -25,6 +25,8 @@ define([
     "./tools"
 ], function(Connection,v6,v7,tools)
 {
+    var _prompted = {};
+
     function
     ServerConnection(host,port,path,secure,delegate,options)
     {
@@ -108,15 +110,19 @@ define([
 
         if (_isNode == false)
         {
-            if (this.established() == false)
+            if (Connection.established(this.getUrl()) == false)
             {
                 if (this.isSecure)
                 {
-                    var url = this.url;
+                    var url = this.httpProtocol;
+                    url += "://";
+                    url += this.host;
+                    url += ":";
+                    url += this.port;
                     url += "/eventStreamProcessing/v1/server";
-                    if (_websockets.prompted(url) == false)
+                    if (_prompted.hasOwnProperty(url) == false)
                     {
-                        _websockets._prompted[url] = true;
+                        _prompted[url] = true;
                         window.open(url,"espconnect","width=800,height=800");
                     }
                 }

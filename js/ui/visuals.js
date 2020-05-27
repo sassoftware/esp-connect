@@ -367,7 +367,11 @@ define([
  
             if (connection == null || tools.supports(v,"usesConnection") && v.usesConnection(connection))
             {
-                v.remove();
+                if (tools.supports(v,"remove"))
+                {
+                    v.remove();
+                }
+
                 this._visuals.splice(i,1);
             }
             else
@@ -1720,6 +1724,7 @@ define([
         this._colors = null;
         this._entries = {};
 
+        var useTheme = this.getOpt("use_theme",false);
         var color = this.getOpt("color");
 
         this._outerColor = this.getOpt("outer_color",color);
@@ -1727,18 +1732,33 @@ define([
 
         if (this._outerColor == null)
         {
-            this._outerColor = this._visuals.colors.middle;
+            if (useTheme)
+            {
+                this._outerColor = this._visuals.colors.middle;
+            }
+            else
+            {
+                this._outerColor = "#D0D3D4";
+            }
         }
 
         if (this._bgColor == null)
         {
-            this._bgColor = this._visuals.colors.middle;
+            if (useTheme)
+            {
+                this._bgColor = this._visuals.colors.lightest;
+            }
+            else
+            {
+                this._bgColor = "white";
+            }
         }
 
         this._lightBg = this._visuals.colors.addAlpha(this._bgColor,.4);
+        this._lightOuter = this._visuals.colors.addAlpha(this._outerColor,.4);
 
-        this._needleColor = this.getOpt("needle_color",this._lightBg);
-        this._centerColor = this.getOpt("center_color",this._lightBg);
+        this._needleColor = this.getOpt("needle_color","white");
+        this._centerColor = this.getOpt("center_color",this._outerColor);
         this._lineWidth = this.getOpt("line_width",1);
     }
 
@@ -1860,7 +1880,6 @@ define([
 
         this._header = document.createElement("div");
         this._header.className = "compassHeader";
-        //this._header.style.width = size + "px";
         this._inner.appendChild(this._header);
 
         this._container = document.createElement("div");
@@ -1871,6 +1890,8 @@ define([
 
         this._layout = {};
         this._heading = 0;
+
+        this._labels = [];
 
         this._data = [];
 
@@ -1896,22 +1917,21 @@ define([
             showlegend:false,
             hoverinfo:"none",
             textposition:"outside",
+            textposition:"bottom",
             textinfo:"none",
             type:"pie"};
 
         this._data.push(this._intervals);
 
-        var margin = this._compass.getOpt("margin",10);
+        //var margin = this._compass.getOpt("margin",10);
+        var margin = this._compass.getOpt("margin",this._compass._lineWidth);
         this._layout["margin"] = {l:margin,r:margin,b:margin,t:margin};
-
-        var labels = []
-        var headings = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 
         var hole = this._intervals["hole"];
         var radius = hole / 2;
         var center = {x:.5,y:.5};
 
-        var luma = this._compass._visuals.colors.getLuma(this._compass._outerColor);
+        var luma = this._compass._visuals.colors.getLuma(this._compass._bgColor);
         var textcolor = (luma < 170) ? "white" : "black";
         var textangle = 0;
         var angle = 0;
@@ -1919,6 +1939,10 @@ define([
         var x;
         var y;
         var h;
+
+        this._labels = [];
+        //var headings = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+        var headings = ["N", "E", "S", "W"];
 
         for (var i = 0; i < headings.length; i++)
         {
@@ -1935,22 +1959,16 @@ define([
 
             radians = h * (Math.PI / 180);
 
-            if (i % 2 == 1)
-            {
-                fontsize = 12;
-                length = radius - .08;
-            }
-            else
-            {
-                fontsize = 18;
-                length = radius - .1;
-            }
+            fontsize = 16;
+            length = (angle == 90 || angle == 270) ? radius - .12 : radius - .10;
+
             x = center["x"] + (length * Math.cos(radians))
             y = center["y"] + (length * Math.sin(radians))
-            label = {text:headings[i],x:x,y:y,showarrow:false,font:{size:fontsize,color:textcolor},textangle:textangle};
-            labels.push(label);
+            //label = {text:headings[i],x:x,y:y,showarrow:false,font:{family:"AvenirNextforSAS",size:fontsize,color:textcolor},textangle:textangle};
+            label = {text:"<b>" + headings[i] + "</b>",x:x,y:y,showarrow:false,font:{family:"AvenirNextforSAS",size:fontsize,color:textcolor},textangle:textangle};
+            this._labels.push(label);
             angle += (360 / headings.length);
-            textangle += 45;
+            //textangle += (360 / headings.length);
         }
 
         textangle = 0;
@@ -1969,7 +1987,6 @@ define([
             radians = h * (Math.PI / 180);
             if (i % 2 == 1)
             {
-                //length = radius + .03;
                 length = radius + .05;
             }
             else
@@ -1979,18 +1996,19 @@ define([
             x = center["x"] + (length * Math.cos(radians));
             y = center["y"] + (length * Math.sin(radians));
             label = {text:angle,x:x,y:y,showarrow:false,font:{size:10},textangle:textangle}
-            labels.push(label)
+            this._labels.push(label)
             angle += 45;
             textangle += 45;
         }
 
         h = (hole / 2) - .1;
-        this._innerCircle = {type:"circle",x0:center["x"] - h,y0:center["y"] - h,x1:center["x"] + h,y1:center["y"] + h,fillcolor:this._compass._bgColor,line:{width:this._compass._lineWidth}}
+        //this._innerCircle = {type:"circle",x0:center["x"] - h,y0:center["y"] - h,x1:center["x"] + h,y1:center["y"] + h,fillcolor:this._compass._bgColor,line:{width:this._compass._lineWidth}}
+        this._innerCircle = {type:"circle",x0:center["x"] - h,y0:center["y"] - h,x1:center["x"] + h,y1:center["y"] + h,fillcolor:this._compass._bgColor,line:{width:1}}
 
         h = (hole / 2);
         this._outerCircle = {type:"circle",x0:center["x"] - h,y0:center["y"] - h,x1:center["x"] + h,y1:center["y"] + h,fillcolor:this._compass._lightBg,line:{width:0}}
 
-        this._layout["annotations"] = labels;
+        this._layout["annotations"] = this._labels;
         this._layout["shapes"] = [this._innerCircle];
 
         this._initialized == true;
@@ -2015,7 +2033,7 @@ define([
         // Heading Pointer
 
         var radians = heading * (Math.PI / 180);
-        var length = radius - .1;
+        var length = radius - .20;
 
         var x = center["x"] + (length * Math.cos(radians));
         var y = center["y"] + (length * Math.sin(radians));
@@ -2034,7 +2052,8 @@ define([
         path += "L " + x1 + " " + y1;
 
         var headingBase = {type:"path",path:path,fillcolor:"white",line:{width:this._compass._lineWidth}};
-        var headingPointer = {type:"path",path:path,fillcolor:this._compass._needleColor,line:{width:this._compass._lineWidth}};
+        //var headingPointer = {type:"path",path:path,fillcolor:this._compass._needleColor,line:{width:this._compass._lineWidth,layer:"above"}};
+        var headingPointer = {type:"path",path:path,fillcolor:this._compass._needleColor,line:{width:1,layer:"above"}};
 
         // End Heading Pointer
 
@@ -2042,7 +2061,7 @@ define([
 
         radians = ((heading + 180) % 360) * (Math.PI / 180);
 
-        length = radius - .23;
+        length = radius - .30;
 
         x = center["x"] + (length * Math.cos(radians));
         y = center["y"] + (length * Math.sin(radians));
@@ -2060,20 +2079,22 @@ define([
         path += "L " + x + " " + y;
         path += "L " + x1 + " " + y1;
 
-        var reciprocalBase = {type:"path",path:path,fillcolor:"white",line:{width:this._compass._lineWidth}};
-        var reciprocalPointer = {type:"path",path:path,fillcolor:this._compass._bgColor,line:{width:this._compass._lineWidth}};
+        /*
+        var reciprocalBase = {type:"path",path:path,fillcolor:"white",line:{width:1}};
+        var reciprocalPointer = {type:"path",path:path,fillcolor:this._compass._bgColor,line:{width:1}};
+        */
+        var reciprocalPointer = {type:"path",path:path,fillcolor:"white",line:{width:1}};
 
         // End Reciprocal Pointer
 
-        var rr = r + .02;
-        var needleCenter = {type:"circle",x0:center["x"] - rr,y0:center["y"] - rr,x1:center["x"] + rr,y1:center["y"] + rr,fillcolor:"white",line:{width:this._compass._lineWidth},layer:"above"};
-        var needleTop = {type:"circle",x0:center["x"] - rr,y0:center["y"] - rr,x1:center["x"] + rr,y1:center["y"] + rr,fillcolor:this._compass._centerColor,line:{width:this._compass._lineWidth},layer:"above"};
-
-        labels = [];
-        label = {text:this._heading,x:center["x"],y:center["y"],showarrow:false,font:{size:12}};
-        labels.push(label);
-
-        this._layout["shapes"] = [this._outerCircle,this._innerCircle,headingBase,headingPointer,reciprocalBase,reciprocalPointer,needleCenter,needleTop];
+        //var rr = r + .01;
+        var rr = r + .005;
+        //var needleCenterColor = this._compass.getOpt("needle_center_color",this._compass._outerColor);
+        var needleCenterColor = this._compass.getOpt("needle_center_color",this._compass._lightOuter);
+        var needleCenter = {type:"circle",x0:center["x"] - rr,y0:center["y"] - rr,x1:center["x"] + rr,y1:center["y"] + rr,fillcolor:"white",line:{width:1},layer:"above"};
+        var needleTop = {type:"circle",x0:center["x"] - rr,y0:center["y"] - rr,x1:center["x"] + rr,y1:center["y"] + rr,fillcolor:needleCenterColor,line:{width:1},layer:"above"};
+        //this._layout["shapes"] = [this._outerCircle,this._innerCircle,headingBase,headingPointer,reciprocalBase,reciprocalPointer,needleCenter,needleTop];
+        this._layout["shapes"] = [this._outerCircle,this._innerCircle,headingBase,headingPointer,reciprocalPointer,needleCenter,needleTop];
 
         Plotly.react(this._container,this._data,this._layout,this._compass._defaults);
 
@@ -2087,7 +2108,10 @@ define([
 
         if (s != null)
         {
-            title = s + " (" + parseInt(this._heading) + ")";
+            var heading = parseInt(this._heading);
+            var tmp = "" + heading;
+            tmp = tmp.padStart(3,"0");
+            title = s + " (" + tmp + ")";
             title = this._compass._visuals.formatTitle(title);
             this._header.innerHTML = title;
         }

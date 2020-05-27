@@ -27,8 +27,9 @@ define([
     "./ajax",
     "./tools",
     "./codec",
+    "./eventsources",
     "./options",
-], function(Connection,resources,Model,Schema,xpath,ajax,tools,codec,Options)
+], function(Connection,resources,Model,Schema,xpath,ajax,tools,codec,eventsources,Options)
 {
     function
     Api(connection,options)
@@ -936,6 +937,12 @@ define([
     function()
     {
         this.sendObject({request:"status"});
+    }
+
+    Api.prototype.createEventSources =
+    function(delegate)
+    {
+        return(eventsources.createEventSources(this,delegate));
     }
 
     Api.prototype.toString =
@@ -2919,6 +2926,11 @@ define([
         o["action"] = "set";
         o["window"] = this._path;
         o["schema"] = true;
+
+        if (this.hasOpt("dateformat"))
+        {
+            o["dateformat"] = this.getOpt("dateformat");
+        }
 
         if (this._api._publishers.hasOwnProperty(this._id) == false)
         {

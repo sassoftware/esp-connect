@@ -353,6 +353,15 @@ define([
             }
         }
 
+        Object.defineProperty(this,"zoom", {
+            get() {
+                return(this._map.getZoom());
+            },
+            set(value) {
+                this._map.setZoom(value);
+            }
+        });
+
         this._data = null;
     }
 
@@ -785,6 +794,7 @@ define([
 
         var o = {};
         o["coords"] = opts.getOpt("coords");
+        o["radius"] = opts.getOpt("radius");
         o["datasource"] = datasource;
         o["layers"] = new L.layerGroup();
         if (opts.hasOpt("text"))
@@ -810,7 +820,6 @@ define([
         }
 
         var lonlat = (o["order"] == "lon_lat")
-        var polygon;
         var coords;
         var points;
         var key;
@@ -850,31 +859,75 @@ define([
                 }
             }
 
-            polygon = L.polygon(points);
-
-            bw = this.getOpt("poly_border_width",2);
-            polygon.setStyle({weight:bw});
-
-            if (bw > 0)
+            if (points.length == 1)
             {
-                polygon.setStyle({stroke:true,color:this.getOpt("poly_border_color","black")});
+                var radius = 100;
+                if (o.hasOwnProperty("radius"))
+                {
+                    if (value.hasOwnProperty(o["radius"]))
+                    {
+                        radius = value[o["radius"]];
+                    }
+                }
+                var lat = points[0][0];
+                var lon = points[0][1];
+                circle = L.circle([lat,lon],{radius:radius})
+
+                var bw = this.getOpt("circle_border_width",2);
+                circle.setStyle({weight:bw});
+
+                if (bw > 0)
+                {
+                    circle.setStyle({stroke:true,color:this.getOpt("circle_border_color","black")});
+                }
+                else
+                {
+                    circle.setStyle({stroke:false});
+                }
+
+                circle.setStyle({fillColor:this.getOpt("circle_fill_color","white")});
+
+                if (this.hasOpt("circle_fill_opacity"))
+                {
+                    circle.setStyle({fillOpacity:this.getOpt("circle_fill_opacity")});
+                }
+
+                if (o.hasOwnProperty("text"))
+                {
+                    var text = value[o["text"]];
+                    circle.bindTooltip(text);
+                }
+
+                o["layers"].addLayer(circle);
             }
             else
             {
-                polygon.setStyle({stroke:false});
+                var polygon = L.polygon(points);
+
+                bw = this.getOpt("poly_border_width",2);
+                polygon.setStyle({weight:bw});
+
+                if (bw > 0)
+                {
+                    polygon.setStyle({stroke:true,color:this.getOpt("poly_border_color","black")});
+                }
+                else
+                {
+                    polygon.setStyle({stroke:false});
+                }
+
+                polygon.setStyle({fillColor:this.getOpt("poly_fill_color","white")});
+                polygon.setStyle({fillOpacity:this.getOpt("poly_fill_opacity",.2)});
+
+                if (o.hasOwnProperty("text"))
+                {
+                    var text = value[o["text"]];
+                    //polygon.bindPopup(text);
+                    polygon.bindTooltip(text);
+                }
+
+                o["layers"].addLayer(polygon);
             }
-
-            polygon.setStyle({fillColor:this.getOpt("poly_fill_color","white")});
-            polygon.setStyle({fillOpacity:this.getOpt("poly_fill_opacity",.2)});
-
-            if (o.hasOwnProperty("text"))
-            {
-                var text = value[o["text"]];
-                //polygon.bindPopup(text);
-                polygon.bindTooltip(text);
-            }
-
-            o["layers"].addLayer(polygon);
         }
 
         if (this._map != null)
