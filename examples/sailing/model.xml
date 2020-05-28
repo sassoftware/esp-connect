@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<project threads="4" pubsub="auto" heartbeat-interval="1" index="pi_EMPTY">
+  <contqueries>
+    <contquery name="cq">
+      <windows>
+        <window-source insert-only="true" autogen-key="true" name="Boat">
+          <schema>
+            <fields>
+              <field name="id" type="string" key="true"/>
+              <field name="boat_id" type="string"/>
+              <field name="dateTime" type="date"/>
+              <field name="heading" type="double"/>
+              <field name="speed" type="double"/>
+              <field name="lat" type="double"/>
+              <field name="long" type="double"/>
+            </fields>
+          </schema>
+        </window-source>
+        <window-aggregate index="pi_HASH" name="Boat_Current">
+          <schema>
+            <fields>
+              <field name="boat_id" type="string" key="true"/>
+              <field name="dateTime" type="date"/>
+              <field name="heading" type="double"/>
+              <field name="speed" type="double"/>
+              <field name="lat" type="double"/>
+              <field name="long" type="double"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>ESP_aLast(dateTime)</field-expr>
+            <field-expr>ESP_aLast(heading)</field-expr>
+            <field-expr>ESP_aLast(speed)</field-expr>
+            <field-expr>ESP_aLast(lat)</field-expr>
+            <field-expr>ESP_aLast(long)</field-expr>
+          </output>
+        </window-aggregate>
+        <window-geofence pubsub-index="pi_HASH" name="Geofence_Area_Check">
+          <geofence coordinate-type="geographic" autosize-mesh="true" max-meshcells-per-geometry="50" log-invalid-geometry="true"/>
+          <geometry desc-fieldname="poly_desc" radius-fieldname="Poly_Radius" data-fieldname="Poly_Data" radius="1000" data-separator=" "/>
+          <position x-fieldname="long" y-fieldname="lat" lookupdistance="0"/>
+          <output geoid-fieldname="GeoID" geodesc-fieldname="GeoDesc" geodistance-fieldname="GeoDist" geotype-fieldname="GeoType" include-geo-fields="Poly_Data,Poly_Radius"/>
+        </window-geofence>
+        <window-source name="Areas_Of_Interest">
+          <description>Loads the areas of interest</description>
+          <schema>
+            <fields>
+              <field name="poly_id" type="int64" key="true"/>
+              <field name="poly_desc" type="string"/>
+              <field name="Poly_Data" type="string"/>
+              <field name="Poly_Radius" type="double"/>
+            </fields>
+          </schema>
+        </window-source>
+        <window-filter index="pi_HASH" name="Filter_Speeding_In_Marina">
+          <expression><![CDATA[GeoID == 1 AND speed > 4]]></expression>
+        </window-filter>
+        <window-filter index="pi_HASH" name="Filter_Inside_Exclusion_Zone">
+          <expression><![CDATA[GeoID == 2]]></expression>
+        </window-filter>
+        <window-aggregate index="pi_HASH" name="Last_Exclusion_Violation">
+          <schema>
+            <fields>
+              <field name="boat_id" type="string" key="true"/>
+              <field name="Minimum_Distance" type="double"/>
+              <field name="Location_Name" type="string"/>
+              <field name="First_dateTime" type="date"/>
+              <field name="Last_dateTime" type="date"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>ESP_aMin(GeoDist)</field-expr>
+            <field-expr>ESP_aLast(GeoDesc)</field-expr>
+            <field-expr>ESP_aFirst(dateTime)</field-expr>
+            <field-expr>ESP_aLast(dateTime)</field-expr>
+          </output>
+        </window-aggregate>
+        <window-aggregate index="pi_HASH" name="Last_Speeding_Event">
+          <schema>
+            <fields>
+              <field name="boat_id" type="string" key="true"/>
+              <field name="Max_speed" type="double"/>
+              <field name="Location_Name" type="string"/>
+              <field name="dateTime" type="date"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>ESP_aMax(speed)</field-expr>
+            <field-expr>ESP_aLast(GeoDesc)</field-expr>
+            <field-expr>ESP_aLast(dateTime)</field-expr>
+          </output>
+        </window-aggregate>
+        <window-copy index="pi_HASH" name="Retention_30Min">
+          <retention type="bytime_sliding">30 minutes</retention>
+        </window-copy>
+      </windows>
+      <edges>
+        <edge source="Boat" target="Boat_Current"/>
+        <edge source="Boat" target="Geofence_Area_Check" role="position"/>
+        <edge source="Areas_Of_Interest" target="Geofence_Area_Check" role="geometry"/>
+        <edge source="Geofence_Area_Check" target="Retention_30Min"/>
+        <edge source="Retention_30Min" target="Filter_Inside_Exclusion_Zone"/>
+        <edge source="Retention_30Min" target="Filter_Speeding_In_Marina"/>
+        <edge source="Filter_Speeding_In_Marina" target="Last_Speeding_Event"/>
+        <edge source="Filter_Inside_Exclusion_Zone" target="Last_Exclusion_Violation"/>
+      </edges>
+    </contquery>
+  </contqueries>
+</project>

@@ -484,7 +484,7 @@ define([
         var text = null;
         if (this._dateformat != null)
         {
-            var text = "";
+            text = "";
             /*
             text += date.toLocaleDateString(this.languages,this._dateformat);
             text += " ";
@@ -507,8 +507,10 @@ define([
     {
         var v = new Number(value) * 1000;
         var date = new Date(v);
+        var text = null;
         if (this._dateformat != null)
         {
+            text = "";
             text += date.toLocaleDateString(this.languages);
             text += " ";
             text += date.toLocaleTimeString(this.languages);
@@ -2802,7 +2804,7 @@ define([
         this._data = {};
         this._data.type = "indicator";
 
-        var mode = "gauge+number";
+        var mode = this._gauge.getOpt("mode","gauge+number");
 
         if (this._gauge.getOpt("delta",false))
         {

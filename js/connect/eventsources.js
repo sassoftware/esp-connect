@@ -19,11 +19,28 @@ define([
     /* EventSources */
 
     function
-    EventSources(connection,delegate)
+    EventSources(api,delegate)
     {
-        this._connection = connection;
+        this._api = api;
         this._delegate = delegate;
         this._eventsources = {};
+        this._running = false;
+        this._paused = false;
+
+        Object.defineProperty(this,"running", {
+            get() {
+                return(this._running);
+            }
+        });
+
+        Object.defineProperty(this,"paused", {
+            get() {
+                return(this._paused);
+            },
+            set(value) {
+                this._paused = value;
+            }
+        });
     }
 
     EventSources.prototype.configure =
@@ -62,15 +79,15 @@ define([
 
             if (type == "url-event-source")
             {
-                eventsource = new UrlEventSource(this._connection,options);
+                eventsource = new UrlEventSource(this,options);
             }
             else if (type == "code-event-source")
             {
-                eventsource = new CodeEventSource(this._connection,options);
+                eventsource = new CodeEventSource(this,options);
             }
             else if (type == "csv-event-source")
             {
-                eventsource = new CsvEventSource(this._connection,options);
+                eventsource = new CsvEventSource(this,options);
             }
 
             if (eventsource == null)
@@ -113,15 +130,15 @@ define([
 
         if (type == "url")
         {
-            eventsource = new UrlEventSource(this._connection,options);
+            eventsource = new UrlEventSource(this,options);
         }
         else if (type == "code")
         {
-            eventsource = new CodeEventSource(this._connection,options);
+            eventsource = new CodeEventSource(this,options);
         }
         else if (type == "csv")
         {
-            eventsource = new CsvEventSource(this._connection,options);
+            eventsource = new CsvEventSource(this,options);
         }
 
         if (eventsource == null)
@@ -178,12 +195,21 @@ define([
         return(this._eventsources.hasOwnProperty(name) ? this._eventsources[name] : null);
     }
 
+    EventSources.prototype.togglePause =
+    function()
+    {
+        this._paused = this._paused ? false : true;
+        return(this._paused);
+    }
+
     EventSources.prototype.start =
     function()
     {
         Object.values(this._eventsources).forEach((ds) => {
             ds.init();
         });
+
+        this._running = true;
 
         var eventsources = this;
         setTimeout(function(){eventsources.run()},1000);
@@ -192,6 +218,13 @@ define([
     EventSources.prototype.run =
     function()
     {
+        if (this._paused)
+        {
+            var eventsources = this;
+            setTimeout(function(){eventsources.run()},1000);
+            return;
+        }
+
         var current = new Date();
         var eventsources = [];
         var depsPending = false;
@@ -247,6 +280,8 @@ var minInterval = 1000;
 
         if (completed == Object.keys(this._eventsources).length)
         {
+            this._running = false;
+
             if (tools.supports(this._delegate,"complete"))
             {
                 var eventsources = this;
@@ -266,7 +301,7 @@ var minInterval = 1000;
     /* EventSource */
 
     function
-    EventSource(connection,options)
+    EventSource(eventsources,options)
     {
 		Options.call(this,options);
 
@@ -277,7 +312,8 @@ var minInterval = 1000;
             tools.exception("no window specified");
         }
 
-        this._connection = connection;
+        this._eventsources = eventsources;
+        this._api = eventsources._api;
         this._ready = false;
         this._done = false;
         this._sources = [];
@@ -401,7 +437,7 @@ var minInterval = 1000;
         {
             opts.dateformat = this.getOpt("dateformat");
         }
-        this._publisher = this._connection.getPublisher(opts);
+        this._publisher = this._api.getPublisher(opts);
         this._publisher.addSchemaDelegate(this);
     }
 
@@ -497,9 +533,9 @@ var minInterval = 1000;
     /* URL EventSource */
 
     function
-    UrlEventSource(connection,options)
+    UrlEventSource(eventsources,options)
     {
-		EventSource.call(this,connection,options);
+		EventSource.call(this,eventsources,options);
 
         this._transform = null;
         this._retrieving = null;
@@ -579,7 +615,7 @@ var minInterval = 1000;
 
                 if (this.getOpt("use-connection",false))
                 {
-                    this._connection.get(url,o);
+                    this._api.get(url,o);
                 }
                 else
                 {
@@ -607,9 +643,9 @@ var minInterval = 1000;
     /* CSV EventSource */
 
     function
-    CsvEventSource(connection,options)
+    CsvEventSource(eventsources,options)
     {
-		EventSource.call(this,connection,options);
+		EventSource.call(this,eventsources,options);
         this._data = null;
     }
 
@@ -669,9 +705,9 @@ var minInterval = 1000;
     /* Code EventSource */
 
     function
-    CodeEventSource(connection,options)
+    CodeEventSource(eventsources,options)
     {
-		EventSource.call(this,connection,options);
+		EventSource.call(this,eventsources,options);
         this._code = null;
     }
 
@@ -731,6 +767,8 @@ var minInterval = 1000;
     Sender.prototype.run =
     function()
     {
+        var target = this._eventsource.getOpt("maxevents",this._data.length);
+
         if (this._delay == 0)
         {
             this._data.forEach((o) => {
@@ -742,14 +780,22 @@ var minInterval = 1000;
 
             tools.removeFrom(this._eventsource._senders,this);
         }
-        else if (this._index < this._data.length)
+        else if (this._index < target)
         {
-            this._eventsource._publisher.add(this._data[this._index]);
-            this._eventsource._publisher.publish();
-
-            this._index++;
             var sender = this;
-            setTimeout(function(){sender.run();},this._delay);
+
+            if (this._eventsource._eventsources.paused == false)
+            {
+                this._eventsource._publisher.add(this._data[this._index]);
+                this._eventsource._publisher.publish();
+                this._index++;
+
+                setTimeout(function(){sender.run();},this._delay);
+            }
+            else
+            {
+                setTimeout(function(){sender.run();},1000);
+            }
         }
         else
         {

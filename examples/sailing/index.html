@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP Sailing Example</title>
+
+<link rel="stylesheet" href="/esp-connect/style/connect.css" />
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="/esp-connect/js/ui/main"></script>
+
+<script type="text/javascript">
+
+var _esp = null;
+var _conn = null;
+var _visuals = null;
+
+function
+esp(api)
+{
+    _esp = api;
+
+    var parms = _esp.getParms();
+
+    if (parms.hasOwnProperty("server") == false)
+    {
+        alert("you must specify ESP server URL");
+        return;
+    }
+
+    var server = parms["server"];
+    delete parms["server"];
+
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+
+    _visuals = _esp.createVisuals(parms);
+    _visuals.dateformat = "%c";
+
+    _esp.handleLayout();
+
+    _esp.connect(server,{ready:ready});
+}
+
+function
+ready(connection)
+{
+    _conn = connection;
+
+    if (_esp.getParm("load",true))
+    {
+        _esp.showStatus("Loading project...");
+        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true,parms:{config:new URL("config.xml",document.URL).toString()}});
+    }
+    else
+    {
+        loaded();
+    }
+}
+
+var _eventsources = null;
+
+function
+loaded()
+{
+    _esp.clearStatus();
+    _conn.publishDataFrom("p/cq/Areas_Of_Interest","geoArea.csv",null,{informat:"csv"});
+    _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
+    var coll = _conn.getEventCollection({window:"p/cq/Boat_Current",interval:1000});
+    var speeding = _conn.getEventStream({window:"p/cq/Last_Speeding_Event",ignore_deletes:true});
+    var exclusion = _conn.getEventStream({window:"p/cq/Last_Exclusion_Violation",ignore_deletes:true});
+
+    var color = "#3b99fc";
+    var colors = _visuals.colors.createGradientColors({color:color,num:5,end:true});
+    var config = {lat:"lat",lon:"long",size:10,color:"speed",colors:colors,color_range:[0,50],
+                      header:"Sailing",popup:["boat_id","heading","speed"],marker_border:0,
+                      poly_border_width:1,poly_fill_color:"rgba(0,255,0,.5)",
+                      circle_border_width:1,circle_fill_color:"rgba(0,255,0,.5)",
+                      zoom:14,center:[56.000241,-3.424250],
+                      polygons:{window:"p/cq/Areas_Of_Interest",mode:"collection",coords:"Poly_Data",radius:"Poly_Radius",text:"poly_desc",order:"lon_lat"},html:getSailboat};
+
+    _map = _visuals.createMap("map",coll,config);
+
+    var w = 160;
+    var h = 80;
+
+    _visuals.createCompass("heading",coll,{value:"heading",size:180,header:"Current Heading",use_theme:false});
+    _visuals.createGauge("speed",coll,{value:"speed",mode:"number",delta:false,segments:5,width:w,height:h,header:"Current Speed",range:[0,10]});
+
+    _visuals.createWrapper("legend",{header:"Ships",style:{width:"98%",height:"5%","padding-top":"10px"},show_header:false});
+
+    _visuals.createTable("speeding",speeding,{header:"Speeding Violations",values:["boat_id","Location_Name","Max_speed","dateTime"],tail:true});
+    _visuals.createTable("exclusion",exclusion,{header:"Exclusion Violations",values:["boat_id","Location_Name","Minimum_Distance","First_dateTime","Last_dateTime"],tail:true});
+
+    _esp.size();
+
+    _eventsources = _conn.createEventSources({complete:complete});
+
+    var delay = 50;
+
+    for (var i = 1; i < 5; i++)
+    {
+        var es = _eventsources.createEventSource({name:"boat" + i,type:"csv",window:"p/cq/Boat",opcode:"insert",dateformat:"%Y-%m-%d %H:%M:%S",url:"http://roberts-mbp.lan.rmt.sas.com/roleve/esp/pages/sailing/boat" + i + ".csv",delay:delay});
+    }
+}
+
+function
+error()
+{
+    alert("error");
+}
+
+function
+playpause()
+{
+    if (_eventsources.running == false)
+    {
+        _eventsources.start();
+    }
+    else
+    {
+        _eventsources.togglePause();
+    }
+
+    document.getElementById("playpause").innerHTML = _eventsources.paused ? "&#xf513;" : "&#xf4f4;";
+}
+
+function
+complete(datasources)
+{
+    document.getElementById("playpause").innerHTML = "&#xf513;";
+}
+
+var _markers = {};
+
+function
+getSailboat(map,data,color)
+{
+    var boat = data.boat_id;
+    var zoom = parseInt(_map.zoom);
+    var speed = parseFloat(data.speed);
+    var heading = parseInt(data.heading);
+    var marker = "";
+
+    if (speed == 0.0 && _markers.hasOwnProperty(boat))
+    {
+        marker = _markers[boat];
+    }
+    else
+    {
+        var style = "font-size:" + (zoom + 5) + "pt";
+        style += ";color:black";
+
+        if (heading > 0 && heading < 180)
+        {
+            style += ";transform:scale(-1,1) rotate(90deg) rotate(" + -heading + "deg)";
+        }
+        else
+        {
+            style += ";transform:rotate(90deg) rotate(" + heading + "deg)";
+        }
+
+        if (boat == "Santa Maria")
+        {
+            style += ";color:#000000";
+        }
+        else if (boat == "Mayflower")
+        {
+            style += ";color:#ff0000";
+        }
+        else if (boat == "Beagle")
+        {
+            style += ";color:#ef8024";
+        }
+        else if (boat == "Bounty")
+        {
+            style += ";color:#0000ff";
+        }
+
+        marker = "<div class='mapicon' style='" + style + "'>&#xf39e;</div>";
+
+        _markers[boat] = marker;
+    }
+
+    return(marker);
+}
+
+</script>
+
+<style type="text/css">
+
+table.legend td.icon
+{
+    font-size:18pt;
+    padding-right:30px;
+}
+
+table.legend a.icon
+{
+    font-size:18pt;
+}
+
+</style>
+
+</head>
+
+<body>
+
+    <div id="banner">
+        <table style="width:100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf426;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content"  class="container">
+        <div id="legend" class="component legend">
+            <table class="legend" style="width:100%" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td>Santa Maria</td><td class="icon" style="color:#000000">&#xf39e;</td>
+                    <td>Mayflower</td><td class="icon" style="color:#ff0000">&#xf39e;</td>
+                    <td>Beagle</td><td class="icon" style="color:#ef8024">&#xf39e;</td>
+                    <td>Bounty</td><td class="icon" style="color:#0000ff">&#xf39e;</td>
+                    <td><a id="playpause" class="icon" title="Start Sailing" href="javascript:playpause()">&#xf513;</a></td>
+                </tr>
+            </table>
+        </div>
+        <div id="map" class="component" style="width:48%;height:55%"></div>
+        <div class="component" style="width:48%;height:55%">
+            <div id="speeding" class="component" style="width:100%;height:50%"></div>
+            <div id="exclusion" class="component" style="width:100%;height:50%"></div>
+        </div>
+        <div id="heading" class="component" style="width:60%;height:290px"></div>
+        <div id="speed" class="component" style="width:35%;height:290px"></div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+    <div id="help" class="dialog" style="width:60%;height:80%;overflow:hidden">
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">ESP Sailing Example</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogContent" style="height:60%;overflow:auto;border:1px solid #d8d8d8">
+            This example is taken from the standard set of ESP examples
+            <br/><br/>
+            This example shows how you can use SAS Event Stream Processing Streamviewer to visualize an event stream of data obtained from a set of boats. The model 
+            identifies two geographical areas of interest. One area is an exclusion zone that the boats identified are not permitted to enter. The other is an area 
+            where a speed restriction has been applied. For convenience, it is recommended that you upload the preprepared model XML file to SAS Event Stream Processing Studio.
+            <br/><br/>
+            For demonstration purposes, this example uses CSV files containing historical data. When a model similar to the one used in this example is deployed in a live 
+            environment, real-time data sources might be used instead. Before attempting to follow the steps in this example to create a sailing data dashboard, ensure that 
+            the model is working correctly in test mode. This includes ensuring that the model’s publisher connectors are correctly configured. The CSV files 
+            listed previously must be in a location on the server on which SAS Event Stream Processing is running
+            <br/><br/>
+
+            This example uses six files listed below:
+            <ol>
+            <li>The XML file (sailing_example.xml) is the project used in the example.</li>
+            <li>geoArea.csv is an input file. This file contains events relating to the defined areas of interest.</li>
+            <li>boat1.csv is an input file. This file contains the event stream of boat 1. The event stream contains time-stamped geographical coordinates of the boat’s movements.</li>
+            <li>boat2.csv is an input file. This file contains the event stream of boat 2. The event stream contains time-stamped geographical coordinates of the boat’s movements.</li>
+            <li>boat3.csv is an input file. This file contains the event stream of boat 3. The event stream contains time-stamped geographical coordinates of the boat’s movements.</li>
+            <li>boat4.csv is an input file. This file contains the event stream of boat 4. The event stream contains time-stamped geographical coordinates of the boat’s movements.</li>
+            </ol>
+
+            The ESP model contains the following windows:
+         
+            <ol>
+            <li>Four Source windows that receive event streams from the four boats identified: The Mayflower, The Bounty, The Beagle, and The Santa Maria.</li>
+            <li>One Source window that receives an event stream defining the areas of interest that the boats are not permitted to enter: Areas_Of_Interest.</li>
+            <li>One Geofence window that defines the areas of interest: Geofence_Area_Check.</li>
+            <li>One Copy window that is used to transition the model from stateless to stateful.</li>
+            <li>Two Filter windows that identify if any of the boats have entered the exclusion zone and speed restriction zone and if any of the boats were 
+            speeding: Filter_Inside_Exclusion_Zone and Last_Speeding_Event</li>
+            <li>Two Aggregate windows that aggregate the last exclusion violation and the last speeding event: Last_Exclusion_Violation and Last_Speeding_Event</li>
+            </ol>
+        </div>
+
+        <div class="dialogButtons">
+            <table style="width:100%">
+                <tr>
+                    <td class="dialogButton">
+                        <span><button class="close" onclick="javascript:_esp.getDialogs().popModal('help')">Done</button></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="espModel" class="dialog" style="width:90%;height:90%">
+
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">ESP Model</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogContent" style="width:95%;height:70%;margin:auto">
+            <pre id="espModelXml" class="model"></pre>
+        </div>
+    </div>
+
+</body>
+
+</html>
