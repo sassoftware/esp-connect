@@ -112,6 +112,20 @@ define([
         });
     }
 
+    EventSources.prototype.configureFromUrl =
+    function(url,parms)
+    {
+        var eventsources = this;
+        var o = {response:function(request,text,xml) {
+            eventsources.configure(text,parms);
+        },
+        error(request,message) {
+            console.log("error: " + message);
+        }
+        };
+        ajax.create("request",url,o).get();
+    }
+
     EventSources.prototype.createEventSource =
     function(options)
     {
@@ -229,7 +243,7 @@ define([
         var eventsources = [];
         var depsPending = false;
         //var minInterval = 10000;
-var minInterval = 1000;
+var minInterval = 5000;
         var completed = 0;
 
         Object.values(this._eventsources).forEach((ds) => {
@@ -538,8 +552,6 @@ var minInterval = 1000;
 		EventSource.call(this,eventsources,options);
 
         this._transform = null;
-        this._retrieving = null;
-        this._content = null;
 
         Object.defineProperty(this,"transform", {
             get() {
@@ -585,51 +597,42 @@ var minInterval = 1000;
     function()
     {
         var code = false;
+        var url = null;
 
-        if (this._retrieving == false)
+        if (this.hasOpt("url"))
         {
-            var url = null;
-
-            if (this.hasOpt("url"))
-            {
-                url = this.getOpt("url");
-            }
-            else if (this.hasOpt("url-func"))
-            {
-                var func = new Function(this.getOpt("url-func"));
-                url = func();
-            }
-
-            if (url != null)
-            {
-                var eventsource = this;
-                var o = {response:function(request,text,xml) {
-                    eventsource._content = text;
-                },
-                error(request,message) {
-                    console.log("error: " + message);
-                }
-                };
-
-                this._retrieving = true;
-
-                if (this.getOpt("use-connection",false))
-                {
-                    this._api.get(url,o);
-                }
-                else
-                {
-                    ajax.create("request",url,o).get();
-                }
-            }
+            url = this.getOpt("url");
         }
-        else if (this._content != null)
+        else if (this.hasOpt("url-func"))
         {
-            var data = eventsource._transform(connect,text);
+            var func = new Function(this.getOpt("url-func"));
+            url = func();
+        }
 
-            if (data != null)
+        if (url != null)
+        {
+            var eventsource = this;
+            var o = {response:function(request,text,xml) {
+                var data = eventsource._transform(connect,text);
+
+                if (data != null)
+                {
+                    eventsource.send(data);
+                }
+            },
+
+            error(request,message) {
+                console.log("error: " + message);
+            }
+            };
+
+            if (this.getOpt("use-connection",false))
             {
-                eventsource.send(data);
+                this._api.get(url,o);
+            }
+            else
+            {
+                ajax.create("request",url,o).get();
             }
 
             code = true;
@@ -759,7 +762,8 @@ var minInterval = 1000;
         this._data = data;
         this._opcode = eventsource.getOpt("opcode","upsert");
         this._delay = eventsource.getInt("delay",0);
-        this._index = 0;
+        this._index = eventsource.getInt("start",0);
+        this._chunksize = eventsource.getInt("chunk_size",1);
 
         tools.addTo(this._eventsource._senders,this);
     }
@@ -767,7 +771,12 @@ var minInterval = 1000;
     Sender.prototype.run =
     function()
     {
-        var target = this._eventsource.getOpt("maxevents",this._data.length);
+        var target = this._eventsource.getOpt("maxevents",0);
+
+        if (target == 0)
+        {
+            target = this._data.length;
+        }
 
         if (this._delay == 0)
         {
@@ -786,9 +795,14 @@ var minInterval = 1000;
 
             if (this._eventsource._eventsources.paused == false)
             {
-                this._eventsource._publisher.add(this._data[this._index]);
+                for (var i = 0; i < this._chunksize && this._index < target; i++)
+                {
+                    this._data[this._index].opcode = this._opcode;
+                    this._eventsource._publisher.add(this._data[this._index]);
+                    this._index++;
+                }
+
                 this._eventsource._publisher.publish();
-                this._index++;
 
                 setTimeout(function(){sender.run();},this._delay);
             }

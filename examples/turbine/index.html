@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP Wind Turbine Example</title>
+
+<link rel="stylesheet" href="/esp-connect/style/connect.css" />
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="/esp-connect/js/ui/main"></script>
+
+<script type="text/javascript">
+
+var _esp = null;
+var _conn = null;
+var _visuals = null;
+var _timer = null;
+
+function
+esp(api)
+{
+    _esp = api;
+
+    var parms = _esp.getParms();
+
+    if (parms.hasOwnProperty("server") == false)
+    {
+        alert("you must specify ESP server URL");
+        return;
+    }
+
+    var server = parms["server"];
+    delete parms["server"];
+
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+
+    _visuals = _esp.createVisuals(parms);
+
+    _esp.handleLayout();
+
+    _esp.connect(server,{ready:ready},{debug:false});
+
+    _timer = _esp.createTimer();
+}
+
+function
+ready(connection)
+{
+    _conn = connection;
+
+    if (_esp.getParm("load",true))
+    {
+        _esp.showStatus("Loading project...");
+        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true});
+    }
+    else
+    {
+        loaded();
+    }
+}
+
+var _eventsources = null;
+var _readings = null;
+var _alerts = null;
+
+function
+loaded()
+{
+    _esp.clearStatus();
+
+    _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
+
+    _readings = _conn.getEventCollection({name:"readings",window:"p/cq/Readings_stats",interval:1000,pagesize:0});
+    _readings.addDelegate({dataChanged:handleStats});
+
+    _alerts = _conn.getEventCollection({window:"p/cq/Union_1",pagesize:0});
+    _alerts.addDelegate({dataChanged:handleAlerts});
+
+    var toolbar = [];
+
+    toolbar.push({id:"playpause",text:"Start Data",class:"",click:playpause});
+
+    _eventsources = _conn.createEventSources({complete:complete});
+
+    var delay = 10;
+    var url = new URL("data.csv",document.URL).toString();
+
+    _eventsources.createEventSource({name:"data",type:"csv",window:"p/cq/Data_Stream",opcode:"insert",dateformat:"%Y-%m-%d %H:%M:%S",url:url,delay:delay,maxevents:0});
+
+    _esp.size();
+
+    _timer.start();
+
+    if (_esp.getParm("load",true))
+    {
+        playpause();
+    }
+}
+
+function
+error()
+{
+    alert("error");
+}
+
+var _turbines = {};
+
+function
+Turbine(id)
+{
+    const   container = document.getElementById("turbines");
+
+    this._id = id;
+    this._data = null;
+
+    this._container = document.createElement("div");
+    this._container.className = "turbineContainer";
+    container.appendChild(this._container);
+
+    this._table = document.createElement("table");
+    this._table.className = "turbine";
+    this._container.appendChild(this._table);
+
+    var tr;
+    var td;
+
+    this._table.appendChild(tr = document.createElement("tr"));
+    tr.appendChild(this._titleCell = document.createElement("td"));
+    this._titleCell.className = "turbineTitle";
+    this._titleCell.colSpan = 2;
+
+    this._table.appendChild(tr = document.createElement("tr"));
+    tr.appendChild(td = document.createElement("td"));
+    td.rowSpan = 2;
+
+    this._canvas = document.createElement("canvas");
+    this._canvas.width = 200;
+    this._canvas.height = 250;
+    this._canvas.className = "turbine";
+    this._context = this._canvas.getContext("2d");
+    td.appendChild(this._canvas);
+
+    tr.appendChild(td = document.createElement("td"));
+    td.className = "turbineInfo";
+    var table = document.createElement("table");
+    table.className = "turbineInfo";
+    table.cellSpacing = 0;
+    table.cellPadding = 0;
+    td.appendChild(table);
+
+    table.appendChild(tr = document.createElement("tr"));
+    tr.appendChild(td = document.createElement("td"));
+    td.style.paddingRight = "10px";
+    td.innerHTML = "Value:";
+    tr.appendChild(this._valueCell = document.createElement("td"));
+
+    table.appendChild(tr = document.createElement("tr"));
+    tr.appendChild(td = document.createElement("td"));
+    td.style.paddingRight = "10px";
+    td.innerHTML = "Average:";
+    tr.appendChild(this._averageCell = document.createElement("td"));
+
+    this._table.appendChild(tr = document.createElement("tr"));
+    tr.appendChild(td = document.createElement("td"));
+    td.className = "alerts";
+
+    var div = document.createElement("div");
+    div.className = "alerts";
+    td.appendChild(div);
+    div.style.width = "150px";
+    div.style.height = "150px";
+
+    this._alertsTable = _visuals.createSimpleTable(div,{key:"alert"});
+
+    var fields = new Array();
+    fields.push({name:"alert",type:"string",label:"Alert"});
+    fields.push({name:"Alert_count",type:"int",label:"Count"});
+    this._alertsTable.setFields(fields);
+
+    this._angle = Math.random() * 360;
+    this._delta = 10;
+
+    this._alerts = {};
+    this._alertTime = null;
+
+    _turbines[this._id] = this;
+
+    this._data = null;
+
+    Object.defineProperty(this,"data", {
+        get() {
+            return(this._data);
+        },
+        set(value) {
+            this._data = value;
+            this.drawInfo();
+        }
+    });
+
+    _timer.add(this);
+}
+
+Turbine.prototype.draw =
+function()
+{
+    var w = this._canvas.width;
+    var h = this._canvas.height;
+    var center = {x:w / 2,y:h / 2};
+
+    this._context.strokeStyle = "#c0c0c0";
+    this._context.strokeStyle = "black";
+    this._context.lineWidth = .5;
+
+    if (this._alertTime != null)
+    {
+        var elapsed = new Date().getTime() - this._alertTime;
+        if (elapsed >= 5000)
+        {
+            this._alertTime = null;
+        }
+    }
+
+    this._context.fillStyle = this._alertTime ? "#ff0000" : "#87cefa";
+    this._context.fillRect(0,0,this._canvas.width,this._canvas.height);
+
+    var  radius = 20;
+
+    this._context.fillStyle = "white";
+    this._context.fillRect(center.x - 10,center.y,20,center.y);
+    this._context.rect(center.x - 10,center.y,20,center.y);
+
+    this._context.beginPath();
+    this._context.ellipse(center.x,center.y,radius,radius,0,0,Math.PI * 2,0);
+    this._context.stroke();
+    this._context.fill();
+
+    var     angle = this._angle;
+    const   length = 90;
+    const   size = 8;
+    var     radians;
+
+    for (var i = 0; i < 3; i++)
+    {
+        radians = angle * (Math.PI / 180);
+        var x = center.x + (length * Math.cos(radians));
+        var y = center.y + (length * Math.sin(radians));
+
+        radians = (angle - 75) * (Math.PI / 180);
+        var x0 = center.x + (size * Math.cos(radians));
+        var y0 = center.y + (size * Math.sin(radians));
+
+        radians = (angle + 75) * (Math.PI / 180);
+        var x1 = center.x + (size * Math.cos(radians));
+        var y1 = center.y + (size * Math.sin(radians));
+
+        this._context.beginPath();
+        this._context.moveTo(x0,y0);
+        this._context.lineTo(x,y);
+        this._context.lineTo(x1,y1);
+        this._context.closePath();
+        this._context.fill();
+        this._context.stroke();
+
+        angle += 120;
+
+        if (angle > 360)
+        {
+            angle -= 360;
+        }
+    }
+
+    var  radius = 10;
+
+    this._context.beginPath();
+    this._context.ellipse(center.x,center.y,radius,radius,0,0,Math.PI * 2,0);
+    this._context.stroke();
+    this._context.fill();
+}
+
+Turbine.prototype.addAlert =
+function(data)
+{
+    this._alerts[data.alert] = data;
+    this._alertsTable.setData(Object.values(this._alerts));
+    this._alertTime = new Date().getTime();
+}
+
+Turbine.prototype.drawInfo =
+function()
+{
+    if (this._data != null)
+    {
+        var title = "";
+        var date = new Date();
+        var ts = new Number(this._data.timestamp);
+        date.setTime(ts * 1000);
+        title += this._data.location;
+        title += " - ";
+        title += this._data.attribute;
+        title += " (";
+        title += date.toLocaleDateString();
+        title += " ";
+        title += date.toLocaleTimeString();
+        title += ")";
+        this._titleCell.innerHTML = title;
+
+        this._valueCell.innerHTML = Number.parseFloat(this._data.current_value).toPrecision(4);
+        this._averageCell.innerHTML = Number.parseFloat(this._data.average).toPrecision(4);
+    }
+
+    this._alertsTable.draw();
+}
+
+Turbine.prototype.run =
+function()
+{
+    if (this._alertTime == null)
+    {
+        this._angle += this._delta;
+
+        if (this._angle > 360)
+        {
+            this._angle -= 360;
+        }
+    }
+
+    this.draw();
+}
+
+Turbine.prototype.getInterval =
+function()
+{
+    return(200);
+}
+
+function
+handleStats(events,data)
+{
+    data.forEach((item) => {
+        var key = item.location + "." + item.attribute;
+        var turbine = _turbines.hasOwnProperty(key) ? _turbines[key] : null;
+        if (turbine == null)
+        {
+            turbine = new Turbine(key);
+        }
+
+        turbine.data = item;
+    });
+}
+
+function
+handleAlerts(events,data)
+{
+    data.forEach((item) => {
+        var key = item.location + "." + item.attribute;
+        var turbine = _turbines.hasOwnProperty(key) ? _turbines[key] : null;
+
+        if (turbine != null)
+        {
+            turbine.addAlert(item);
+        }
+    });
+}
+
+function
+playpause()
+{
+    if (_eventsources.running == false)
+    {
+        _eventsources.start();
+    }
+    else
+    {
+        _eventsources.togglePause();
+    }
+
+    //document.getElementById("playpause").innerHTML = _eventsources.paused ? "&#xf513;" : "&#xf4f4;";
+    document.getElementById("playpause").innerHTML = _eventsources.paused ? "Start Data" : "Pause Data";
+}
+
+function
+complete(eventsources)
+{
+    document.getElementById("playpause").innerHTML = "Start Data";
+}
+
+</script>
+
+<style type="text/css">
+
+div.alerts
+{
+    border:1px solid #d8d8d8;
+    overflow:auto;
+}
+
+div.turbineContainer
+{
+    padding:10px;
+    font-size:10pt;
+}
+
+table.turbine
+{
+    width:100%;
+    height:100%;
+    border:1px solid #d8d8d8;
+}
+
+td.turbineTitle
+{
+    background:#3b99fc;
+    font-size:12pt;
+    padding:4px;
+    color:white;
+}
+
+td.turbineInfo,
+td.alerts
+{
+    padding:10px;
+}
+
+canvas.turbine
+{
+    border:1px solid #d8d8d8;
+}
+
+</style>
+
+</head>
+
+<body>
+
+    <div id="banner">
+        <table style="width:100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td style="width:40%;text-align:left">
+                    <a id="playpause" href="javascript:playpause()">Start Data</a>
+                </td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf426;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content"  class="container">
+        <div id="turbines" class="container" style="width:90%;height:90%;padding-top:20px"></div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+    <div id="help" class="dialog" style="width:60%">
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">ESP Wind Turbine Example</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogContent">
+            This example uses calculate windows with DS2 and pattern windows to process sensor readings from wind turbines.
+            <br/><br/>
+            The event data should begin to flow when the project is loaded. You can pause and restart the event flow with the link
+            at the top center of the page.
+            <br/><br/>
+            The page subscribes to the turbine data and displays the current values in the turbine widgets. It also subscribes to the
+            turbine alerts window. When a new turbine alert is received, the corresponding widget will turn red and the turbine will
+            stop spinning for about 5 seconds. It will then go back to normal.
+        </div>
+
+        <div class="dialogButtons">
+            <table style="width:100%">
+                <tr>
+                    <td class="dialogButton">
+                        <span><button class="close" onclick="javascript:_esp.getDialogs().popModal('help')">Done</button></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="espModel" class="dialog" style="width:90%;height:90%">
+
+        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td><div class="dialogTitle">ESP Model</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogContent" style="width:95%;height:70%;margin:auto">
+            <pre id="espModelXml" class="model"></pre>
+        </div>
+    </div>
+
+</body>
+
+</html>

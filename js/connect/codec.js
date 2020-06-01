@@ -24,10 +24,8 @@ define([
     function
     JsonEncoder(o)
     {
-        var size = this.size(o);
-        size *= 2;
-
-        this._data = new ArrayBuffer(size);
+        this._size = this.size(o) * 2;
+        this._data = new ArrayBuffer(this._size);
         this._view = new DataView(this._data);
         this._index = 0;
 
@@ -298,6 +296,8 @@ define([
         {
             throw("unknown type: " + type);
         }
+
+        bytes += 5;
 
         return(bytes);
     }

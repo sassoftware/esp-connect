@@ -203,6 +203,11 @@ define([
             return(tools.guid());
         },
 
+        createTimer:function()
+        {
+            return(tools.createTimer());
+        },
+
         formatDate:function(date,format)
         {
             return(tools.formatDate(date,format));

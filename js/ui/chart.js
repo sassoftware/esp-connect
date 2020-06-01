@@ -55,6 +55,24 @@ define([
     }
 
     function
+    click()
+    {
+        this._info.click(this._chart,this._info);
+    }
+
+    function
+    mouseup()
+    {
+        this._info.mouseup(this._chart,this._info);
+    }
+
+    function
+    mousedown()
+    {
+        this._info.mousedown(this._chart,this._info);
+    }
+
+    function
     editFilter()
     {
         this._chart._visuals.editFilter(this._chart._datasource);
@@ -117,11 +135,6 @@ define([
                 this._chart._filterContainer.style.visibility = "visible";
             }
 
-            if (this._chart._closeContainer != null)
-            {
-                this._chart._closeContainer.style.visibility = "visible";
-            }
-
             this._chart._playPauseContainer.style.visibility = "visible";
 
             this._chart.info();
@@ -130,6 +143,11 @@ define([
         if (this._chart._share != null)
         {
             this._chart._share.style.visibility = "visible";
+        }
+
+        if (this._chart._custom != null)
+        {
+            this._chart._custom.style.visibility = "visible";
         }
     }
 
@@ -148,17 +166,17 @@ define([
                 this._chart._filterContainer.style.visibility = "hidden";
             }
 
-            if (this._chart._closeContainer != null)
-            {
-                this._chart._closeContainer.style.visibility = "hidden";
-            }
-
             this._chart._playPauseContainer.style.visibility = "hidden";
         }
 
         if (this._chart._share != null)
         {
             this._chart._share.style.visibility = "hidden";
+        }
+
+        if (this._chart._custom != null)
+        {
+            this._chart._custom.style.visibility = "hidden";
         }
     }
 
@@ -232,6 +250,12 @@ define([
             this.container.innerHTML = "";
         }
 
+        this._navigation = null;
+        this._playPauseContainer = null;
+        this._filterContainer = null;
+        this._share = null;
+        this._custom = null;
+
         this._div = document.createElement("div");
         this._div.className = "visual"; 
 
@@ -241,24 +265,97 @@ define([
         this._header.style.overflow = "hidden";
         var table = document.createElement("table");
         table.style.width = "100%";
+
         var tr = document.createElement("tr");
-        var td = document.createElement("td");
+        var close = null;
+        var td;
+
+        if (this.getOpt("enable_close",false))
+        {
+            tr.appendChild(td = document.createElement("td"));
+            td.className = "close";
+            td.style.paddingRight = "10px";
+            td.title = "Close";
+            close = document.createElement("a");
+            close._chart = this;
+            close.innerHTML = "&#xf10c;"
+            close.className = "icon";
+            close.href = "#";
+            close.addEventListener("click",closeChart);
+            td.appendChild(close);
+        }
+
+        tr.appendChild(td = document.createElement("td"));
         td.className = "headerText";
+        if (close != null)
+        {
+            td.style.paddingLeft = "10px";
+        }
         table.appendChild(tr);
-        tr.appendChild(td);
         this._text = td;
+
         this._header.appendChild(table);
 
-        this._navigation = null;
-        this._playPauseContainer = null;
-        this._filterContainer = null;
-        this._closeContainer = null;
-        this._share = null;
+        var icons = null;
+        var toolbar = this.getOptAndClear("toolbar");
+
+        if (toolbar != null)
+        {
+            if (icons == null)
+            {
+                tr.appendChild(icons = document.createElement("td"));
+                icons.className = "icons";
+            }
+
+            this._custom = document.createElement("span");
+            this._custom.className = "custom";
+            this._custom.style.visibility = "hidden";
+            icons.appendChild(this._custom);
+
+            toolbar.forEach((info) => {
+                var a = document.createElement("a");
+                a._info = info;
+                a._chart = this;
+                a.innerHTML = info.text;
+                a.className = info.hasOwnProperty("class") ? info["class"] : "icon";
+                if (info.hasOwnProperty("id"))
+                {
+                    a.id = info.id;
+                }
+                if (info.hasOwnProperty("tooltip"))
+                {
+                    a.title = info.tooltip;
+                }
+                a.href = "#";
+                if (info.hasOwnProperty("click"))
+                {
+                    a.addEventListener("click",click);
+                }
+                else if (info.hasOwnProperty("mousedown"))
+                {
+                    a.addEventListener("mousedown",mousedown);
+
+                    if (info.hasOwnProperty("mouseup"))
+                    {
+                        a.addEventListener("mouseup",mouseup);
+                    }
+                }
+                else
+                {
+                    throw "You must specify either click or mousedown in the toolbar item.";
+                }
+
+                this._custom.appendChild(a);
+            });
+        }
 
         if (this.getType() != "wrapper")
         {
-            tr.appendChild(td = document.createElement("td"));
-            td.className = "icons";
+            if (icons == null)
+            {
+                tr.appendChild(icons = document.createElement("td"));
+                icons.className = "icons";
+            }
 
             if (this._datasource != null && this._datasource.isArray() == false)
             {
@@ -266,7 +363,7 @@ define([
                 this._navigation.className = "navigation";
                 this._navigation.style.visibility = "hidden";
                 this._navigation.style.display = "none";
-                td.appendChild(this._navigation);
+                icons.appendChild(this._navigation);
             }
 
             if (this.getOpt("enable_filter",false))
@@ -274,26 +371,18 @@ define([
                 this._filterContainer = document.createElement("span");
                 this._filterContainer.className = "filter";
                 this._filterContainer.style.visibility = "hidden";
-                td.appendChild(this._filterContainer);
+                icons.appendChild(this._filterContainer);
             }
 
             this._playPauseContainer = document.createElement("span");
             this._playPauseContainer.className = "playPause";
             this._playPauseContainer.style.visibility = "hidden";
-            td.appendChild(this._playPauseContainer);
+            icons.appendChild(this._playPauseContainer);
 
             this._share = document.createElement("span");
             this._share.className = "share";
             this._share.style.visibility = "hidden";
-            td.appendChild(this._share);
-
-            if (this.getOpt("enable_close",false))
-            {
-                this._closeContainer = document.createElement("span");
-                this._closeContainer.className = "close";
-                this._closeContainer.style.visibility = "hidden";
-                td.appendChild(this._closeContainer);
-            }
+            icons.appendChild(this._share);
 
             if (this._navigation != null)
             {
@@ -347,17 +436,6 @@ define([
                 this._filter.href = "#";
                 this._filter.addEventListener("click",editFilter);
                 this._filterContainer.appendChild(this._filter);
-            }
-
-            if (this._closeContainer != null)
-            {
-                this._close = document.createElement("a");
-                this._close._chart = this;
-                this._close.innerHTML = "&#xf10c;"
-                this._close.className = "icon";
-                this._close.href = "#";
-                this._close.addEventListener("click",closeChart);
-                this._closeContainer.appendChild(this._close);
             }
 
             this._copy = document.createElement("a");
@@ -636,6 +714,10 @@ define([
         if (this._share != null)
         {
             this._share.style.visibility = "hidden";
+        }
+        if (this._custom != null)
+        {
+            this._custom.style.visibility = "hidden";
         }
     }
 

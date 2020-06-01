@@ -54,7 +54,7 @@ ready(connection)
     if (_esp.getParm("load",true))
     {
         _esp.showStatus("Loading project...");
-        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true,parms:{config:new URL("config.xml",document.URL).toString()}});
+        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true});
     }
     else
     {

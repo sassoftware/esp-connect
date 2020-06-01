@@ -110,6 +110,86 @@ define([
         return(JSON.stringify(this._a));
     }
 
+    function
+    Timer()
+    {
+        this._items = [];
+    }
+
+    Timer.prototype.add =
+    function(item)
+    {
+        if (__tools.supports(item,"run") == false)
+        {
+            __tools.exception("The timer entry must implement the run method");
+        }
+
+        if (__tools.supports(item,"getInterval") == false)
+        {
+            __tools.exception("The timer entry must implement the getInterval method");
+        }
+
+        item._fired = 0;
+
+        Object.defineProperty(item,"fired", {
+            get() {
+                return(this._fired);
+            },
+            set(value) {
+                this._fired = value;
+            }
+        });
+
+        this._items.push(item);
+    }
+
+    Timer.prototype.start =
+    function()
+    {
+        var timer = this;
+        setTimeout(function(){timer.run()},1000);
+    }
+
+    Timer.prototype.run =
+    function()
+    {
+        var current = new Date();
+        var items = [];
+        var minInterval = 1000;
+
+        this._items.forEach((item) => {
+
+            var diff = current.getTime() - item.fired;
+            var interval = item.getInterval();
+
+            if (diff > interval)
+            {
+                if (interval < minInterval)
+                {
+                    minInterval = interval;
+                }
+
+                items.push(item);
+            }
+            else
+            {
+                diff = current.getTime() - item.fired + interval;
+
+                if (diff < minInterval)
+                {
+                    minInterval = diff;
+                }
+            }
+        });
+
+        items.forEach((item) => {
+            item.run();
+        });
+
+        var timer = this;
+        setTimeout(function(){timer.run()},minInterval);
+    }
+
     var __tools =
     {
         s4()
@@ -210,6 +290,11 @@ define([
         createRange(lower,upper,num)
         {
             return(new Range(lower,upper,num));
+        },
+
+        createTimer()
+        {
+            return(new Timer());
         },
 
         createUrl(url)

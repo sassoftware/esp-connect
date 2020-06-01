@@ -108,7 +108,8 @@ loaded()
 
     for (var i = 1; i < 5; i++)
     {
-        var es = _eventsources.createEventSource({name:"boat" + i,type:"csv",window:"p/cq/Boat",opcode:"insert",dateformat:"%Y-%m-%d %H:%M:%S",url:"http://roberts-mbp.lan.rmt.sas.com/roleve/esp/pages/sailing/boat" + i + ".csv",delay:delay});
+        var url = new URL("boat" + i + ".csv",document.URL).toString();
+        _eventsources.createEventSource({name:"boat" + i,type:"csv",window:"p/cq/Boat",opcode:"insert",dateformat:"%Y-%m-%d %H:%M:%S",url:url,delay:delay});
     }
 }
 
@@ -134,7 +135,7 @@ playpause()
 }
 
 function
-complete(datasources)
+complete(eventsources)
 {
     document.getElementById("playpause").innerHTML = "&#xf513;";
 }
@@ -145,7 +146,7 @@ function
 getSailboat(map,data,color)
 {
     var boat = data.boat_id;
-    var zoom = parseInt(_map.zoom);
+    var zoom = parseInt(_map.getZoom());
     var speed = parseFloat(data.speed);
     var heading = parseInt(data.heading);
     var marker = "";

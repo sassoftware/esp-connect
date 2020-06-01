@@ -790,6 +790,12 @@ define([
         }
 
         var values = this._datasource.getValuesBy(xValues,yValues);
+
+        if (values == null)
+        {
+            return;
+        }
+
         var items = this._datasource.getList();
         var markers = [];
         var lines = {color:[],width:[]};
@@ -3112,7 +3118,7 @@ define([
                 _filterDelegate.setFilter(document.getElementById("_filtertext_").value);
             }
 
-            _api.getDialogs().popModal("_editfilter_");
+            dialogs.popModal("_editfilter_");
 
             _filterDelegate = null;
         }
@@ -3120,7 +3126,7 @@ define([
         window._cancelFilterEdit_ = 
         function()
         {
-            _api.getDialogs().popModal("_editfilter_");
+            dialogs.popModal("_editfilter_");
             _filterDelegate = null;
         }
 

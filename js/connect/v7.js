@@ -1468,6 +1468,11 @@ define([
 	Datasource.prototype.getValuesBy =
     function(keys,names,delimiter = ".")
     {
+        if (this.schema.size == 0)
+        {
+            return(null);
+        }
+
         var keyFields = [];
         var f;
 

@@ -13,6 +13,39 @@ define([
     "./chart"
 ], function(Options,Chart)
 {
+    var _interval = null;
+
+    function
+    mousedown(chart,info)
+    {
+        var msecs = 50;
+
+        if (info.name == "zoomin")
+        {
+            if (_interval == null)
+            {
+                _interval = setInterval(function(){chart.zoomIn()},msecs);
+            }
+        }
+        else if (info.name == "zoomout")
+        {
+            if (_interval == null)
+            {
+                _interval = setInterval(function(){chart.zoomOut()},msecs);
+            }
+        }
+    }
+
+    function
+    mouseup(chart,info)
+    {
+        if (_interval != null)
+        {
+            clearInterval(_interval);
+            _interval = null;
+        }
+    }
+
     function
     Maps(options)
     {
@@ -29,17 +62,31 @@ define([
         var engine = opts.getOpt("engine","leaflet");
         var chart = null;
 
+        if (opts.getOpt("allow_zoom",true))
+        {
+            var toolbar = opts.getOpt("toolbar");
+
+            if (toolbar == null)
+            {
+                toolbar = [];
+                opts.setOpt("toolbar",toolbar);
+            }
+
+            toolbar.push({name:"zoomin",text:"&#xf8e1;",mousedown:mousedown,mouseup:mouseup});
+            toolbar.push({name:"zoomout",text:"&#xf8e2;",mousedown:mousedown,mouseup:mouseup});
+        }
+
         if (engine == "plotly")
         {
-            chart = new PlotlyMap(visuals,container,datasource,options);
+            chart = new PlotlyMap(visuals,container,datasource,opts.getOpts());
         }
         else if (engine == "choropleth")
         {
-            chart = new ChoroplethMap(visuals,container,datasource,options);
+            chart = new ChoroplethMap(visuals,container,datasource,opts.getOpts());
         }
         else
         {
-            chart = new LeafletMap(visuals,container,datasource,options);
+            chart = new LeafletMap(visuals,container,datasource,opts.getOpts());
         }
 
         return(chart);
@@ -59,7 +106,7 @@ define([
     Map.prototype.constructor = Map;
 
     Map.prototype.init =
-    function(data,clear)
+    function()
     {
         this._lat = this.getOpt("lat");
 
@@ -252,6 +299,39 @@ define([
         return(mapdata);
     }
 
+    Map.prototype.getZoomDelta =
+    function()
+    {
+        return(1);
+    }
+
+    Map.prototype.getZoom =
+    function()
+    {
+        return(this.getOpt("zoom",10));
+    }
+
+    Map.prototype.setZoom =
+    function(value)
+    {
+        this.setOpt("zoom",value);
+        this.draw();
+    }
+
+    Map.prototype.zoomIn =
+    function()
+    {
+        var current = this.getZoom();
+        this.setZoom(current + this.getZoomDelta());
+    }
+
+    Map.prototype.zoomOut =
+    function()
+    {
+        var current = this.getZoom();
+        this.setZoom(current - this.getZoomDelta());
+    }
+
     Map.prototype.getText =
     function(fields)
     {
@@ -305,7 +385,9 @@ define([
 
         this.sizeContent();
 
-        this._map = new L.map(this._content,{zoom:4});
+        const   showzoom = this.getOpt("show_zoom",false);
+
+        this._map = new L.map(this._content,{zoom:this.getZoom(),zoomControl:showzoom,zoomSnap:.1,zoomDelta:this.getOpt("zoom_delta",.1)});
 
         this._markers = {};
 
@@ -316,7 +398,6 @@ define([
         var osmAttrib = "Map data © <a href='https://openstreetmap.org'>OpenStreetMap</a> contributors";
         var osm = new L.TileLayer(osmUrl,{attribution:osmAttrib});
 
-        //this._map.setView(new L.LatLng(37.0,-95));
         this._map.addLayer(osm);
 
         if (this.hasOpt("circles"))
@@ -352,15 +433,6 @@ define([
                 this.addPolygons(o);
             }
         }
-
-        Object.defineProperty(this,"zoom", {
-            get() {
-                return(this._map.getZoom());
-            },
-            set(value) {
-                this._map.setZoom(value);
-            }
-        });
 
         this._data = null;
     }
@@ -636,6 +708,13 @@ define([
         {
             this.getOpt("mouseover")(data);
         }
+    }
+
+    LeafletMap.prototype.setZoom =
+    function(value)
+    {
+        Map.prototype.setZoom.call(this,value);
+        this._map.setZoom(value);
     }
 
     LeafletMap.prototype.addCircles =
@@ -974,6 +1053,12 @@ define([
         }
     }
 
+    LeafletMap.prototype.getZoomDelta =
+    function()
+    {
+        return(this.getOpt("zoom_delta",.1));
+    }
+
     /* End Map */
 
     /* Plotly Map */
@@ -983,6 +1068,22 @@ define([
     {
         Map.call(this,visuals,container,datasource,options);
         this._type = "scattergeo";
+        this._geo = new Options({scope:"usa"});
+        Object.defineProperty(this,"geo", {
+            get() {
+                return(this._geo);
+            }
+        });
+
+        Object.defineProperty(this,"center", {
+            get() {
+                var center = this._geo.getOpt("center");
+                return(center);
+            },
+            set(value) {
+                this._geo.setOpt("center",value);
+            }
+        });
     }
 
     PlotlyMap.prototype = Object.create(Map.prototype);
@@ -1027,6 +1128,10 @@ define([
             }
         }];
 
+        this._layout.geo = this._geo.getOpts();
+
+        /*
+
         this._layout.geo = {
             showland: true,
             landcolor: "rgb(217, 217, 217)",
@@ -1037,7 +1142,7 @@ define([
             countrycolor: "rgb(255,255,255)"
         };
 
-        /*
+
         this._layout.geo = {
             scope: "usa",
             projection: {
@@ -1056,6 +1161,47 @@ define([
         Plotly.react(this._content,data,this._layout,this._defaults);
     }
 
+    PlotlyMap.prototype.getZoomDelta =
+    function()
+    {
+        return(.1);
+    }
+
+    PlotlyMap.prototype.getZoom =
+    function()
+    {
+        var level = 1;
+        var projection = this._geo.getOpt("projection");
+        if (projection != null && projection.hasOwnProperty("scale"))
+        {
+            level = projection.scale;
+        }
+        return(level);
+    }
+
+    PlotlyMap.prototype.setZoom =
+    function(value)
+    {
+        var projection = this._geo.hasOpt("projection") ? this._geo.getOpt("projection") : {};
+        projection.scale = value;
+        this._geo.setOpt("projection",projection);
+        this.draw();
+    }
+
+    PlotlyMap.prototype.setCenter =
+    function(lat,lon,zoom)
+    {
+        this.center = {lat:lat,lon:lon};
+        if (zoom != null)
+        {
+            this.setZoom(zoom);
+        }
+        else
+        {
+            this.draw();
+        }
+    }
+
     /* End Plotly Map */
 
     /* Choropleth Map */
@@ -1063,41 +1209,8 @@ define([
     function
     ChoroplethMap(visuals,container,datasource,options)
     {
-        Map.call(this,visuals,container,datasource,options);
+        PlotlyMap.call(this,visuals,container,datasource,options);
         this._type = "choropleth";
-        this._geo = new Options({scope:"usa"});
-        Object.defineProperty(this,"geo", {
-            get() {
-                return(this._geo);
-            }
-        });
-
-        Object.defineProperty(this,"center", {
-            get() {
-                var center = this._geo.getOpt("center");
-                return(center);
-            },
-            set(value) {
-                this._geo.setOpt("center",value);
-            }
-        });
-
-        Object.defineProperty(this,"zoom", {
-            get() {
-                var level = 1;
-                var projection = this._geo.getOpt("projection");
-                if (projection != null && projection.hasOwnProperty("scale"))
-                {
-                    level = projection.scale;
-                }
-                return(level);
-            },
-            set(value) {
-                var projection = this._geo.hasOpt("projection") ? this._geo.getOpt("projection") : {};
-                projection.scale = value;
-                this._geo.setOpt("projection",projection);
-            }
-        });
     }
 
     ChoroplethMap.prototype = Object.create(PlotlyMap.prototype);
@@ -1135,16 +1248,6 @@ define([
         }
 
         var z = this._datasource.getValues(values[0]);
-
-            /*
-            featureidkey:"properties.name",
-            locations:locations,
-            locationmode: "geojson-id",
-            locations:"fips",
-            geojson:"https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json",
-            geojson: "https://raw.githubusercontent.com/shawnbot/topogram/master/data/us-states.geojson",
-            mode: "markers",
-            */
 
         var data = [{
             type: this._type,
@@ -1196,21 +1299,12 @@ define([
         };
         */
 
+        this._defaults.scrollZoom = this.getOpt("scroll_zoom",true);
+
         Plotly.react(this._content,data,this._layout,this._defaults);
 
         this.setHandlers();
         this.setHeader();
-    }
-
-    ChoroplethMap.prototype.setCenter =
-    function(lat,lon,zoom)
-    {
-        this.center = {lat:lat,lon:lon};
-        if (zoom != null)
-        {
-            this.zoom = zoom;
-        }
-        this.draw();
     }
 
     /* End Choropleth Map */

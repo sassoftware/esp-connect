@@ -291,6 +291,11 @@ define([
             return(connect.guid());
         },
 
+        createTimer:function()
+        {
+            return(connect.createTimer());
+        },
+
         formatDate:function(date,format)
         {
             return(connect.formatDate(date,format));
