@@ -1074,6 +1074,12 @@ define([
                 return(this._geo);
             }
         });
+        this._geo.setOpt("showcountries",false);
+        this._geo.setOpt("showframe",true);
+        this._geo.setOpt("framecolor","red");
+        this._geo.setOpt("framewidth",6);
+
+        this._geo.setOpt("lonaxis",{showgrid:true});
 
         Object.defineProperty(this,"center", {
             get() {
@@ -1164,7 +1170,7 @@ define([
     PlotlyMap.prototype.getZoomDelta =
     function()
     {
-        return(.1);
+        return(.25);
     }
 
     PlotlyMap.prototype.getZoom =
@@ -1248,6 +1254,11 @@ define([
         }
 
         var z = this._datasource.getValues(values[0]);
+        var min = Math.min.apply(Math,z);
+        var max = Math.max.apply(Math,z);
+        var colorscale = null;
+
+        var colorscale = this._visuals.colors.createColorScale(this);
 
         var data = [{
             type: this._type,
@@ -1256,11 +1267,13 @@ define([
             featureidkey:this.getOpt("key"),
             showscale:this.getOpt("show_scale",true),
             z:z,
+            zmin:min,
+            zmax:max,
             hoverinfo: "text",
             text: mapdata.tooltips,
+            colorscale:colorscale,
             marker: {
                 size: mapdata.sizes,
-                color: mapdata.colors,
                 line: {
                     color: this.getOpt("boundary_color","black"),
                     width: this.getOpt("boundary_width",1)

@@ -318,6 +318,70 @@ define([
         return(new Gradient(this,options));
     }
 
+    Colors.prototype.createColorScale =
+    function(opts)
+    {
+        var colorscale = [];
+
+        if (opts.hasOpt("gradient"))
+        {
+            var gradientEnd = opts.getOpt("gradient_end",false);
+            var color = this.getColor(opts.getOpt("gradient","lightest"));
+            var levels = opts.getOpt("levels",5);
+            var factor = opts.getOpt("factor",15);
+            var c = gradientEnd ? this.lighten(color,levels * factor) : color;
+            var delta = 1 / (levels - 1);
+            var value = 0;
+            var i = 0;
+
+            while (i < levels - 1)
+            {
+                colorscale.push([value,this.darken(c,i * factor)]);
+                value += delta;
+                i++;
+            }
+
+            colorscale.push([1,gradientEnd ? color : this.darken(c,i * factor)]);
+        }
+        else
+        {
+            var colors = opts.getArray("colors");
+
+            if (colors != null)
+            {
+                var delta = 1 / (colors.length - 1);
+                var value = 0;
+                var i = 0;
+
+                while (i < colors.length - 1)
+                {
+                    colorscale.push([value,colors[i]]);
+                    value += delta;
+                    i++;
+                }
+
+                colorscale.push([1,colors[i]]);
+            }
+            else
+            {
+                var delta = 1 / (this._colors.length - 1);
+                var value = 0;
+                var i = 0;
+
+                while (i < this._colors.length - 1)
+                {
+                    colorscale.push([value,this._colors[i].str]);
+                    value += delta;
+                    i++;
+                }
+
+                colorscale.push([1,this._colors[i].str]);
+            }
+        }
+
+        return(colorscale);
+    }
+
     Colors.prototype.lighten =
     function(color,amount)
     {
@@ -375,7 +439,8 @@ define([
     {
         var rgb = this.toRgb(color);
         var luma = ((rgb.red * 299) + (rgb.green * 587) + (rgb.blue * 114)) / 1000;
-        var o = {color:color,rgb:rgb,luma:luma};
+        var o = {color:color,rgb:rgb,luma:luma,str:color};
+
         this._colors.push(o);
     }
 
@@ -429,7 +494,6 @@ define([
         {
             var c = this.getColor(opts.getOpt("gradient","lightest"));
             var levels = opts.getOpt("levels",100);
-            var base = opts.getOpt("base",this.lightest);
             var gradient = this.createGradient({color:c,levels:levels,min:range[0],max:range[1]});
             var gradientEnd = opts.getOpt("gradient_end",false);
 

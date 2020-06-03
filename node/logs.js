@@ -29,13 +29,17 @@ esp.connect(server,{ready:ready},o);
 function
 ready(connection)
 {
-    var context = opts.getOpt("context");
     var delegate = {
         handleLog:function(log,message)
         {
             console.log(message);
         }
     };
+
+    if (opts.hasOpt("filter"))
+    {
+        connection.getLog().filter = opts.getOpt("filter");
+    }
     connection.getLog().addDelegate(delegate);
 }
 

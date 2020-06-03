@@ -232,6 +232,8 @@ pages load the projects they need to run.
 * [geofence](doc/examples/paris.txt) - geofence example with trip through Paris
 * [weather](doc/examples/weather.txt) - weather data example using gauges and compasses
 * [symbols](doc/examples/symbols.txt) - charts with controls for paging and filtering
+* [sailing](doc/examples/sailing.txt) - geofence example with sailboats
+* [turbines](doc/examples/turbines.txt) - example of custom graphics displaying streaming data from wind turbines
 * [trades](doc/examples/trades.txt) - streaming stock trades and broker violations
 * [images](doc/examples/images.txt) - examples with images and object detection in tables
 

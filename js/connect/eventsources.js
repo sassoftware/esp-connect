@@ -113,11 +113,22 @@ define([
     }
 
     EventSources.prototype.configureFromUrl =
-    function(url,parms)
+    function(url,parms,delegate)
     {
         var eventsources = this;
+        var opts = new Options(parms);
         var o = {response:function(request,text,xml) {
             eventsources.configure(text,parms);
+
+            if (opts.getOpt("start",false))
+            {
+                eventsources.start();
+            }
+
+            if (delegate != null && tools.supports(delegate,"ready"))
+            {
+                delegate.ready(eventsources);
+            }
         },
         error(request,message) {
             console.log("error: " + message);
@@ -219,8 +230,8 @@ define([
     EventSources.prototype.start =
     function()
     {
-        Object.values(this._eventsources).forEach((ds) => {
-            ds.init();
+        Object.values(this._eventsources).forEach((es) => {
+            es.init();
         });
 
         this._running = true;
@@ -246,16 +257,16 @@ define([
 var minInterval = 5000;
         var completed = 0;
 
-        Object.values(this._eventsources).forEach((ds) => {
+        Object.values(this._eventsources).forEach((es) => {
 
-            if (ds.done == false)
+            if (es.done == false)
             {
-                if (ds.sending == false)
+                if (es.sending == false)
                 {
-                    if (ds.checkDependencies())
+                    if (es.checkDependencies())
                     {
-                        var diff = current.getTime() - ds.timestamp;
-                        var interval = ds.interval;
+                        var diff = current.getTime() - es.timestamp;
+                        var interval = es.interval;
 
                         if (diff > interval)
                         {
@@ -264,11 +275,11 @@ var minInterval = 5000;
                                 minInterval = interval;
                             }
 
-                            eventsources.push(ds);
+                            eventsources.push(es);
                         }
                         else
                         {
-                            diff = current.getTime() - ds.timestamp + interval;
+                            diff = current.getTime() - es.timestamp + interval;
 
                             if (diff < minInterval)
                             {
@@ -288,8 +299,8 @@ var minInterval = 5000;
             }
         });
 
-        eventsources.forEach((ds) => {
-            ds.process();
+        eventsources.forEach((es) => {
+            es.process();
         });
 
         if (completed == Object.keys(this._eventsources).length)
@@ -468,13 +479,13 @@ var minInterval = 5000;
     }
 
     EventSource.prototype.dependsOn =
-    function(ds)
+    function(es)
     {
         var code = false;
 
         for (var source of this._sources)
         {
-            if (source == ds || source.dependsOn(ds))
+            if (source == es || source.dependsOn(es))
             {
                 code = true;
                 break;
@@ -612,26 +623,42 @@ var minInterval = 5000;
         if (url != null)
         {
             var eventsource = this;
-            var o = {response:function(request,text,xml) {
-                var data = eventsource._transform(connect,text);
-
-                if (data != null)
-                {
-                    eventsource.send(data);
-                }
-            },
-
-            error(request,message) {
-                console.log("error: " + message);
-            }
-            };
-
-            if (this.getOpt("use-connection",false))
+            if (this.getOpt("use-connect",false))
             {
+                var o = {
+                    response:function(text) {
+                        var data = eventsource._transform(connect,text);
+
+                        if (data != null)
+                        {
+                            eventsource.send(data);
+                        }
+                    },
+
+                    error(request,message) {
+                        console.log("error: " + message);
+                    }
+                };
+
                 this._api.get(url,o);
             }
             else
             {
+                var o = {
+                    response:function(request,text,xml) {
+                        var data = eventsource._transform(connect,text);
+
+                        if (data != null)
+                        {
+                            eventsource.send(data);
+                        }
+                    },
+
+                    error(request,message) {
+                        console.log("error: " + message);
+                    }
+                };
+
                 ajax.create("request",url,o).get();
             }
 
@@ -671,13 +698,13 @@ var minInterval = 5000;
         }
         else
         {
-            var ds = this;
+            var es = this;
             var o = {
                 response:function(request,text) {
-                    ds._data = text;
+                    es._data = text;
                 },
                 error:function(request,message) {
-                    console.log("error: " + ds.getOpt("url") + " " + message);
+                    console.log("error: " + es.getOpt("url") + " " + message);
                 }
             };
 		    ajax.create("load",this.getOpt("url"),o).get();

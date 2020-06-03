@@ -1229,6 +1229,7 @@ define([
             keyFields.push(f);
         }
 
+        var dateKeys = false;
         var timeKeys = false;
 
         if (keyFields.length == 1)
@@ -1237,7 +1238,7 @@ define([
 
             if (f["isDate"])
             {
-                timeKeys = true;
+                dateKeys = true;
             }
             else if (f["isTime"])
             {
@@ -1340,7 +1341,14 @@ define([
             key = o["key"];
             entry = o["data"];
 
-            if (timeKeys)
+            if (dateKeys)
+            {
+                var date = new Date();
+                var seconds = new Number(key) * 1000;
+                date.setTime(seconds);
+                keyValues.push(date);
+            }
+            else if (timeKeys)
             {
                 var date = new Date();
                 var seconds = new Number(key) / 1000;

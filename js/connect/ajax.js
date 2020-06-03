@@ -127,7 +127,7 @@ define([
 		{
 			if (this.readyState == 1)
 			{
-				request.withCredentials = true;
+				//request.withCredentials = true;
 			}
 			else if (this.readyState == 2)
 			{

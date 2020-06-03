@@ -127,6 +127,20 @@ define([
         return(num);
     }
 
+	Options.prototype.getArray =
+    function(name,dv)
+    {
+        var a = null;
+        var value = this.getOpt(name,dv);
+
+        if (value != null && Array.isArray(value))
+        {
+            a = value;
+        }
+
+        return(a);
+    }
+
 	Options.prototype.setOpt =
     function(name,value)
     {
