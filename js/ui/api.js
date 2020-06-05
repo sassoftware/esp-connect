@@ -73,6 +73,39 @@ define([
             }
         },
 
+        showConnectDialog:function(delegate)
+        {
+            if (connect.getTools().supports(delegate,"connect") == false)
+            {
+                throw "The delegate must implement the connect method";
+            }
+
+            var storage = new StoredData("esp-connect");
+            var server = storage.getOpt("esp-server","");
+
+            var o = {
+                ok:function(data) {
+                    var server = data.server.trim();
+                    if (server.length == 0)
+                    {
+                        return(false);
+                    }
+                    storage.setOpt("esp-server",server);
+                    delegate.connect(server);
+                    return(true);
+                },
+                header:"Connect to ESP Server",
+                values:[{name:"server",label:"ESP Server",value:server}]
+            };
+
+            dialogs.showDialog(o);
+        },
+
+        showCodeDialog:function(header,code)
+        {
+            dialogs.showCodeDialog({header:header,code:code});
+        },
+
         createVisuals:function(options)
         {
             var visuals = new Visuals(options);

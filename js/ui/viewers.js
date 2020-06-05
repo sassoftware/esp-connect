@@ -1054,7 +1054,10 @@ define([
     ModelViewer.prototype.fitNetwork =
     function()
     {
-        this._viewer.fit();
+        if (this._viewer != null)
+        {
+            this._viewer.fit();
+        }
     }
 
     ModelViewer.prototype.fit =

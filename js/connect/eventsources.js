@@ -98,6 +98,8 @@ define([
             this.addEventSource(eventsource);
 
             eventsource.configure(node);
+
+            eventsource.enabled = node.hasAttribute("enabled") ? (node.getAttribute("enabled") == "true") : true;
         });
 
         xpath.getNodes("./edges/edge",xml).forEach((node) => {
@@ -253,13 +255,12 @@ define([
         var current = new Date();
         var eventsources = [];
         var depsPending = false;
-        //var minInterval = 10000;
-var minInterval = 5000;
+        var minInterval = 5000;
         var completed = 0;
 
         Object.values(this._eventsources).forEach((es) => {
 
-            if (es.done == false)
+            if (es.enabled && es.done == false)
             {
                 if (es.sending == false)
                 {
@@ -348,6 +349,8 @@ var minInterval = 5000;
 
         this._senders = [];
 
+        this._enabled = true;
+
         Object.defineProperty(this,"publisher", {
             get() {
                 return(this._publisher);
@@ -357,6 +360,15 @@ var minInterval = 5000;
         Object.defineProperty(this,"repeat", {
             get() {
                 return(this.getOpt("repeat","1"));
+            }
+        });
+
+        Object.defineProperty(this,"enabled", {
+            get() {
+                return(this._enabled);
+            },
+            set(value) {
+                this._enabled = value;
             }
         });
 
@@ -461,6 +473,10 @@ var minInterval = 5000;
         if (this.hasOpt("dateformat"))
         {
             opts.dateformat = this.getOpt("dateformat");
+        }
+        if (this._api.version < 7)
+        {
+            opts.format = "json";
         }
         this._publisher = this._api.getPublisher(opts);
         this._publisher.addSchemaDelegate(this);
@@ -623,7 +639,7 @@ var minInterval = 5000;
         if (url != null)
         {
             var eventsource = this;
-            if (this.getOpt("use-connect",false))
+            if (this._api.version > 7 && this.getOpt("use-connect",false))
             {
                 var o = {
                     response:function(text) {
@@ -707,6 +723,7 @@ var minInterval = 5000;
                     console.log("error: " + es.getOpt("url") + " " + message);
                 }
             };
+
 		    ajax.create("load",this.getOpt("url"),o).get();
         }
     }

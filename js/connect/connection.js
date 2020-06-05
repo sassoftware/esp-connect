@@ -259,14 +259,21 @@ define([
             }
         });
 
+        Object.defineProperty(this,"urlBase", {
+            get() {
+                var	base = "";
+                base += this.protocol;
+                base += "://";
+                base += this.host;
+                base += ":";
+                base += this.port;
+                return(base);
+            }
+        });
+
         Object.defineProperty(this,"url", {
             get() {
-                var	url = "";
-                url += this.protocol;
-                url += "://";
-                url += this.host;
-                url += ":";
-                url += this.port;
+                var	url = this.urlBase;
                 if (this._path != null && this._path.length > 0)
                 {
                     url += this._path;
@@ -282,14 +289,21 @@ define([
             }
         });
 
+        Object.defineProperty(this,"httpurlBase", {
+            get() {
+                var	base = "";
+                base += this.httpProtocol;
+                base += "://";
+                base += this.host;
+                base += ":";
+                base += this.port;
+                return(base);
+            }
+        });
+
         Object.defineProperty(this,"httpurl", {
             get() {
-                var	url = "";
-                url += this.httpProtocol;
-                url += "://";
-                url += this.host;
-                url += ":";
-                url += this.port;
+                var	url = this.httpurlBase;
                 if (this._path != null && this._path.length > 0)
                 {
                     url += this._path;

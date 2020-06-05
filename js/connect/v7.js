@@ -38,6 +38,12 @@ define([
 
         this._connection = connection;
 
+        Object.defineProperty(this,"version", {
+            get() {
+		        return(7.1);
+            }
+        });
+
         Object.defineProperty(this,"protocol", {
             get() {
 		        return(this._connection.protocol);
@@ -583,6 +589,17 @@ define([
             var publisher = this._publishers[id];
             publisher.close();
         }
+    }
+
+	Api.prototype.clearWindow =
+	function(path)
+    {
+        var	o = {};
+
+        var request = {"clear-window":{}};
+        var o = request["clear-window"];
+        o["window"] = path;
+        this.sendObject(request);
     }
 
 	Api.prototype.publishDataFrom =

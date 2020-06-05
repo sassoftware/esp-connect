@@ -57,7 +57,7 @@ ready(connection)
     if (_esp.getParm("load",true))
     {
         _esp.showStatus("Loading project...");
-        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true});
+        _conn.loadProjectFrom("p",new URL("model.xml",document.URL).toString(),{loaded:loaded},{overwrite:true});
     }
     else
     {
@@ -97,7 +97,7 @@ loaded()
 
     _timer.start();
 
-    if (_esp.getParm("load",true))
+    //if (_esp.getParm("load",true))
     {
         playpause();
     }

@@ -18,8 +18,9 @@ define([
 	var	__dialogs =
 	{
 		_okText:"Ok",
-
 		_cancelText:"Cancel",
+        _codeDiv:null,
+        _codeId:null,
 
 		init:function(okText,cancelText)
 		{
@@ -125,6 +126,7 @@ define([
 			this._cancel = opts.getOpt("cancel");
 
             this._dialog.style.width = opts.getOpt("width","50%");
+            this._dialog.style.height = opts.getOpt("height","auto");
 
 			var	d = window.document;
 
@@ -140,8 +142,18 @@ define([
 
             if (this._formdata.length > 0)
             {
-                var element = d.getElementById(this._formdata[0].getOpt("id"));
-                if (element != null)
+                var element;
+                this._formdata.forEach((item) => {
+                    if (item.getOpt("type") == "code")
+                    {
+                        if ((element = d.getElementById(item.getOpt("id"))) != null)
+                        {
+                            element.innerText = item.getOpt("value");
+                        }
+                    }
+                });
+
+                if ((element = d.getElementById(this._formdata[0].getOpt("id"))) != null)
                 {
                     element.focus();
                 }
@@ -151,6 +163,60 @@ define([
 		hideDialog:function()
         {
 			this.popModal("_dialog");
+        },
+
+		showCodeDialog:function(options)
+        {
+            var opts = new Options(options);
+
+            if (this._codeDiv == null)
+            {
+                this._codeId = tools.guid();
+                this._codeDiv = document.createElement("div");
+                this._codeDiv.className = "dialog";
+                this._codeDiv.innerHTML = "<table class='dialogClose' style='width:100%' cellspacing='0' cellpadding='0'>\
+                        <tr><td class='icon'><a class='icon dialogTitle' href='javascript:_dialogs_.clearCodeDialog()'>&#xf10c;</a></td></tr>\
+                    </table>\
+                    <div class='dialogTop'>\
+                        <div  class='dialogHeader'>\
+                            <div class='dialogTitle'>\
+                                <table style='width:100%;border:0' cellspacing='0' cellpadding='0'>\
+                                    <tr>\
+                                        <td><div id='_dialogCodeHeader' class='dialogTitle'></div></td>\
+                                    </tr>\
+                                </table>\
+                            </div>\
+                        </div>\
+                    </div>\
+                    <div class='dialogContent' style='width:95%;height:70%;margin:auto'>\
+                        <pre id='_dialogCode' class='dialogCode'></pre>\
+                    </div>\
+                    <div class='dialogButtons'>\
+                        <table style='width:100%'>\
+                            <tr>\
+                                <td class='dialogButton'>\
+                                    <span><button class='close' onclick='javascript:_dialogs_.clearCodeDialog()'>Done</button></span>\
+                                </td>\
+                            </tr>\
+                        </table>\
+                    </div>";
+            }
+
+            this._codeDiv.style.width = opts.getOpt("width","90%");
+            this._codeDiv.style.height = opts.getOpt("height","90%");
+
+            this.pushModal(this._codeDiv);
+
+            document.getElementById("_dialogCodeHeader").innerHTML = opts.getOpt("header","");
+            document.getElementById("_dialogCode").innerText = opts.getOpt("code","");
+        },
+
+		clearCodeDialog:function(options)
+        {
+            if (this._codeDiv != null)
+            {
+                this.popModal(this._codeDiv);
+            }
         },
 
 		dialog:function(content,ok,header,cancel,values)
@@ -216,23 +282,49 @@ define([
 		{
             this._formdata = [];
 
+            var code = {};
 			var	html = "";
 			html += "<table style='margin:auto;width:80%'>";
             values.forEach((value) => {
                 var opts = new Options(value);
-                var id = tools.guid();
+                var id = opts.getOpt("id",tools.guid());
                 var name = opts.getOpt("name","");
                 var value = opts.getOpt("value","");
                 var label = opts.getOpt("label",name);
+                var classname = opts.getOpt("class","dialogValue");
                 var type = opts.getOpt("type","input");
-				html += "<tr><td class='dialogLabel'>" + label + "</td></tr><tr><td class='dialogValue'>";
+                var style = opts.getOpt("style");
+                if (label.length > 0)
+                {
+				    html += "<tr><td class='dialogLabel'>" + label + "</td></tr>";
+                }
+				html += "<tr><td class='" + classname + "'>";
                 if (type == "textarea")
                 {
-                    html += "<textarea id='" + id + "' type='" + opts.getOpt("type","text") + "' value='" + value + "'></textarea>";
+                    html += "<textarea id='" + id + "' type='" + opts.getOpt("type","text") + "' value='" + value + "'";
+                    if (style != null)
+                    {
+                        html += " style='" + style + "'";
+                    }
+                    html += "></textarea>";
+                }
+                else if (type == "code")
+                {
+                    html += "<pre id='" + id + "' style='overflow:auto";
+                    if (style != null)
+                    {
+                        html += ";" + style + "'";
+                    }
+                    html += ">" + "</pre>";
                 }
                 else
                 {
-                    html += "<input id='" + id + "' type='" + opts.getOpt("type","text") + "' value='" + value + "'></input>";
+                    html += "<input id='" + id + "' type='" + opts.getOpt("type","text") + "' value='" + value + "'";
+                    if (style != null)
+                    {
+                        html += " style='" + style + "'";
+                    }
+                    html += "></input>";
                 }
                 html += "</td></tr>";
                 opts.setOpt("id",id);
@@ -284,11 +376,11 @@ define([
 			this.popModal("_popup");
 		},
 
-		pushModal:function(id,xAlign,yAlign)
+		pushModal:function(modal,xAlign,yAlign)
 		{
 			this.check();
 
-			var	element = document.getElementById(id);
+			var	element = (typeof(modal) == "string") ? document.getElementById(modal) : modal;
 
 			if (element == null)
 			{
@@ -342,14 +434,14 @@ define([
 			this.obscure();
 		},
 
-		popModal:function(id)
+		popModal:function(modal)
 		{
 			if (this._modals.length == 0)
 			{
 				return;
 			}
 
-			var	element = document.getElementById(id);
+			var	element = (typeof(modal) == "string") ? document.getElementById(modal) : modal;
 
 			if (element == null)
 			{

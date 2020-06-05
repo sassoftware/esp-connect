@@ -895,6 +895,9 @@ define([
             data.push(o);
         }
 
+        this._layout["hovermode"] = this.getOpt("hover_mode","closest");
+        this._layout["hoverlabel"] = this.getOpt("hover_style");
+
         Plotly.react(this._content,data,this._layout);
 
         this.setHandlers();
@@ -1102,6 +1105,10 @@ define([
         {
             line["shape"] = "spline";
         }
+        else if (this.hasOpt("line_shape"))
+        {
+            line["shape"] = this.getOpt("line_shape");
+        }
 
         var colors = this.getOpt("colors");
 
@@ -1110,21 +1117,47 @@ define([
             colors = this._visuals.colors.colors;
         }
 
+        var showMarkers = this.getOpt("show_markers",false);
+        var showText = this.getOpt("show_text",false);
+        var mode = "lines";
+        var textfont = {family:"AvenirNextforSAS",size:30};
+
+        if (showMarkers)
+        {
+            mode += "+markers";
+        }
+
+        if (showText)
+        {
+            mode += "+text";
+        }
+
         y.forEach((v) => {
             var o = {};
             o["x"] = values["keys"];
             o["y"] = values["values"][v];
             o["type"] = "scatter";
             o["line"] = line;
-            o["mode"] = "lines";
+            o["mode"] = mode;
+            if (showText)
+            {
+                o["text"] = o["y"];
+            }
             o["name"] = v;
             if (this.getOpt("fill",false))
             {
                 o["fill"] = "tonexty";
             }
+            o["textfont"] = textfont;
+            o["hoverlabel"] = this.getOpt("hoverstyle");
             o["marker"] = {color:colors[index]};index++;
             data.push(o);
         });
+
+        this._layout["xaxis"].tickfont = this.getOpt("tick_style");
+        this._layout["yaxis"].tickfont = this.getOpt("tick_style");
+        this._layout["hovermode"] = this.getOpt("hover_mode","closest");
+        this._layout["hoverlabel"] = this.getOpt("hover_style");
 
         Plotly.react(this._content,data,this._layout);
 

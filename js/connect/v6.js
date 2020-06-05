@@ -38,6 +38,12 @@ define([
 
         this._connection = connection;
 
+        Object.defineProperty(this,"version", {
+            get() {
+		        return(6.2);
+            }
+        });
+
         Object.defineProperty(this,"protocol", {
             get() {
 		        return(this._connection.protocol);
@@ -115,7 +121,7 @@ define([
     function(base,path,options)
     {
         var url = base;
-        url += "eventStreamProcessing/v1/";
+        url += "/eventStreamProcessing/v1/";
         url += path;
 
         var parms = "";
@@ -153,14 +159,14 @@ define([
     Api.prototype.getUrl =
     function(path,options)
     {
-        var url = this.formUrl(this._connection.url,path,options);
+        var url = this.formUrl(this._connection.urlBase,path,options);
         return(url);
     }
 
     Api.prototype.getHttpUrl =
     function(path,options)
     {
-        var url = this.formUrl(this._connection.httpurl,path,options);
+        var url = this.formUrl(this._connection.httpurlBase,path,options);
         return(url);
     }
 
@@ -328,6 +334,11 @@ define([
             var publisher = this._publishers[id];
             publisher.close();
         }
+    }
+
+	Api.prototype.clearWindow =
+	function(path)
+    {
     }
 
 	Api.prototype.publishDataFrom =
@@ -1658,6 +1669,11 @@ define([
         request += "</properties>";
 
         this._api.send(request);
+
+        if (load)
+        {
+            this.load();
+        }
     }
 
     EventCollection.prototype.close =
@@ -2635,8 +2651,14 @@ define([
         this.addOpts(o);
 
         var opts = {schema:true,format:"json"};
+
+        if (this.hasOpt("dateformat"))
+        {
+            opts["dateformat"] = this.getOpt("dateformat");
+        }
+
         var url = this._api.getUrl("publishers/" + this._path,opts);
-        this._connection = Connection.createDelegateConnection(this,url,opts);
+        this._connection = Connection.createDelegateConnection(this,encodeURI(url),opts);
         this._connection.authorization = this._api._connection.authorization;
         this._connection.start();
     }

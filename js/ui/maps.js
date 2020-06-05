@@ -1074,12 +1074,6 @@ define([
                 return(this._geo);
             }
         });
-        this._geo.setOpt("showcountries",false);
-        this._geo.setOpt("showframe",true);
-        this._geo.setOpt("framecolor","red");
-        this._geo.setOpt("framewidth",6);
-
-        this._geo.setOpt("lonaxis",{showgrid:true});
 
         Object.defineProperty(this,"center", {
             get() {
@@ -1163,6 +1157,9 @@ define([
             countrycolor: "rgb(255,255,255)"
         };
         */
+
+        this._layout["hovermode"] = this.getOpt("hover_mode","closest");
+        this._layout["hoverlabel"] = this.getOpt("hover_style");
 
         Plotly.react(this._content,data,this._layout,this._defaults);
     }
@@ -1313,6 +1310,9 @@ define([
         */
 
         this._defaults.scrollZoom = this.getOpt("scroll_zoom",true);
+
+        this._layout["hovermode"] = this.getOpt("hover_mode","closest");
+        this._layout["hoverlabel"] = this.getOpt("hover_style");
 
         Plotly.react(this._content,data,this._layout,this._defaults);
 

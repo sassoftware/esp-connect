@@ -99,6 +99,7 @@ ready(conn)
 }
 
 var _publisher = null;
+var _model = null;
 
 function
 loaded()
@@ -114,7 +115,7 @@ loaded()
     _visuals.createBarChart("barchart",clicks,{y:"count",header:"Clicks Chart",xrange:[0,100],orientation:"horizontal",get_color:barcolor});
     _visuals.createGauge("gauges",clicks,{value:"count",segments:5,header:"Clicks Indicators",width:200,range:[0,100],bar_color:"rgba(255,255,255,.7)"});
 
-    _conn.getProjectXml("myproject",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
+    _conn.getProjectXml("myproject",{response:function(c,data){_model = data;}});
 
     _publisher = _conn.getPublisher({window:"myproject/cq/clicks"});
 
@@ -151,7 +152,7 @@ publish(evt)
             <tr>
                 <td id="bannerTitle"></td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf426;</a>
+                    <a class="icon" href="javascript:_esp.showCodeDialog('ESP Model',_model)">&#xf426;</a>
                     <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a></td>
                 </td>
             </tr>
@@ -176,30 +177,6 @@ publish(evt)
     </div>
 
     <div id="footer">&nbsp;</div>
-
-    <div id="espModel" class="dialog" style="width:90%;height:90%">
-
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
-        </table>
-
-        <div class="dialogTop">
-
-            <div  class="dialogHeader">
-                <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td><div class="dialogTitle">ESP Model</div></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="dialogContent" style="width:95%;height:70%;margin:auto">
-            <pre id="espModelXml" class="model"></pre>
-        </div>
-    </div>
 
     <div id="help" class="dialog" style="width:60%">
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">

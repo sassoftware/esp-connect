@@ -44,13 +44,16 @@ define([
     {
         var code = this._chart._datasource.togglePlay();
 
-        if (code)
+        if (this._chart._playPause != null)
         {
-            this._chart._playPause.innerHTML = "&#xf4f4;";
-        }
-        else
-        {
-            this._chart._playPause.innerHTML = "&#xf513;";
+            if (code)
+            {
+                this._chart._playPause.innerHTML = "&#xf4f4;";
+            }
+            else
+            {
+                this._chart._playPause.innerHTML = "&#xf513;";
+            }
         }
     }
 
@@ -135,7 +138,10 @@ define([
                 this._chart._filterContainer.style.visibility = "visible";
             }
 
-            this._chart._playPauseContainer.style.visibility = "visible";
+            if (this._chart._playPauseContainer != null)
+            {
+                this._chart._playPauseContainer.style.visibility = "visible";
+            }
 
             this._chart.info();
         }
@@ -166,7 +172,10 @@ define([
                 this._chart._filterContainer.style.visibility = "hidden";
             }
 
-            this._chart._playPauseContainer.style.visibility = "hidden";
+            if (this._chart._playPauseContainer != null)
+            {
+                this._chart._playPauseContainer.style.visibility = "hidden";
+            }
         }
 
         if (this._chart._share != null)
@@ -197,6 +206,24 @@ define([
 
         var margin = this.getOpt("margin",20);
         this._layout["margin"] = {l:margin,r:margin,b:margin,t:margin};
+
+        Object.defineProperty(this,"layout", {
+            get() {
+                return(this._layout);
+            }
+        });
+
+        Object.defineProperty(this,"xaxis", {
+            get() {
+                return(this._layout.xaxis);
+            }
+        });
+
+        Object.defineProperty(this,"yaxis", {
+            get() {
+                return(this._layout.yaxis);
+            }
+        });
 
         var range;
 
@@ -252,6 +279,7 @@ define([
 
         this._navigation = null;
         this._playPauseContainer = null;
+        this._playPause = null;
         this._filterContainer = null;
         this._share = null;
         this._custom = null;
@@ -374,10 +402,13 @@ define([
                 icons.appendChild(this._filterContainer);
             }
 
-            this._playPauseContainer = document.createElement("span");
-            this._playPauseContainer.className = "playPause";
-            this._playPauseContainer.style.visibility = "hidden";
-            icons.appendChild(this._playPauseContainer);
+            if (this.getOpt("play_pause",false))
+            {
+                this._playPauseContainer = document.createElement("span");
+                this._playPauseContainer.className = "playPause";
+                this._playPauseContainer.style.visibility = "hidden";
+                icons.appendChild(this._playPauseContainer);
+            }
 
             this._share = document.createElement("span");
             this._share.className = "share";
@@ -419,13 +450,16 @@ define([
                 this._navigation.appendChild(this._last);
             }
 
-            this._playPause = document.createElement("a");
-            this._playPause._chart = this;
-            this._playPause.innerHTML = "&#xf4f4;";
-            this._playPause.className = "icon";
-            this._playPause.href = "#";
-            this._playPause.addEventListener("click",playPause);
-            this._playPauseContainer.appendChild(this._playPause);
+            if (this._playPauseContainer != null)
+            {
+                this._playPause = document.createElement("a");
+                this._playPause._chart = this;
+                this._playPause.innerHTML = "&#xf4f4;";
+                this._playPause.className = "icon";
+                this._playPause.href = "#";
+                this._playPause.addEventListener("click",playPause);
+                this._playPauseContainer.appendChild(this._playPause);
+            }
 
             if (this._filterContainer != null)
             {
@@ -558,6 +592,11 @@ define([
             url += "&";
             url += this.addToUrl(o,name);
         }
+        
+        if (this._visuals.hasOpt("theme"))
+        {
+            url += "&theme=" + this._visuals.getOpt("theme");
+        }
 
         var a = document.createElement("a");
         a.href = url;
@@ -584,57 +623,60 @@ define([
             }
         }
 
-        var tmp;
-
-        if (Array.isArray(o))
+        if (o != null)
         {
-            s += "[";
+            var tmp;
 
-            var i = 0;
-
-            for (var item of o)
+            if (Array.isArray(o))
             {
-                if (i > 0)
+                s += "[";
+
+                var i = 0;
+
+                for (var item of o)
                 {
-                    s += ",";
+                    if (i > 0)
+                    {
+                        s += ",";
+                    }
+
+                    s += this.addToUrl(item);
+
+                    i++;
                 }
-
-                s += this.addToUrl(item);
-
-                i++;
+                s += "]";
             }
-            s += "]";
-        }
-        else if (o.constructor == Object)
-        {
-            s += "{";
-
-            var i = 0;
-
-            for (var y in o)
+            else if (o.constructor == Object)
             {
-                if (i > 0)
+                s += "{";
+
+                var i = 0;
+
+                for (var y in o)
                 {
-                    s += ",";
+                    if (i > 0)
+                    {
+                        s += ",";
+                    }
+
+                    s += this.addToUrl(o[y],y,true);
+
+                    i++;
                 }
-
-                s += this.addToUrl(o[y],y,true);
-
-                i++;
-            }
-            s += "}";
-        }
-        else
-        {
-            tmp = o.toString();
-            tmp = tmp.replace("#","%23");
-            if (json)
-            {
-                s += "\"" + tmp + "\"";
+                s += "}";
             }
             else
             {
-                s += tmp;
+                tmp = o.toString();
+                tmp = tmp.replace("#","%23");
+                if (json)
+                {
+                    s += "\"" + tmp + "\"";
+                }
+                else
+                {
+                    s += tmp;
+                }
             }
         }
 
@@ -745,7 +787,10 @@ define([
                 }
             }
 
-            this._playPause.innerHTML = this._datasource._paused ? "&#xf513;" : "&#xf4f4;";
+            if (this._playPause != null)
+            {
+                this._playPause.innerHTML = this._datasource._paused ? "&#xf513;" : "&#xf4f4;";
+            }
         }
 
         this.setHeader();
@@ -805,6 +850,9 @@ define([
             this._content.on("plotly_selected",function(data) {
                 chart.selected(data);
             });
+            this._content.on("plotly_hover",function(data) {
+                return("jasfjasdfjajdfjasdfj");
+            });
             this._handlers = true;
         }
     }
@@ -832,12 +880,15 @@ define([
                 }
             }
 
-            filter = this._datasource.getOpt("filter");
-
-            if (filter != null)
+            if (this.getOpt("filter_in_title",true))
             {
-                header += "<br>";
-                header += filter;
+                filter = this._datasource.getOpt("filter");
+
+                if (filter != null)
+                {
+                    header += "<br>";
+                    header += filter;
+                }
             }
         }
 
