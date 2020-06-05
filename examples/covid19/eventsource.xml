@@ -1,0 +1,73 @@
+<config>
+    <event-sources>
+        <url-event-source name="centers" window="p/cq/centers">
+            <options>
+                <option name="url">https://www.latlong.net/category/states-236-14.html</option>
+                <option name="opcode">upsert</option>
+                <option name="use-connect">true</option>
+                <option name="transform"><![CDATA[
+                    var rgx = new RegExp("US.*>([A-z ]+).*<td>([0-9]+).([0-9]+).*<td>(-[0-9]+).([0-9]+)","g");
+                    var a = [];
+
+                    while ((results = rgx.exec(data)) != null)
+                    {
+                        if (results.length == 6)
+                        {
+                            var state = results[1];
+                            state = state.replace(" State","");
+
+                            var o = {};
+                            o.state = state;
+                            o.center_lat = results[2] + "." + results[3];
+                            o.center_lon = results[4] + "." + results[5];
+                            a.push(o);
+                        }
+                    }
+
+                    return(a);
+                    ]]>
+                </option>
+            </options>
+        </url-event-source>
+        <url-event-source name="counties" window="p/cq/county">
+            <options>
+                <option name="interval">60 seconds</option>
+                <option name="repeat">0</option>
+                <option name="opcode">upsert</option>
+                <option name="url"><![CDATA[https://services1.arcgis.com/0MSEUqKaxRlEPj5g/ArcGIS/rest/services/ncov_cases_US/FeatureServer/0/query?where=1%3D1&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=none&distance=0.0&units=esriSRUnit_Meter&returnGeodetic=false&outFields=*&returnGeometry=true&featureEncoding=esriDefault&multipatchOption=xyFootprint&maxAllowableOffset=&geometryPrecision=&outSR=&datumTransformation=&applyVCSProjection=false&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnQueryGeometry=false&returnDistinctValues=false&cacheHint=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&returnExceededLimitFeatures=true&quantizationParameters=&sqlFormat=none&f=json&token=]]></option>
+                <option name="transform">
+
+                const   eventdata = JSON.parse(data);
+                var     events = [];
+
+                eventdata.features.forEach((item) => {
+                    var fips = item.attributes.FIPS;
+
+                    if (fips != null)
+                    {
+                        var o = {};
+                        o.fips = fips;
+                        o.state = item.attributes.Province_State;
+                        o.county = item.attributes.Admin2;
+                        o.updated = parseInt(item.attributes.Last_Update / 1000);
+                        o.confirmed = item.attributes.Confirmed;
+                        o.deaths = item.attributes.Deaths;
+                        o.active = item.attributes.Active;
+                        o.lat = item.attributes.Lat;
+                        o.lon = item.attributes.Long_;
+                        o.hospitalized = item.attributes.People_Hospitalized;
+                        o.tested = item.attributes.People_Tested;
+                        events.push(o);
+                    }
+                });
+
+                return(events);
+
+                </option>
+            </options>
+        </url-event-source>
+    </event-sources>
+    <edges>
+        <edge source="centers" target="counties" />
+    </edges>
+</config>

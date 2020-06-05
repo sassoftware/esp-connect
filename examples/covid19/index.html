@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP Covid19 Data</title>
+
+<link rel="stylesheet" href="/esp-connect/style/connect.css" />
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="/esp-connect/js/ui/main"></script>
+
+<script type="text/javascript">
+
+var _esp = null;
+var _conn = null;
+var _visuals = null;
+
+function
+esp(api)
+{
+    _esp = api;
+
+    if (_esp.hasParm("theme") == false)
+    {
+        _esp.setParm("theme","sas_opal");
+    }
+
+    var parms = _esp.getParms();
+
+    if (parms.hasOwnProperty("server") == false)
+    {
+        _esp.showConnectDialog({connect:connect});
+        return;
+    }
+
+    var server = parms["server"];
+    delete parms["server"];
+
+    connect(server);
+}
+
+function
+connect(server)
+{
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+
+    _esp.connect(server,{ready:ready});
+    _visuals = _esp.createVisuals(_esp.getParms());
+    _visuals.addDelegate({selectionChanged:select});
+
+    _esp.handleLayout();
+}
+
+function
+ready(connection)
+{
+    _conn = connection;
+
+    if (_esp.getParm("load",true))
+    {
+        _conn.loadProjectFrom("p","model.xml",{loaded:loaded,error:error},{overwrite:true});
+    }
+    else
+    {
+        loaded();
+    }
+}
+
+var _publisher = null;
+var _eventsources = null;
+var _states = null;
+var _counties = null;
+var _history = null;
+var _countyMap = null;
+var _geojson = null;
+var _model = null;
+
+function
+loaded()
+{
+    _conn.clearWindow("p/cq/history");
+
+    _states = _conn.getEventCollection({window:"p/cq/state",pagesize:0,interval:5000,sort:"deaths"});
+    _counties = _conn.getEventCollection({window:"p/cq/county",pagesize:0,interval:5000,sort:"deaths"});
+    _history = _conn.getEventCollection({window:"p/cq/history",pagesize:0,interval:2000,ignore_deletes:true,debug:false});
+
+    var o = {
+        response:function(request,text) {
+            _geojson = JSON.parse(text);
+            createGraphics();
+        }
+    };
+
+    _esp.getAjax().create("geojson","https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json",o).get();
+
+    _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
+}
+
+function
+createGraphics()
+{
+    var engine = "choropleth";
+    var hovermode = "x unified";
+    var hover = {bgcolor:"white",font:{family:"AvenirNextforSAS",size:16,color:"black"}};
+
+    var usaMap = _visuals.createMap("usa",_states,{engine:engine,lat:"lat",lon:"lon",size:"deaths",color:"deaths",header:"National Covid19 Data",allow_zoom:false,show_scale:false,scroll_zoom:false,show_tooltips:true,hover_mode:hovermode,hover_style:hover})
+    usaMap.setOpts({locations:"state",values:"deaths"});
+    usaMap.setOpt("geojson","https://raw.githubusercontent.com/shawnbot/topogram/master/data/us-states.geojson");
+    usaMap.setOpt("key","properties.name");
+    usaMap.geo.setOpts({scope:"usa",showrivers:true,showlakes:true,lakecolor:"#0000ff"});
+    usaMap.draw();
+
+    _countyMap = _visuals.createMap("counties",_counties,{engine:engine,lat:"lat",lon:"lon",color:"deaths",header:"State Covid19 Data",tooltip:["state","county","confirmed","active","deaths"],filter_in_title:false,
+                                                            show_tooltips:true,hover_mode:hovermode,hover_style:hover})
+    _countyMap.setOpts({locations:"fips",values:"deaths"});
+    _countyMap.geo.setOpts({showsubunits:false});
+    _countyMap.geo.setOpt("showframe",true);
+    _countyMap.geo.setOpt("framecolor","red");
+    _countyMap.setZoom(5);
+
+    var lineWidth = 3;
+    var curved = false;
+    var shape = "linear";
+    var tick = {family:"AvenirNextforSAS",size:16,color:"black"};
+
+    _visuals.createTimeSeries("hospitalized",_history,{y:["hospitalizedCurrently"],time:"date",header:"Currently Hospitalized",line_width:lineWidth,line_shape:shape,curved:curved,hover_mode:hovermode,hover_style:hover,tick_style:tick});
+    _visuals.createTimeSeries("deaths",_history,{y:["death"],time:"date",header:"Total Deaths",line_shape:shape,line_width:lineWidth,curved:curved,hover_style:hover,hover_mode:hovermode,tick_style:tick});
+    _visuals.createTimeSeries("newcases",_history,{y:["positiveIncrease"],time:"date",header:"New Cases",line_shape:shape,line_width:lineWidth,curved:curved,hover_style:hover,hover_mode:hovermode,tick_style:tick});
+    _visuals.createTimeSeries("newdeaths",_history,{y:["deathIncrease"],time:"date",header:"New Deaths",line_shape:shape,line_width:lineWidth,curved:curved,hover_style:hover,hover_mode:hovermode,tick_style:tick});
+    _visuals.createTimeSeries("testing",_history,{y:["totalTestResults","positive","negative"],time:"date",header:"Testing",line_shape:shape,line_width:lineWidth,curved:curved,hover_style:hover,hover_mode:hovermode,tick_style:tick});
+
+    _esp.size();
+
+    _eventsources = _conn.createEventSources();
+    _eventsources.configureFromUrl(new URL("eventsource.xml",document.URL).toString(),{start:true});
+
+    _publisher = _conn.getPublisher({window:"p/cq/history",dateformat:"%Y%m%d"});
+}
+
+function
+select(collection)
+{
+    if (collection.name == "p/cq/state")
+    {
+        var item = collection.getSelectedItem();
+
+        if (item != null)
+        {
+            document.getElementById("currentState").innerHTML = item.state;
+            _conn.clearWindow("p/cq/history");
+
+            _counties.setFilter("eq(state," + item.state + ")");
+
+            var geojson = {type:"FeatureCollection",features:[]};
+            var fip = _stateinfo[item.state].fip;
+            var state = null;
+
+            _geojson.features.forEach((feature) => {
+                if (feature.properties.STATE == fip)
+                {
+                    geojson.features.push(feature);
+                }
+            });
+
+            _countyMap.setOpt("geojson",geojson);
+            _countyMap.setCenter(item.center_lat,item.center_lon);
+            _countyMap.draw();
+
+            loadHistory(item);
+        }
+    }
+}
+
+const _stateinfo =
+{
+    "Alabama":{abbrev:"AL",fip:"01"}, "Alaska":{abbrev:"AK",fip:"02"},"Arizona":{abbrev:"AZ",fip:"04"}, "Arkansas":{abbrev:"AR",fip:"05"}, "California":{abbrev:"CA",fip:"06"},
+    "Colorado":{abbrev:"CO",fip:"08"}, "Connecticut":{abbrev:"CT",fip:"09"},"Delaware":{abbrev:"DE",fip:"10"}, "Florida":{abbrev:"FL",fip:"12"}, "Georgia":{abbrev:"GA",fip:"13"},
+    "Hawaii":{abbrev:"HI",fip:"15"}, "Idaho":{abbrev:"ID",fip:"16"}, "Illinois":{abbrev:"IL",fip:"17"}, "Indiana":{abbrev:"IN",fip:"18"}, "Iowa":{abbrev:"IA",fip:"19"},
+    "Kansas":{abbrev:"KS",fip:"20"}, "Kentucky":{abbrev:"KY",fip:"21"}, "Louisiana":{abbrev:"LA",fip:"22"}, "Maine":{abbrev:"ME",fip:"23"}, "Maryland":{abbrev:"MD",fip:"24"},
+    "Massachusetts":{abbrev:"MA",fip:"25"}, "Michigan":{abbrev:"MI",fip:"26"}, "Minnesota":{abbrev:"MN",fip:"27"}, "Mississippi":{abbrev:"MS",fip:"28"}, "Missouri":{abbrev:"MO",fip:"29"},
+    "Montana":{abbrev:"MT",fip:"30"}, "Nebraska":{abbrev:"NE",fip:"31"}, "Nevada":{abbrev:"NV",fip:"32"}, "New Hampshire":{abbrev:"NH",fip:"33"}, "New Jersey":{abbrev:"NJ",fip:"34"},
+    "New Mexico":{abbrev:"NM",fip:"35"}, "New York":{abbrev:"NY",fip:"36"}, "North Carolina":{abbrev:"NC",fip:"37"}, "North Dakota":{abbrev:"ND",fip:"38"}, "Ohio":{abbrev:"OH",fip:"39"},
+    "Oklahoma":{abbrev:"OK",fip:"40"}, "Oregon":{abbrev:"OR",fip:"41"}, "Pennsylvania":{abbrev:"PA",fip:"42"}, "Rhode Island":{abbrev:"RI",fip:"44"}, "South Carolina":{abbrev:"SC",fip:"45"},
+    "South Dakota":{abbrev:"SD",fip:"46"}, "Tennessee":{abbrev:"TN",fip:"47"}, "Texas":{abbrev:"TX",fip:"48"}, "Utah":{abbrev:"UT",fip:"49"}, "Vermont":{abbrev:"VT",fip:"50"},
+    "Virginia":{abbrev:"VA",fip:"51"}, "Washington":{abbrev:"WA",fip:"53"}, "West Virginia":{abbrev:"WV",fip:"54"}, "Wisconsin":{abbrev:"WI",fip:"55"}, "Wyoming":{abbrev:"WY",fip:"56"}
+};
+
+function
+loadHistory(item)
+{
+    var abbrev = _stateinfo[item.state].abbrev;
+
+    //_history.setFilter("eq(state," + abbrev + ")");
+
+    var o = {
+        response:function(request,text,xml) {
+            var a = JSON.parse(text);
+            a.forEach((item) => {
+                item.opcode = "upsert";
+                _publisher.add(item);
+            });
+
+            _publisher.publish();
+        },
+
+        error(request,message) {
+            console.log("error: " + message);
+        }
+    };
+
+    var url = "https://covidtracking.com/api/v1/states/" + abbrev.toLowerCase() + "/daily.json";
+
+    _esp.getAjax().create("request",url,o).get();
+}
+
+function
+html(map,item,color,size,selected)
+{
+    var s = "";
+    s += "<div>";
+    s += "hi there";
+    s += "</div>";
+    return(s);
+}
+
+function
+error()
+{
+    alert("error");
+}
+
+</script>
+</head>
+
+<body>
+
+    <div id="banner">
+        <table style="width:100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td id="currentState" style="width:40%;text-align:left;font-weight:bold"></td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf539;</a>
+                    <a class="icon" href="javascript:_esp.showCodeDialog('ESP Model',_model)">&#xf426;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content"  class="container">
+        <div class="container" style="width:100%;height:35%">
+            <div id="usa" style="width:30%;height:100%"></div>
+            <div id="counties" style="width:65%;height:100%"></div>
+        </div>
+        <div class="container" style="width:100%;height:65%">
+            <div id="newcases" style="width:48%;height:49%"></div>
+            <div id="newdeaths" style="width:48%;height:49%"></div>
+            <div id="hospitalized" style="width:32%;height:49%"></div>
+            <div id="deaths" style="width:32%;height:49%"></div>
+            <div id="testing" style="width:32%;height:49%"></div>
+        </div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+</body>
+
+</html>
