@@ -355,6 +355,129 @@ define([
             return(dv.buffer);
         },
 
+        createDataFromCsv:function(csv,options)
+        {
+            var opts = new Options(options);
+            var data = [];
+            var lines = csv.split("\n");
+            var headers = null;
+            var fields = null;
+            var quotes = 0;
+            var i = 0;
+            var words;
+            var field;
+            var index;
+            var prev;
+            var word;
+            var c;
+            var s;
+            var o;
+
+            if (opts.hasOpt("fields"))
+            {
+                fields = opts.getOpt("fields");
+            }
+            else if (opts.getOpt("header",false))
+            {
+                s = lines[i].trim();
+                headers = s.split(",");
+                i++;
+            }
+
+            while (i < lines.length)
+            {
+                s = lines[i].trim();
+
+                if (s.length == 0)
+                {
+                    i++;
+                    continue;
+                }
+
+                words = [];
+                word = "";
+
+                for (var idx = 0; idx < s.length; idx++)
+                {
+                    c = s[idx];
+
+                    if (c == ',')
+                    {
+                        if (quotes > 0)
+                        {
+                            word += c;
+                        }
+                        else
+                        {
+                            words.push(word);
+                            word = "";
+                        }
+                    }
+                    else if (c == '\"')
+                    {
+                        if (prev == '\\')
+                        {
+                            word += c;
+                        }
+                        else
+                        {
+                            quotes ^= 1;
+                        }
+                    }
+                    else if (c == '\\')
+                    {
+                        if (prev == '\\')
+                        {
+                            word += c;
+                        }
+                    }
+                    else
+                    {
+                        word += c;
+                    }
+
+                    prev = c;
+                }
+
+                if (word.length > 0)
+                {
+                    words.push(word);
+                }
+
+                if (fields != null)
+                {
+                    o = {};
+
+                    for (var j = 0; j < words.length; j++)
+                    {
+                        if (fields.hasOwnProperty(j))
+                        {
+                            o[fields[j]] = words[j];
+                        }
+                    }
+                }
+                else if (headers != null)
+                {
+                    o = {};
+
+                    for (var j = 0; j < words.length; j++)
+                    {
+                        o[headers[j]] = words[j];
+                    }
+                }
+                else
+                {
+                    o = words;
+                }
+
+                data.push(o);
+
+                i++;
+            }
+
+            return(data);
+        },
+
         formatDate:function(date,format)
         {
             var field;

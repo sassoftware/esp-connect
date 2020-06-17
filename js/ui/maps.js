@@ -72,8 +72,8 @@ define([
                 opts.setOpt("toolbar",toolbar);
             }
 
-            toolbar.push({name:"zoomin",text:"&#xf8e1;",mousedown:mousedown,mouseup:mouseup});
-            toolbar.push({name:"zoomout",text:"&#xf8e2;",mousedown:mousedown,mouseup:mouseup});
+            toolbar.push({name:"zoomin",text:"&#xf8e1;"});
+            toolbar.push({name:"zoomout",text:"&#xf8e2;"});
         }
 
         if (engine == "plotly")
@@ -100,6 +100,7 @@ define([
         Chart.call(this,visuals,container,datasource,options);
         this._lat = null;
         this._lon = null;
+        this._interval = null;
     }
 
     Map.prototype = Object.create(Chart.prototype);
@@ -297,6 +298,39 @@ define([
         });
 
         return(mapdata);
+    }
+
+    Map.prototype.toolbarMouseDown =
+    function(opts)
+    {
+        var action = opts.getOpt("name","");
+        var map = this;
+        var msecs = 50;
+
+        if (action == "zoomin")
+        {
+            if (this._interval == null)
+            {
+                this._interval = setInterval(function(){map.zoomIn()},msecs);
+            }
+        }
+        else if (action == "zoomout")
+        {
+            if (this._interval == null)
+            {
+                this._interval = setInterval(function(){map.zoomOut()},msecs);
+            }
+        }
+    }
+
+    Map.prototype.toolbarMouseUp =
+    function(opts)
+    {
+        if (this._interval != null)
+        {
+            clearInterval(this._interval);
+            this._interval = null;
+        }
     }
 
     Map.prototype.getZoomDelta =

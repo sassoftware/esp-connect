@@ -28,9 +28,8 @@ define([
 	"./codec",
 	"./options",
 	"./router",
-	"./eventsources",
 	"./formatter"
-], function(ServerConnection,ajax,xpath,resources,tools,codec,Options,Router,eventsources,Formatter)
+], function(ServerConnection,ajax,xpath,resources,tools,codec,Options,Router,Formatter)
 {
 	var	__api =
 	{

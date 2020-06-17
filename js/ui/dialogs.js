@@ -20,7 +20,8 @@ define([
 		_okText:"Ok",
 		_cancelText:"Cancel",
         _codeDiv:null,
-        _codeId:null,
+        _divDialog:null,
+        _frameDialog:null,
 
 		init:function(okText,cancelText)
 		{
@@ -171,30 +172,26 @@ define([
 
             if (this._codeDiv == null)
             {
-                this._codeId = tools.guid();
                 this._codeDiv = document.createElement("div");
                 this._codeDiv.className = "dialog";
-                this._codeDiv.innerHTML = "<table class='dialogClose' style='width:100%' cellspacing='0' cellpadding='0'>\
-                        <tr><td class='icon'><a class='icon dialogTitle' href='javascript:_dialogs_.clearCodeDialog()'>&#xf10c;</a></td></tr>\
-                    </table>\
-                    <div class='dialogTop'>\
-                        <div  class='dialogHeader'>\
+                this._codeDiv.innerHTML = "<div class='dialogTop' style='height:80%;overflow:auto'>\
+                        <div class='dialogHeader'>\
                             <div class='dialogTitle'>\
-                                <table style='width:100%;border:0' cellspacing='0' cellpadding='0'>\
+                                <table style='width:100%;height:10%;border:0' cellspacing='0' cellpadding='0'>\
                                     <tr>\
-                                        <td><div id='_dialogCodeHeader' class='dialogTitle'></div></td>\
+                                        <td><div id='_dialogCodeHeader'></div></td>\
                                     </tr>\
                                 </table>\
                             </div>\
                         </div>\
+                        <div class='dialogContent' style='width:95%;height:85%;margin:auto'>\
+                            <pre id='_dialogCode' class='dialogCode'></pre>\
+                        </div>\
                     </div>\
-                    <div class='dialogContent' style='width:95%;height:70%;margin:auto'>\
-                        <pre id='_dialogCode' class='dialogCode'></pre>\
-                    </div>\
-                    <div class='dialogButtons'>\
-                        <table style='width:100%'>\
+                    <div class='dialogButtons' style='height:10%;padding:0;padding-right:30px'>\
+                        <table style='width:100%;height:100%'>\
                             <tr>\
-                                <td class='dialogButton'>\
+                                <td class='dialogButton' style='vertical-align:middle'>\
                                     <span><button class='close' onclick='javascript:_dialogs_.clearCodeDialog()'>Done</button></span>\
                                 </td>\
                             </tr>\
@@ -216,6 +213,204 @@ define([
             if (this._codeDiv != null)
             {
                 this.popModal(this._codeDiv);
+            }
+        },
+
+		showDivDialog:function(div,options)
+        {
+            var opts = new Options(options);
+
+            if (this._divDialog == null)
+            {
+                var table;
+                var tr;
+                var td;
+
+                this._divDialog = document.createElement("div");
+                this._divDialog.className = "dialog";
+                this._divDialog.style.width = opts.getOpt("width","80%");
+                this._divDialog.style.height = opts.getOpt("height","80%");
+                this._divDialog.style.overflow = "hidden";
+
+                var top = document.createElement("div");
+                this._divDialog.appendChild(top);
+                top.className = "dialogTop";
+                top.style.height = "80%";
+                top.style.overflow = "hidden";
+
+                var header = document.createElement("div");
+                top.appendChild(header);
+                header.className = "dialogHeader";
+
+                var title = document.createElement("div");
+                header.appendChild(title);
+                title.className = "dialogTitle";
+                //title.style.width = "100%";
+
+                title.appendChild(table = document.createElement("table"));
+                table.cellSpacing = 0;
+                table.cellPadding = 0;
+                table.style.width = "100%";
+                table.style.height = "10%";
+
+                table.appendChild(tr = document.createElement("tr"));
+                this._divDialogTitle = document.createElement("td"); 
+                tr.appendChild(this._divDialogTitle);
+
+                this._divDialogContent = document.createElement("div"); 
+                this._divDialogContent.style.height = "100%";
+                top.appendChild(this._divDialogContent);
+
+                var buttons = document.createElement("div");
+                this._divDialog.appendChild(buttons);
+                buttons.className = "dialogButtons";
+                buttons.style.height = "10%";
+                buttons.style.padding = 0;
+                buttons.style.paddingRight = "10px";
+
+                buttons.appendChild(table = document.createElement("table"));
+                table.style.width = "100%";
+                table.style.height = "100%";
+                table.appendChild(tr = document.createElement("tr"));
+                tr.appendChild(td = document.createElement("td"));
+                td.className = "dialogButton";
+                td.innerHTML = "<span><button class='close' onclick='javascript:_dialogs_.clearDivDialog()'>Done</button></span>";
+            }
+
+            this._divDialogTitle.innerHTML = opts.getOpt("title","");
+
+            this._divDialogContent.innerHTML = "";
+            this._divDialogContent.appendChild(div);
+            div.style.width = "100%";
+            div.style.height = "90%";
+
+            this.pushModal(this._divDialog);
+        },
+
+		clearDivDialog:function(options)
+        {
+            if (this._divDialog != null)
+            {
+                this.popModal(this._divDialog);
+            }
+        },
+
+		showFrameDialog:function(options)
+        {
+            var opts = new Options(options);
+
+            if (this._frameDialog == null)
+            {
+                var table;
+                var tr;
+                var td;
+
+                this._frameDialog = document.createElement("div");
+                this._frameDialog.className = "dialog";
+                this._frameDialog.style.width = opts.getOpt("width","80%");
+                this._frameDialog.style.height = opts.getOpt("height","80%");
+                this._frameDialog.style.overflow = "hidden";
+
+                var top = document.createElement("div");
+                this._frameDialog.appendChild(top);
+                top.className = "dialogTop";
+                top.style.height = "70%";
+                top.style.overflow = "hidden";
+
+                var header = document.createElement("div");
+                top.appendChild(header);
+                header.className = "dialogHeader";
+
+                var title = document.createElement("div");
+                header.appendChild(title);
+                title.className = "dialogTitle";
+
+                title.appendChild(table = document.createElement("table"));
+                table.cellSpacing = 0;
+                table.cellPadding = 0;
+                table.style.width = "100%";
+                table.style.height = "10%";
+
+                table.appendChild(tr = document.createElement("tr"));
+                this._frameDialogTitle = document.createElement("td"); 
+                tr.appendChild(this._frameDialogTitle);
+
+                this._frameDialogContent = document.createElement("iframe"); 
+                top.appendChild(this._frameDialogContent);
+                this._frameDialogContent.frameBorder = 0;
+                this._frameDialogContent.className = "dialogFrame";
+                this._frameDialogContent.style.width = "100%";
+                this._frameDialogContent.style.height = "80%";
+
+                var buttons = document.createElement("div");
+                this._frameDialog.appendChild(buttons);
+                buttons.className = "dialogButtons";
+                buttons.style.height = "10%";
+                buttons.style.padding = 0;
+                buttons.style.paddingRight = "10px";
+
+                buttons.appendChild(table = document.createElement("table"));
+                table.style.width = "100%";
+                table.style.height = "100%";
+                table.appendChild(tr = document.createElement("tr"));
+                tr.appendChild(td = document.createElement("td"));
+                td.className = "dialogButton";
+                td.innerHTML = "<span><button class='close' onclick='javascript:_dialogs_.clearFrameDialog()'>Done</button></span>";
+            }
+
+            this._frameDialogTitle.innerHTML = opts.getOpt("header","");
+            this._frameDialogContent.src = opts.getOpt("url","");
+
+            this.pushModal(this._frameDialog);
+        },
+
+		showFrameDialogx:function(options)
+        {
+            var opts = new Options(options);
+
+            if (this._frameDialog == null)
+            {
+                this._frameDialog = document.createElement("div");
+                this._frameDialog.className = "dialog";
+                this._frameDialog.innerHTML = "<div class='dialogTop' style='height:70%;overflow:auto'>\
+                        <div class='dialogHeader'>\
+                            <div class='dialogTitle'>\
+                                <table style='width:100%;height:10%;border:0' cellspacing='0' cellpadding='0'>\
+                                    <tr>\
+                                        <td><div id='_dialogFrameHeader' class='dialogTitle'></div></td>\
+                                    </tr>\
+                                </table>\
+                            </div>\
+                        </div>\
+                        <div class='dialogContent' style='width:95%;height:85%;margin:auto'>\
+                            <iframe id='_dialogFrame' class='dialogFrame' frameborder='0'></iframe>\
+                        </div>\
+                    </div>\
+                    <div class='dialogButtons' style='height:10%;padding:0;padding-right:30px'>\
+                        <table style='width:100%;height:100%'>\
+                            <tr>\
+                                <td class='dialogButton' style='vertical-align:middle'>\
+                                    <span><button class='close' onclick='javascript:_dialogs_.clearFrameDialog()'>Done</button></span>\
+                                </td>\
+                            </tr>\
+                        </table>\
+                    </div>";
+            }
+
+            this._frameDialog.style.width = opts.getOpt("width","90%");
+            this._frameDialog.style.height = opts.getOpt("height","90%");
+
+            this.pushModal(this._frameDialog);
+
+            document.getElementById("_dialogFrameHeader").innerHTML = opts.getOpt("header","");
+            document.getElementById("_dialogFrame").src = opts.getOpt("url","");
+        },
+
+		clearFrameDialog:function(options)
+        {
+            if (this._frameDialog != null)
+            {
+                this.popModal(this._frameDialog);
             }
         },
 

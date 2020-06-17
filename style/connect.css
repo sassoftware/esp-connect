@@ -61,6 +61,12 @@ body
     font-family:AvenirNextforSAS;
 }
 
+body.help
+{
+    overflow:auto;
+    padding:10px;
+}
+
 div.container
 {
     display:flex;
@@ -83,6 +89,7 @@ div#footer
 div#banner
 {
     background:#3b99fc;
+    font-size:14pt;
     padding:.5rem;
     color:white;
     z-index:10;
@@ -455,11 +462,6 @@ table.modelViewerHeader table.controls td.display
     padding-left:10px;
 }
 
-table.modelViewerHeader td.cpu
-{
-    border-left:1px solid #d8d8d8;
-}
-
 div.modelViewerHeader td,
 div.modelViewerFooter td,
 div.modelViewerHeader select
@@ -496,7 +498,8 @@ table.modelViewerHeader td
 
 table.modelViewerHeader td.project
 {
-    padding-right:10px;
+    padding-right:20px;
+    border-right:1px solid #d8d8d8;
 }
 
 table.modelViewerHeader td.memoryHeader
@@ -563,6 +566,11 @@ pre.dialogCode
     height:100%;
     border:1px solid #d8d8d8;
     overflow:auto;
+}
+
+iframe.dialogFrame
+{
+    border:1px solid #d8d8d8;
 }
 
 span.navigation
@@ -742,4 +750,9 @@ div.layout
 button:focus
 {
     border:2px solid #c0c0c0;
+}
+
+.indent
+{
+    padding-left:20px;
 }

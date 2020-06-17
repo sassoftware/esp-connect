@@ -648,11 +648,14 @@ setProject()
 function
 projectLoaded(viewer)
 {
-    _storage.setOpt("project",viewer.project);
-    var windows = viewer.model.getWindowsForProject(viewer.project);
-    _statsTable.clear();
-    _statsTable.setData(windows);
-    loadPublishWindows();
+    if (viewer.model != null)
+    {
+        _storage.setOpt("project",viewer.project);
+        var windows = viewer.model.getWindowsForProject(viewer.project);
+        _statsTable.clear();
+        _statsTable.setData(windows);
+        loadPublishWindows();
+    }
 }
 
 function

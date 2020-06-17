@@ -13,6 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.6.0/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/ui/main"></script>
 
@@ -67,13 +68,15 @@ sendModel(name,text,data)
     _conn.loadProject("p",text,{loaded:loaded},{overwrite:true});
 }
 
+var _modelXml = null;
+
 function
 loaded(p,conn)
 {
     _conn.getPublisher({window:"p/cq/circles_in"}).publishCsvFrom("circles_in.csv",{close:true});
     _conn.getPublisher({window:"p/cq/poly_in"}).publishCsvFrom("poly_in.csv",{close:true});
     setTimeout(createVisuals,1000);
-    _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
+    _conn.getProjectXml("p",{response:function(c,data){_modelXml = data;}});
 
     _esp.clearStatus();
 }
@@ -197,8 +200,9 @@ function()
                 <td id="bannerTitle"></td>
                 <td class="icon">
                     <a class="icon" href="javascript:_esp.getDialogs().pushModal('publish')">&#xf360;</a>
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf426;</a>
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_modelXml)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'p',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('ESP Paris Geofence Example','help.html',{width:'50%',height:'50%'})">&#xf30b;</a>
                 </td>
             </tr>
         </table>
@@ -259,67 +263,6 @@ function()
             </table>
         </div>
     </div>
-
-    <div id="espModel" class="dialog" style="width:90%;height:90%">
-
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
-        </table>
-
-        <div class="dialogTop">
-
-            <div  class="dialogHeader">
-                <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td><div class="dialogTitle">ESP Model</div></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="dialogContent" style="width:95%;height:70%;margin:auto">
-            <pre id="espModelXml" class="model"></pre>
-        </div>
-    </div>
-
-    <div id="help" class="dialog" style="width:60%">
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
-        </table>
-
-        <div class="dialogTop">
-
-            <div  class="dialogHeader">
-                <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td><div class="dialogTitle">ESP Paris Geofence Example</div></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="dialogContent">
-            This example simulates vehicles traveling through Paris. The example adds several general polygons and some specific points of interest to the map. When the vehicles enter and/or
-            approach these items, you will see events come in. Also, the speed and direction of the vehicles are displayed in gauges and compasses, respectively. You can initiate any number
-            of vehicle trips by hitting the gear icon at the top right and entering a vehicle name.
-        </div>
-
-        <div class="dialogButtons">
-            <table style="width:100%">
-                <tr>
-                    <td class="dialogButton">
-                        <span><button class="close" onclick="javascript:_esp.getDialogs().popModal('help')">Done</button></span>
-                    </td>
-                </tr>
-            </table>
-        </div>
-    </div>
-
-
 
 </body>
 

@@ -76,7 +76,20 @@ define([
     function
     ModelViewer(visuals,container,connection,options)
     {
-        ViewerBase.call(this,visuals,container,connection,options);
+        var opts = new Options(options);
+        var toolbar = [];
+        opts.setOpt("toolbar",toolbar);
+
+        toolbar.push({name:"reload",text:"&#xf59c;",right_border:true,style:{borderRight:"1px solid #d8d8d8",paddingRight:"10px"}});
+        toolbar.push({name:"zoomIn",text:"&#xf8e1;",style:{paddingLeft:"10px"}});
+        toolbar.push({name:"zoomOut",text:"&#xf8e2;"});
+        toolbar.push({name:"fit",text:"&#xf7e6;"});
+
+        opts.setOpt("toolbar",toolbar);
+
+        ViewerBase.call(this,visuals,container,connection,opts.getOpts());
+
+        this._project = null;
 
         Object.defineProperty(this,"connection", {
             get() {
@@ -166,8 +179,6 @@ define([
         {
             this.connection = connection;
         }
-
-        this._project = null;
     }
 
 	ModelViewer.prototype = Object.create(ViewerBase.prototype);
@@ -221,91 +232,97 @@ define([
         this._content.appendChild(this._modelDiv);
         this._content.appendChild(this._footerDiv);
 
-        var controlTable = document.createElement("table");
-        controlTable.className = "controls";
-        controlTable.appendChild(tr = document.createElement("tr"));
+        var controlTable = null;
+        this._projectSelect = document.createElement("select");
 
-        tr.appendChild(td = document.createElement("td"));
-        td.innerText = "Project: ";
-        tr.appendChild(td = document.createElement("td"));
-        td.className = "project";
-        td.appendChild(this._projectSelect = document.createElement("select"));
-        this._projectSelect._viewer = this;
-        this._projectSelect.style.outline = "none";
-        this._projectSelect.addEventListener("change",projectChanged);
+        if (this.getOpt("show_projects",true) || this.getOpt("show_controls",true))
+        {
+            controlTable = document.createElement("table");
+            controlTable.className = "controls";
+            controlTable.appendChild(tr = document.createElement("tr"));
 
-        var span;
-        var a;
+            if (this.getOpt("show_projects",true))
+            {
+                tr.appendChild(td = document.createElement("td"));
+                td.innerText = "Project: ";
+                tr.appendChild(td = document.createElement("td"));
+                td.className = "project";
+                td.appendChild(this._projectSelect);
+                this._projectSelect._viewer = this;
+                this._projectSelect.style.outline = "none";
+                this._projectSelect.addEventListener("change",projectChanged);
+            }
 
-        tr.appendChild(td = document.createElement("td"));
-        td.appendChild(a = document.createElement("a"));
-        td.className = "action";
-        a.className = "icon";
-        a.title = "Reload";
-        a._viewer = this;
-        a.innerHTML = "&#xf59c;";
-        a.href = "#";
-        a.addEventListener("click",function(){this._viewer.reload()});
+            if (this.getOpt("show_controls",true))
+            {
+                var span;
+                var a;
 
-        tr.appendChild(td = document.createElement("td"));
-        td.className = "display cpu";
-        td.appendChild(this._cpuLabel = document.createElement("label"));
-        this._cpuLabel.appendChild(this._cpu = document.createElement("input"));
-        this._cpuLabel.appendChild(span = document.createElement("span"));
-        span.innerHTML = "   CPU";
-        this._cpu.type = "checkbox";
-        this._cpu.name = "cpu";
-        this._cpu._viewer = this;
-        this._cpu.addEventListener("change",propertyChanged);
-        this._cpu.checked = this.getOpt("cpu",false);
+                tr.appendChild(td = document.createElement("td"));
+                td.className = "display cpu";
+                td.appendChild(this._cpuLabel = document.createElement("label"));
+                this._cpuLabel.appendChild(this._cpu = document.createElement("input"));
+                this._cpuLabel.appendChild(span = document.createElement("span"));
+                span.innerHTML = "   CPU";
+                this._cpu.type = "checkbox";
+                this._cpu.name = "cpu";
+                this._cpu._viewer = this;
+                this._cpu.addEventListener("change",propertyChanged);
+                this._cpu.checked = this.getOpt("cpu",false);
 
-        tr.appendChild(td = document.createElement("td"));
-        td.className = "display";
-        td.appendChild(this._countsLabel = document.createElement("label"));
-        this._countsLabel.appendChild(this._counts = document.createElement("input"));
-        this._countsLabel.appendChild(span = document.createElement("span"));
-        span.innerHTML = "   Counts";
-        this._counts.name = "counts";
-        this._counts.type = "checkbox";
-        this._counts._viewer = this;
-        this._counts.addEventListener("change",propertyChanged);
-        this._counts.checked = this.getOpt("counts",false);
+                tr.appendChild(td = document.createElement("td"));
+                td.className = "display";
+                td.appendChild(this._countsLabel = document.createElement("label"));
+                this._countsLabel.appendChild(this._counts = document.createElement("input"));
+                this._countsLabel.appendChild(span = document.createElement("span"));
+                span.innerHTML = "   Counts";
+                this._counts.name = "counts";
+                this._counts.type = "checkbox";
+                this._counts._viewer = this;
+                this._counts.addEventListener("change",propertyChanged);
+                this._counts.checked = this.getOpt("counts",false);
 
-        tr.appendChild(td = document.createElement("td"));
-        td.className = "display";
-        td.appendChild(this._typesLabel = document.createElement("label"));
-        this._typesLabel.appendChild(this._types = document.createElement("input"));
-        this._typesLabel.appendChild(span = document.createElement("span"));
-        span.innerHTML = "   Types";
-        this._types.type = "checkbox";
-        this._types.name = "type";
-        this._types._viewer = this;
-        this._types.addEventListener("change",propertyChanged);
-        this._types.checked = this.getOpt("type",false);
+                tr.appendChild(td = document.createElement("td"));
+                td.className = "display";
+                td.appendChild(this._typesLabel = document.createElement("label"));
+                this._typesLabel.appendChild(this._types = document.createElement("input"));
+                this._typesLabel.appendChild(span = document.createElement("span"));
+                span.innerHTML = "   Types";
+                this._types.type = "checkbox";
+                this._types.name = "type";
+                this._types._viewer = this;
+                this._types.addEventListener("change",propertyChanged);
+                this._types.checked = this.getOpt("type",false);
 
-        tr.appendChild(td = document.createElement("td"));
-        td.className = "display";
-        td.appendChild(this._indexLabel  = document.createElement("label"));
-        this._indexLabel .appendChild(this._indices = document.createElement("input"));
-        this._indexLabel .appendChild(span = document.createElement("span"));
-        span.innerHTML = "   Indices";
-        this._indices.name = "index";
-        this._indices.type = "checkbox";
-        this._indices._viewer = this;
-        this._indices.addEventListener("change",propertyChanged);
-        this._indices.checked = this.getOpt("index",false);
+                tr.appendChild(td = document.createElement("td"));
+                td.className = "display";
+                td.appendChild(this._indexLabel  = document.createElement("label"));
+                this._indexLabel .appendChild(this._indices = document.createElement("input"));
+                this._indexLabel .appendChild(span = document.createElement("span"));
+                span.innerHTML = "   Indices";
+                this._indices.name = "index";
+                this._indices.type = "checkbox";
+                this._indices._viewer = this;
+                this._indices.addEventListener("change",propertyChanged);
+                this._indices.checked = this.getOpt("index",false);
 
-        tr.appendChild(td = document.createElement("td"));
-        td.className = "display";
-        td.appendChild(this._memoryLabel = document.createElement("label"));
-        this._memoryLabel.appendChild(this._memory = document.createElement("input"));
-        this._memoryLabel.appendChild(span = document.createElement("span"));
-        span.innerHTML = "   Memory";
-        this._memory.name = "memory";
-        this._memory.type = "checkbox";
-        this._memory._viewer = this;
-        this._memory.addEventListener("change",propertyChanged);
-        this._memory.checked = this.getOpt("memory",false);
+                tr.appendChild(td = document.createElement("td"));
+                td.className = "display";
+                td.appendChild(this._memoryLabel = document.createElement("label"));
+                this._memoryLabel.appendChild(this._memory = document.createElement("input"));
+                this._memoryLabel.appendChild(span = document.createElement("span"));
+                span.innerHTML = "   Memory";
+                this._memory.name = "memory";
+                this._memory.type = "checkbox";
+                this._memory._viewer = this;
+                this._memory.addEventListener("change",propertyChanged);
+                this._memory.checked = this.getOpt("memory",false);
+            }
+        }
+        else
+        {
+            this._headerDiv.style.display = "none";
+        }
 
         this._memoryTable = document.createElement("table");
         this._memoryTable.appendChild(tr = document.createElement("tr"));
@@ -337,91 +354,38 @@ define([
         tr.appendChild(this._resident = document.createElement("td"));
         this._resident.className = "memoryValue";
 
-        var navTable = document.createElement("table");
-        navTable.className = "navigation";
-        navTable.appendChild(tr = document.createElement("tr"));
-        tr.appendChild(td = document.createElement("td"));
-        td.appendChild(a = document.createElement("a"));
-        td.className = "action";
-        a._viewer = this;
-        a._action = "zoomIn";
-        a.className = "icon";
-        a.innerHTML = "&#xf8e1;";
-        a.href = "#";
-        a.addEventListener("mousedown",this.startAction);
-        a.addEventListener("mouseup",this.stopAction);
+        var navTable = null;
 
-        tr.appendChild(td = document.createElement("td"));
-        td.appendChild(a = document.createElement("a"));
-        td.className = "action";
-        a._viewer = this;
-        a._action = "zoomOut";
-        a.className = "icon";
-        a.innerHTML = "&#xf8e2;";
-        a.href = "#";
-        a.addEventListener("mousedown",this.startAction);
-        a.addEventListener("mouseup",this.stopAction);
- 
-        tr.appendChild(td = document.createElement("td"));
-        td.appendChild(a = document.createElement("a"));
-        td.className = "action";
-        a._viewer = this;
-        a.className = "icon";
-        a.innerHTML = "&#xf7e6;";
-        a.href = "#";
-        a.addEventListener("click",this.fitNetwork);
+        if (this.getOpt("show_header",true) == false)
+        {
+            navTable = document.createElement("table");
+            navTable.className = "navigation";
+            navTable.appendChild(tr = document.createElement("tr"));
 
-        /*
-        tr.appendChild(td = document.createElement("td"));
-        td.appendChild(a = document.createElement("a"));
-        td.className = "action";
-        a._viewer = this;
-        a._action = "moveUp";
-        a.className = "icon";
-        a.innerHTML = "&#xf047;";
-        a.href = "#";
-        a.addEventListener("mousedown",this.startAction);
-        a.addEventListener("mouseup",this.stopAction);
+            tr.appendChild(td = document.createElement("td"));
+            td.className = "action";
+            td.appendChild(this.createToolbarItem({name:"zoomIn",text:"&#xf8e1;"}));
 
-        tr.appendChild(td = document.createElement("td"));
-        td.appendChild(a = document.createElement("a"));
-        td.className = "action";
-        a._viewer = this;
-        a._action = "moveLeft";
-        a.className = "icon";
-        a.innerHTML = "&#xf043;";
-        a.href = "#";
-        a.addEventListener("mousedown",this.startAction);
-        a.addEventListener("mouseup",this.stopAction);
+            tr.appendChild(td = document.createElement("td"));
+            td.className = "action";
+            td.appendChild(this.createToolbarItem({name:"zoomOut",text:"&#xf8e2;"}));
 
-        tr.appendChild(td = document.createElement("td"));
-        td.appendChild(a = document.createElement("a"));
-        td.className = "action";
-        a._viewer = this;
-        a._action = "moveRight";
-        a.className = "icon";
-        a.innerHTML = "&#xf045;";
-        a.href = "#";
-        a.addEventListener("mousedown",this.startAction);
-        a.addEventListener("mouseup",this.stopAction);
-
-        tr.appendChild(td = document.createElement("td"));
-        td.appendChild(a = document.createElement("a"));
-        td.className = "action";
-        a._viewer = this;
-        a._action = "moveDown";
-        a.className = "icon";
-        a.innerHTML = "&#xf041;";
-        a.href = "#";
-        a.addEventListener("mousedown",this.startAction);
-        a.addEventListener("mouseup",this.stopAction);
-        */
+            tr.appendChild(td = document.createElement("td"));
+            td.className = "action";
+            td.appendChild(this.createToolbarItem({name:"fit",text:"&#xf7e6;"}));
+        }
 
         this._headerTable.appendChild(tr = document.createElement("tr"));
-        tr.appendChild(td = document.createElement("td"));
-        td.appendChild(navTable);
-        tr.appendChild(td = document.createElement("td"));
-        td.appendChild(controlTable);
+        if (navTable != null)
+        {
+            tr.appendChild(td = document.createElement("td"));
+            td.appendChild(navTable);
+        }
+        if (controlTable != null)
+        {
+            tr.appendChild(td = document.createElement("td"));
+            td.appendChild(controlTable);
+        }
 
         /*
         this._headerTable.appendChild(tr = document.createElement("tr"));
@@ -531,6 +495,11 @@ define([
             }
             //console.log("click: " + JSON.stringify(nodes));
         });
+
+        if (this.hasOpt("project"))
+        {
+            this.project = this.getOptAndClear("project");
+        }
     }
 
     ModelViewer.prototype.zoom =
@@ -579,7 +548,17 @@ define([
             this.size();
         }
 
-        this.setHeader();
+        var header = this.getOpt("header","");
+
+        if (this.getOpt("show_projects",true) == false)
+        {
+            if (this._project != null && this._project != "*")
+            {
+                header += " (" + this._project + ")";
+            }
+        }
+
+        this.setHeader(header);
     }
 
     ModelViewer.prototype.setStats =
@@ -678,16 +657,18 @@ define([
 
         this.clearNetwork();
 
-        this.setOpt("cpu",tools.setCbState(this._cpuLabel,{enabled:connection != null}));
-        this.setOpt("counts",tools.setCbState(this._countsLabel,{enabled:connection != null}));
-        this.setOpt("type",tools.setCbState(this._typesLabel,{enabled:true}));
-        this.setOpt("index",tools.setCbState(this._indexLabel,{enabled:true}));
-        this.setOpt("memory",tools.setCbState(this._memoryLabel,{enabled:connection != null}));
+        if (this.getOpt("show_controls",true))
+        {
+            this.setOpt("cpu",tools.setCbState(this._cpuLabel,{enabled:connection != null}));
+            this.setOpt("counts",tools.setCbState(this._countsLabel,{enabled:connection != null}));
+            this.setOpt("type",tools.setCbState(this._typesLabel,{enabled:true}));
+            this.setOpt("index",tools.setCbState(this._indexLabel,{enabled:true}));
+            this.setOpt("memory",tools.setCbState(this._memoryLabel,{enabled:connection != null}));
+        }
 
-        var viewer = this;
-        setTimeout(function(){viewer.fit()},1000);
+        this.fit(1000);
 
-        viewer._delegates.forEach((d) => 
+        this._delegates.forEach((d) => 
         {
             if (tools.supports(d,"modelLoaded"))
             {
@@ -960,11 +941,11 @@ define([
         });
     }
 
-    ModelViewer.prototype.startAction =
-    function()
+    ModelViewer.prototype.toolbarMouseDown =
+    function(opts)
     {
-        var viewer = this._viewer;
-        var action = this._action;
+        var action = opts.getOpt("name","");
+        var viewer = this;
         var msecs = 50;
 
         if (action == "zoomIn")
@@ -993,13 +974,28 @@ define([
         }
     }
 
-    ModelViewer.prototype.stopAction =
-    function()
+    ModelViewer.prototype.toolbarMouseUp =
+    function(opts)
     {
         if (this._interval != null)
         {
             clearInterval(this._interval);
             this._interval = null;
+        }
+    }
+
+    ModelViewer.prototype.toolbarClick =
+    function(opts)
+    {
+        var action = opts.getOpt("name","");
+
+        if (action == "fit")
+        {
+            this._network.fit();
+        }
+        else if (action == "reload")
+        {
+            this.reload();
         }
     }
 

@@ -268,7 +268,7 @@ define([
                         d.delegate.loaded(this,name);
                     }
                 }
-                else if (tools.supports(d.delegate,"error"))
+                else
                 {
                     var message = "";
 
@@ -287,7 +287,14 @@ define([
                         }
                     }
 
-                    d.delegate.error(this,d.request.name,message);
+                    if (tools.supports(d.delegate,"error"))
+                    {
+                        d.delegate.error(this,d.request.name,message);
+                    }
+                    else
+                    {
+                        console.log(message);
+                    }
                 }
 
                 delete this._loadDelegates[id];

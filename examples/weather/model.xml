@@ -1,6 +1,6 @@
 <project name='p' threads='4' pubsub='auto'>
 	<contqueries>
-		<contquery name='cq' trace='aggr'>
+		<contquery name='cq'>
 			<windows>
 				<window-source name='s'>
 					<schema>

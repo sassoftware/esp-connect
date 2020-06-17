@@ -219,6 +219,18 @@ define([
     {
     }
 
+	Options.prototype.resolve =
+    function(value)
+    {
+        for (var name in this._options)
+        {
+            var rgx = new RegExp("@" + name + "@","g");
+            value = value.replace(rgx,this._options[name]);
+        }
+
+        return(value);
+    }
+
 	Options.prototype.clone =
     function(names)
     {

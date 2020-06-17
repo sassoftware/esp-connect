@@ -58,21 +58,21 @@ define([
     }
 
     function
-    click()
+    handleClick()
     {
-        this._info.click(this._chart,this._info);
+        this._chart.toolbarClick(this._opts);
     }
 
     function
-    mouseup()
+    handleMouseDown()
     {
-        this._info.mouseup(this._chart,this._info);
+        this._chart.toolbarMouseDown(this._opts);
     }
 
     function
-    mousedown()
+    handleMouseUp()
     {
-        this._info.mousedown(this._chart,this._info);
+        this._chart.toolbarMouseUp(this._opts);
     }
 
     function
@@ -341,39 +341,7 @@ define([
             icons.appendChild(this._custom);
 
             toolbar.forEach((info) => {
-                var a = document.createElement("a");
-                a._info = info;
-                a._chart = this;
-                a.innerHTML = info.text;
-                a.className = info.hasOwnProperty("class") ? info["class"] : "icon";
-                if (info.hasOwnProperty("id"))
-                {
-                    a.id = info.id;
-                }
-                if (info.hasOwnProperty("tooltip"))
-                {
-                    a.title = info.tooltip;
-                }
-                a.href = "#";
-                if (info.hasOwnProperty("click"))
-                {
-                    a.addEventListener("click",click);
-                }
-                else if (info.hasOwnProperty("mousedown"))
-                {
-                    a.addEventListener("mousedown",mousedown);
-
-                    if (info.hasOwnProperty("mouseup"))
-                    {
-                        a.addEventListener("mouseup",mouseup);
-                    }
-                }
-                else
-                {
-                    throw "You must specify either click or mousedown in the toolbar item.";
-                }
-
-                this._custom.appendChild(a);
+                this._custom.appendChild(this.createToolbarItem(info));
             });
         }
 
@@ -683,6 +651,39 @@ define([
         return(s);
     }
 
+    Chart.prototype.createToolbarItem =
+    function(info)
+    {
+        var a = document.createElement("a");
+        var opts = new Options(info);
+        a._opts = opts;
+        a._chart = this;
+        a.innerHTML = opts.getOpt("text","");
+        a.className = opts.getOpt("classname","icon");
+        if (opts.hasOpt("style"))
+        {
+            var style = opts.getOpt("style");
+            for (var x in style)
+            {
+                a.style[x] = style[x];
+            }
+        }
+        if (opts.hasOpt("id"))
+        {
+            a.id = opts.getOpt("id");
+        }
+        if (opts.hasOpt("tooltip"))
+        {
+            a.title = opts.getOpt("tooltip");
+        }
+        a.href = "#";
+        a.addEventListener("click",handleClick);
+        a.addEventListener("mousedown",handleMouseDown);
+        a.addEventListener("mouseup",handleMouseUp);
+
+        return(a);
+    }
+
     Chart.prototype.getBorderSize =
     function()
     {
@@ -727,8 +728,23 @@ define([
         return(padding);
     }
 
+    Chart.prototype.toolbarClick =
+    function(info)
+    {
+    }
+
+    Chart.prototype.toolbarMouseDown =
+    function(opts)
+    {
+    }
+
+    Chart.prototype.toolbarMouseUp =
+    function(opts)
+    {
+    }
+
     Chart.prototype.size =
-    function(name)
+    function(opts)
     {
     }
 

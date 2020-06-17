@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="../../style/connect.css" />
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/ui/main"></script>
 
@@ -116,12 +117,11 @@ layout()
 
 var _imagePublisher = null;
 var _objectPublisher = null;
+var _model = null;
 
 function
 loaded()
 {
-    _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
-
     _imagePublisher = _conn.getPublisher({window:"p/cq_1/w_data",binary:true});
     _objectPublisher = _conn.getPublisher({window:"p/cq_2/s",binary:true});
 
@@ -133,6 +133,8 @@ loaded()
     {
         createVisuals();
     }
+
+    _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
 }
 
 function
@@ -359,8 +361,9 @@ button
                 <td id="bannerTitle"></td>
                 <td class="icon">
                     <a class="icon" href="javascript:editProperties()">&#xf201;</a>
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf426;</a>
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a></td>
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'p',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('ESP Image Object Detection Example','help.html',{width:'80%',height:'60%'})">&#xf30b;</a>
                 </td>
             </tr>
         </table>
@@ -376,71 +379,6 @@ button
     </div>
 
     <div id="footer">&nbsp;</div>
-
-    <div id="help" class="dialog">
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
-        </table>
-
-        <div class="dialogTop">
-
-            <div  class="dialogHeader">
-                <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td><div class="dialogTitle">ESP Image Object Detection</div></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="dialogContent">
-            This example allows you to specify a video to play. The page will grab each frame from the video and publish it into the ESP model. The example
-            uses binary communication with the ESP server so it can keep up with the rate and amount of data being processed.
-            <br/><br/>
-            In order to run the model, you must copy the <a href="../data/images.astore">astore file</a>
-            into the directory in which you are running your ESP server.
-            <br/><br/>
-            After you have done this, you can hit the play icon and start the video. As the video starts, each frame is grabbed and copied into the HTML
-            canvas element at the upper right of the screen. Then, the image data is taken out of the canvas and sent into the ESP image processing object detection
-            model. The image is processed and sent back to the web page where it is displayed in the <i>Results</i> image viewer.
-        </div>
-
-        <div class="dialogButtons">
-            <table style="width:100%">
-                <tr>
-                    <td class="dialogButton">
-                        <span><button class="close" onclick="javascript:_esp.getDialogs().popModal('help')">Done</button></span>
-                    </td>
-                </tr>
-            </table>
-        </div>
-    </div>
-
-    <div id="espModel" class="dialog" style="width:90%;height:90%">
-
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
-        </table>
-
-        <div class="dialogTop">
-
-            <div  class="dialogHeader">
-                <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td><div class="dialogTitle">ESP Model</div></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="dialogContent" style="width:95%;height:70%;margin:auto">
-            <pre id="espModelXml" class="model"></pre>
-        </div>
-    </div>
 
     <div id="properties" class="dialog" style="width:600px">
 

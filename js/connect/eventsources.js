@@ -26,10 +26,17 @@ define([
         this._eventsources = {};
         this._running = false;
         this._paused = false;
+        this._config = null;
 
         Object.defineProperty(this,"running", {
             get() {
                 return(this._running);
+            }
+        });
+
+        Object.defineProperty(this,"configuration", {
+            get() {
+                return(this._config);
             }
         });
 
@@ -46,20 +53,14 @@ define([
     EventSources.prototype.configure =
     function(config,parms)
     {
+        this._config = config;
+
         var content = config.hasOwnProperty("nodeType") ? xpath.xmlString(config) : config;
-        var rgx = new RegExp("@([A-z0-9_]*)@");
-        var results;
 
-        while ((results = rgx.exec(content)) != null)
+        if (parms != null)
         {
-            var name = results[1];
-
-            if (parms == null || parms.hasOwnProperty(name) == false)
-            {
-                tools.exception("you must provide a value for '" + name + "'");
-            }
-
-            content = content.replace(new RegExp("@" + name + "@","g"),parms[name]);
+            var opts = new Options(parms);
+            content = opts.resolve(content);
         }
 
         var xml = xpath.createXml(content).documentElement;
@@ -98,8 +99,6 @@ define([
             this.addEventSource(eventsource);
 
             eventsource.configure(node);
-
-            eventsource.enabled = node.hasAttribute("enabled") ? (node.getAttribute("enabled") == "true") : true;
         });
 
         xpath.getNodes("./edges/edge",xml).forEach((node) => {
@@ -119,10 +118,12 @@ define([
     {
         var eventsources = this;
         var opts = new Options(parms);
+        var start = opts.getOptAndClear("start",false);
         var o = {response:function(request,text,xml) {
-            eventsources.configure(text,parms);
 
-            if (opts.getOpt("start",false))
+            eventsources.configure(text,opts.getOpts());
+
+            if (start)
             {
                 eventsources.start();
             }
@@ -132,6 +133,7 @@ define([
                 delegate.ready(eventsources);
             }
         },
+
         error(request,message) {
             console.log("error: " + message);
         }
@@ -260,7 +262,7 @@ define([
 
         Object.values(this._eventsources).forEach((es) => {
 
-            if (es.enabled && es.done == false)
+            if (es.repeat >= 0 && es.done == false)
             {
                 if (es.sending == false)
                 {
@@ -301,7 +303,10 @@ define([
         });
 
         eventsources.forEach((es) => {
-            es.process();
+            if (es.repeat >= 0)
+            {
+                es.process();
+            }
         });
 
         if (completed == Object.keys(this._eventsources).length)
@@ -322,6 +327,19 @@ define([
         }
     }
 
+    EventSources.prototype.publish =
+    function(name,options)
+    {
+        if (this._eventsources.hasOwnProperty(name) == false)
+        {
+            tools.exception("cannot find event source " + name);
+        }
+
+        var es = this._eventsources[name];
+
+        es.process(options);
+    }
+
     /* End EventSources */
 
     /* EventSource */
@@ -338,6 +356,18 @@ define([
             tools.exception("no window specified");
         }
 
+        Object.defineProperty(this,"esp", {
+            get() {
+                return(connect);
+            }
+        });
+
+        Object.defineProperty(this,"tools", {
+            get() {
+                return(tools);
+            }
+        });
+
         this._eventsources = eventsources;
         this._api = eventsources._api;
         this._ready = false;
@@ -349,8 +379,6 @@ define([
 
         this._senders = [];
 
-        this._enabled = true;
-
         Object.defineProperty(this,"publisher", {
             get() {
                 return(this._publisher);
@@ -360,15 +388,6 @@ define([
         Object.defineProperty(this,"repeat", {
             get() {
                 return(this.getOpt("repeat","1"));
-            }
-        });
-
-        Object.defineProperty(this,"enabled", {
-            get() {
-                return(this._enabled);
-            },
-            set(value) {
-                this._enabled = value;
             }
         });
 
@@ -549,9 +568,9 @@ define([
     }
 
     EventSource.prototype.process =
-    function()
+    function(options)
     {
-        if (this.run())
+        if (this.run(options))
         {
             this._timestamp = new Date().getTime();
             this._times++;
@@ -564,7 +583,7 @@ define([
     }
 
     EventSource.prototype.run =
-    function()
+    function(options)
     {
         return(false);
     }
@@ -600,7 +619,7 @@ define([
 
         if (this.hasOpt("transform"))
         {
-            this._transform = new Function("esp","data",this.getOpt("transform"));
+            this._transform = new Function("eventsource","data",this.getOpt("transform"));
         }
     }
 
@@ -621,7 +640,7 @@ define([
     }
 
     UrlEventSource.prototype.run =
-    function()
+    function(options)
     {
         var code = false;
         var url = null;
@@ -638,12 +657,18 @@ define([
 
         if (url != null)
         {
+            if (options != null)
+            {
+                var opts = new Options(options);
+                url = opts.resolve(url);
+            }
+
             var eventsource = this;
             if (this._api.version > 7 && this.getOpt("use-connect",false))
             {
                 var o = {
                     response:function(text) {
-                        var data = eventsource._transform(connect,text);
+                        var data = eventsource._transform(eventsource,text);
 
                         if (data != null)
                         {
@@ -662,7 +687,7 @@ define([
             {
                 var o = {
                     response:function(request,text,xml) {
-                        var data = eventsource._transform(connect,text);
+                        var data = eventsource._transform(eventsource,text);
 
                         if (data != null)
                         {
@@ -729,7 +754,7 @@ define([
     }
 
     CsvEventSource.prototype.run =
-    function()
+    function(options)
     {
         var code = false;
 
@@ -784,9 +809,9 @@ define([
     }
 
     CodeEventSource.prototype.run =
-    function()
+    function(options)
     {
-        this._code(connect,this._publisher);
+        this._code(this._eventsources,this._publisher);
         return(true);
     }
 

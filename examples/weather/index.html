@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="../../style/connect.css" />
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/ui/main"></script>
 
@@ -67,6 +68,8 @@ ready(connection)
     _esp.size();
 }
 
+var _model = null;
+
 function
 loaded()
 {
@@ -88,7 +91,7 @@ loaded()
 
     _esp.size();
 
-    _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
+    _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
 }
 
 function
@@ -130,7 +133,8 @@ done()
             <tr>
                 <td id="bannerTitle"></td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf426;</a>
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'p',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
                     <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
                 </td>
             </tr>

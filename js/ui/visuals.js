@@ -17,15 +17,17 @@ define([
     var _dataHeader = "_data://";
 
     function
-    Visuals(options)
+    Visuals(api,options)
     {
         Options.call(this,options);
+        this._api = api;
         this._viewers = new Viewers();
         this._maps = new Maps();
         this._visuals = [];
         this._delegates = [];
 
         this._languages = null;
+        this._modelDivs = {};
 
         if (navigator.hasOwnProperty("language"))
         {
@@ -324,6 +326,30 @@ define([
         var chart = this._viewers.createLogViewer(this,container,connection,options);
         this._visuals.push(chart);
         return(chart);
+    }
+
+    Visuals.prototype.showModel =
+    function(connection,options)
+    {
+        var div = (this._modelDivs.hasOwnProperty(connection.url)) ? this._modelDivs[connection.url] : null;
+        var viewer = null;
+
+        if (div == null)
+        {
+            div = document.createElement("div");
+            viewer = this.createModelViewer(div,connection,options);
+            this._modelDivs[connection.url] = div;
+
+            div._viewer = viewer;
+        }
+        else
+        {
+            viewer = div._viewer;
+        }
+
+        dialogs.showDivDialog(div,options);
+
+        this._api.size();
     }
 
     Visuals.prototype.addDelegate =

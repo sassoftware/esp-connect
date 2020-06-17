@@ -101,14 +101,25 @@ define([
             dialogs.showDialog(o);
         },
 
-        showCodeDialog:function(header,code)
+        showCodeDialog:function(header,code,options)
         {
-            dialogs.showCodeDialog({header:header,code:code});
+            var opts = connect.createOptions(options);
+            opts.setOpt("header",header);
+            opts.setOpt("code",code);
+            dialogs.showCodeDialog(opts.getOpts());
+        },
+
+        showFrameDialog:function(header,url,options)
+        {
+            var opts = connect.createOptions(options);
+            opts.setOpt("header",header);
+            opts.setOpt("url",url);
+            dialogs.showFrameDialog(opts.getOpts());
         },
 
         createVisuals:function(options)
         {
-            var visuals = new Visuals(options);
+            var visuals = new Visuals(__api,options);
             this._visuals.push(visuals);
             return(visuals);
         },

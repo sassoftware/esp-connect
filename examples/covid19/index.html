@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/esp-connect/style/connect.css" />
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="/esp-connect/js/ui/main"></script>
 
@@ -72,7 +73,6 @@ ready(connection)
     }
 }
 
-var _publisher = null;
 var _eventsources = null;
 var _states = null;
 var _counties = null;
@@ -139,9 +139,21 @@ createGraphics()
 
     _eventsources = _conn.createEventSources();
     _eventsources.configureFromUrl(new URL("eventsource.xml",document.URL).toString(),{start:true});
-
-    _publisher = _conn.getPublisher({window:"p/cq/history",dateformat:"%Y%m%d"});
 }
+
+const _stateinfo =
+{
+    "Alabama":{abbrev:"AL",fip:"01"}, "Alaska":{abbrev:"AK",fip:"02"},"Arizona":{abbrev:"AZ",fip:"04"}, "Arkansas":{abbrev:"AR",fip:"05"}, "California":{abbrev:"CA",fip:"06"},
+    "Colorado":{abbrev:"CO",fip:"08"}, "Connecticut":{abbrev:"CT",fip:"09"},"Delaware":{abbrev:"DE",fip:"10"}, "Florida":{abbrev:"FL",fip:"12"}, "Georgia":{abbrev:"GA",fip:"13"},
+    "Hawaii":{abbrev:"HI",fip:"15"}, "Idaho":{abbrev:"ID",fip:"16"}, "Illinois":{abbrev:"IL",fip:"17"}, "Indiana":{abbrev:"IN",fip:"18"}, "Iowa":{abbrev:"IA",fip:"19"},
+    "Kansas":{abbrev:"KS",fip:"20"}, "Kentucky":{abbrev:"KY",fip:"21"}, "Louisiana":{abbrev:"LA",fip:"22"}, "Maine":{abbrev:"ME",fip:"23"}, "Maryland":{abbrev:"MD",fip:"24"},
+    "Massachusetts":{abbrev:"MA",fip:"25"}, "Michigan":{abbrev:"MI",fip:"26"}, "Minnesota":{abbrev:"MN",fip:"27"}, "Mississippi":{abbrev:"MS",fip:"28"}, "Missouri":{abbrev:"MO",fip:"29"},
+    "Montana":{abbrev:"MT",fip:"30"}, "Nebraska":{abbrev:"NE",fip:"31"}, "Nevada":{abbrev:"NV",fip:"32"}, "New Hampshire":{abbrev:"NH",fip:"33"}, "New Jersey":{abbrev:"NJ",fip:"34"},
+    "New Mexico":{abbrev:"NM",fip:"35"}, "New York":{abbrev:"NY",fip:"36"}, "North Carolina":{abbrev:"NC",fip:"37"}, "North Dakota":{abbrev:"ND",fip:"38"}, "Ohio":{abbrev:"OH",fip:"39"},
+    "Oklahoma":{abbrev:"OK",fip:"40"}, "Oregon":{abbrev:"OR",fip:"41"}, "Pennsylvania":{abbrev:"PA",fip:"42"}, "Rhode Island":{abbrev:"RI",fip:"44"}, "South Carolina":{abbrev:"SC",fip:"45"},
+    "South Dakota":{abbrev:"SD",fip:"46"}, "Tennessee":{abbrev:"TN",fip:"47"}, "Texas":{abbrev:"TX",fip:"48"}, "Utah":{abbrev:"UT",fip:"49"}, "Vermont":{abbrev:"VT",fip:"50"},
+    "Virginia":{abbrev:"VA",fip:"51"}, "Washington":{abbrev:"WA",fip:"53"}, "West Virginia":{abbrev:"WV",fip:"54"}, "Wisconsin":{abbrev:"WI",fip:"55"}, "Wyoming":{abbrev:"WY",fip:"56"}
+};
 
 function
 select(collection)
@@ -153,7 +165,6 @@ select(collection)
         if (item != null)
         {
             document.getElementById("currentState").innerHTML = item.state;
-            _conn.clearWindow("p/cq/history");
 
             _counties.setFilter("eq(state," + item.state + ")");
 
@@ -172,61 +183,11 @@ select(collection)
             _countyMap.setCenter(item.center_lat,item.center_lon);
             _countyMap.draw();
 
-            loadHistory(item);
+            _conn.clearWindow("p/cq/history");
+            var abbrev = _stateinfo[item.state].abbrev;
+            _eventsources.publish("history",{state:abbrev.toLowerCase()});
         }
     }
-}
-
-const _stateinfo =
-{
-    "Alabama":{abbrev:"AL",fip:"01"}, "Alaska":{abbrev:"AK",fip:"02"},"Arizona":{abbrev:"AZ",fip:"04"}, "Arkansas":{abbrev:"AR",fip:"05"}, "California":{abbrev:"CA",fip:"06"},
-    "Colorado":{abbrev:"CO",fip:"08"}, "Connecticut":{abbrev:"CT",fip:"09"},"Delaware":{abbrev:"DE",fip:"10"}, "Florida":{abbrev:"FL",fip:"12"}, "Georgia":{abbrev:"GA",fip:"13"},
-    "Hawaii":{abbrev:"HI",fip:"15"}, "Idaho":{abbrev:"ID",fip:"16"}, "Illinois":{abbrev:"IL",fip:"17"}, "Indiana":{abbrev:"IN",fip:"18"}, "Iowa":{abbrev:"IA",fip:"19"},
-    "Kansas":{abbrev:"KS",fip:"20"}, "Kentucky":{abbrev:"KY",fip:"21"}, "Louisiana":{abbrev:"LA",fip:"22"}, "Maine":{abbrev:"ME",fip:"23"}, "Maryland":{abbrev:"MD",fip:"24"},
-    "Massachusetts":{abbrev:"MA",fip:"25"}, "Michigan":{abbrev:"MI",fip:"26"}, "Minnesota":{abbrev:"MN",fip:"27"}, "Mississippi":{abbrev:"MS",fip:"28"}, "Missouri":{abbrev:"MO",fip:"29"},
-    "Montana":{abbrev:"MT",fip:"30"}, "Nebraska":{abbrev:"NE",fip:"31"}, "Nevada":{abbrev:"NV",fip:"32"}, "New Hampshire":{abbrev:"NH",fip:"33"}, "New Jersey":{abbrev:"NJ",fip:"34"},
-    "New Mexico":{abbrev:"NM",fip:"35"}, "New York":{abbrev:"NY",fip:"36"}, "North Carolina":{abbrev:"NC",fip:"37"}, "North Dakota":{abbrev:"ND",fip:"38"}, "Ohio":{abbrev:"OH",fip:"39"},
-    "Oklahoma":{abbrev:"OK",fip:"40"}, "Oregon":{abbrev:"OR",fip:"41"}, "Pennsylvania":{abbrev:"PA",fip:"42"}, "Rhode Island":{abbrev:"RI",fip:"44"}, "South Carolina":{abbrev:"SC",fip:"45"},
-    "South Dakota":{abbrev:"SD",fip:"46"}, "Tennessee":{abbrev:"TN",fip:"47"}, "Texas":{abbrev:"TX",fip:"48"}, "Utah":{abbrev:"UT",fip:"49"}, "Vermont":{abbrev:"VT",fip:"50"},
-    "Virginia":{abbrev:"VA",fip:"51"}, "Washington":{abbrev:"WA",fip:"53"}, "West Virginia":{abbrev:"WV",fip:"54"}, "Wisconsin":{abbrev:"WI",fip:"55"}, "Wyoming":{abbrev:"WY",fip:"56"}
-};
-
-function
-loadHistory(item)
-{
-    var abbrev = _stateinfo[item.state].abbrev;
-
-    //_history.setFilter("eq(state," + abbrev + ")");
-
-    var o = {
-        response:function(request,text,xml) {
-            var a = JSON.parse(text);
-            a.forEach((item) => {
-                item.opcode = "upsert";
-                _publisher.add(item);
-            });
-
-            _publisher.publish();
-        },
-
-        error(request,message) {
-            console.log("error: " + message);
-        }
-    };
-
-    var url = "https://covidtracking.com/api/v1/states/" + abbrev.toLowerCase() + "/daily.json";
-
-    _esp.getAjax().create("request",url,o).get();
-}
-
-function
-html(map,item,color,size,selected)
-{
-    var s = "";
-    s += "<div>";
-    s += "hi there";
-    s += "</div>";
-    return(s);
 }
 
 function
@@ -246,9 +207,10 @@ error()
                 <td id="bannerTitle"></td>
                 <td id="currentState" style="width:40%;text-align:left;font-weight:bold"></td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf539;</a>
-                    <a class="icon" href="javascript:_esp.showCodeDialog('ESP Model',_model)">&#xf426;</a>
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Event Source Configuration',_eventsources.configuration)" title="Event Source Configuration">&#xf651;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'p',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('ESP Covid19 Example','help.html')">&#xf30b;</a>
                 </td>
             </tr>
         </table>

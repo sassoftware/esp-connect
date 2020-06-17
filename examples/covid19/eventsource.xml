@@ -31,7 +31,7 @@
         </url-event-source>
         <url-event-source name="counties" window="p/cq/county">
             <options>
-                <option name="interval">60 seconds</option>
+                <option name="interval">60 minutes</option>
                 <option name="repeat">0</option>
                 <option name="opcode">upsert</option>
                 <option name="url"><![CDATA[https://services1.arcgis.com/0MSEUqKaxRlEPj5g/ArcGIS/rest/services/ncov_cases_US/FeatureServer/0/query?where=1%3D1&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=none&distance=0.0&units=esriSRUnit_Meter&returnGeodetic=false&outFields=*&returnGeometry=true&featureEncoding=esriDefault&multipatchOption=xyFootprint&maxAllowableOffset=&geometryPrecision=&outSR=&datumTransformation=&applyVCSProjection=false&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnQueryGeometry=false&returnDistinctValues=false&cacheHint=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&returnExceededLimitFeatures=true&quantizationParameters=&sqlFormat=none&f=json&token=]]></option>
@@ -62,6 +62,19 @@
                 });
 
                 return(events);
+
+                </option>
+            </options>
+        </url-event-source>
+        <url-event-source name="history" window="p/cq/history">
+            <options>
+                <option name="repeat">-1</option>
+                <option name="opcode">upsert</option>
+                <option name="dateformat">%Y%m%d</option>
+                <option name="url">https://covidtracking.com/api/v1/states/@state@/daily.json</option>
+                <option name="transform">
+
+                return(JSON.parse(data));
 
                 </option>
             </options>

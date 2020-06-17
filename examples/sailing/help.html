@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<link rel="stylesheet" href="../../style/connect.css" />
+</head>
+
+<body style="overflow:auto">
+This example is taken from the standard set of ESP examples
+<br/><br/>
+This example shows how you can use SAS Event Stream Processing Streamviewer to visualize an event stream of data obtained from a set of boats. The model 
+identifies two geographical areas of interest. One area is an exclusion zone that the boats identified are not permitted to enter. The other is an area 
+where a speed restriction has been applied. For convenience, it is recommended that you upload the preprepared model XML file to SAS Event Stream Processing Studio.
+<br/><br/>
+For demonstration purposes, this example uses CSV files containing historical data. When a model similar to the one used in this example is deployed in a live 
+environment, real-time data sources might be used instead. Before attempting to follow the steps in this example to create a sailing data dashboard, ensure that 
+the model is working correctly in test mode. This includes ensuring that the model’s publisher connectors are correctly configured. The CSV files 
+listed previously must be in a location on the server on which SAS Event Stream Processing is running
+<br/><br/>
+
+This example uses six files listed below:
+<ol>
+<li>The XML file (sailing_example.xml) is the project used in the example.</li>
+<li>geoArea.csv is an input file. This file contains events relating to the defined areas of interest.</li>
+<li>boat1.csv is an input file. This file contains the event stream of boat 1. The event stream contains time-stamped geographical coordinates of the boat’s movements.</li>
+<li>boat2.csv is an input file. This file contains the event stream of boat 2. The event stream contains time-stamped geographical coordinates of the boat’s movements.</li>
+<li>boat3.csv is an input file. This file contains the event stream of boat 3. The event stream contains time-stamped geographical coordinates of the boat’s movements.</li>
+<li>boat4.csv is an input file. This file contains the event stream of boat 4. The event stream contains time-stamped geographical coordinates of the boat’s movements.</li>
+</ol>
+
+The ESP model contains the following windows:
+
+<ol>
+<li>Four Source windows that receive event streams from the four boats identified: The Mayflower, The Bounty, The Beagle, and The Santa Maria.</li>
+<li>One Source window that receives an event stream defining the areas of interest that the boats are not permitted to enter: Areas_Of_Interest.</li>
+<li>One Geofence window that defines the areas of interest: Geofence_Area_Check.</li>
+<li>One Copy window that is used to transition the model from stateless to stateful.</li>
+<li>Two Filter windows that identify if any of the boats have entered the exclusion zone and speed restriction zone and if any of the boats were 
+speeding: Filter_Inside_Exclusion_Zone and Last_Speeding_Event</li>
+<li>Two Aggregate windows that aggregate the last exclusion violation and the last speeding event: Last_Exclusion_Violation and Last_Speeding_Event</li>
+</ol>
+</body>
+
+</html>
