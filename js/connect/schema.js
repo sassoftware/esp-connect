@@ -363,13 +363,16 @@ define([
     }
 
     Schema.prototype.createDataFromCsv =
-    function(csv,header)
+    function(csv,options)
     {
+        var opts = new Options(options);
+        var delegate = opts.getOpt("delegate");
         var data = [];
         var lines = csv.split("\n");
         var fields = this.getFields();
         var headers = null;
         var quotes = 0;
+        var incomment = false;
         var i = 0;
         var field;
         var index;
@@ -380,18 +383,46 @@ define([
         var a;
         var o;
 
-        if (header != null && header)
+        if (opts.getOpt("header",false))
         {
             s = lines[i].trim();
             headers = s.split(",");
             i++;
         }
 
+        var opcodes = opts.getOpt("opcodes",false);
+        var flags = opts.getOpt("flags",false);
+
+        var filter = (delegate != null && tools.supports(delegate,"filter")) ? delegate["filter"] : null;
+        var supplement = (delegate != null && tools.supports(delegate,"supplement")) ? delegate["supplement"] : null;
+
         while (i < lines.length)
         {
             s = lines[i].trim();
 
             if (s.length == 0)
+            {
+                i++;
+                continue;
+            }
+
+            if (s == "/*")
+            {
+                incomment = true;
+                i++;
+                continue;
+            }
+            else if (incomment)
+            {
+                if (s == "*/")
+                {
+                    incomment = false;
+                    i++;
+                    continue;
+                }
+            }
+
+            if (incomment)
             {
                 i++;
                 continue;
@@ -465,7 +496,7 @@ define([
 
                 for (var j = 0; j < a.length; j++)
                 {
-                    if (j == 0)
+                    if (opcodes && j == 0)
                     {
                         s = a[j].trim().toLowerCase();
 
@@ -486,18 +517,15 @@ define([
                             {
                                 o["@opcode"] = "delete";
                             }
-
-                            continue;
                         }
+
+                        continue;
                     }
-                    else if (j == 1)
+
+                    if (flags && j == 1)
                     {
                         s = a[j].trim().toLowerCase();
-
-                        if (s == "n")
-                        {
-                            continue;
-                        }
+                        continue;
                     }
 
                     if (index < fields.length)
@@ -509,9 +537,19 @@ define([
                 }
             }
 
-            data.push(o);
-
             i++;
+
+            if (filter != null && filter(o) == false)
+            {
+                continue;
+            }
+
+            if (supplement != null)
+            {
+                supplement(o);
+            }
+
+            data.push(o);
         }
 
         return(data);

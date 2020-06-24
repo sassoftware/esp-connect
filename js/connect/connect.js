@@ -56,7 +56,7 @@ define([
                 credentials = opts.getOptAndClear("credentials");
             }
 
-            var connection = ServerConnection.create(url,delegate,opts.getOpts());
+            var connection = ServerConnection.create(this,url,delegate,opts.getOpts());
 
             if (token != null)
             {
@@ -81,13 +81,6 @@ define([
             {
                 v.closed(connection);
             }
-        },
-
-        createVisuals:function(options)
-        {
-            var visuals = new Visuals(options);
-            this._visuals.push(visuals);
-            return(visuals);
         },
 
         createWebSocket:function(url,delegate)

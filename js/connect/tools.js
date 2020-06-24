@@ -114,6 +114,7 @@ define([
     Timer()
     {
         this._items = [];
+        this._running = false;
     }
 
     Timer.prototype.add =
@@ -146,8 +147,15 @@ define([
     Timer.prototype.start =
     function()
     {
+        this._running = true;
         var timer = this;
         setTimeout(function(){timer.run()},1000);
+    }
+
+    Timer.prototype.stop =
+    function()
+    {
+        this._running = false;
     }
 
     Timer.prototype.run =
@@ -186,8 +194,11 @@ define([
             item.run();
         });
 
-        var timer = this;
-        setTimeout(function(){timer.run()},minInterval);
+        if (this._running)
+        {
+            var timer = this;
+            setTimeout(function(){timer.run()},minInterval);
+        }
     }
 
     var __tools =

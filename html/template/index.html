@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP Template</title>
+
+<link rel="stylesheet" href="/esp-connect/style/connect.css" />
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="/esp-connect/js/ui/main"></script>
+
+<script type="text/javascript">
+
+var _eventsources = null;
+var _visuals = null;
+var _conn = null;
+var _esp = null;
+
+function
+esp(api)
+{
+    _esp = api;
+
+    var parms = _esp.getParms();
+
+    if (parms.hasOwnProperty("server") == false)
+    {
+        alert("you must specify ESP server URL");
+        return;
+    }
+
+    var server = parms["server"];
+    delete parms["server"];
+
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+
+    parms["theme"] = "sas_opal";
+    _visuals = _esp.createVisuals(parms);
+
+    _esp.handleLayout();
+
+    _esp.connect(server,{ready:ready});
+}
+
+function
+ready(connection)
+{
+    _conn = connection;
+
+    if (_esp.getParm("load",true))
+    {
+        _esp.showStatus("Loading project...");
+        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true});
+    }
+    else
+    {
+        loaded();
+    }
+}
+
+var _model = null;
+
+function
+loaded()
+{
+    _esp.clearStatus();
+
+    _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
+
+    var coll = _conn.getEventCollection({window:"p/cq/s"});
+
+    _visuals.createTable("mytable",coll);
+    _visuals.createBarChart("mychart",coll,{y:["number"],color:"number",gradient:"#3b99fc",gradient_end:true});
+
+    _esp.size();
+
+    _eventsources = _conn.createEventSources();
+    _eventsources.configureFromUrl(new URL("eventsource.xml",document.URL).toString(),{start:true});
+}
+
+function
+error(message)
+{
+    alert("error: " + message);
+}
+
+</script>
+</head>
+
+<body>
+
+    <div id="banner">
+        <table style="width:100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'p',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('ESP Basic Example','help.html',{width:'80%',height:'80%'})" title="Help">&#xf30b;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content" class="container">
+        <div id="mytable" class="component" style="width:60%;height:400px"></div>
+        <div id="mychart" class="component" style="width:60%;height:400px"></div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+</body>
+
+</html>

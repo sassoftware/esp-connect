@@ -31,7 +31,7 @@ ready(connection)
         process.exit(0);
     }};
     var eventsources = connection.createEventSources(delegate);
-    eventsources.configure(configuration,opts.getOpts());
+    eventsources.configure(configuration.toString(),opts.getOpts());
     eventsources.start();
 }
 

@@ -879,6 +879,11 @@ define([
             }
         }
 
+        if (colors == null)
+        {
+            colors = this._visuals.colors.middle;
+        }
+
         var selectedBorder = this._visuals.selectedBorder;
 
         values["selected"].forEach(selected =>
@@ -2565,7 +2570,7 @@ define([
             }
         }
 
-        tr.className = "last";
+        tr.className = tr.className + " last";
 
         var show = null;
 

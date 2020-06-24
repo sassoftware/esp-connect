@@ -1,0 +1,21 @@
+<config>
+    <event-sources>
+        <csv-event-source name="data" window="p/cq/s">
+            <options>
+                <option name="repeat">10</option>
+                <option name="interval">1 seconds</option>
+                <option name="opcode">upsert</option>
+                <!--
+                <option name="url">data.csv</option>
+                -->
+                <option name="url">http://roberts-mbp.lan.rmt.sas.com/roleve/esp-connect/html/template/data.csv</option>
+                <option name="filter">
+                    return(true);
+                </option>
+                <option name="supplement">
+                    o.number *= (Math.random() * 1000);
+                </option>
+            </options>
+        </csv-event-source>
+    </event-sources>
+</config>

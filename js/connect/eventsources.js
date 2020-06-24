@@ -10,11 +10,10 @@ if (typeof(define) !== "function")
 
 define([
     "./options",
-    "./connect",
     "./ajax",
     "./xpath",
     "./tools"
-], function(Options,connect,ajax,xpath,tools)
+], function(Options,ajax,xpath,tools)
 {
     /* EventSources */
 
@@ -26,7 +25,14 @@ define([
         this._eventsources = {};
         this._running = false;
         this._paused = false;
+        this._restart = false;
         this._config = null;
+
+        Object.defineProperty(this,"connect", {
+            get() {
+                return(this._api.connect);
+            }
+        });
 
         Object.defineProperty(this,"running", {
             get() {
@@ -48,6 +54,28 @@ define([
                 this._paused = value;
             }
         });
+
+        this._api.connection.addDelegate(this);
+    }
+
+    EventSources.prototype.ready =
+    function(conn)
+    {
+        if (this._restart)
+        {
+            this._restart = false;
+            this.start();
+        }
+    }
+
+    EventSources.prototype.closed =
+    function(conn)
+    {
+        Object.values(this._eventsources).forEach((es) => {
+            es.reset();
+        });
+
+        this._restart = true;
     }
 
     EventSources.prototype.configure =
@@ -358,7 +386,7 @@ define([
 
         Object.defineProperty(this,"esp", {
             get() {
-                return(connect);
+                return(this._eventsources.connect);
             }
         });
 
@@ -378,6 +406,8 @@ define([
         this._timestamp = 0;
 
         this._senders = [];
+
+        this._publisher = null;
 
         Object.defineProperty(this,"publisher", {
             get() {
@@ -499,6 +529,15 @@ define([
         }
         this._publisher = this._api.getPublisher(opts);
         this._publisher.addSchemaDelegate(this);
+    }
+
+    EventSource.prototype.reset =
+    function()
+    {
+        this._times = 0;
+        this._timestamp = 0;
+        this._senders = [];
+        this._publisher = null;
     }
 
     EventSource.prototype.schemaSet =
@@ -718,6 +757,8 @@ define([
     {
 		EventSource.call(this,eventsources,options);
         this._data = null;
+        this._filter = null;
+        this._supplement = null;
     }
 
 	CsvEventSource.prototype = Object.create(EventSource.prototype);
@@ -751,6 +792,16 @@ define([
 
 		    ajax.create("load",this.getOpt("url"),o).get();
         }
+
+        if (this.hasOpt("filter"))
+        {
+            this._filter = new Function("o",this.getOpt("filter"));
+        }
+
+        if (this.hasOpt("supplement"))
+        {
+            this._supplement = new Function("o",this.getOpt("supplement"));
+        }
     }
 
     CsvEventSource.prototype.run =
@@ -764,7 +815,19 @@ define([
             {
                 code = true;
 
-                var data = this.publisher._schema.createDataFromCsv(this._data);
+                var delegate = {};
+
+                if (this._filter != null)
+                {
+                    delegate["filter"] = this._filter;
+                }
+                if (this._supplement != null)
+                {
+                    delegate["supplement"] = this._supplement;
+                }
+                var opts = this.clone();
+                opts["delegate"] = delegate;
+                var data = this.publisher._schema.createDataFromCsv(this._data,opts);
                 this.send(data);
             }
         }
@@ -840,6 +903,12 @@ define([
     Sender.prototype.run =
     function()
     {
+        if (this._eventsource._publisher == null)
+        {
+            tools.removeFrom(this._eventsource._senders,this);
+            return;
+        }
+
         var target = this._eventsource.getOpt("maxevents",0);
 
         if (target == 0)

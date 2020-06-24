@@ -826,14 +826,14 @@ define([
     Chart.prototype.clicked =
     function(data)
     {
-        var indices = [];
+        var keys = [];
 
         for (var i = 0; i < 1; i++)
         {
-            indices.push(data.points[i].pointNumber);
+            keys.push(data.points[i].label);
         }
 
-        this._datasource.toggleSelectedIndices(indices,this.isCtrl(data.event) == false);
+        this._datasource.toggleSelectedKeys(keys,this.isCtrl(data.event) == false);
     }
 
     Chart.prototype.selected =

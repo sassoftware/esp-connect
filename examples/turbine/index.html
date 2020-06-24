@@ -45,7 +45,7 @@ esp(api)
 
     _esp.handleLayout();
 
-    _esp.connect(server,{ready:ready},{debug:false});
+    _esp.connect(server,{ready:ready,closed:closed},{debug:false});
 
     _timer = _esp.createTimer();
 }
@@ -64,6 +64,12 @@ ready(connection)
     {
         loaded();
     }
+}
+
+function
+closed(connection)
+{
+    _timer.stop();
 }
 
 var _eventsources = null;
@@ -86,14 +92,15 @@ loaded()
 
     var toolbar = [];
 
-    toolbar.push({id:"playpause",text:"Start Data",class:"",click:playpause});
+    toolbar.push({id:"playPause",text:"Start Data",class:"",click:playPause});
 
     _eventsources = _conn.createEventSources({complete:complete});
 
     var delay = 10;
     var url = new URL("data.csv",document.URL).toString();
 
-    _eventsources.createEventSource({name:"data",type:"csv",window:"p/cq/Data_Stream",opcode:"insert",dateformat:"%Y-%m-%d %H:%M:%S",url:url,delay:delay,maxevents:0});
+    _eventsources.createEventSource({name:"data",type:"csv",window:"p/cq/Data_Stream",opcode:"insert",
+                                        dateformat:"%Y-%m-%d %H:%M:%S",url:url,delay:delay,opcodes:true,flags:true,maxevents:0});
 
     _esp.size();
 
@@ -101,7 +108,7 @@ loaded()
 
     //if (_esp.getParm("load",true))
     {
-        playpause();
+        playPause();
     }
 }
 
@@ -371,25 +378,34 @@ handleAlerts(events,data)
 }
 
 function
-playpause()
+playPause()
 {
     if (_eventsources.running == false)
     {
         _eventsources.start();
+        _timer.start();
     }
     else
     {
         _eventsources.togglePause();
     }
 
-    //document.getElementById("playpause").innerHTML = _eventsources.paused ? "&#xf513;" : "&#xf4f4;";
-    document.getElementById("playpause").innerHTML = _eventsources.paused ? "Start Data" : "Pause Data";
+    if (_eventsources.paused)
+    {
+        _timer.stop();
+    }
+    else
+    {
+        _timer.start();
+    }
+
+    document.getElementById("playPause").innerHTML = _eventsources.paused ? "Start Data" : "Pause Data";
 }
 
 function
 complete(eventsources)
 {
-    document.getElementById("playpause").innerHTML = "Start Data";
+    document.getElementById("playPause").innerHTML = "Start Data";
 }
 
 </script>
@@ -445,7 +461,7 @@ canvas.turbine
             <tr>
                 <td id="bannerTitle"></td>
                 <td style="width:40%;text-align:left">
-                    <a id="playpause" href="javascript:playpause()">Start Data</a>
+                    <a id="playPause" href="javascript:playPause()">Start Data</a>
                 </td>
                 <td class="icon">
                     <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>

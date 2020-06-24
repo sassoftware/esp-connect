@@ -38,51 +38,63 @@ define([
 
         this._connection = connection;
 
+        Object.defineProperty(this,"connection", {
+            get() {
+                return(this._connection);
+            }
+        });
+
+        Object.defineProperty(this,"connect", {
+            get() {
+                return(this._connection.connect);
+            }
+        });
+
         Object.defineProperty(this,"version", {
             get() {
-		        return(7.1);
+                return(7.3);
             }
         });
 
         Object.defineProperty(this,"protocol", {
             get() {
-		        return(this._connection.protocol);
+                return(this._connection.protocol);
             }
         });
 
         Object.defineProperty(this,"httpProtocol", {
             get() {
-		        return(this._connection.httpProtocol);
+                return(this._connection.httpProtocol);
             }
         });
 
         Object.defineProperty(this,"host", {
             get() {
-		        return(this._connection.host);
+                return(this._connection.host);
             }
         });
 
         Object.defineProperty(this,"port", {
             get() {
-		        return(this._connection.port);
+                return(this._connection.port);
             }
         });
 
         Object.defineProperty(this,"isSecure", {
             get() {
-		        return(this._connection.isSecure);
+                return(this._connection.isSecure);
             }
         });
 
         Object.defineProperty(this,"url", {
             get() {
-		        return(this._connection.url);
+                return(this._connection.url);
             }
         });
 
         Object.defineProperty(this,"httpurl", {
             get() {
-		        return(this._connection.httpurl);
+                return(this._connection.httpurl);
             }
         });
 
@@ -99,11 +111,11 @@ define([
         this.init();
     }
 
-	Api.prototype = Object.create(Options.prototype);
-	Api.prototype.constructor = Api;
+    Api.prototype = Object.create(Options.prototype);
+    Api.prototype.constructor = Api;
 
-	Api.prototype.init =
-	function()
+    Api.prototype.init =
+    function()
     {
         this._datasources = {};
         this._publishers = {};
@@ -133,34 +145,34 @@ define([
         this.sendObject(request);
     }
 
-	Api.prototype.send =
-	function(o)
+    Api.prototype.send =
+    function(o)
     {
         this._connection.send(o);
     }
 
-	Api.prototype.sendObject =
-	function(o)
+    Api.prototype.sendObject =
+    function(o)
     {
         this._connection.sendObject(o);
     }
 
-	Api.prototype.sendBinary =
-	function(o)
-	{
+    Api.prototype.sendBinary =
+    function(o)
+    {
         this._connection.sendBinary(o);
     }
 
-	Api.prototype.message =
-	function(data)
-	{
+    Api.prototype.message =
+    function(data)
+    {
         if (data.length == 0)
         {
             return;
         }
 
-		var	xml = null;
-		var	json = null;
+        var    xml = null;
+        var    json = null;
 
         for (var i = 0; i < data.length; i++)
         {
@@ -171,7 +183,7 @@ define([
             }
             else if (data[i] == '<')
             {
-		        xml = xpath.createXml(data);
+                xml = xpath.createXml(data);
                 break;
             }
         }
@@ -186,14 +198,14 @@ define([
         }
     }
 
-	Api.prototype.data =
-	function(o)
+    Api.prototype.data =
+    function(o)
     {
         this.processJson(o);
     }
 
-	Api.prototype.processJson =
-	function(json)
+    Api.prototype.processJson =
+    function(json)
     {
         if (this.getOpt("debug",false))
         {
@@ -360,11 +372,11 @@ define([
         }
     }
 
-	Api.prototype.processXml =
-	function(xml,data)
+    Api.prototype.processXml =
+    function(xml,data)
     {
-        var	root = xml.documentElement;
-        var	tag = root.nodeName;
+        var    root = xml.documentElement;
+        var    tag = root.nodeName;
 
         if (this.getOpt("debug",false))
         {
@@ -598,10 +610,10 @@ define([
         }
     }
 
-	Api.prototype.clearWindow =
-	function(path)
+    Api.prototype.clearWindow =
+    function(path)
     {
-        var	o = {};
+        var    o = {};
 
         var request = {"clear-window":{}};
         var o = request["clear-window"];
@@ -609,8 +621,8 @@ define([
         this.sendObject(request);
     }
 
-	Api.prototype.publishDataFrom =
-	function(path,url,delegate,options)
+    Api.prototype.publishDataFrom =
+    function(path,url,delegate,options)
     {
         var conn = this;
         var o = {
@@ -621,17 +633,17 @@ define([
                 console.log("error: " + error);
             }
         };
-		ajax.create("load",url,o).get();
+        ajax.create("load",url,o).get();
     }
 
-	Api.prototype.publishData =
-	function(path,data,delegate,options)
-	{
+    Api.prototype.publishData =
+    function(path,data,delegate,options)
+    {
         var opts = new Options(options);
         var blocksize = opts.getOpt("blocksize",1);
         var times = opts.getOpt("times",1);
         var id = opts.getOpt("id",tools.guid());
-        var	o = {};
+        var    o = {};
 
         var request = {"data-publisher":{}};
         var o = request["data-publisher"];
@@ -660,13 +672,13 @@ define([
         this.sendObject(request);
     }
 
-	Api.prototype.publishUrl =
-	function(path,url,delegate,options)
-	{
+    Api.prototype.publishUrl =
+    function(path,url,delegate,options)
+    {
         var opts = new Options(options);
         var blocksize = opts.getOpt("blocksize",1);
         var times = opts.getOpt("times",1);
-        var	o = {};
+        var    o = {};
         var id = tools.guid();
 
         var request = {"url-publisher":{}};
@@ -729,7 +741,7 @@ define([
         var get = {};
         get["delegate"] = delegate;
         get["options"] = new Options(opts);
-		this._gets[id] = get;
+        this._gets[id] = get;
 
         this.sendObject(request);
     }
@@ -737,7 +749,7 @@ define([
     Api.prototype.loadModel =
     function(delegate,options)
     {
-	    if (tools.supports(delegate,"modelLoaded") == false)
+        if (tools.supports(delegate,"modelLoaded") == false)
         {
             throw "The delegate must implement the modelLoaded method";
         }
@@ -775,7 +787,7 @@ define([
                 }
             }
         };
-		ajax.create("load",url,o).get();
+        ajax.create("load",url,o).get();
     }
 
     Api.prototype.loadProjectFrom =
@@ -790,7 +802,7 @@ define([
                 console.log("error: " + error);
             }
         };
-		ajax.create("load",url,o).get();
+        ajax.create("load",url,o).get();
     }
 
     Api.prototype.loadRouterFrom =
@@ -805,7 +817,7 @@ define([
                 console.log("error: " + error);
             }
         };
-		ajax.create("load",url,o).get();
+        ajax.create("load",url,o).get();
     }
 
     Api.prototype.loadProject =
@@ -826,7 +838,7 @@ define([
         }
         o["data"] = tools.b64Encode(data);
 
-		this._loadDelegates[id] = {connection:this,request:request,delegate:delegate};
+        this._loadDelegates[id] = {connection:this,request:request,delegate:delegate};
 
         this.sendObject(request);
     }
@@ -849,7 +861,7 @@ define([
         }
         o["data"] = tools.b64Encode(data);
 
-		this._loadDelegates[id] = {connection:this,request:request,delegate:delegate};
+        this._loadDelegates[id] = {connection:this,request:request,delegate:delegate};
 
         this.sendObject(request);
     }
@@ -891,7 +903,7 @@ define([
     Api.prototype.getLoggers =
     function(delegate)
     {
-	    if (tools.supports(delegate,"response") == false)
+        if (tools.supports(delegate,"response") == false)
         {
             throw "The delegate must implement the response method";
         }
@@ -932,7 +944,7 @@ define([
     Api.prototype.loadGuids =
     function(delegate,num)
     {
-	    if (tools.supports(delegate,"guidsLoaded") == false)
+        if (tools.supports(delegate,"guidsLoaded") == false)
         {
             throw "The stats delegate must implement the guidsLoaded method";
         }
@@ -980,7 +992,7 @@ define([
     function
     Datasource(api,options)
     {
-		Options.call(this,options);
+        Options.call(this,options);
         this._api = api;
         this._id = this.getOpt("id",tools.guid());
         this._path = this.getOpt("window");
@@ -1045,11 +1057,11 @@ define([
         this._paused = false;
     }
 
-	Datasource.prototype = Object.create(Options.prototype);
-	Datasource.prototype.constructor = Datasource;
+    Datasource.prototype = Object.create(Options.prototype);
+    Datasource.prototype.constructor = Datasource;
 
-	Datasource.prototype.schemaLoaded =
-	function()
+    Datasource.prototype.schemaLoaded =
+    function()
     {
         this._delegates.forEach((d) =>
         {
@@ -1060,14 +1072,14 @@ define([
         });
     }
 
-	Datasource.prototype.isArray =
-	function()
+    Datasource.prototype.isArray =
+    function()
     {
         return(this._data != null && Array.isArray(this._data));
     }
 
-	Datasource.prototype.setIntervalProperty =
-	function()
+    Datasource.prototype.setIntervalProperty =
+    function()
     {
         var interval = null;
 
@@ -1088,8 +1100,8 @@ define([
         this.setOpt("interval",interval);
     }
 
-	Datasource.prototype.setFilter =
-	function(value)
+    Datasource.prototype.setFilter =
+    function(value)
     {
         this.setOpt("filter",value)
         this.set(true);
@@ -1097,16 +1109,16 @@ define([
         this.deliverFilterChange();
     }
 
-	Datasource.prototype.clearFilter =
-	function()
+    Datasource.prototype.clearFilter =
+    function()
     {
         this.clearOpt("filter");
         this.set(true);
         this.deliverFilterChange();
     }
 
-	Datasource.prototype.getFilter =
-	function()
+    Datasource.prototype.getFilter =
+    function()
     {
         return(this.getOpt("filter"));
     }
@@ -1141,19 +1153,19 @@ define([
         return(code);
     }
 
-	Datasource.prototype.setSchemaFromXml =
-	function(xml)
+    Datasource.prototype.setSchemaFromXml =
+    function(xml)
     {
         this._schema.fromXml(xml);
     }
 
-	Datasource.prototype.setSchemaFromJson =
-	function(json)
+    Datasource.prototype.setSchemaFromJson =
+    function(json)
     {
         this._schema.fromJson(json);
     }
 
-	Datasource.prototype.getKey =
+    Datasource.prototype.getKey =
     function(o)
     {
         var key = "";
@@ -1176,16 +1188,36 @@ define([
             key += o[name];
         });
 
-        return(key)
+        return(key);
     }
 
-	Datasource.prototype.isSelected =
+    Datasource.prototype.isSelected =
     function(item)
     {
         return(item != null && item.hasOwnProperty("@selected") && item["@selected"] == true);
     }
 
-	Datasource.prototype.toggleSelected =
+    Datasource.prototype.toggleSelectedKeys =
+    function(keys,deselect)
+    {
+        if (deselect)
+        {
+            this.deselectAll();
+        }
+
+        var item;
+
+        keys.forEach((key) => {
+            if ((item = this.getDataByKey(key)) != null)
+            {
+                this.toggleSelected(item);
+            }
+        });
+
+        this.deliverSelectionChange(null,false);
+    }
+
+    Datasource.prototype.toggleSelected =
     function(item)
     {
         if (item.hasOwnProperty("@selected"))
@@ -1200,7 +1232,7 @@ define([
         return(item["@selected"]);
     }
 
-	Datasource.prototype.deselectAll =
+    Datasource.prototype.deselectAll =
     function()
     {
         if (Array.isArray(this._data))
@@ -1219,7 +1251,7 @@ define([
         }
     }
 
-	Datasource.prototype.setSelectedIndices =
+    Datasource.prototype.setSelectedIndices =
     function(indices,deselect)
     {
         if (deselect)
@@ -1243,7 +1275,7 @@ define([
         this.deliverSelectionChange(null,false);
     }
 
-	Datasource.prototype.toggleSelectedIndices =
+    Datasource.prototype.toggleSelectedIndices =
     function(indices,deselect)
     {
         if (deselect)
@@ -1261,11 +1293,10 @@ define([
             }
         });
 
-        //this.deliverDataChange(null,false);
         this.deliverSelectionChange(null,false);
     }
 
-	Datasource.prototype.selectByKeys =
+    Datasource.prototype.selectByKeys =
     function(keys)
     {
         this.deselectAll();
@@ -1276,7 +1307,7 @@ define([
         });
     }
 
-	Datasource.prototype.getSelectedItems =
+    Datasource.prototype.getSelectedItems =
     function()
     {
         var items = [];
@@ -1292,7 +1323,7 @@ define([
         return(items);
     }
 
-	Datasource.prototype.getSelectedIndices =
+    Datasource.prototype.getSelectedIndices =
     function()
     {
         var indices = [];
@@ -1311,7 +1342,7 @@ define([
         return(indices);
     }
 
-	Datasource.prototype.getSelectedKeys =
+    Datasource.prototype.getSelectedKeys =
     function()
     {
         var keys = [];
@@ -1327,28 +1358,28 @@ define([
         return(keys);
     }
 
-	Datasource.prototype.getSelectedItem =
+    Datasource.prototype.getSelectedItem =
     function()
     {
         var a = this.getSelectedItems();
         return(a.length > 0 ? a[0] : null);
     }
 
-	Datasource.prototype.getSelectedIndex =
+    Datasource.prototype.getSelectedIndex =
     function()
     {
         var a = this.getSelectedIndices();
         return(a.length > 0 ? a[0] : null);
     }
 
-	Datasource.prototype.getSelectedKey =
+    Datasource.prototype.getSelectedKey =
     function()
     {
         var a = this.getSelectedKeys();
         return(a.length > 0 ? a[0] : null);
     }
 
-	Datasource.prototype.getKeyValues =
+    Datasource.prototype.getKeyValues =
     function()
     {
         var values = [];
@@ -1371,7 +1402,7 @@ define([
         return(values);
     }
 
-	Datasource.prototype.getList =
+    Datasource.prototype.getList =
     function()
     {
         var a = null;
@@ -1399,7 +1430,7 @@ define([
         return(a);
     }
 
-	Datasource.prototype.getValues =
+    Datasource.prototype.getValues =
     function(name)
     {
         var f = this._schema.getField(name);
@@ -1473,7 +1504,7 @@ define([
         return(values);
     }
 
-	Datasource.prototype.getLimits =
+    Datasource.prototype.getLimits =
     function(name)
     {
         var limits = null;
@@ -1489,7 +1520,7 @@ define([
         return(limits);
     }
 
-	Datasource.prototype.getValuesBy =
+    Datasource.prototype.getValuesBy =
     function(keys,names,delimiter = ".")
     {
         if (this.schema.size == 0)
@@ -1537,21 +1568,7 @@ define([
             valueFields.push(f);
         }
 
-        var items = null;
-
-        if (Array.isArray(this._data))
-        {
-            items = this._data;
-        }
-        else
-        {
-            items = [];
-
-            Object.values(this._data).forEach(item =>
-            {
-                items.push(item);
-            });
-        }
+        var items = this.getList();
 
         if (items == null)
         {
@@ -1660,31 +1677,31 @@ define([
         return(v);
     }
 
-	Datasource.prototype.getKeyFieldNames =
-	function()
+    Datasource.prototype.getKeyFieldNames =
+    function()
     {
         return(this._schema != null ? this._schema.getKeyFieldNames() : null);
     }
 
-	Datasource.prototype.events =
-	function(xml)
+    Datasource.prototype.events =
+    function(xml)
     {
     }
 
-	Datasource.prototype.info =
-	function(xml)
+    Datasource.prototype.info =
+    function(xml)
     {
     }
 
-	Datasource.prototype.set =
-	function(value)
+    Datasource.prototype.set =
+    function(value)
     {
     }
 
     Datasource.prototype.addDelegate =
     function(delegate)
     {
-	    if (tools.supports(delegate,"dataChanged") == false)
+        if (tools.supports(delegate,"dataChanged") == false)
         {
             if (_isNode)
             {
@@ -1708,7 +1725,7 @@ define([
     Datasource.prototype.addSchemaDelegate =
     function(delegate)
     {
-	    if (tools.supports(delegate,"schemaSet") == false)
+        if (tools.supports(delegate,"schemaSet") == false)
         {
             if (_isNode)
             {
@@ -1864,7 +1881,7 @@ define([
     function
     EventCollection(conn,options)
     {
-		Datasource.call(this,conn,options);
+        Datasource.call(this,conn,options);
         this.setOpt("format","ubjson");
         this._data = {};
         this._list = [];
@@ -1874,8 +1891,8 @@ define([
         this._sortdir = 0;
     }
 
-	EventCollection.prototype = Object.create(Datasource.prototype);
-	EventCollection.prototype.constructor = EventCollection;
+    EventCollection.prototype = Object.create(Datasource.prototype);
+    EventCollection.prototype.constructor = EventCollection;
 
     EventCollection.prototype.open =
     function()
@@ -1950,7 +1967,7 @@ define([
         o["id"] = this._id;
         o["action"] = "play";
         this._api.sendObject(request);
-		Datasource.prototype.play.call(this);
+        Datasource.prototype.play.call(this);
     }
 
     EventCollection.prototype.pause =
@@ -1961,7 +1978,7 @@ define([
         o["id"] = this._id;
         o["action"] = "pause";
         this._api.sendObject(request);
-		Datasource.prototype.play.call(this);
+        Datasource.prototype.play.call(this);
     }
 
     EventCollection.prototype.sort =
@@ -2019,24 +2036,24 @@ define([
     EventCollection.prototype.setSchemaFromXml =
     function(xml)
     {
-		Datasource.prototype.setSchemaFromXml.call(this,xml);
+        Datasource.prototype.setSchemaFromXml.call(this,xml);
         this.deliverSchemaSet();
     }
 
     EventCollection.prototype.setSchemaFromJson =
     function(json)
     {
-		Datasource.prototype.setSchemaFromJson.call(this,json);
+        Datasource.prototype.setSchemaFromJson.call(this,json);
         this.deliverSchemaSet();
     }
 
-	EventCollection.prototype.events =
-	function(data)
+    EventCollection.prototype.events =
+    function(data)
     {
         if (this.getOpt("debug"))
         {
-		    console.log("events for " + this._path);
-		    console.log(tools.stringify(data));
+            console.log("events for " + this._path);
+            console.log(tools.stringify(data));
         }
 
         if (data.hasOwnProperty("entries") == false)
@@ -2078,17 +2095,17 @@ define([
         }
     }
 
-	EventCollection.prototype.eventsXml =
-	function(xml)
+    EventCollection.prototype.eventsXml =
+    function(xml)
     {
         if (this.getOpt("debug"))
         {
-		    console.log("events for " + this._path);
-		    console.log(xpath.format(xml));
+            console.log("events for " + this._path);
+            console.log(xpath.format(xml));
         }
 
         var data = [];
-        var	nodes = xpath.getNodes("//entries/event",xml);
+        var    nodes = xpath.getNodes("//entries/event",xml);
         var datatype;
         var content;
         var values;
@@ -2144,8 +2161,8 @@ define([
         //console.log(JSON.stringify(data));
     }
 
-	EventCollection.prototype.info =
-	function(data)
+    EventCollection.prototype.info =
+    function(data)
     {
         if (data.hasOwnProperty("page"))
         {
@@ -2155,8 +2172,8 @@ define([
         }
     }
 
-	EventCollection.prototype.process =
-	function(events,clear)
+    EventCollection.prototype.process =
+    function(events,clear)
     {
         var selected = null;
 
@@ -2236,14 +2253,14 @@ define([
     function
     EventStream(conn,options)
     {
-		Datasource.call(this,conn,options);
+        Datasource.call(this,conn,options);
         this.setOpt("format","ubjson");
         this._data = [];
         this._counter = 1;
     }
 
-	EventStream.prototype = Object.create(Datasource.prototype);
-	EventStream.prototype.constructor = EventStream;
+    EventStream.prototype = Object.create(Datasource.prototype);
+    EventStream.prototype.constructor = EventStream;
 
     EventStream.prototype.open =
     function()
@@ -2317,7 +2334,7 @@ define([
         o["id"] = this._id;
         o["action"] = "play";
         this._api.sendObject(request);
-		Datasource.prototype.play.call(this);
+        Datasource.prototype.play.call(this);
     }
 
     EventStream.prototype.pause =
@@ -2328,13 +2345,13 @@ define([
         o["id"] = this._id;
         o["action"] = "pause";
         this._api.sendObject(request);
-		Datasource.prototype.play.call(this);
+        Datasource.prototype.play.call(this);
     }
 
     EventStream.prototype.setSchemaFromXml =
     function(xml)
     {
-		Datasource.prototype.setSchemaFromXml.call(this,xml);
+        Datasource.prototype.setSchemaFromXml.call(this,xml);
         this.completeSchema();
         this.deliverSchemaSet();
     }
@@ -2342,7 +2359,7 @@ define([
     EventStream.prototype.setSchemaFromJson =
     function(json)
     {
-		Datasource.prototype.setSchemaFromJson.call(this,json);
+        Datasource.prototype.setSchemaFromJson.call(this,json);
         this.completeSchema();
         this.deliverSchemaSet();
     }
@@ -2375,13 +2392,13 @@ define([
         this._schema._keyFields = [f];
     }
 
-	EventStream.prototype.events =
-	function(data)
+    EventStream.prototype.events =
+    function(data)
     {
         if (this.getOpt("debug"))
         {
-		    console.log("events for " + this._path);
-		    console.log(tools.stringify(data));
+            console.log("events for " + this._path);
+            console.log(tools.stringify(data));
         }
 
         if (data.hasOwnProperty("entries") == false)
@@ -2421,24 +2438,24 @@ define([
         this.process(events);
     }
 
-	EventStream.prototype.eventsXml =
-	function(xml)
+    EventStream.prototype.eventsXml =
+    function(xml)
     {
         if (this.getOpt("debug"))
         {
-		    console.log("events for " + this._path);
-		    console.log(xpath.format(xml));
+            console.log("events for " + this._path);
+            console.log(xpath.format(xml));
         }
 
-        var	nodes = xpath.getNodes("//entries/event",xml);
-        var	data = new Array();
-        var	content;
-        var	values;
-        var	opcode;
-        var	type;
-        var	key;
-        var	e;
-        var	o;
+        var    nodes = xpath.getNodes("//entries/event",xml);
+        var    data = new Array();
+        var    content;
+        var    values;
+        var    opcode;
+        var    type;
+        var    key;
+        var    e;
+        var    o;
 
         var ignoreDeletes = this.getOpt("ignore_deletes",false);
 
@@ -2490,8 +2507,8 @@ define([
         this.process(data);
     }
 
-	EventStream.prototype.process =
-	function(events)
+    EventStream.prototype.process =
+    function(events)
     {
         var o;
 
@@ -2532,31 +2549,31 @@ define([
         this.deliverDataChange(events,false);
     }
 
-	EventStream.prototype.info =
-	function(xml)
+    EventStream.prototype.info =
+    function(xml)
     {
     }
 
-	function
-	Stats(api,options)
-	{
-		Options.call(this,options);
+    function
+    Stats(api,options)
+    {
+        Options.call(this,options);
         this._api = api;
 
-		var	projectLabel = resources.getString("Project");
-		var	contqueryLabel = resources.getString("Contquery");
-		var	windowLabel = resources.getString("Window");
-		var	cpuLabel = resources.getString("CPU");
-		var	intervalLabel = resources.getString("Interval");
-		var	countLabel = resources.getString("Count");
+        var    projectLabel = resources.getString("Project");
+        var    contqueryLabel = resources.getString("Contquery");
+        var    windowLabel = resources.getString("Window");
+        var    cpuLabel = resources.getString("CPU");
+        var    intervalLabel = resources.getString("Interval");
+        var    countLabel = resources.getString("Count");
 
-		var	fields = new Array();
-		fields.push({"name":"project","label":projectLabel,"isKey":true});
-		fields.push({"name":"contquery","label":contqueryLabel,"isKey":true});
-		fields.push({"name":"window","label":windowLabel,"isKey":true});
-		fields.push({"name":"cpu","label":cpuLabel,"type":"int"});
-		fields.push({"name":"interval","label":intervalLabel,"type":"int"});
-		fields.push({"name":"count","label":countLabel,"type":"int"});
+        var    fields = new Array();
+        fields.push({"name":"project","label":projectLabel,"isKey":true});
+        fields.push({"name":"contquery","label":contqueryLabel,"isKey":true});
+        fields.push({"name":"window","label":windowLabel,"isKey":true});
+        fields.push({"name":"cpu","label":cpuLabel,"type":"int"});
+        fields.push({"name":"interval","label":intervalLabel,"type":"int"});
+        fields.push({"name":"count","label":countLabel,"type":"int"});
 
         Object.defineProperty(this,"api", {
             get() {
@@ -2586,10 +2603,10 @@ define([
         this._memory = {};
         this._config = {};
         this._delegates = [];
-	}
+    }
 
-	Stats.prototype = Object.create(Options.prototype);
-	Stats.prototype.constructor = Stats;
+    Stats.prototype = Object.create(Options.prototype);
+    Stats.prototype.constructor = Stats;
 
     Stats.prototype.process =
     function(o)
@@ -2603,7 +2620,7 @@ define([
 
         if (json.hasOwnProperty("projects"))
         {
-            var	projects = json["projects"];
+            var    projects = json["projects"];
 
             for (var i = 0; i < projects.length; i++)
             {
@@ -2627,7 +2644,7 @@ define([
                     }
 
                     var cq = contquery["@name"];
-                    var	windows = contquery["windows"];
+                    var    windows = contquery["windows"];
 
                     for (var k = 0; k < windows.length; k++)
                     {
@@ -2652,7 +2669,7 @@ define([
 
         if (json.hasOwnProperty("server-memory"))
         {
-		    var	memory = json["server-memory"];
+            var    memory = json["server-memory"];
             this._memory["system"] = memory["system"];
             this._memory["virtual"] = memory["virtual"];
             this._memory["resident"] = memory["resident"];
@@ -2662,7 +2679,7 @@ define([
 
         if (json.hasOwnProperty("properties"))
         {
-		    var	properties = json["properties"];
+            var    properties = json["properties"];
             var name;
             var value;
 
@@ -2685,46 +2702,46 @@ define([
     {
         this._windows = [];
 
-		var	projects = xpath.getNodes(".//project",xml);
-		var	contqueries;
-		var	windows;
-		var	p;
-		var	cq;
-		var	w;
-		var	o;
+        var    projects = xpath.getNodes(".//project",xml);
+        var    contqueries;
+        var    windows;
+        var    p;
+        var    cq;
+        var    w;
+        var    o;
 
-		for (var i = 0; i < projects.length; i++)
-		{
-			p = projects[i].getAttribute("name");
+        for (var i = 0; i < projects.length; i++)
+        {
+            p = projects[i].getAttribute("name");
 
-			contqueries = xpath.getNodes("./contquery",projects[i]);
+            contqueries = xpath.getNodes("./contquery",projects[i]);
 
-			for (var j = 0; j < contqueries.length; j++)
-			{
-				cq = contqueries[j].getAttribute("name");
+            for (var j = 0; j < contqueries.length; j++)
+            {
+                cq = contqueries[j].getAttribute("name");
 
-				windows = xpath.getNodes("./window",contqueries[j]);
+                windows = xpath.getNodes("./window",contqueries[j]);
 
-				for (var k = 0; k < windows.length; k++)
-				{
-					w = windows[k];
-					o = new Object();
-					o["project"] = p;
-					o["contquery"] = cq;
-					o["window"] = w.getAttribute("name");
-					o["cpu"] = new Number(w.getAttribute("cpu"));
-					o["interval"] = new Number(w.getAttribute("interval"));
-					o["count"] = new Number(w.getAttribute("count"));
-					this._windows.push(o);
-				}
-			}
-		}
+                for (var k = 0; k < windows.length; k++)
+                {
+                    w = windows[k];
+                    o = new Object();
+                    o["project"] = p;
+                    o["contquery"] = cq;
+                    o["window"] = w.getAttribute("name");
+                    o["cpu"] = new Number(w.getAttribute("cpu"));
+                    o["interval"] = new Number(w.getAttribute("interval"));
+                    o["count"] = new Number(w.getAttribute("count"));
+                    this._windows.push(o);
+                }
+            }
+        }
 
         this._windows.sort(this.sort);
 
         this._memory = {};
 
-		var	memory = xpath.getNode(".//server-memory",xml);
+        var    memory = xpath.getNode(".//server-memory",xml);
 
         if (memory != null)
         {
@@ -2735,7 +2752,7 @@ define([
 
         this._config = {};
 
-		var	nodes = xpath.getNodes(".//properties/property",xml);
+        var    nodes = xpath.getNodes(".//properties/property",xml);
 
         if (nodes.length > 0)
         {
@@ -2800,7 +2817,7 @@ define([
     Stats.prototype.addDelegate =
     function(delegate)
     {
-	    if (tools.supports(delegate,"handleStats") == false)
+        if (tools.supports(delegate,"handleStats") == false)
         {
             throw "The stats delegate must implement the handleStats method";
         }
@@ -2844,9 +2861,9 @@ define([
         return(this._config);
     }
 
-	function
-	Log(api)
-	{
+    function
+    Log(api)
+    {
         this._api = api;
         this._delegates = [];
 
@@ -2899,7 +2916,7 @@ define([
     Log.prototype.addDelegate =
     function(delegate)
     {
-	    if (tools.supports(delegate,"handleLog") == false)
+        if (tools.supports(delegate,"handleLog") == false)
         {
             throw "The stats delegate must implement the handleLog method";
         }
@@ -2927,14 +2944,14 @@ define([
         }
     }
 
-	function
+    function
     Publisher(api,options)
-	{
-		Options.call(this,options);
+    {
+        Options.call(this,options);
         this._api = api;
         this._path = this.getOpt("window");
         this._id = this.getOpt("id",tools.guid());
-		this._data = new Array();
+        this._data = new Array();
         this._schema = new Schema();
         this._csv = null;
 
@@ -2945,13 +2962,13 @@ define([
         });
 
         this._schemaDelegates = [];
-	}
+    }
 
-	Publisher.prototype = Object.create(Options.prototype);
-	Publisher.prototype.constructor = Publisher;
+    Publisher.prototype = Object.create(Options.prototype);
+    Publisher.prototype.constructor = Publisher;
 
-	Publisher.prototype.open =
-	function()
+    Publisher.prototype.open =
+    function()
     {
         var o = {};
 
@@ -2977,8 +2994,8 @@ define([
         this._api.sendObject(request);
     }
 
-	Publisher.prototype.close =
-	function()
+    Publisher.prototype.close =
+    function()
     {
         var request = {"publisher":{}};
         var o = request["publisher"];
@@ -2996,7 +3013,7 @@ define([
     Publisher.prototype.addSchemaDelegate =
     function(delegate)
     {
-	    if (tools.supports(delegate,"schemaSet") == false)
+        if (tools.supports(delegate,"schemaSet") == false)
         {
             if (_isNode)
             {
@@ -3017,8 +3034,8 @@ define([
         tools.removeFrom(this._schemaDelegates,delegate);
     }
 
-	Publisher.prototype.setSchemaFromXml =
-	function(xml)
+    Publisher.prototype.setSchemaFromXml =
+    function(xml)
     {
         this._schema.fromXml(xml);
         this.deliverSchemaSet();
@@ -3029,8 +3046,8 @@ define([
         }
     }
 
-	Publisher.prototype.setSchemaFromJson =
-	function(json)
+    Publisher.prototype.setSchemaFromJson =
+    function(json)
     {
         this._schema.fromJson(json);
         this.deliverSchemaSet();
@@ -3055,52 +3072,52 @@ define([
         });
     }
 
-	Publisher.prototype.begin =
-	function()
-	{
-		this._o = new Object();
-	}
+    Publisher.prototype.begin =
+    function()
+    {
+        this._o = new Object();
+    }
 
-	Publisher.prototype.set =
-	function(name,value)
-	{
-		if (this._o != null)
-		{
-			this._o[name] = value;
-		}
-	}
+    Publisher.prototype.set =
+    function(name,value)
+    {
+        if (this._o != null)
+        {
+            this._o[name] = value;
+        }
+    }
 
-	Publisher.prototype.end =
-	function()
-	{
-		if (this._o != null)
-		{
-			this._data.push(this._o);
-			this._o = new Object();
-		}
-	}
+    Publisher.prototype.end =
+    function()
+    {
+        if (this._o != null)
+        {
+            this._data.push(this._o);
+            this._o = new Object();
+        }
+    }
 
-	Publisher.prototype.add =
-	function(o)
-	{
+    Publisher.prototype.add =
+    function(o)
+    {
         if (Array.isArray(o))
         {
             for (var data of o)
             {
-		        this._data.push(o);
+                this._data.push(o);
             }
         }
         else
         {
-		    this._data.push(o);
+            this._data.push(o);
         }
-	}
+    }
 
-	Publisher.prototype.publish =
-	function()
-	{
-		if (this._data.length > 0)
-		{
+    Publisher.prototype.publish =
+    function()
+    {
+        if (this._data.length > 0)
+        {
             var request = {"publisher":{}};
             var o = request["publisher"];
             o["id"] = this._id;
@@ -3114,12 +3131,12 @@ define([
             {
                 this._api.sendObject(request);
             }
-			this._data = new Array();
-		}
-	}
+            this._data = new Array();
+        }
+    }
 
-	Publisher.prototype.send =
-	function(publisher)
+    Publisher.prototype.send =
+    function(publisher)
     {
         if (this._csv.index < this._csv.items.length)
         {
@@ -3138,8 +3155,8 @@ define([
         }
     }
 
-	Publisher.prototype.csv =
-	function()
+    Publisher.prototype.csv =
+    function()
     {
         if (this._schema.size == 0)
         {
@@ -3172,8 +3189,8 @@ define([
         }
     }
 
-	Publisher.prototype.publishCsvFrom =
-	function(url,options)
+    Publisher.prototype.publishCsvFrom =
+    function(url,options)
     {
         var publisher = this;
         var o = {
@@ -3184,11 +3201,11 @@ define([
                 console.log("error: " + error);
             }
         };
-		ajax.create("load",url,o).get();
+        ajax.create("load",url,o).get();
     }
 
-	Publisher.prototype.publishCsv =
-	function(data,options)
+    Publisher.prototype.publishCsv =
+    function(data,options)
     {
         this._csv = {data:data,options:new Options(options),index:0};
 
@@ -3200,13 +3217,13 @@ define([
         this.csv();
     }
 
-	Publisher.prototype.isBinary =
-	function()
+    Publisher.prototype.isBinary =
+    function()
     {
         return(this.getOpt("binary",true));
     }
 
-	/* Delegates */
+    /* Delegates */
 
     function
     ModelDelegate(api,delegate,request)
@@ -3217,8 +3234,8 @@ define([
         this._api.sendObject(request);
     }
 
-	ModelDelegate.prototype.deliver =
-	function(xml)
+    ModelDelegate.prototype.deliver =
+    function(xml)
     {
         var model = new Model(xml);
 
@@ -3235,7 +3252,7 @@ define([
         this._delegate = delegate;
     }
 
-	ResponseDelegate.prototype.deliver =
+    ResponseDelegate.prototype.deliver =
     function(data,xml)
     {
         if (tools.supports(this._delegate,"response"))
@@ -3251,8 +3268,8 @@ define([
         this._delegate = delegate;
     }
 
-	GuidDelegate.prototype.deliver =
-	function(data)
+    GuidDelegate.prototype.deliver =
+    function(data)
     {
         if (tools.supports(this._delegate,"guidsLoaded"))
         {
@@ -3266,7 +3283,7 @@ define([
         }
     }
 
-	/* End Delegates */
+    /* End Delegates */
 
     return(Api);
 });

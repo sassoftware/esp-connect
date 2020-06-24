@@ -28,10 +28,17 @@ define([
     var _prompted = {};
 
     function
-    ServerConnection(host,port,path,secure,delegate,options)
+    ServerConnection(connect,host,port,path,secure,delegate,options)
     {
 		Connection.call(this,host,port,path,secure,options);
+        this._connect = connect;
         this._delegates = [];
+
+        Object.defineProperty(this,"connect", {
+            get() {
+                return(this._connect);
+            }
+        });
 
         if (delegate != null)
         {
@@ -90,6 +97,7 @@ define([
         if (this._impl != null)
         {
             this._impl.closed();
+            this._impl = null;
         }
 
         var reconnect = this.getOpt("reconnect",1);
@@ -184,6 +192,11 @@ define([
     function(delegate)
     {
         tools.addTo(this._delegates,delegate);
+
+        if (this._impl != null && tools.supports(delegate,"ready"))
+        {
+            delegate.ready(this._impl);
+        }
     }
 
     ServerConnection.prototype.removeDelegate =
@@ -221,10 +234,10 @@ define([
 	}
 
     ServerConnection.create =
-    function(url,delegate,options)
+    function(connect,url,delegate,options)
     {
         var u = tools.createUrl(decodeURI(url));
-        return(new ServerConnection(u["host"],u["port"],u["path"],u["secure"],delegate,options));
+        return(new ServerConnection(connect,u["host"],u["port"],u["path"],u["secure"],delegate,options));
     }
 
     return(ServerConnection);

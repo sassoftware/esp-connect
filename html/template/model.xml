@@ -1,0 +1,23 @@
+<project name="p" pubsub="auto" threads="4">
+    <contqueries>
+        <contquery name="cq" trace="s transform">
+            <windows>
+                <window-source name="s">
+                    <schema>
+                        <fields>
+                            <field name="id" type="string" key="true"/>
+                            <field name="text" type="string"/>
+                            <field name="number" type="int32"/>
+                        </fields>
+                    </schema>
+                </window-source>
+                <window-copy name="copy">
+                    <retention type="bytime_sliding">10 minutes</retention>
+                </window-copy>
+            </windows>
+            <edges>
+                <edge source="s" target="copy"/>
+            </edges>
+        </contquery>
+    </contqueries>
+</project>
