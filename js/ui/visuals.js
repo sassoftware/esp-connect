@@ -522,7 +522,13 @@ define([
         }
         else
         {
-            text = date.toISOString();
+            //text = date.toISOString();
+            text = "";
+            text += "<nobr>";
+            text += date.toLocaleDateString(this.languages);
+            text += " ";
+            text += date.toLocaleTimeString(this.languages);
+            text += "</nobr>";
         }
 
         return(text);
@@ -564,7 +570,10 @@ define([
         {
             if (visual._datasource == datasource)
             {
-                visual.draw(data,clear);
+                if (visual.isSchemaReady)
+                {
+                    visual.draw(data,clear);
+                }
             }
         });
     }
@@ -577,6 +586,19 @@ define([
             if (visual._datasource == datasource)
             {
                 visual.info();
+            }
+        });
+    }
+
+    Visuals.prototype.schemaReady =
+    function(api,datasource)
+    {
+        this._visuals.forEach(function(visual)
+        {
+            if (visual._datasource == datasource)
+            {
+                visual.schemaReady(visual._datasource.schema);
+                visual.draw();
             }
         });
     }
@@ -794,6 +816,12 @@ define([
         return("bar");
     }
 
+    BarChart.prototype.createChild =
+    function(container,options)
+    {
+        return(new BarChart(this._visuals,container,this._datasource,options));
+    }
+
     BarChart.prototype.draw =
     function()
     {
@@ -803,24 +831,46 @@ define([
             this.isInitialized = true;
         }
 
-        var orientation = this.getOpt("orientation","vertical");
         var xValues = this.getValues("x");
         var yValues = this.getValues("y");
-        var data = [];
-        var index = 0;
-        var o;
 
         if (xValues.length == 0)
         {
             xValues = this._datasource.getKeyFieldNames();
         }
 
-        var values = this._datasource.getValuesBy(xValues,yValues);
+        var values = this._datasource.getValuesBy(xValues,yValues,this.keyfilter);
 
         if (values == null)
         {
             return;
         }
+
+        if (xValues.length > 1 && this._parent == null && this.getOpt("enable_children",true))
+        {
+            var field = xValues[0];
+            var keyValues = values["keyvalues"][field];
+            var child;
+
+            keyValues.forEach((kv) => {
+                if ((child = this.getChild(kv)) == null)
+                {
+                    child = this.addChild(kv);
+                    child.keyfilter = {};
+                    child.keyfilter[field] = kv;
+                    child.header = kv;
+                }
+
+                child.draw();
+            });
+
+            return;
+        }
+
+        var orientation = this.getOpt("orientation","vertical");
+        var data = [];
+        var index = 0;
+        var o;
 
         var items = this._datasource.getList();
         var markers = [];
@@ -954,6 +1004,12 @@ define([
         return("line");
     }
 
+    LineChart.prototype.createChild =
+    function(container,options)
+    {
+        return(new LineChart(this._visuals,container,this._datasource,options));
+    }
+
     LineChart.prototype.draw =
     function()
     {
@@ -963,13 +1019,42 @@ define([
             this.isInitialized = true;
         }
 
-        if (this._datasource.schema.size == 0)
+        var xValues = this.getValues("x");
+        var yValues = this.getValues("y");
+
+        if (xValues.length == 0)
+        {
+            xValues = this._datasource.getKeyFieldNames();
+        }
+
+        var values = this._datasource.getValuesBy(xValues,yValues,this.keyfilter);
+
+        if (values == null)
         {
             return;
         }
 
-        var xValues = this.getValues("x");
-        var yValues = this.getValues("y");
+        if (xValues.length > 1 && this._parent == null && this.getOpt("enable_children",true))
+        {
+            var field = xValues[0];
+            var keyValues = values["keyvalues"][field];
+            var child;
+
+            keyValues.forEach((kv) => {
+                if ((child = this.getChild(kv)) == null)
+                {
+                    child = this.addChild(kv);
+                    child.keyfilter = {};
+                    child.keyfilter[field] = kv;
+                    child.header = kv;
+                }
+
+                child.draw();
+            });
+
+            return;
+        }
+
         var width = this.getOpt("line_width",2);
         var data = [];
         var line = {};
@@ -990,9 +1075,7 @@ define([
             colors = this._visuals.colors.colors;
         }
 
-        if (xValues.length > 0)
         {
-            var values = this._datasource.getValuesBy(xValues,yValues);
             var o;
 
             yValues.forEach((v) => {
@@ -1011,28 +1094,7 @@ define([
                 data.push(o);
             });
         }
-        else
-        {
-            var x = this._datasource.getKeyValues();
 
-            yValues.forEach((y) => {
-                o = {};
-                o["x"] = x;
-                o["y"] = this._datasource.getValues(y);
-                o["type"] = "scatter";
-                o["line"] = line;
-                o["mode"] = "lines";
-                o["name"] = y;
-                if (this.getOpt("fill",false))
-                {
-                    o["fill"] = "tonexty";
-                }
-                o["marker"] = {color:colors[index]};index++;
-                data.push(o);
-            });
-        }
-
-        //console.log(tools.stringify(data));
         Plotly.react(this._content,data,this._layout);
 
         this.setHeader();

@@ -28,25 +28,33 @@ esp(api)
 {
     _esp = api;
 
+    if (_esp.hasParm("theme") == false)
+    {
+        _esp.setParm("theme","sas_opal");
+    }
+
+    _visuals = _esp.createVisuals(_esp.getParms());
+
     var parms = _esp.getParms();
 
     if (parms.hasOwnProperty("server") == false)
     {
-        alert("you must specify ESP server URL");
+        _esp.showConnectDialog({connect:connect});
         return;
     }
 
     var server = parms["server"];
     delete parms["server"];
 
+    connect(server);
+}
+
+function
+connect(server)
+{
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-
-    parms["theme"] = "sas_opal";
-    _visuals = _esp.createVisuals(parms);
-
-    _esp.handleLayout();
-
     _esp.connect(server,{ready:ready});
+    _esp.handleLayout();
 }
 
 function

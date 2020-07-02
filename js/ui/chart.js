@@ -121,11 +121,6 @@ define([
     {
         this._chart._visuals.hideToolbars();
 
-        var subject = document.title;
-        subject += " : ";
-        subject += encodeURIComponent(this._chart.getOpt("header","ESP"));
-        this._chart._mail.href = "mailto:?subject=" + subject + "&body=" + encodeURIComponent(this._chart.getUrl());
-
         if (this._chart._datasource != null)
         {
             if (this._chart._navigation != null)
@@ -148,6 +143,14 @@ define([
 
         if (this._chart._share != null)
         {
+            if (this._chart._mail != null)
+            {
+                var subject = document.title;
+                subject += " : ";
+                subject += encodeURIComponent(this._chart.getOpt("header","ESP"));
+                this._chart._mail.href = "mailto:?subject=" + subject + "&body=" + encodeURIComponent(this._chart.getUrl());
+            }
+
             this._chart._share.style.visibility = "visible";
         }
 
@@ -203,6 +206,17 @@ define([
         this._layout["font"] = this._visuals.font;
         this._layout["xaxis"] = {automargin:true,showline:true};
         this._layout["yaxis"] = {automargin:true,showline:true};
+        this._keyfilter = null;
+        this._parent = null;
+        this._children = null;
+
+        this._schemaReady = (this._datasource != null && this._datasource.schema.size > 0) ? true : false;
+
+        Object.defineProperty(this,"isSchemaReady", {
+            get() {
+                return(this._schemaReady);
+            }
+        });
 
         var margin = this.getOpt("margin",20);
         this._layout["margin"] = {l:margin,r:margin,b:margin,t:margin};
@@ -227,12 +241,12 @@ define([
 
         var range;
 
-        if ((range = this.getOpt("xrange")) != null)
+        if ((range = this.getOpt("x_range")) != null)
         {
             this._layout["xaxis"]["range"] = range;
         }
 
-        if ((range = this.getOpt("yrange")) != null)
+        if ((range = this.getOpt("y_range")) != null)
         {
             this._layout["yaxis"]["range"] = range;
         }
@@ -269,6 +283,26 @@ define([
 
             set(value) {
                 this.setOpt("header",value);
+            }
+        });
+
+        Object.defineProperty(this,"keyfilter",{
+            get() {
+                return(this._keyfilter);
+            },
+
+            set(value) {
+                this._keyfilter = value;
+            }
+        });
+
+        Object.defineProperty(this,"parent",{
+            get() {
+                return(this._parent);
+            },
+
+            set(value) {
+                this._parent = value;
             }
         });
 
@@ -378,10 +412,13 @@ define([
                 icons.appendChild(this._playPauseContainer);
             }
 
-            this._share = document.createElement("span");
-            this._share.className = "share";
-            this._share.style.visibility = "hidden";
-            icons.appendChild(this._share);
+            if (this.getOpt("enable_share",true))
+            {
+                this._share = document.createElement("span");
+                this._share.className = "share";
+                this._share.style.visibility = "hidden";
+                icons.appendChild(this._share);
+            }
 
             if (this._navigation != null)
             {
@@ -440,28 +477,31 @@ define([
                 this._filterContainer.appendChild(this._filter);
             }
 
-            this._copy = document.createElement("a");
-            this._copy._chart = this;
-            this._copy.innerHTML = "&#xf141;";
-            this._copy.className = "icon";
-            this._copy.href = "#";
-            this._copy.addEventListener("click",copy);
-            this._share.appendChild(this._copy);
+            if (this._share != null)
+            {
+                this._copy = document.createElement("a");
+                this._copy._chart = this;
+                this._copy.innerHTML = "&#xf141;";
+                this._copy.className = "icon";
+                this._copy.href = "#";
+                this._copy.addEventListener("click",copy);
+                this._share.appendChild(this._copy);
 
-            this._open = document.createElement("a");
-            this._open._chart = this;
-            this._open.innerHTML = "&#xf4a2;";
-            this._open.className = "icon";
-            this._open.href = "#";
-            this._open.addEventListener("click",open);
-            this._share.appendChild(this._open);
+                this._open = document.createElement("a");
+                this._open._chart = this;
+                this._open.innerHTML = "&#xf4a2;";
+                this._open.className = "icon";
+                this._open.href = "#";
+                this._open.addEventListener("click",open);
+                this._share.appendChild(this._open);
 
-            this._mail = document.createElement("a");
-            this._mail._chart = this;
-            this._mail.innerHTML = "&#xf3f1;";
-            this._mail.className = "icon";
-            this._mail.href = "javascript:null";
-            this._share.appendChild(this._mail);
+                this._mail = document.createElement("a");
+                this._mail._chart = this;
+                this._mail.innerHTML = "&#xf3f1;";
+                this._mail.className = "icon";
+                this._mail.href = "javascript:null";
+                this._share.appendChild(this._mail);
+            }
 
             this._header.addEventListener("mouseover",over);
             this._header.addEventListener("mouseout",out);
@@ -515,6 +555,77 @@ define([
     function()
     {
         return("");
+    }
+
+    Chart.prototype.schemaReady =
+    function(schema)
+    {
+        this._schemaReady = true;
+    }
+
+    Chart.prototype.init =
+    function(schema)
+    {
+    }
+
+    Chart.prototype.getChild =
+    function(keyvalue)
+    {
+        var child = (this._children != null && this._children.hasOwnProperty(keyvalue)) ? this._children[keyvalue] : null;
+        return(child);
+    }
+
+    Chart.prototype.addChild =
+    function(value)
+    {
+        var child = this.getChild(value);
+
+        if (child != null)
+        {
+            return(child);
+        }
+
+        if (this._children == null)
+        {
+            this._content.innerHTML = "";
+            this._content.style.display = "flex";
+            this._content.style.flexWrap = "wrap";
+            this._content.style.alignItems = "center";
+            this._content.style.justifyContent = "center";
+            this._children = {};
+        }
+
+        var width = this.getOpt("child_width","300");
+        var height = this.getOpt("child_height","300");
+        var div = document.createElement("div");
+        div.style.width = width + "px";
+        div.style.height = height + "px";
+        var container = document.createElement("div");
+        container.style.overflow = "auto";
+        container.className = "component";
+        container.style.width = this.getOpt("child_width","300px");
+        container.style.height = this.getOpt("child_height","300px");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.padding = "10px";
+        container.appendChild(div);
+        this._content.appendChild(container);
+        var opts = new Options(this.getOpts());
+        opts.setOpt("enable_share",false);
+        if ((child = this.createChild(div,opts.getOpts())) != null)
+        {
+            child.parent = this;
+            this._children[value] = child;
+            child.sizeContent();
+        }
+
+        return(child);
+    }
+
+    Chart.prototype.createChild =
+    function()
+    {
+        return(null);
     }
 
     Chart.prototype.usesConnection =

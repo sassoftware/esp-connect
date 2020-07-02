@@ -1258,8 +1258,14 @@ define([
     }
 
     Datasource.prototype.getValuesBy =
-    function(keys,names,delimiter = ".")
+    function(keys,names,keyfilter,delimiter = ".")
     {
+        if (this.schema.size == 0)
+        {
+            return(null);
+        }
+
+        var keyFieldValues = {};
         var keyFields = [];
         var f;
 
@@ -1269,7 +1275,14 @@ define([
             {
                 throw("field " + s + " not found");
             }
+
+            if (keyfilter != null && keyfilter.hasOwnProperty(f.name))
+            {
+                continue;
+            }
+
             keyFields.push(f);
+            keyFieldValues[f.name] = [];
         }
 
         var dateKeys = false;
@@ -1322,12 +1335,32 @@ define([
         }
 
         var data = {};
+        var value;
         var entry;
         var name;
         var key;
 
-        items.forEach((o) =>
+        for (var o of items)
         {
+            if (keyfilter != null)
+            {
+                var match = true;
+
+                for (var x in keyfilter)
+                {
+                    if (keyfilter[x] != o[x])
+                    {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match == false)
+                {
+                    continue;
+                }
+            }
+
             key = "";
 
             keyFields.forEach((f) =>
@@ -1335,11 +1368,17 @@ define([
                 name = f["name"];
                 if (o.hasOwnProperty(name))
                 {
+                    value = o[name];
                     if (key.length > 0)
                     {
                         key += delimiter;
                     }
-                    key += o[name];
+                    key += value;
+
+                    if (keyFieldValues[name].includes(value) == false)
+                    {
+                        keyFieldValues[name].push(value);
+                    }
                 }
             });
 
@@ -1366,7 +1405,7 @@ define([
                     entry[name] += parseFloat(o[name]);
                 }
             }
-        });
+        }
 
         var values = {};
 
@@ -1419,7 +1458,7 @@ define([
             }
         });
 
-        var v = {keys:keyValues,values:values,selected:selected};
+        var v = {keys:keyValues,keyvalues:keyFieldValues,values:values,selected:selected};
         return(v);
     }
 

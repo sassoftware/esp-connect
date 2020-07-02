@@ -30,6 +30,12 @@ define([
                 return(this._fields.length);
             }
         });
+
+        Object.defineProperty(this,"numkeys",{
+            get() {
+                return(this._keyFields.length);
+            }
+        });
     }
 
     Schema.prototype = Object.create(Options.prototype);

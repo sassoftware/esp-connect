@@ -51,7 +51,22 @@ define([
         this._prev = null;
         this._incommand = false;
         this._command = null;
-        this.process(text,length,indent);
+        if (Array.isArray(text))
+        {
+            text.forEach((t) => {
+                this.process(t,length,indent);
+                this._text += "\n\n";
+                this._text += (init != null) ? init : "";
+                this._index = 0;
+                this._prev = null;
+                this._incommand = false;
+                this._command = null;
+            });
+        }
+        else
+        {
+            this.process(text,length,indent);
+        }
         return(this._text);
     }
 
