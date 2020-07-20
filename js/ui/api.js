@@ -206,7 +206,7 @@ define([
 
         hasParm:function(name)
         {
-            return(this.getParms().hasOwnProperty(name));
+            return(this.getParms().hasOwnProperty(name) && this._parms[name] != null);
         },
 
         getParm:function(name,dv)
@@ -238,11 +238,6 @@ define([
             }
         },
 
-        hasParm:function(name)
-        {
-            return(this.getParms().hasOwnProperty(name));
-        },
-
         createValue:function(s)
         {
             var value = s;
@@ -264,6 +259,10 @@ define([
             else if (s == "false")
             {
                 value = false;
+            }
+            else if (s == "null")
+            {
+                value = null;
             }
 
             return(value);

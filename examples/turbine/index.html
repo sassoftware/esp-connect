@@ -28,26 +28,30 @@ esp(api)
 {
     _esp = api;
 
+    _timer = _esp.createTimer();
+
     var parms = _esp.getParms();
+
+    _visuals = _esp.createVisuals(parms);
 
     if (parms.hasOwnProperty("server") == false)
     {
-        alert("you must specify ESP server URL");
+        _esp.showConnectDialog({connect:connect});
         return;
     }
 
     var server = parms["server"];
     delete parms["server"];
 
+    connect(server);
+}
+
+function
+connect(server)
+{
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-
-    _visuals = _esp.createVisuals(parms);
-
+    _esp.connect(server,{ready:ready,closed:closed});
     _esp.handleLayout();
-
-    _esp.connect(server,{ready:ready,closed:closed},{debug:false});
-
-    _timer = _esp.createTimer();
 }
 
 function
@@ -193,7 +197,7 @@ Turbine(id)
     this._alertsTable.setFields(fields);
 
     this._angle = Math.random() * 360;
-    this._delta = 10;
+    this._delta = 2;
 
     this._alerts = {};
     this._alertTime = null;
@@ -229,7 +233,7 @@ function()
     if (this._alertTime != null)
     {
         var elapsed = new Date().getTime() - this._alertTime;
-        if (elapsed >= 5000)
+        if (elapsed >= 2000)
         {
             this._alertTime = null;
         }

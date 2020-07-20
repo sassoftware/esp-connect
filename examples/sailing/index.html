@@ -32,23 +32,29 @@ esp(api)
 
     var parms = _esp.getParms();
 
+    _visuals = _esp.createVisuals(parms);
+    _visuals.dateformat = "%c";
+
+    _visuals = _esp.createVisuals(parms);
+
     if (parms.hasOwnProperty("server") == false)
     {
-        alert("you must specify ESP server URL");
+        _esp.showConnectDialog({connect:connect});
         return;
     }
 
     var server = parms["server"];
     delete parms["server"];
 
+    connect(server);
+}
+
+function
+connect(server)
+{
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-
-    _visuals = _esp.createVisuals(parms);
-    _visuals.dateformat = "%c";
-
-    _esp.handleLayout();
-
     _esp.connect(server,{ready:ready});
+    _esp.handleLayout();
 }
 
 function

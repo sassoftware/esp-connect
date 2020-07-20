@@ -306,6 +306,18 @@ define([
             }
         });
 
+        this._keyProperty = "label";
+
+        Object.defineProperty(this,"keyProperty",{
+            get() {
+                return(this._keyProperty);
+            },
+
+            set(value) {
+                this._keyProperty = value;
+            }
+        });
+
         if (this.getType() != "wrapper")
         {
             this.container.innerHTML = "";
@@ -941,7 +953,11 @@ define([
 
         for (var i = 0; i < 1; i++)
         {
-            keys.push(data.points[i].label);
+            var point = data.points[i];
+            if (point.hasOwnProperty(this.keyProperty))
+            {
+                keys.push(point[this.keyProperty]);
+            }
         }
 
         this._datasource.toggleSelectedKeys(keys,this.isCtrl(data.event) == false);

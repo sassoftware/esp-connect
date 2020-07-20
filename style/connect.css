@@ -291,6 +291,7 @@ div.dialogButtons button
 div.dialogButtons button:focus
 {
     border:2px solid #c0c0c0;
+    background:white;
 }
 
 div.obscureCover
@@ -745,11 +746,6 @@ div.layout
     align-items:flex-start;
     justify-content:space-around;
     margin:auto;
-}
-
-button:focus
-{
-    border:2px solid #c0c0c0;
 }
 
 .indent

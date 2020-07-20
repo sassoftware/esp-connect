@@ -98,15 +98,16 @@ define([
             }
         });
 
-        /*
-        this._delegates = [];
-
-        if (delegate != null)
-        {
-            this._delegates.push(delegate);
-        }
         this._closed = false;
-        */
+
+        Object.defineProperty(this,"closed", {
+            get() {
+                return(this._closed);
+            },
+            set(value) {
+                this._closed = value;
+            }
+        });
 
         this.init();
     }
@@ -202,11 +203,6 @@ define([
     function()
     {
         this._closed = true;
-
-        var request = {"connection":{}};
-        var o = request["connection"];
-        o["action"] = "close";
-        this.sendObject(request);
     }
 
     Api.prototype.send =

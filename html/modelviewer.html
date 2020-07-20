@@ -113,7 +113,6 @@ setup()
 
     if (_esp.hasParm("server"))
     {
-        document.getElementById("server").value = _esp.getParm("server");
         connect(encodeURI(_esp.getParm("server")));
     }
     else if (_esp.hasParm("xml"))
@@ -122,7 +121,7 @@ setup()
     }
     else
     {
-        _esp.getDialogs().pushModal("connect");
+        _esp.showConnectDialog({connect:connect});
     }
 
     _opcodes = document.createElement("select");
@@ -338,11 +337,6 @@ closeEvents()
 function
 connect(server)
 {
-    if (server == null)
-    {
-        server = encodeURI(document.getElementById('server').value);
-    }
-
     close();
 
     _esp.getDialogs().clearModals();
@@ -396,14 +390,6 @@ close()
         _connection.close();
         _connection = null;
     }
-
-    /*
-    document.getElementById("detailCb").checked = false;
-    document.getElementById("statsCb").checked = false;
-    document.getElementById("windowXmlCb").checked = false;
-    document.getElementById("schemaCb").checked = false;
-    document.getElementById("logsCb").checked = false;
-    */
 }
 
 function
@@ -636,10 +622,13 @@ setProject()
 {
     if (_esp.hasParm("project"))
     {
-        _viewer.project = _esp.getParm("project");
+        if (_viewer != null)
+        {
+            _viewer.project = _esp.getParm("project");
+        }
         _esp.removeParm("project");
     }
-    else
+    else if (_viewer != null)
     {
         _viewer.project = "*";
     }
@@ -1465,7 +1454,7 @@ div#banner td.icon
                     </select>
                 </td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('connect')">&#xf137;</a>
+                    <a class="icon" href="javascript:_esp.showConnectDialog({connect:connect})">&#xf137;</a>
                 </td>
             </tr>
         </table>
@@ -1503,46 +1492,6 @@ div#banner td.icon
                 </td>
             </tr>
         </table>
-    </div>
-
-    <div id="connect" class="dialog" style="width:50%">
-
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('connect')">&#xf10c;</a></td></tr>
-        </table>
-
-        <div class="dialogTop">
-
-            <div  class="dialogHeader">
-                <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td><div class="dialogTitle">Connect to ESP Server</div></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-
-            <div class="dialogContent">
-                <table border="0" style="width:100%;height:100%" cellspacing="0" cellpadding="0">
-                    <tr>
-                        <td class="dialogLabel">ESP Server:</td>
-                    </tr>
-                    <tr>
-                        <td class="dialogValue"><input id="server" type="text"></input></td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-        <div class="dialogButtons">
-            <table style="width:100%">
-                <tr>
-                    <td class="dialogButton">
-                        <span><button class="close" onclick="javascript:connect()">Connect</button></span>
-                    </td>
-                </tr>
-            </table>
-        </div>
     </div>
 
     <div id="detailContent" style="display:none">

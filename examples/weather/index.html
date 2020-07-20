@@ -29,26 +29,30 @@ esp(api)
 
     var parms = _esp.getParms();
 
-    if (parms.hasOwnProperty("server") == false)
-    {
-        alert("you must specify ESP server URL");
-        return;
-    }
-
-    var server = parms["server"];
-    delete parms["server"];
-
-    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-
     _appid = parms.hasOwnProperty("appid") ? parms["appid"] : "";
 
     document.getElementById("appid").value = _appid;
 
     _visuals = _esp.createVisuals(parms);
 
-    _esp.handleLayout();
+    if (parms.hasOwnProperty("server") == false)
+    {
+        _esp.showConnectDialog({connect:connect});
+        return;
+    }
 
+    var server = parms["server"];
+    delete parms["server"];
+
+    connect(server);
+}
+
+function
+connect(server)
+{
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.connect(server,{ready:ready});
+    _esp.handleLayout();
 }
 
 function

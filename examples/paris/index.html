@@ -31,20 +31,25 @@ esp(api)
 
     var parms = _esp.getParms();
 
+    _visuals = _esp.createVisuals(parms);
+
     if (parms.hasOwnProperty("server") == false)
     {
-        alert("you must specify ESP server URL");
+        _esp.showConnectDialog({connect:connect});
         return;
     }
 
     var server = parms["server"];
     delete parms["server"];
 
+    connect(server);
+}
+
+function
+connect(server)
+{
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-
     _esp.connect(server,{ready:ready});
-    _visuals = _esp.createVisuals(_esp.getParms());
-
     _esp.handleLayout();
 }
 
@@ -73,8 +78,8 @@ var _modelXml = null;
 function
 loaded(p,conn)
 {
-    _conn.getPublisher({window:"p/cq/circles_in"}).publishCsvFrom("circles_in.csv",{close:true});
-    _conn.getPublisher({window:"p/cq/poly_in"}).publishCsvFrom("poly_in.csv",{close:true});
+    _conn.getPublisher({window:"p/cq/circles_in"}).publishCsvFrom("circles_in.csv",{close:true,opcodes:true,flags:true});
+    _conn.getPublisher({window:"p/cq/poly_in"}).publishCsvFrom("poly_in.csv",{close:true,opcodes:true,flags:true});
     setTimeout(createVisuals,1000);
     _conn.getProjectXml("p",{response:function(c,data){_modelXml = data;}});
 
@@ -147,7 +152,7 @@ function
 Trip(name)
 {
     this._name = name;
-    this._data = _model.getWindow("p/cq/position_in").schema.createDataFromCsv(_trip);
+    this._data = _model.getWindow("p/cq/position_in").schema.createDataFromCsv(_trip,{opcodes:true,flags:true});
     this._publisher = _conn.getPublisher({window:"p/cq/position_in"});
     this._fields = ["vehicle","pt_id","GPS_longitude","GPS_latitude","speed","course"];
     this._index = 0;

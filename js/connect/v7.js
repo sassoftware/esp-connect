@@ -98,15 +98,16 @@ define([
             }
         });
 
-        /*
-        this._delegates = [];
-
-        if (delegate != null)
-        {
-            this._delegates.push(delegate);
-        }
         this._closed = false;
-        */
+
+        Object.defineProperty(this,"closed", {
+            get() {
+                return(this._closed);
+            },
+            set(value) {
+                this._closed = value;
+            }
+        });
 
         this.init();
     }
@@ -137,7 +138,7 @@ define([
     Api.prototype.close =
     function()
     {
-        this._closed = true;
+        this.closed = true;
 
         var request = {"connection":{}};
         var o = request["connection"];
@@ -3190,7 +3191,7 @@ define([
             return;
         }
 
-        this._csv.items = this._schema.createDataFromCsv(this._csv.data);
+        this._csv.items = this._schema.createDataFromCsv(this._csv.data,this._csv.options.getOpts());
 
         var pause = this._csv.options.getOpt("pause",0);
         var opcode = this._csv.options.getOpt("opcode","insert");

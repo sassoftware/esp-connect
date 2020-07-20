@@ -869,7 +869,6 @@ define([
 
         var orientation = this.getOpt("orientation","vertical");
         var data = [];
-        var index = 0;
         var o;
 
         var items = this._datasource.getList();
@@ -929,11 +928,6 @@ define([
             }
         }
 
-        if (colors == null)
-        {
-            colors = this._visuals.colors.middle;
-        }
-
         var selectedBorder = this._visuals.selectedBorder;
 
         values["selected"].forEach(selected =>
@@ -949,6 +943,9 @@ define([
                 lines["width"].push(0);
             }
         });
+
+        var index = 0;
+        var spread = (colors == null) ? this._visuals._colors.getSpread(yValues.length) : null;
 
         for (var y of yValues)
         {
@@ -969,7 +966,7 @@ define([
             o["type"] = "bar";
 
             var marker = {};
-            marker["color"] = colors;
+            marker["color"] = (spread != null) ? spread[index] : colors;
             marker["line"] = lines;
             o["marker"] = marker;
             index++;

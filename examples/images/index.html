@@ -30,29 +30,32 @@ esp(api)
 
     var parms = _esp.getParms();
 
-    if (parms.hasOwnProperty("server") == false)
-    {
-        alert("you must specify ESP server URL");
-        return;
-    }
-
-    var server = parms["server"];
-    delete parms["server"];
-
-    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-
     _visuals = _esp.createVisuals(parms);
+    _visuals.addDelegate({selectionChanged:select});
 
     _visuals.createWrapper("video",{header:"<br/>The video plays here",style:{width:"45%",height:"40%"}});
     _visuals.createWrapper("canvas",{header:"This image displays the current frame of the video. The bits are taken from the image and sent into the ESP object detection model.",style:{width:"45%",height:"40%"}});
 
     document.getElementById("video").style.display = "inline";
 
-    _visuals.addDelegate({selectionChanged:select});
+    if (parms.hasOwnProperty("server") == false)
+    {
+        _esp.showConnectDialog({connect:connect});
+        return;
+    }
 
-    _esp.handleLayout({layout:layout});
+    var server = parms["server"];
+    delete parms["server"];
 
+    connect(server);
+}
+
+function
+connect(server)
+{
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.connect(server,{ready:ready,closed:closed});
+    _esp.handleLayout();
 }
 
 function
@@ -95,24 +98,6 @@ select(ds)
             }
         }
     }
-}
-
-function
-layout()
-{
-    /*
-    var video = document.getElementById("video");
-    var canvas = document.getElementById("canvas");
-    canvas.width = video.offsetWidth;
-    canvas.height = video.offsetHeight;
-
-    if (_viewer != null)
-    {
-        _viewer.setOpt("image_width",video.offsetWidth);
-        _viewer.setOpt("image_height",video.offsetHeight);
-        _viewer.drawImage();
-    }
-    */
 }
 
 var _imagePublisher = null;

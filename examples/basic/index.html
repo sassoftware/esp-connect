@@ -29,30 +29,28 @@ esp(api)
 
     var parms = _esp.getParms();
 
+    _visuals = _esp.createVisuals(parms);
+
+    _visuals.createWrapper("colors",{header:"Click on the colored areas to generate events",style:{width:"98%",height:"150px"}});
+
     if (parms.hasOwnProperty("server") == false)
     {
-        alert("you must specify ESP server URL");
+        _esp.showConnectDialog({connect:connect});
         return;
     }
 
     var server = parms["server"];
     delete parms["server"];
 
-    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
- 
-    _visuals = _esp.createVisuals(parms);
-
-    _visuals.createWrapper("colors",{header:"Click on the colored areas to generate events",style:{width:"98%",height:"150px"}});
-
-    _esp.handleLayout({layout:layout});
-
     _esp.connect(server,{ready:ready});
 }
 
 function
-layout()
+connect(server)
 {
-    _esp.refresh();
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+    _esp.connect(server,{ready:ready});
+    _esp.handleLayout();
 }
 
 function
@@ -95,6 +93,12 @@ ready(conn)
     {
         loaded();
     }
+}
+
+function
+layout()
+{
+    _esp.refresh();
 }
 
 var _publisher = null;

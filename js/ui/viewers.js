@@ -364,6 +364,10 @@ define([
 
             tr.appendChild(td = document.createElement("td"));
             td.className = "action";
+            td.appendChild(this.createToolbarItem({name:"reload",text:"&#xf59c;",right_border:true,style:{borderRight:"1px solid #c8c8c8",paddingRight:"10px"}}));
+
+            tr.appendChild(td = document.createElement("td"));
+            td.className = "action";
             td.appendChild(this.createToolbarItem({name:"zoomIn",text:"&#xf8e1;"}));
 
             tr.appendChild(td = document.createElement("td"));

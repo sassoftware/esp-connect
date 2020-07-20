@@ -67,7 +67,9 @@ define([
     function(name)
     {
 		var	s = name.toLowerCase();
-        return(this._options.hasOwnProperty(s));
+        //var code = (this._options.hasOwnProperty(s) && this._options[s] != null);
+        var code = (this._options.hasOwnProperty(s));
+        return(code);
     }
 
 	Options.prototype.hasOpts =

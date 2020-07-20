@@ -45,7 +45,6 @@ define([
             this._delegates.push(delegate);
         }
 
-        this._closed = false;
         this._impl = null;
     }
 
@@ -81,7 +80,7 @@ define([
     ServerConnection.prototype.closed =
     function(conn)
     {
-        if (this._closed)
+        if (this._impl != null && this._impl.closed)
         {
             return;
         }
@@ -96,7 +95,6 @@ define([
 
         if (this._impl != null)
         {
-            this._impl.closed();
             this._impl = null;
         }
 
@@ -111,7 +109,7 @@ define([
     ServerConnection.prototype.error =
     function(conn)
     {
-        if (this._closed)
+        if (this._impl != null && this._impl.closed)
         {
             return;
         }
@@ -156,12 +154,6 @@ define([
         {
             this.reconnect(reconnect);
         }
-    }
-
-    ServerConnection.prototype.close =
-    function()
-    {
-        this._closed = true;
     }
 
 	ServerConnection.prototype.message =

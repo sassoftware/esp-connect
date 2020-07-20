@@ -1118,6 +1118,8 @@ define([
                 this._geo.setOpt("center",value);
             }
         });
+
+        this.keyProperty = "location";
     }
 
     PlotlyMap.prototype = Object.create(Map.prototype);
