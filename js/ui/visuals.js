@@ -3210,6 +3210,11 @@ define([
         return("wrapper");
     }
 
+    Wrapper.prototype.remove =
+    function()
+    {
+    }
+
     Wrapper.prototype.sizeContent =
     function()
     {

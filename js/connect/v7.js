@@ -643,8 +643,9 @@ define([
         var opts = new Options(options);
         var blocksize = opts.getOpt("blocksize",1);
         var times = opts.getOpt("times",1);
+        var pause = opts.getOpt("pause",0);
         var id = opts.getOpt("id",tools.guid());
-        var    o = {};
+        var o = {};
 
         var request = {"data-publisher":{}};
         var o = request["data-publisher"];
@@ -653,6 +654,7 @@ define([
         o["data"] = tools.b64Encode(data);
         o["blocksize"] = blocksize;
         o["times"] = times;
+        o["pause"] = pause;
         o["informat"] = opts.getOpt("informat","csv");
 
         if (opts.hasOpt("dateformat"))

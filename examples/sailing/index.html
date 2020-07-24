@@ -46,6 +46,8 @@ esp(api)
     var server = parms["server"];
     delete parms["server"];
 
+    _visuals.createWrapper("legend",{header:"Ships",style:{width:"98%",height:"5%","padding-top":"10px"},show_header:false});
+
     connect(server);
 }
 
@@ -102,8 +104,6 @@ loaded()
 
     _visuals.createCompass("heading",coll,{value:"heading",size:180,header:"Current Heading",use_theme:false});
     _visuals.createGauge("speed",coll,{value:"speed",mode:"number",delta:false,segments:5,width:w,height:h,header:"Current Speed",range:[0,10]});
-
-    _visuals.createWrapper("legend",{header:"Ships",style:{width:"98%",height:"5%","padding-top":"10px"},show_header:false});
 
     _visuals.createTable("speeding",speeding,{header:"Speeding Violations",values:["boat_id","Location_Name","Max_speed","dateTime"],tail:true});
     _visuals.createTable("exclusion",exclusion,{header:"Exclusion Violations",values:["boat_id","Location_Name","Minimum_Distance","First_dateTime","Last_dateTime"],tail:true});
