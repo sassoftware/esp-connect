@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "amdefine": "latest",
+    "websocket": "latest",
     "ws": "latest",
     "jsdom": "latest",
     "xpath": "latest",

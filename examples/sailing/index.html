@@ -119,6 +119,8 @@ loaded()
         var url = new URL("boat" + i + ".csv",document.URL).toString();
         _eventsources.createEventSource({name:"boat" + i,type:"csv",window:"p/cq/Boat",opcode:"insert",opcodes:true,flags:true,dateformat:"%Y-%m-%d %H:%M:%S",url:url,delay:delay});
     }
+
+    playpause();
 }
 
 function

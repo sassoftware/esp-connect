@@ -24,7 +24,183 @@ define([
     "./options"
 ], function(tools,codec,Options)
 {
-    var WS = _isNode ? require("ws") : null;
+    var WS = null;
+    var W3CWS = null;
+
+    var _nodeWS = null;
+    var _nodeWebsockets = null;
+
+    if (_isNode)
+    {
+        if (process.env.NODE_WEBSOCKETS == "ws")
+        {
+            WS = require("ws");
+            _nodeWS = {
+                open:function(e)
+                {
+                    var	conn = this._connection;
+
+                    if (conn != null)
+                    {
+                        conn._websocket = this;
+                        conn._ready = true;
+                        conn.ready();
+                    }
+                },
+
+                close:function(e)
+                {
+                    var	conn = this._connection;
+
+                    if (conn != null)
+                    {
+                        conn.clear();
+                        conn.closed();
+                    }
+                },
+
+                error:function(e)
+                {
+                    var	conn = this._connection;
+
+                    if (conn != null)
+                    {
+                        console.log(conn.getUrl() + ": " + e);
+                        conn.clear();
+                        conn.error();
+                    }
+                },
+
+                message:function(message)
+                {
+                    var	conn = this._connection;
+
+                    if (conn != null)
+                    {
+                        if (typeof(message) == "string")
+                        {
+                            conn.message(message);
+                        }
+                        else
+                        {
+                            var buffer = new ArrayBuffer(message.length);
+                            var view = new Uint8Array(buffer);
+                            for (var i = 0; i < message.length; ++i)
+                            {
+                               view[i] = message[i];
+                            }
+
+                            var o = codec.decode(buffer);
+                            conn.data(o);
+                        }
+                    }
+                },
+
+                data:function(stream)
+                {
+                    var	conn = this._connection;
+
+                    if (conn != null)
+                    {
+                        var data = Buffer.alloc(0);
+
+                        stream.on("readable",function()
+                        {
+                            var newData = stream.read();
+
+                            if (newData != null)
+                            {
+                                data = Buffer.concat([data,newData],data.length + newData.length);
+                            }
+                        });
+
+                        stream.on("end",function()
+                        {
+                            var buffer = new ArrayBuffer(data.length);
+                            var view = new Uint8Array(buffer);
+                            for (var i = 0; i < data.length; ++i)
+                            {
+                               view[i] = data[i];
+                            }
+
+                            var o = codec.decode(buffer);
+                            conn.data(o);
+                        });
+                    }
+                }
+            };
+        }
+        else
+        {
+            W3CWS = require("websocket").w3cwebsocket;
+
+            function
+            WebSocketClient(url,connection)
+            {
+                this._conn = connection;
+                this.binaryType = "arraybuffer";
+		        W3CWS.call(this,url);
+            }
+
+            WebSocketClient.prototype = Object.create(W3CWS.prototype);
+            WebSocketClient.prototype.constructor = WebSocketClient;
+
+            _nodeWebsockets = {
+                open:function()
+                {
+                    var	conn = this._conn;
+
+                    if (conn != null)
+                    {
+                        conn._websocket = this;
+                        conn._ready = true;
+                        conn.ready();
+                    }
+                },
+
+                close:function(e)
+                {
+                    var	conn = this._conn;
+
+                    if (conn != null)
+                    {
+                        conn.clear();
+                        conn.closed();
+                    }
+                },
+
+                error:function(e)
+                {
+                    var	conn = this._conn;
+
+                    if (conn != null)
+                    {
+                        console.log(conn.getUrl() + ": " + e);
+                        conn.clear();
+                        conn.error();
+                    }
+                },
+
+                message:function(e)
+                {
+                    var	conn = this._conn;
+
+                    if (conn != null)
+                    {
+                        if (typeof(e.data) == "string")
+                        {
+                            conn.message(e.data);
+                        }
+                        else
+                        {
+                            var o = codec.decode(e.data);
+                            conn.data(o);
+                        }
+                    }
+                }
+            };
+        }
+    }
 
     var	_websockets =
 	{
@@ -90,102 +266,6 @@ define([
         {
             return(this._prompted.hasOwnProperty(url));
         }
-	};
-
-    var	_nodeWebsockets =
-    {
-		open:function(e)
-		{
-			var	conn = this._connection;
-
-			if (conn != null)
-			{
-                conn._websocket = this;
-				conn._ready = true;
-                conn.ready();
-			}
-		},
-
-		close:function(e)
-		{
-			var	conn = this._connection;
-
-			if (conn != null)
-			{
-				conn.clear();
-                conn.closed();
-			}
-		},
-
-		error:function(e)
-		{
-			var	conn = this._connection;
-
-			if (conn != null)
-			{
-                console.log(conn.getUrl() + ": " + e);
-				conn.clear();
-                conn.error();
-			}
-		},
-
-		message:function(message)
-		{
-			var	conn = this._connection;
-
-			if (conn != null)
-			{
-                if (typeof(message) == "string")
-                {
-				    conn.message(message);
-                }
-                else
-                {
-                    var buffer = new ArrayBuffer(message.length);
-                    var view = new Uint8Array(buffer);
-                    for (var i = 0; i < message.length; ++i)
-                    {
-                       view[i] = message[i];
-                    }
-
-                    var o = codec.decode(buffer);
-				    conn.data(o);
-                }
-			}
-		},
-
-		data:function(stream)
-		{
-			var	conn = this._connection;
-
-			if (conn != null)
-			{
-                var data = Buffer.alloc(0);
-
-                stream.on("readable",function()
-                {
-                    var newData = stream.read();
-
-                    if (newData != null)
-                    {
-                        data = Buffer.concat([data,newData],data.length + newData.length);
-                    }
-                });
-
-                stream.on("end",function()
-                {
-                    var buffer = new ArrayBuffer(data.length);
-                    var view = new Uint8Array(buffer);
-                    for (var i = 0; i < data.length; ++i)
-                    {
-                       view[i] = data[i];
-                    }
-
-                    var o = codec.decode(buffer);
-				    conn.data(o);
-                });
-			}
-		}
 	};
 
 	function
@@ -397,10 +477,18 @@ define([
         {
             var ws = new WS(url);
             ws._connection = this;
-            ws.on("open",_nodeWebsockets.open);
-            ws.on("close",_nodeWebsockets.close);
-            ws.on("error",_nodeWebsockets.error);
-            ws.on("message",_nodeWebsockets.message);
+            ws.on("open",_nodeWS.open);
+            ws.on("close",_nodeWS.close);
+            ws.on("error",_nodeWS.error);
+            ws.on("message",_nodeWS.message);
+        }
+        else if (W3CWS != null)
+        {
+            var ws = new WebSocketClient(url,this);
+            ws.onopen = _nodeWebsockets.open;
+            ws.onclose = _nodeWebsockets.close;
+            ws.onerror = _nodeWebsockets.error;
+            ws.onmessage = _nodeWebsockets.message;
         }
         else
         {

@@ -89,25 +89,52 @@ define([
 
             if (this.isNode())
             {
-                const   WS = require("ws");
+                if (process.env.NODE_WEBSOCKETS == "ws")
+                {
+                    const   WS = require("ws");
 
-                ws = new WS(url);
+                    ws = new WS(url);
 
-                if (tools.supports(delegate,"open"))
-                {
-                    ws.on("open",delegate.open);
+                    if (tools.supports(delegate,"open"))
+                    {
+                        ws.on("open",delegate.open);
+                    }
+                    if (tools.supports(delegate,"close"))
+                    {
+                        ws.on("close",delegate.close);
+                    }
+                    if (tools.supports(delegate,"error"))
+                    {
+                        ws.on("error",delegate.error);
+                    }
+                    if (tools.supports(delegate,"message"))
+                    {
+                        ws.on("message",delegate.message);
+                    }
                 }
-                if (tools.supports(delegate,"close"))
+                else
                 {
-                    ws.on("close",delegate.close);
-                }
-                if (tools.supports(delegate,"error"))
-                {
-                    ws.on("error",delegate.error);
-                }
-                if (tools.supports(delegate,"message"))
-                {
-                    ws.on("message",delegate.message);
+                    var W3CWS = require("websocket").w3cwebsocket;
+
+console.log("create it: " + url);
+                    ws = new W3CWS(url);
+
+                    if (tools.supports(delegate,"open"))
+                    {
+                        ws.onopen = delegate.open;
+                    }
+                    if (tools.supports(delegate,"close"))
+                    {
+                        ws.onclose = delegate.close;
+                    }
+                    if (tools.supports(delegate,"error"))
+                    {
+                        ws.onerror = delegate.error;
+                    }
+                    if (tools.supports(delegate,"message"))
+                    {
+                        ws.onmessage = delegate.message;
+                    }
                 }
             }
             else

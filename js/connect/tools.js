@@ -22,16 +22,6 @@ define([
     "./options",
 ], function(Options)
 {
-    var _node = null;
-
-    try
-    {
-        _node = require("ws");
-    }
-    catch (exception)
-    {
-    }
-
     function
     Range(lower,upper,num)
     {
@@ -539,7 +529,7 @@ define([
         {
             var value = null;
 
-            if (_node != null)
+            if (_isNode)
             {
                 value = Buffer.from(s).toString("base64");
             }
@@ -555,7 +545,7 @@ define([
         {
             var value = null;
 
-            if (_node != null)
+            if (_isNode)
             {
                 value = Buffer.from(s,"base64");
             }
