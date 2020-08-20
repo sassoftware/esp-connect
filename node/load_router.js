@@ -22,6 +22,17 @@ if (server == null || opts.hasOpts(["name","model"]) == false)
 
 var fs = require("fs");
 
+var config = {};
+var cert = opts.getOptAndClear("cert");
+
+if (cert != null)
+{
+    const   fs = require("fs");
+    config.ca = fs.readFileSync(cert);
+}
+
+esp.config = config;
+
 var names = ["access_token","token","credentials"];
 var o = opts.clone(names);
 opts.clearOpts(names);
@@ -60,7 +71,8 @@ showUsage()
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
             {name:"name",arg:"router name",description:"name of the ESP router",required:true},
             {name:"model",arg:"filename",description:"file containing the ESP router configuration",required:true},
-            {name:"overwrite",arg:"true | false",description:"overwrite router if it exists, defaults to false",required:false}
+            {name:"overwrite",arg:"true | false",description:"overwrite router if it exists, defaults to false",required:false},
+            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
         ],
         description:"This command sends an ESP router from a file to the ESP server.",
         see_also:[

@@ -40,24 +40,39 @@ esp.connect(server,{ready:ready},o);
 function
 ready(connection)
 {
-    var delegate = {response:function(connection,data,xml) {
-        console.log("" + esp.getXPath().xmlString(xml));
-        process.exit(0);
-    }};
-    connection.getProjectXml(opts.getOpt("name"),delegate);
+    var delegate = {
+        projectLoaded:function(name)
+        {
+            console.log("project " + name + " loaded");
+        },
+
+        projectRemoved:function(name)
+        {
+            console.log("project " + name + " removed");
+        }
+    };
+
+    connection.addDelegate(delegate);
+
+    connection.subscribeToProjectUpdates();
 }
 
 function
 showUsage()
 {
     esp.usage({
-        name:"xml",
-        summary:"display project XML from an ESP server",
+        name:"logs",
+        summary:"view realtime ESP server logs",
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
-            {name:"name",arg:"project name",description:"The name of the project for which to retrieve the xml (defaults to all)"},
             {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
         ],
-        description:"This command is used to view project XML from an ESP server."
+        description:"This command listens for project load and delete events.",
+        see_also:[
+        {
+            name:"ESP User Guide",
+            link:"https://go.documentation.sas.com/?cdcId=espcdc&cdcVersion=6.2&docsetId=espov&docsetTarget=home.htm&locale=en"
+        }
+        ]
     });
 }

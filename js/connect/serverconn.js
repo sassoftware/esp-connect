@@ -30,7 +30,7 @@ define([
     function
     ServerConnection(connect,host,port,path,secure,delegate,options)
     {
-		Connection.call(this,host,port,path,secure,options);
+		Connection.call(this,host,port,path,secure,options,connect.config);
         this._connect = connect;
         this._delegates = [];
 

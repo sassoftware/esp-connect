@@ -139,7 +139,9 @@ define([
             {
                 this._conn = connection;
                 this.binaryType = "arraybuffer";
-		        W3CWS.call(this,url);
+                var config = {};
+                config.tlsOptions = this._conn._config;
+		        W3CWS.call(this,url,null,null,null,null,config);
             }
 
             WebSocketClient.prototype = Object.create(W3CWS.prototype);
@@ -269,13 +271,14 @@ define([
 	};
 
 	function
-    Connection(host,port,path,secure,options)
+    Connection(host,port,path,secure,options,config)
 	{
 		Options.call(this,options);
         this._host = host;
         this._port = new Number(port);
         this._path = path;
         this._secure = secure;
+        this._config = config;
 
         if (this._port == 0)
         {

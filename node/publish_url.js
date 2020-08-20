@@ -22,6 +22,16 @@ if (server == null || opts.hasOpts(["window","url"]) == false)
 
 var fs = require("fs");
 
+var config = {};
+var cert = opts.getOptAndClear("cert");
+
+if (cert != null)
+{
+    config.ca = fs.readFileSync(cert);
+}
+
+esp.config = config;
+
 var names = ["access_token","token","credentials"];
 var o = opts.clone(names);
 opts.clearOpts(names);
@@ -54,7 +64,8 @@ showUsage()
             {name:"informat",arg:"csv | xml | json | bin",description:"input data format, default is to derive from the URL"},
             {name:"blocksize",arg:"size",description:"event block size (defaults to 1)"},
             {name:"dateformat",arg:"format",description:"event date format"},
-            {name:"times",arg:"number",description:"number of times to publish (defaults to 1)"}
+            {name:"times",arg:"number",description:"number of times to publish (defaults to 1)"},
+            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
         ],
         description:"This command publishes events from a URL into an ESP source window.<br/><br/>\
 <note> It is important to note that the URL must \

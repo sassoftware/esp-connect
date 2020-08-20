@@ -34,6 +34,7 @@ define([
 	var	__api =
 	{
 		_args:null,
+        _config:null,
 
 		isNode:function()
         {
@@ -402,6 +403,7 @@ console.log("create it: " + url);
 
             if (docopts.hasOpt("see_also"))
             {
+                console.log("");
                 console.log("\x1b[1m%s\x1b[0m","SEE ALSO");
 
                 var maxlen = 0;
@@ -437,6 +439,16 @@ console.log("create it: " + url);
             console.log("");
         }
 	};
+
+    Object.defineProperty(__api,"config", {
+        get() {
+            return(this._config);
+        },
+
+        set(value) {
+            this._config = value;
+        }
+    });
 
 	return(__api);
 });

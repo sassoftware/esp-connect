@@ -22,6 +22,16 @@ if (server == null || opts.hasOpts(["name","model"]) == false)
 
 var fs = require("fs");
 
+var config = {};
+var cert = opts.getOptAndClear("cert");
+
+if (cert != null)
+{
+    config.ca = fs.readFileSync(cert);
+}
+
+esp.config = config;
+
 var names = ["access_token","token","credentials"];
 var o = opts.clone(names);
 opts.clearOpts(names);
@@ -63,7 +73,8 @@ showUsage()
             {name:"connectors",arg:"true | false",description:"start connectors, defaults to true",required:false},
             {name:"overwrite",arg:"true | false",description:"overwrite project if it exists, defaults to false",required:false},
             {name:"validate",arg:"true | false",description:"validate project, defaults to true",required:false},
-            {name:"start",arg:"true | false",description:"start the project, defaults to true",required:false}
+            {name:"start",arg:"true | false",description:"start the project, defaults to true",required:false},
+            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
         ],
         description:"This command sends an ESP model from a file to the ESP server.",
         see_also:[

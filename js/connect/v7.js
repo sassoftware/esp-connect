@@ -127,6 +127,7 @@ define([
         this._guidDelegates = {};
         this._loadDelegates = {};
         this._responseDelegates = {};
+        this._delegates = [];
         this._gets = {};
     }
 
@@ -371,6 +372,35 @@ define([
                 delete this._responseDelegates[id];
             }
         }
+        else if (json.hasOwnProperty("project-loaded") || json.hasOwnProperty("project-removed"))
+        {
+            if (json.hasOwnProperty("project-loaded"))
+            {
+                var o = json["project-loaded"];
+                var name = o["name"];
+
+                this._delegates.forEach((d) =>
+                {
+                    if (tools.supports(d,"projectLoaded"))
+                    {
+                        d.projectLoaded(name);
+                    }
+                });
+            }
+            else
+            {
+                var o = json["project-removed"];
+                var name = o["name"];
+
+                this._delegates.forEach((d) =>
+                {
+                    if (tools.supports(d,"projectRemoved"))
+                    {
+                        d.projectRemoved(name);
+                    }
+                });
+            }
+        }
     }
 
     Api.prototype.processXml =
@@ -541,6 +571,28 @@ define([
     function(delegate)
     {
         tools.removeFrom(this._delegates,delegate);
+    }
+
+    Api.prototype.subscribeToProjectUpdates =
+    function()
+    {
+        var    o = {};
+
+        var request = {"project-status":{}};
+        var o = request["project-status"];
+        o["on"] = true;
+        this.sendObject(request);
+    }
+
+    Api.prototype.unsubscribeFromProjectUpdates =
+    function()
+    {
+        var    o = {};
+
+        var request = {"project-status":{}};
+        var o = request["project-status"];
+        o["on"] = false;
+        this.sendObject(request);
     }
 
     Api.prototype.getDatasource =

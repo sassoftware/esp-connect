@@ -20,6 +20,17 @@ if (server == null)
     process.exit(0);
 }
 
+var config = {};
+var cert = opts.getOptAndClear("cert");
+
+if (cert != null)
+{
+    const   fs = require("fs");
+    config.ca = fs.readFileSync(cert);
+}
+
+esp.config = config;
+
 var names = ["access_token","token","credentials"];
 var o = opts.clone(names);
 opts.clearOpts(names);
@@ -50,7 +61,8 @@ showUsage()
         name:"logs",
         summary:"view realtime ESP server logs",
         options:[
-            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true}
+            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
+            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
         ],
         description:"This command sets up a connection to an ESP server and reads the server logs. The logs are output to the screen.",
         see_also:[

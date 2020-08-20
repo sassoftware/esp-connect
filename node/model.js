@@ -20,6 +20,18 @@ if (server == null)
     process.exit(0);
 }
 
+var config = {};
+var cert = opts.getOptAndClear("cert");
+
+if (cert != null)
+{
+    const   fs = require("fs");
+    config.ca = fs.readFileSync(cert);
+}
+
+esp.config = config;
+esp.config = null;
+
 var names = ["access_token","token","credentials"];
 var o = opts.clone(names);
 opts.clearOpts(names);
@@ -45,7 +57,8 @@ showUsage()
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
             {name:"name",arg:"project name",description:"name of the project for which to retrieve the model (defaults to all)"},
-            {name:"schema",arg:"true | false",description:"return schema information in data, defaults to true."}
+            {name:"schema",arg:"true | false",description:"return schema information in data, defaults to true."},
+            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
         ],
         description:"This command subscribes to an ESP window for streaming events.",
         examples:[
