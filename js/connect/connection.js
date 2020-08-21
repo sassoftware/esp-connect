@@ -140,7 +140,7 @@ define([
                 this._conn = connection;
                 this.binaryType = "arraybuffer";
                 var config = {};
-                config.tlsOptions = this._conn._config;
+                config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
 		        W3CWS.call(this,url,null,null,null,null,config);
             }
 

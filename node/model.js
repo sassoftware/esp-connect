@@ -30,7 +30,6 @@ if (cert != null)
 }
 
 esp.config = config;
-esp.config = null;
 
 var names = ["access_token","token","credentials"];
 var o = opts.clone(names);
