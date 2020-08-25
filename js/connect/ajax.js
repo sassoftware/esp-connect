@@ -8,6 +8,19 @@ if (typeof(define) !== "function")
     var define = require("amdefine")(module);
 }
 
+var _isNode = false;
+
+try
+{
+    _isNode = (require("detect-node") != null);
+}
+catch (e)
+{
+}
+
+var _https = _isNode ? require("https") : null;
+var _http = _isNode ? require("http") : null;
+
 define([
     "./xpath",
     "./tools"
@@ -387,13 +400,231 @@ define([
 		return(status);
 	}
 
-	var	__ajax =
-	{
-		create:function(name,url,delegate,context)
-		{
-			return(new Ajax(name,url,delegate,context));
-		}
-	};
+    function
+    NodeAjax(name,url,delegate,context)
+    {
+        this._name = name;
+        this._url = url;
+        this._delegate = delegate;
+        this._context = context;
+        this._options = {};
+        this._response = null;
+        this._responseText = "";
+        this._data = null;
+        this._xml = null;
+    }
+
+    NodeAjax.prototype.get =
+    function(options)
+    {
+        this.setOptions(options);
+        this.send("GET");
+    }
+
+    NodeAjax.prototype.post =
+    function(options)
+    {
+        this.setOptions(options);
+        this.send("POST");
+    }
+
+    NodeAjax.prototype.put =
+    function(options)
+    {
+        this.setOptions(options);
+        this.send("PUT");
+    }
+
+    NodeAjax.prototype.del =
+    function(options)
+    {
+        this.setOptions(options);
+        this.send("DELETE");
+    }
+
+    NodeAjax.prototype.head =
+    function()
+    {
+        this.setOptions(options);
+        this.send("HEAD");
+    }
+
+    NodeAjax.prototype.setOptions =
+    function(options)
+    {
+        if (options != null)
+        {
+            for (var name in options)
+            {
+                this._options[name] = options[name];
+            }
+        }
+    }
+
+    NodeAjax.prototype.send =
+    function(method)
+    {
+        if (method != null)
+        {
+            this._options.method = method;
+        }
+
+        var url = new URL(this._url);
+
+        this._options.hostname = url.hostname;
+        this._options.port = url.port;
+        this._options.path = url.pathname;
+
+        var protocol = url.protocol.toLowerCase();
+
+        if (protocol == "file:")
+        {
+            var filename = this._url.substr(7);
+            var request = this;
+
+            require("fs").readFile(filename,"utf8",function(error,contents) {
+                this._responseText = contents;
+
+                if (error != null)
+                {
+                    if (tools.supports(request._delegate,"error"))
+                    {
+                        request._delegate.error(request,error);
+                    }
+                }
+                else if (tools.supports(request._delegate,"response"))
+                {
+                    request._delegate.response(request,contents,null);
+                }
+            });
+
+            return;
+        }
+
+        var request = (protocol == "https:") ? _https.request(this._options) : _http.request(this._options);
+        var ajax = this;
+
+        request.on("response", function (response) {
+
+            ajax._response = response;
+
+            var contentType = response.headers["content-type"];
+            var content = "";
+
+            response.on("data", function(data) {
+                content += data.toString();
+            });
+
+            response.on("end", function(data) {
+
+                ajax._responseText = content;
+
+                if (contentType.indexOf("text/xml") != -1 || contentType.indexOf("application/xml") != -1)
+                {
+                    ajax._xml = xpath.createXml(content);
+                }
+
+                if (tools.supports(ajax._delegate,"response"))
+                {
+                    ajax._delegate.response(this._ajax,content,ajax._xml);
+                }
+            });
+        });
+
+        request.on("error", function(e) {
+            console.log("got error: " + e.toString());
+        });
+
+        if (this._data != null)
+        {
+            request.write(this._data);
+        }
+
+        request.end();
+    }
+
+    NodeAjax.prototype.setAccept =
+    function(value)
+    {
+        this.setRequestHeader("accept",value);
+    }
+
+    NodeAjax.prototype.setRequestHeaders =
+    function(o)
+    {
+        for (var x in o)
+        {
+            this.setRequestHeader(x,o[x]);
+        }
+    }
+
+    NodeAjax.prototype.setRequestHeader =
+    function(name,value)
+    {
+        this._requestHeaders[name] = value;
+    }
+
+    NodeAjax.prototype.setData =
+    function(data,type)
+    {
+        this._data = data;
+
+        if (type != null)
+        {
+            this.setRequestHeader("content-type",type);
+        }
+    }
+
+    NodeAjax.prototype.getContext =
+    function(value)
+    {
+        return(this._context);
+    }
+
+    NodeAjax.prototype.getName =
+    function()
+    {
+        return(this._name);
+    }
+
+    NodeAjax.prototype.getUrl =
+    function()
+    {
+        return(this._url);
+    }
+
+    NodeAjax.prototype.getResponseText =
+    function()
+    {
+        return(this._responseText);
+    }
+
+    NodeAjax.prototype.getResponseXml =
+    function()
+    {
+        return(this._xml);
+    }
+
+    NodeAjax.prototype.getStatus =
+    function(token)
+    {
+        return((this._response != null) ? this._response.statusCode : 0);
+    }
+
+    var __ajax =
+    {
+        create:function(name,url,delegate,context)
+        {
+            if (_isNode)
+            {
+                return(new NodeAjax(name,url,delegate,context));
+            }
+            else
+            {
+                return(new Ajax(name,url,delegate,context));
+            }
+        }
+    };
 
 	return(__ajax);
 });

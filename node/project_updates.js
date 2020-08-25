@@ -46,15 +46,13 @@ ready(connection)
             console.log("project " + name + " loaded");
         },
 
-        projectRemoved:function(name)
+        projectRemovedx:function(name)
         {
             console.log("project " + name + " removed");
         }
     };
 
-    connection.addDelegate(delegate);
-
-    connection.subscribeToProjectUpdates();
+    connection.addProjectUpdateDelegate(delegate);
 }
 
 function

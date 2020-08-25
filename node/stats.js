@@ -20,6 +20,17 @@ if (server == null)
     process.exit(0);
 }
 
+var config = {};
+var cert = opts.getOptAndClear("cert");
+
+if (cert != null)
+{
+    const   fs = require("fs");
+    config.ca = fs.readFileSync(cert);
+}
+
+esp.config = config;
+
 var names = ["access_token","token","credentials"];
 var o = opts.clone(names);
 opts.clearOpts(names);

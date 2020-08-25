@@ -127,7 +127,7 @@ define([
         this._guidDelegates = {};
         this._loadDelegates = {};
         this._responseDelegates = {};
-        this._delegates = [];
+        this._projectUpdateDelegates = [];
         this._gets = {};
     }
 
@@ -379,12 +379,9 @@ define([
                 var o = json["project-loaded"];
                 var name = o["name"];
 
-                this._delegates.forEach((d) =>
+                this._projectUpdateDelegates.forEach((d) =>
                 {
-                    if (tools.supports(d,"projectLoaded"))
-                    {
-                        d.projectLoaded(name);
-                    }
+                    d.projectLoaded(name);
                 });
             }
             else
@@ -392,12 +389,9 @@ define([
                 var o = json["project-removed"];
                 var name = o["name"];
 
-                this._delegates.forEach((d) =>
+                this._projectUpdateDelegates.forEach((d) =>
                 {
-                    if (tools.supports(d,"projectRemoved"))
-                    {
-                        d.projectRemoved(name);
-                    }
+                    d.projectRemoved(name);
                 });
             }
         }
@@ -561,38 +555,42 @@ define([
         }
     }
 
-    Api.prototype.addDelegate =
+    Api.prototype.addProjectUpdateDelegate =
     function(delegate)
     {
-        tools.addTo(this._delegates,delegate);
+        if (tools.supports(delegate,"projectLoaded") == false || tools.supports(delegate,"projectRemoved") == false)
+        {
+            tools.exception("The project update delegate must implement the projectLoaded and projectRemoved methods");
+        }
+
+        if (tools.addTo(this._projectUpdateDelegates,delegate))
+        {
+            if (this._projectUpdateDelegates.length == 1)
+            {
+                var    o = {};
+                var request = {"project-status":{}};
+                var o = request["project-status"];
+                o["on"] = true;
+                this.sendObject(request);
+            }
+        }
     }
 
-    Api.prototype.removeDelegate =
+    Api.prototype.removeProjectUpdateDelegate =
     function(delegate)
     {
-        tools.removeFrom(this._delegates,delegate);
-    }
+        if (tools.removeFrom(this._projectUpdateDelegates,delegate))
+        {
+            if (this._projectUpdateDelegates.length == 0)
+            {
+                var    o = {};
 
-    Api.prototype.subscribeToProjectUpdates =
-    function()
-    {
-        var    o = {};
-
-        var request = {"project-status":{}};
-        var o = request["project-status"];
-        o["on"] = true;
-        this.sendObject(request);
-    }
-
-    Api.prototype.unsubscribeFromProjectUpdates =
-    function()
-    {
-        var    o = {};
-
-        var request = {"project-status":{}};
-        var o = request["project-status"];
-        o["on"] = false;
-        this.sendObject(request);
+                var request = {"project-status":{}};
+                var o = request["project-status"];
+                o["on"] = false;
+                this.sendObject(request);
+            }
+        }
     }
 
     Api.prototype.getDatasource =

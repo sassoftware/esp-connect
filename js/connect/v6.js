@@ -19,7 +19,7 @@ catch (e)
 }
 
 define([
-    "./connection",
+   "./connection",
     "./resources",
     "./model",
     "./schema",
@@ -258,6 +258,18 @@ define([
         }
     }
 
+    Api.prototype.addProjectUpdateDelegate =
+    function(delegate)
+    {
+        tools.exception("addProjectUpdateDelegate is not supported");
+    }
+
+    Api.prototype.removeProjectUpdateDelegate =
+    function(delegate)
+    {
+        tools.exception("removeProjectUpdateDelegate is not supported");
+    }
+
     Api.prototype.data =
     function(o)
     {
@@ -328,6 +340,7 @@ define([
                 return(this._publishers[id]);
             }
         }
+
         var publisher = new Publisher(this,options);
         this._publishers[publisher._id] = publisher;
         publisher.open();
@@ -392,7 +405,7 @@ define([
         }
 
         var url = this.getUrl("publishers/" + path);
-        var connection = Connection.createDelegateConnection(o,url,opts.getOpts());
+        var connection = Connection.createDelegateConnection(o,url,opts.getOpts(),this._connection._connect.config);
         connection.authorization = this._connection.authorization;
         connection.start();
     }
@@ -442,19 +455,6 @@ define([
     Api.prototype.get =
     function(url,delegate,opts)
     {
-        var request = {"get":{}};
-        var o = request["get"];
-        var id = tools.guid();
-        o["id"] = id;
-        o["url"] = url;
-        o["format"] = "ubjson";
-
-        var get = {};
-        get["delegate"] = delegate;
-        get["options"] = new Options(opts);
-        this._gets[id] = get;
-
-        this.sendObject(request);
     }
 
     Api.prototype.loadModel =
@@ -484,7 +484,7 @@ define([
             }
         };
 
-        this.createRequest("load",url,o).get();
+        this.createRequest("load",url,o).get(this._connection._config);
     }
 
     Api.prototype.loadUrl =
@@ -1707,7 +1707,7 @@ define([
         {
             opts.interval = interval;
         }
-        this._connection = Connection.createDelegateConnection(this,url,opts);
+        this._connection = Connection.createDelegateConnection(this,url,opts,this._api.connection._connect.config);
         this._connection.authorization = this._api._connection.authorization;
         this._connection.start();
         this.setIntervalProperty();
@@ -2087,7 +2087,7 @@ define([
         {
             opts.maxevents = this.getOpt("maxevents");
         }
-        this._connection = Connection.createDelegateConnection(this,url,opts);
+        this._connection = Connection.createDelegateConnection(this,url,opts,this._api.connection._connect.config);
         this._connection.authorization = this._api._connection.authorization;
         this._connection.start();
 
@@ -2520,7 +2520,7 @@ define([
             opts["format"] = "xml";
 
             var url = this._api.getUrl("projectStats");
-            this._connection = Connection.createDelegateConnection(this,url,opts);
+            this._connection = Connection.createDelegateConnection(this,url,opts,this._api.connection._connect.config);
             this._connection.authorization = this._api._connection.authorization;
             this._connection.start();
         }
@@ -2632,7 +2632,7 @@ define([
         if (this._connection == null)
         {
             var url = this._api.getUrl("logs");
-            this._connection = Connection.createDelegateConnection(this,url);
+            this._connection = Connection.createDelegateConnection(this,url,null,this._api.connection._connect.config);
             this._connection.authorization = this._api._connection.authorization;
             this._connection.start();
         }
@@ -2725,7 +2725,7 @@ define([
         }
 
         var url = this._api.getUrl("publishers/" + this._path,opts);
-        this._connection = Connection.createDelegateConnection(this,encodeURI(url),opts);
+        this._connection = Connection.createDelegateConnection(this,encodeURI(url),opts,this._api.connection._connect.config);
         this._connection.authorization = this._api._connection.authorization;
         this._connection.start();
     }

@@ -177,7 +177,7 @@ define([
 
                     if (conn != null)
                     {
-                        console.log(conn.getUrl() + ": " + e);
+                        console.log("websocket error: " + conn.getUrl());
                         conn.clear();
                         conn.error();
                     }
@@ -756,9 +756,9 @@ define([
     }
 
 	function
-    DelegateConnection(delegate,host,port,path,secure,options)
+    DelegateConnection(delegate,host,port,path,secure,options,config)
     {
-		Connection.call(this,host,port,path,secure,options);
+		Connection.call(this,host,port,path,secure,options,config);
         this._delegate = delegate;
     }
 
@@ -834,10 +834,10 @@ define([
     }
 
     Connection.createDelegateConnection =
-    function(delegate,url,options)
+    function(delegate,url,options,config)
     {
         var u = tools.createUrl(decodeURI(url));
-        var conn = new DelegateConnection(delegate,u["host"],u["port"],u["path"],u["secure"],options);
+        var conn = new DelegateConnection(delegate,u["host"],u["port"],u["path"],u["secure"],options,config);
         return(conn);
     }
 

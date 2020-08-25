@@ -117,7 +117,6 @@ define([
                 {
                     var W3CWS = require("websocket").w3cwebsocket;
 
-console.log("create it: " + url);
                     ws = new W3CWS(url);
 
                     if (tools.supports(delegate,"open"))
