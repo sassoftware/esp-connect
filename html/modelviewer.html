@@ -170,8 +170,8 @@ setup()
     _schema.id = "schema";
 
     var fields = new Array();
-    fields.push({name:"name","type":"string"});
-    fields.push({name:"type","type":"string"});
+    fields.push({name:"name","type":"string",label:"Field"});
+    fields.push({name:"type","type":"string",label:"Type"});
 
     _schemaTable = _visuals.createSimpleTable(_schema,{name:"schema",key:"name",owner_draw:["name"]});
     _schemaTable.drawCell = drawCell;
@@ -265,7 +265,7 @@ drawCell(table,name,item,td)
     if (table.name == "schema")
     {
         var value = item[name];
-        if (item._data.isKey)
+        if (item._data.iskey)
         {
             value += "*";
         }
@@ -510,7 +510,7 @@ nodeHandler(w)
         {
             xml.innerText = _selected.xmlsource;
         }
-        var fields = _selected.schema.getFields();
+        var fields = _selected.schema.getFieldDescriptors();
         if (_schemaTable != null)
         {
             _schemaTable.setData(fields,true);
@@ -724,8 +724,8 @@ loadPublishWindow(key)
 
         tr.appendChild(td = document.createElement("td"));
         td.className = "field";
-        text = f.name;
-        if (f.isKey)
+        text = f.getOpt("label",f.getOpt("name"));
+        if (f.getOpt("iskey",false))
         {
             text += "*";
         }
@@ -764,7 +764,7 @@ setGuid()
         for (var i = 1; i < table.rows.length; i++)
         {
             f = fields[i - 1];
-            if (f.isKey == false)
+            if (f.getOpt("iskey",false) == false)
             {
                 continue;
             }
@@ -1041,13 +1041,13 @@ publishData()
                 f = fields[i - 1];
                 tr = table.rows[i];
                 input = tr.cells[1].firstChild;
-                if (f.isKey)
+                if (f.getOpt("iskey",false))
                 {
-                    o[f.name] = (_genGuid.checked) ? _esp.guid() : input.value;
+                    o[f.getOpt("name")] = (_genGuid.checked) ? _esp.guid() : input.value;
                 }
                 else
                 {
-                    o[f.name] = input.value;
+                    o[f.getOpt("name")] = input.value;
                 }
             }
 

@@ -211,11 +211,14 @@ define([
 
         contains(list,o)
         {
-            for (var i = 0; i < list.length; i++)
+            if (list != null)
             {
-                if (list[i] == o)
+                for (var i = 0; i < list.length; i++)
                 {
-                    return(true);
+                    if (list[i] == o)
+                    {
+                        return(true);
+                    }
                 }
             }
 
@@ -224,11 +227,14 @@ define([
 
         indexOf(list,o)
         {
-            for (var i = 0; i < list.length; i++)
+            if (list != null)
             {
-                if (list[i] == o)
+                for (var i = 0; i < list.length; i++)
                 {
-                    return(i);
+                    if (list[i] == o)
+                    {
+                        return(i);
+                    }
                 }
             }
 

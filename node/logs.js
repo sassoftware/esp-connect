@@ -43,7 +43,7 @@ ready(connection)
     var delegate = {
         handleLog:function(log,message)
         {
-            console.log(message);
+            console.log(JSON.stringify(message));
         }
     };
 

@@ -64,67 +64,70 @@ define([
         this._columns = [];
 
         var name;
+        var type;
         var o;
 
         fields.forEach((f) =>
         {
-            o = {};
+            o = new Options();
 
             name = f["name"];
-            o["name"] = name;
-            o["espType"] = f["type"];
-            o["isNumber"] = false;
-            o["isTime"] = false;
-            o["isDate"] = false;
-            o["isArray"] = false;
+            o.setOpt("name",name);
+            o.setOpt("espType",f["type"]);
+            o.setOpt("isNumber",false);
+            o.setOpt("isTime",false);
+            o.setOpt("isDate",false);
+            o.setOpt("isArray",false);
 
             if (f.hasOwnProperty("label"))
             {
-                o["label"] = f["label"];
+                o.setOpt("label",f["label"]);
             }
 
-            if (o["espType"] == "utf8str")
+            type = o.getOpt("espType");
+
+            if (type == "utf8str")
             {
-                o["type"] = "string";
+                o.setOpt("type","string");
             }
-            else if (o["espType"] == "int32" || o["espType"] == "int64")
+            else if (type == "int32" || type == "int64")
             {
-                o["type"] = "int";
-                o["isNumber"] = true;
+                o.setOpt("type","int");
+                o.setOpt("isNumber",true);
             }
-            else if (o["espType"] == "double" || o["espType"] == "money")
+            else if (type == "double" || type == "money")
             {
-                o["type"] = "float";
-                o["isNumber"] = true;
+                o.setOpt("type","float");
+                o.setOpt("isNumber",true);
             }
-            else if (o["espType"] == "array(dbl)")
+            else if (type == "array(dbl)")
             {
-                o["type"] = "float";
-                o["isNumber"] = true;
-                o["isArray"] = true;
+                o.setOpt("type","float");
+                o.setOpt("isNumber",true);
+                o.setOpt("isArray",true);
             }
-            else if (o["espType"] == "array(i32)" || o["espType"] == "array(i64)")
+            else if (type == "array(i32)" || type == "array(i64)")
             {
-                o["type"] = "int";
-                o["isNumber"] = true;
-                o["isArray"] = true;
+                o.setOpt("type","int");
+                o.setOpt("isNumber",true);
+                o.setOpt("isArray",true);
             }
-            else if (o["espType"] == "date")
+            else if (type == "date")
             {
-                o["type"] = "date";
-                o["isDate"] = true;
+                o.setOpt("type","date");
+                o.setOpt("isDate",true);
             }
-            else if (o["espType"] == "timestamp")
+            else if (type == "timestamp")
             {
-                o["type"] = "datetime";
-                o["isTime"] = true;
+                o.setOpt("type","datetime");
+                o.setOpt("isTime",true);
             }
             else
             {
-                o["type"] = o["espType"];
+                o.setOpt("type",type);
             }
 
-            o["isKey"] = (f.hasOwnProperty("key") && f["key"] == "true");
+            o.setOpt("isKey",(f.hasOwnProperty("key") && f["key"] == "true"));
 
             this._fields.push(o);
             this._columns.push(name);
@@ -147,69 +150,73 @@ define([
         this._columns = [];
 
         var name;
+        var type;
         var o;
 
         for (var f of xpath.getNodes(".//fields/field",xml))
         {
-            o = {};
+            o = new Options();
 
             name = f.getAttribute("name");
-            o["name"] = name;
-            o["espType"] = f.getAttribute("type");
-            o["isNumber"] = false;
-            o["isTime"] = false;
-            o["isDate"] = false;
-            o["isArray"] = false;
 
-            if (o["espType"] == "utf8str")
+            o.setOpt("name",name);
+            o.setOpt("espType",f.getAttribute("type"));
+            o.setOpt("isNumber",false);
+            o.setOpt("isTime",false);
+            o.setOpt("isDate",false);
+            o.setOpt("isArray",false);
+
+            type = o.getOpt("espType");
+
+            if (type == "utf8str")
             {
-                o["type"] = "string";
+                o.setOpt("type","string");
             }
-            else if (o["espType"] == "int32" || o["espType"] == "int64")
+            else if (type == "int32" || type == "int64")
             {
-                o["type"] = "int";
-                o["isNumber"] = true;
+                o.setOpt("type","int");
+                o.setOpt("isNumber",true);
             }
-            else if (o["espType"] == "double" || o["espType"] == "money")
+            else if (type == "double" || type == "money")
             {
-                o["type"] = "float";
-                o["isNumber"] = true;
+                o.setOpt("type","float");
+                o.setOpt("isNumber",true);
             }
-            else if (o["espType"] == "array(dbl)")
+            else if (type == "array(dbl)")
             {
-                o["type"] = "float";
-                o["isNumber"] = true;
-                o["isArray"] = true;
+                o.setOpt("type","float");
+                o.setOpt("isNumber",true);
+                o.setOpt("isArray",true);
             }
-            else if (o["espType"] == "array(i32)" || o["espType"] == "array(i64)")
+            else if (type == "array(i32)" || type == "array(i64)")
             {
-                o["type"] = "int";
-                o["isNumber"] = true;
-                o["isArray"] = true;
+                o.setOpt("type","int");
+                o.setOpt("isNumber",true);
+                o.setOpt("isArray",true);
             }
-            else if (o["espType"] == "date")
+            else if (type == "date")
             {
-                o["type"] = "date";
-                o["isDate"] = true;
+                o.setOpt("type","date");
+                o.setOpt("isDate",true);
             }
-            else if (o["espType"] == "timestamp")
+            else if (type == "timestamp")
             {
-                o["type"] = "datetime";
-                o["isTime"] = true;
+                o.setOpt("type","datetime");
+                o.setOpt("isTime",true);
             }
             else
             {
-                o["type"] = o["espType"];
+                o.setOpt("type",type);
             }
 
-            o["isKey"] = (f.getAttribute("key") == "true");
+            o.setOpt("isKey",(f.getAttribute("key") == "true"));
 
             this._fields.push(o);
             this._columns.push(name);
 
             this._fieldMap[name] = o;
 
-            if (o["isKey"])
+            if (o.getOpt("isKey",false))
             {
                 this._keyFields.push(o);
             }
@@ -235,69 +242,72 @@ define([
         this._columns = [];
 
         var name;
+        var type;
         var o;
 
         json.fields.forEach((f) =>
         {
-            o = {};
+            o = new Options();
 
             name = f["@name"];
-            o["name"] = name;
-            o["espType"] = f["@type"];
-            o["isNumber"] = false;
-            o["isTime"] = false;
-            o["isDate"] = false;
-            o["isArray"] = false;
+            o.setOpt("name",name);
+            o.setOpt("espType",f["@type"]);
+            o.setOpt("isNumber",false);
+            o.setOpt("isTime",false);
+            o.setOpt("isDate",false);
+            o.setOpt("isArray",false);
 
-            if (o["espType"] == "utf8str")
+            type = o.getOpt("espType");
+
+            if (type == "utf8str")
             {
-                o["type"] = "string";
+                o.setOpt("type","string");
             }
-            else if (o["espType"] == "int32" || o["espType"] == "int64")
+            else if (type == "int32" || type == "int64")
             {
-                o["type"] = "int";
-                o["isNumber"] = true;
+                o.setOpt("type","int");
+                o.setOpt("isNumber",true);
             }
-            else if (o["espType"] == "double" || o["espType"] == "money")
+            else if (type == "double" || type == "money")
             {
-                o["type"] = "float";
-                o["isNumber"] = true;
+                o.setOpt("type","float");
+                o.setOpt("isNumber",true);
             }
-            else if (o["espType"] == "array(dbl)")
+            else if (type == "array(dbl)")
             {
-                o["type"] = "float";
-                o["isNumber"] = true;
-                o["isArray"] = true;
+                o.setOpt("type","float");
+                o.setOpt("isNumber",true);
+                o.setOpt("isArray",true);
             }
-            else if (o["espType"] == "array(i32)" || o["espType"] == "array(i64)")
+            else if (type == "array(i32)" || type == "array(i64)")
             {
-                o["type"] = "int";
-                o["isNumber"] = true;
-                o["isArray"] = true;
+                o.setOpt("type","int");
+                o.setOpt("isNumber",true);
+                o.setOpt("isArray",true);
             }
-            else if (o["espType"] == "date")
+            else if (type == "date")
             {
-                o["type"] = "date";
-                o["isDate"] = true;
+                o.setOpt("type","date");
+                o.setOpt("isDate",true);
             }
-            else if (o["espType"] == "timestamp")
+            else if (type == "timestamp")
             {
-                o["type"] = "datetime";
-                o["isTime"] = true;
+                o.setOpt("type","datetime");
+                o.setOpt("isTime",true);
             }
             else
             {
-                o["type"] = o["espType"];
+                o.setOpt("type",type);
             }
 
-            o["isKey"] = (f.hasOwnProperty("@key") && f["@key"] == "true");
+            o.setOpt("isKey",(f.hasOwnProperty("@key") && f["@key"] == "true"));
 
             this._fields.push(o);
             this._columns.push(name);
 
             this._fieldMap[name] = o;
 
-            if (o["isKey"])
+            if (o.getOpt("isKey",false))
             {
                 this._keyFields.push(o);
             }
@@ -325,6 +335,16 @@ define([
         return(this._fields)
     }
 
+    Schema.prototype.getFieldDescriptors =
+    function(name)
+    {
+        var a = [];
+        this._fields.forEach((f) => {
+            a.push(f.getOpts());
+        });
+        return(a);
+    }
+
     Schema.prototype.getKeyFields =
     function()
     {
@@ -338,7 +358,7 @@ define([
 
         for (var f of this._fields)
         {
-            if (f["isKey"] == false)
+            if (f.getOpt("isKey",false) == false)
             {
                 fields.push(f);
             }
@@ -356,7 +376,7 @@ define([
         {
             for (f of fields)
             {
-                names.push(f["name"]);
+                names.push(f.getOpt("name"));
             }
         }
         return(names);
@@ -492,7 +512,7 @@ define([
                 {
                     if ((field = this.getField(headers[j])) != null)
                     {
-                        o[field["name"]] = a[j];
+                        o[field.getOpt("name")] = a[j];
                     }
                 }
             }
@@ -537,7 +557,7 @@ define([
                     if (index < fields.length)
                     {
                         field = fields[index];
-                        o[field["name"]] = a[j];
+                        o[field.getOpt("name")] = a[j];
                         index++;
                     }
                 }

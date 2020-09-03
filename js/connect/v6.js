@@ -37,6 +37,7 @@ define([
         Options.call(this,options);
 
         this._connection = connection;
+        this._version - 6.2;
 
         Object.defineProperty(this,"connection", {
             get() {
@@ -52,7 +53,10 @@ define([
 
         Object.defineProperty(this,"version", {
             get() {
-                return(6.2);
+                return(this._version);
+            },
+            set(value) {
+                this._version = parseFloat(value);
             }
         });
 
@@ -128,6 +132,24 @@ define([
         this._loadDelegates = {};
         this._responseDelegates = {};
         this._gets = {};
+    }
+
+    Api.prototype.versionGreaterThan =
+    function(version)
+    {
+        return(this._version > version);
+    }
+
+    Api.prototype.versionLessThan =
+    function(version)
+    {
+        return(this._version < version);
+    }
+
+    Api.prototype.stop =
+    function()
+    {
+        this._connection.stop();
     }
 
     Api.prototype.formUrl =
@@ -231,8 +253,8 @@ define([
             return;
         }
 
-        var    xml = null;
-        var    json = null;
+        var xml = null;
+        var json = null;
 
         for (var i = 0; i < data.length; i++)
         {
@@ -905,7 +927,7 @@ define([
 
         this._schema._keyFields.forEach((f) =>
         {
-            name = f["name"];
+            name = f.getOpt("name");
 
             if (o.hasOwnProperty(name) == false)
             {
@@ -920,7 +942,7 @@ define([
             key += o[name];
         });
 
-        return(key)
+        return(key);
     }
 
     Datasource.prototype.toggleSelectedKeys =
@@ -1174,7 +1196,7 @@ define([
         }
 
         var values = [];
-        var numeric = f["isNumber"];
+        var numeric = f.getOpt("isNumber",false);
 
         if (Array.isArray(this._data) || this._list != null)
         {
@@ -1272,13 +1294,13 @@ define([
                 throw("field " + s + " not found");
             }
 
-            if (keyfilter != null && keyfilter.hasOwnProperty(f.name))
+            if (keyfilter != null && keyfilter.hasOwnProperty(f.getOpt("name")))
             {
                 continue;
             }
 
             keyFields.push(f);
-            keyFieldValues[f.name] = [];
+            keyFieldValues[f.getOpt("name")] = [];
         }
 
         var dateKeys = false;
@@ -1288,11 +1310,11 @@ define([
         {
             f = keyFields[0];
 
-            if (f["isDate"])
+            if (f.getOpt("isDate",false))
             {
                 dateKeys = true;
             }
-            else if (f["isTime"])
+            else if (f.getOpt("isTime",false))
             {
                 timeKeys = true;
             }
@@ -1361,7 +1383,7 @@ define([
 
             keyFields.forEach((f) =>
             {
-                name = f["name"];
+                name = f.getOpt("name");
                 if (o.hasOwnProperty(name))
                 {
                     value = o[name];
@@ -1387,7 +1409,7 @@ define([
                 entry = {};
                 for (f of valueFields)
                 {
-                    name = f["name"];
+                    name = f.getOpt("name");
                     entry[name] = 0.0;
                 }
                 data[key] = {key:key,data:entry,selected:this.isSelected(o)};
@@ -1395,9 +1417,9 @@ define([
 
             for (f of valueFields)
             {
-                if (f["isNumber"])
+                if (f.getOpt("isNumber",false))
                 {
-                    name = f["name"];
+                    name = f.getOpt("name");
                     entry[name] += parseFloat(o[name]);
                 }
             }
@@ -1407,7 +1429,7 @@ define([
 
         for (f of valueFields)
         {
-            name = f["name"];
+            name = f.getOpt("name");
             values[name] = [];
         }
 
@@ -1442,8 +1464,8 @@ define([
 
             for (f of valueFields)
             {
-                name = f["name"];
-                if (f["isNumber"])
+                name = f.getOpt("name");
+                if (f.getOpt("isNumber",false))
                 {
                     values[name].push(parseFloat(entry[name]));
                 }
@@ -1753,7 +1775,7 @@ define([
     EventCollection.prototype.message =
     function(data)
     {
-        var    xml = xpath.createXml(data);
+        var xml = xpath.createXml(data);
         var root = xml.documentElement;
         if (root.tagName == "schema")
         {
@@ -2104,7 +2126,7 @@ define([
     EventStream.prototype.message =
     function(data)
     {
-        var    xml = xpath.createXml(data);
+        var xml = xpath.createXml(data);
         var root = xml.documentElement;
         if (root.tagName == "schema")
         {
@@ -2185,25 +2207,25 @@ define([
     {
         for (var i = 0; i < this._schema._fields.length; i++)
         {
-            this._schema._fields[i].isKey = false;
+            this._schema._fields[i].setOpt("isKey",false);
         }
 
         var f;
 
-        f = {"name":"@opcode","espType":"utf8str","type":"string","isKey":false,"isNumber":false,"isDate":false,"isTime":false};
+        f = new Options({"name":"@opcode","espType":"utf8str","type":"string","isKey":false,"isNumber":false,"isDate":false,"isTime":false});
         this._schema._fields.unshift(f);
-        this._schema._columns.unshift(f["name"]);
-        this._schema._fieldMap[f["name"]] = f;
+        this._schema._columns.unshift(f.getOpt("name"));
+        this._schema._fieldMap[f.getOpt("name")] = f;
 
-        f = {"name":"@timestamp","espType":"timestamp","type":"date","isKey":false,"isNumber":true,"isDate":false,"isTime":true};
+        f = new Options({"name":"@timestamp","espType":"timestamp","type":"date","isKey":false,"isNumber":true,"isDate":false,"isTime":true});
         this._schema._fields.unshift(f);
-        this._schema._columns.unshift(f["name"]);
-        this._schema._fieldMap[f["name"]] = f;
+        this._schema._columns.unshift(f.getOpt("name"));
+        this._schema._fieldMap[f.getOpt("name")] = f;
 
-        f = {"name":"@counter","espType":"int32","type":"int","isKey":true,"isNumber":true,"isDate":false,"isTime":false};
+        f = new Options({"name":"@counter","espType":"int32","type":"int","isKey":true,"isNumber":true,"isDate":false,"isTime":false});
         this._schema._fields.unshift(f);
-        this._schema._columns.unshift(f["name"]);
-        this._schema._fieldMap[f["name"]] = f;
+        this._schema._columns.unshift(f.getOpt("name"));
+        this._schema._fieldMap[f.getOpt("name")] = f;
 
         this._schema._keyFields = [f];
     }
@@ -2649,10 +2671,52 @@ define([
     }
 
     Log.prototype.message =
-    function(data)
+    function(text)
     {
+        var o = {};
+        o["_timestamp"] = text.substr(0,19);
+
+        var i1 = text.indexOf("[");
+        var i2;
+
+        if (i1 != -1)
+        {
+            i2 = text.indexOf("]",i1);
+
+            if (i2 != -1)
+            {
+                var s = text.substring(i1 + 1,i2 - 1)
+                var a = s.split(":");
+
+                if (a.length == 3)
+                {
+                    o["logLevel"] = a[0];
+                    o["messageFile"] = a[1];
+                    o["messageLine"] = a[2];
+                }
+            }
+        }
+
+        if (i2 != -1)
+        {
+            var i1 = text.indexOf("[",i2 + 1);
+
+            if (i1 != -1)
+            {
+                i2 = text.indexOf("]",i1 + 1);
+            }
+
+            if (i2 != -1)
+            {
+                var s = text.substr(i2 + 1);
+                s = text.replace(this._newlines,"<br/>");
+                s = text.replace(this._spaces,"&nbsp;");
+                o["messageContent"] = s;
+            }
+        }
+
         this._delegates.forEach((d) => {
-            d.handleLog(this,data);
+            d.handleLog(this,o);
         });
     }
 
@@ -2915,7 +2979,7 @@ define([
             return;
         }
 
-        this._csv.items = this._schema.createDataFromCsv(this._csv.data);
+        this._csv.items = this._schema.createDataFromCsv(this._csv.data,this._csv.options.getOpts());
 
         var pause = this._csv.options.getOpt("pause",0);
         var opcode = this._csv.options.getOpt("opcode","insert");

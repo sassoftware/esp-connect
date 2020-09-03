@@ -144,7 +144,7 @@ ready(connection)
     if (_viewer == null)
     {
         _parms.enable_controls = true;
-        _parms.show_header = false;
+        //_parms.show_header = false;
         _parms.max = _maxentries;
         _viewer = _visuals.createLogViewer("viewer",null,_parms);
         _esp.size();
@@ -169,7 +169,10 @@ showLoggers()
 function
 handleLoggers(connection,data)
 {
-    _loggerTable.setData(data);
+    if (Array.isArray(data))
+    {
+        _loggerTable.setData(data);
+    }
 }
 
 function

@@ -2292,6 +2292,7 @@ define([
         var values = this.getTableValues();
         var fields = [];
         var field;
+        var type;
         var tr;
         var th;
 
@@ -2316,11 +2317,13 @@ define([
                 th.className = "first";
             }
 
-            if (field.type == "int" || field.type == "float")
+            type = field.getOpt("type","");
+
+            if (type == "int" || type == "float")
             {
                 th.style.textAlign = "right";
             }
-            th.innerHTML = field["name"];
+            th.innerHTML = field.getOpt("name");
             tr.appendChild(th);
         }
 
@@ -2460,7 +2463,7 @@ define([
                     td.className = "first";
                 }
 
-                name = field["name"];
+                name = field.getOpt("name");
 
                 if (draw != null)
                 {
@@ -2535,8 +2538,8 @@ define([
 
                 text = item.hasOwnProperty(name) ? item[name] : "";
 
-                esptype = field["espType"];
-                type = field["type"];
+                esptype = field.getOpt("espType");
+                type = field.getOpt("type");
 
                 if (esptype == "date" || esptype == "datetime")
                 {
@@ -2548,7 +2551,7 @@ define([
                 }
                 else if (type == "int" || type == "float")
                 {
-                    if (field.isKey == false)
+                    if (field.getOpt("isKey",false) == false)
                     {
                         var    num = new Number(text);
                         text = num.toLocaleString();
@@ -2556,7 +2559,7 @@ define([
                     }
                 }
 
-                if (text != null && field.type == "blob")
+                if (text != null && type == "blob")
                 {
 				    var	div = document.createElement("div");
                     var canvas = document.createElement("canvas");
@@ -2687,12 +2690,12 @@ define([
             {
                 for (var f of this._datasource.schema.getKeyFields())
                 {
-                    values.push(f["name"]);
+                    values.push(f.getOpt("name"));
                 }
 
                 for (var f of this._datasource.schema.getColumnFields())
                 {
-                    values.push(f["name"]);
+                    values.push(f.getOpt("name"));
                 }
             }
         }

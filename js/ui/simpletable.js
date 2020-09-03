@@ -59,6 +59,18 @@ define([
                 return(this._map);
             }
         });
+
+        Object.defineProperty(this,"length", {
+            get() {
+                return(this._list.length);
+            }
+        });
+
+        Object.defineProperty(this,"fields", {
+            get() {
+                return(this._schema.getFields());
+            }
+        });
     }
 
     SimpleTable.prototype = Object.create(Options.prototype);
@@ -74,6 +86,72 @@ define([
     function(fields)
     {
         this._schema.setFields(fields);
+
+        fields.forEach((f) => {
+            if (f.hasOwnProperty("hidden") && f.hidden)
+            {
+                this.hide(f.name);
+            }
+
+            if (f.hasOwnProperty("nobr") && f.nobr)
+            {
+                this.setProperty(f.name,"nobr");
+            }
+        });
+    }
+
+    SimpleTable.prototype.hide =
+    function(name)
+    {
+        this.setProperty(name,"hidden");
+    }
+
+    SimpleTable.prototype.unhide =
+    function(name)
+    {
+        this.unsetProperty(name,"hidden");
+    }
+
+    SimpleTable.prototype.isHidden =
+    function(name)
+    {
+        return(this.isSet(name,"hidden"));
+    }
+
+    SimpleTable.prototype.setProperty =
+    function(name,property)
+    {
+        var field = this._schema.getField(name);
+
+        if (field != null)
+        {
+            field.setOpt(property,true);
+        }
+    }
+
+    SimpleTable.prototype.unsetProperty =
+    function(name,property)
+    {
+        var field = this._schema.getField(name);
+
+        if (field != null)
+        {
+            field.clearOpt(property);
+        }
+    }
+
+    SimpleTable.prototype.isSet =
+    function(name,property)
+    {
+        var code = false;
+        var field = this._schema.getField(name);
+
+        if (field != null)
+        {
+            code = field.getOpt(property);
+        }
+
+        return(code);
     }
 
     SimpleTable.prototype.setData =
@@ -84,10 +162,13 @@ define([
         {
             this.clear();
         }
-        data.forEach((d) =>
+        if (data != null)
         {
-            this.setItem(d);
-        });
+            data.forEach((d) =>
+            {
+                this.setItem(d);
+            });
+        }
         this.release();
     }
 
@@ -167,7 +248,7 @@ define([
 
         this._schema.getFields().forEach((field) =>
         {
-            name = field["name"];
+            name = field.getOpt("name");
 
             if (data.hasOwnProperty(name))
             {
@@ -194,6 +275,39 @@ define([
         return(this._map.hasOwnProperty(key) ? this._map[key] : null);
     }
 
+    SimpleTable.prototype.removeItem =
+    function(data)
+    {
+        var key = (typeof data == "string") ? data : ((data.hasOwnProperty(this._keyfield)) ? data[this._keyfield] : null);
+
+        if (key == null)
+        {
+            return(false);
+        }
+
+        var item = this.getItem(key);
+        var code = false;
+
+        if (item != null)
+        {
+            delete this._map[key];
+            tools.removeFrom(this._list,item);
+            code = true;
+        }
+
+        return(code);
+    }
+
+    SimpleTable.prototype.removeHead =
+    function(num)
+    {
+        var items = this._list.splice(0,num);
+        items.forEach((item) => {
+            delete this._map[item._key];
+        });
+        this.draw();
+    }
+
     SimpleTable.prototype.draw =
     function()
     {
@@ -205,6 +319,7 @@ define([
         this.size();
 
         var label;
+        var type;
         var tr;
         var th;
 
@@ -213,8 +328,13 @@ define([
         var fields = this._schema.getFields();
         var column = 0;
 
-        fields.forEach((field) =>
+        for (var field of fields)
         {
+            if (field.getOpt("hidden",false))
+            {
+                continue;
+            }
+
             th = document.createElement("th");
 
             if (column == 0)
@@ -222,22 +342,25 @@ define([
                 th.className = "first";
             }
 
-            if (field.type == "int" || field.type == "float")
+            type = field.getOpt("type","");
+
+            if (type == "int" || type == "float")
             {
                 th.style.textAlign = "right";
             }
-            label = field.hasOwnProperty("label") ? field.label : field.name;
+            label = field.getOpt("label",field.getOpt("name"));
             th.innerHTML = label;
             tr.appendChild(th);
 
             column++;
-        });
+        }
 
         var table = this;
         var ownerdraw = this.getOpt("owner_draw");
         var row = 0;
         var show = null;
         var text;
+        var type;
         var name;
         var td;
 
@@ -269,9 +392,15 @@ define([
 
             column = 0;
 
-            fields.forEach((field) =>
+            for (var field of fields)
             {
-                name = field["name"];
+                if (field.getOpt("hidden",false))
+                {
+                    continue;
+                }
+
+                name = field.getOpt("name");
+                type = field.getOpt("type");
 
                 td = document.createElement("td");
 
@@ -280,7 +409,7 @@ define([
                     td.className = "first";
                 }
 
-                if (field.type == "int" || field.type == "float")
+                if (type == "int" || type == "float")
                 {
                     td.style.textAlign = "right";
                 }
@@ -304,12 +433,16 @@ define([
                     {
                         text = "&nbsp;";
                     }
+                    else if (field.getOpt("nobr",false))
+                    {
+                        text = "<nobr>" + text + "</nobr>";
+                    }
 
                     td.innerHTML = text;
                 }
 
                 column++;
-            });
+            }
 
             row++;
         });
@@ -319,9 +452,20 @@ define([
             tr.className = "last";
         }
 
-        if (show)
+        if (show == null)
         {
-            show.scrollIntoView(false);
+            if (this.getOpt("tail",false))
+            {
+                show = tr;
+            }
+        }
+
+        if (show != null)
+        {
+            if (show.offsetTop < this._container.scrollTop || show.offsetTop > (this._container.scrollTop + this._container.offsetHeight))
+            {
+                show.scrollIntoView(false);
+            }
         }
     }
 
@@ -504,6 +648,27 @@ define([
     {
         this.size();
     }
+
+    /*
+    SimpleTable.prototype.toString =
+    function()
+    {
+        var s = "";
+
+        this._list.forEach((item) => {
+            this._schema.getFields().forEach((field) => {
+                if (item.hasOwnProperty(field.getOpt("name")))
+                {
+                    s += field.getOpt("name");
+                    s += "=";
+                    s += item[field.getOpt("name")];
+                }
+            });
+        });
+
+        return(s);
+    }
+    */
 
     return(SimpleTable);
 });

@@ -67,6 +67,8 @@ define([
 
         if (this._impl != null)
         {
+            this._impl.version = version;
+
             for (var d of this._delegates)
             {
                 if (tools.supports(d,"ready"))

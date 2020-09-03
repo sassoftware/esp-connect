@@ -12,8 +12,9 @@ define([
     "../connect/model",
     "../connect/options",
     "../connect/tools",
-    "./chart"
-], function(Model,Options,tools,Chart)
+    "./chart",
+    "./simpletable"
+], function(Model,Options,tools,Chart,SimpleTable)
 {
     function
     Viewers(options)
@@ -1081,7 +1082,7 @@ define([
     function
     filterLogViewer()
     {
-        this._viewer._conn.getLog().filter = this._viewer._filter.value;
+        this._viewer._connection.getLog().filter = this._viewer._filter.value;
         this._viewer.draw();
     }
 
@@ -1094,11 +1095,51 @@ define([
     function
     copyLog()
     {
-        var text = this._viewer._code;
-        text.setSelectionRange(0,text.value.length);
-        text.focus();
+        var copy = this._viewer._copy;
+
+        if (copy == null)
+        {
+            copy = document.createElement("textarea");
+            copy.style.display.width = "1px";
+            copy.style.display.height = "1px";
+            copy.style.display.left = "-10px";
+            copy.style.display.top = "-10px";
+            document.body.appendChild(copy);
+            this._viewer._copy = copy;
+        }
+
+        var s = "";
+        var value;
+
+        const   newlines = /\<br\/\>/gi;
+        const   spaces = /&nbsp;/gi;
+
+        this._viewer._table.items.forEach((item) => {
+            this._viewer._table.fields.forEach((field) => {
+                if (this._viewer._table.isHidden(field.name) == false)
+                {
+                    value = item[field.name];
+
+                    if (field.name == "messageContent")
+                    {
+                        value = value.replace(newlines,"\n");
+                        value = value.replace(spaces," ");
+                    }
+
+                    s += field.name;
+                    s += "=";
+                    s += value;
+                    s += "\n";
+                }
+            });
+
+            s += "------------------------------------------------------\n";
+        });
+
+        copy.value = s;
+        copy.setSelectionRange(0,copy.value.length);
+        copy.focus();
         document.execCommand("copy");
-        text.setSelectionRange(0,0);
     }
 
     function
@@ -1112,10 +1153,16 @@ define([
     {
         ViewerBase.call(this,visuals,container,connection,options);
 
-        this._log = null;
         this._filter = null;
         this._playPause = null;
         this._paused = false;
+        this._jsonformat = false;
+        this._table = null;
+        this._copy = null;
+        this._id = 1;
+
+        this._newlines = /\n/gi;
+        this._spaces = / /gi;
 
         Object.defineProperty(this,"connection", {
             get() {
@@ -1138,14 +1185,14 @@ define([
                     }
 
                     this._connection.getLog().addDelegate(this);
+
+                    this._jsonformat = this._connection.versionGreaterThan(7.4);
                 }
 
-                this._messages = [];
                 this.draw();
             }
         });
 
-        this._messages = [];
         this.connection = connection;
     }
 
@@ -1167,23 +1214,6 @@ define([
         this._logDiv.style.className = "Logviewer";
         this._logDiv.style.margin = 0;
         this._logDiv.style.padding = 0;
-        this._logDiv.style.padding = "5px";
-
-        this._log = document.createElement("div");
-        this._log.style.overflow = "hidden";
-        this._log.style.whiteSpace = "pre-wrap";
-        this._log.style.fontFamily = this._visuals.font.family;
-        this._log.style.fontSize = this._visuals.font.size;
-        this._logDiv.appendChild(this._log);
-
-        this._code = document.createElement("textarea");
-        this._code.style.fontFamily = this._visuals.font.family;
-        this._code.style.fontSize = this._visuals.font.size + "pt";
-        this._code.style.width = "100%";
-        this._code.style.height = "100%";
-        this._code.style.resize = "none";
-        this._code.style.border = 0;
-        this._log.appendChild(this._code);
 
         this._controlDiv = document.createElement("div");
         this._controlDiv.style.display = "none";
@@ -1252,6 +1282,23 @@ define([
             this._controlDiv.style.display = "block";
         }
 
+        var fields = [];
+        fields.push({name:"id",type:"string",hidden:true});
+        fields.push({name:"_timestamp",type:"string",label:"Time",nobr:true});
+        fields.push({name:"messageContent",type:"string",label:"Text"});
+        fields.push({name:"messageFile",type:"string",label:"File"});
+        fields.push({name:"messageLine",type:"int",label:"Line"});
+        fields.push({name:"logName",type:"string",label:"Logger"});
+        fields.push({name:"logLevel",type:"string",label:"Level"});
+
+        var options = {key:"id",tail:true};
+
+        this._logDiv.innerHTML = "";
+
+        this._table = new SimpleTable(this._logDiv,options);
+        this._table.setFields(fields);
+        this._table.draw();
+
         this.size();
     }
 
@@ -1285,54 +1332,57 @@ define([
             this.init();
         }
 
-        var s = "";
-
-        for (var i = 0; i < this._messages.length; i++)
+        if (this._table != null)
         {
-            s += this._messages[i];
-            s += "\n\n";
+            this._table.draw();
         }
-        this._code.innerHTML = s;
-        this._code.scrollTop = this._code.scrollHeight;
+
         this.setHeader();
     }
 
     LogViewer.prototype.size =
     function()
     {
-        if (this._log != null)
+        if (this._logDiv != null)
         {
             var	outerBorders = tools.getBorders(this._logDiv,true);
-            var	innerBorders = tools.getBorders(this._log,true);
             this._logDiv.style.width = (this._content.offsetWidth - outerBorders.hsize) + "px";
-            this._logDiv.style.height = (this._content.offsetHeight - this._controlDiv.offsetHeight - outerBorders.vsize - innerBorders.vsize) + "px";
-            this._log.style.width = (this._content.offsetWidth - outerBorders.hsize - innerBorders.hsize) + "px";
-            this._log.style.height = (this._logDiv.offsetHeight - outerBorders.vsize - innerBorders.vsize) + "px";
+            this._logDiv.style.height = (this._content.offsetHeight - this._controlDiv.offsetHeight - outerBorders.vsize) + "px";
         }
     }
 
     LogViewer.prototype.clear =
     function()
     {
-        this._messages = [];
+        if (this._table != null)
+        {
+            this._table.clear();
+        }
         this.draw();
     }
 
     LogViewer.prototype.handleLog =
     function(connection,message)
     {
-        this._messages.push(message);
+console.log(message);
+        var text = message.messageContent.replace(this._newlines,"<br/>");
+        text = text.replace(this._spaces,"&nbsp;");
+        message.messageContent = text;
 
-        var max = this.getOpt("max",50);
-        var diff = this._messages.length - max;
+        this._table.hold();
+
+        message.id = new String(this._id++);
+
+        this._table.setItem(message);
+
+        var diff = this._table.length - this.getOpt("max",50);
 
         if (diff > 0)
         {
-            for (var i = 0; i < diff; i++)
-            {
-                this._messages.splice(0,1);
-            }
+            this._table.removeHead(diff);
         }
+
+        this._table.release();
 
         this.draw();
     }

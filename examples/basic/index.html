@@ -42,7 +42,7 @@ esp(api)
     var server = parms["server"];
     delete parms["server"];
 
-    _esp.connect(server,{ready:ready});
+    connect(server);
 }
 
 function
