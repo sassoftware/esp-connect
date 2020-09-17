@@ -20,6 +20,8 @@ if (server == null)
     process.exit(0);
 }
 
+esp.k8s = opts.getOptAndClear("k8s");
+
 var config = {};
 var cert = opts.getOptAndClear("cert");
 
@@ -43,7 +45,7 @@ ready(connection)
     var delegate = {
         handleLog:function(log,message)
         {
-            console.log(JSON.stringify(message));
+            console.log(JSON.stringify(message,null,2));
         }
     };
 

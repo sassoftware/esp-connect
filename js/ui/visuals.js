@@ -742,6 +742,24 @@ define([
     Visuals.prototype.editFilter =
     function(delegate)
     {
+        var o =
+        {
+            ok:function(data)
+            {
+                delegate.setFilter(data.filter);
+                dialogs.hideDialog();
+            },
+            cancel:dialogs.hideDialog,
+            header:"Edit Filter",
+            values:[{name:"filter",label:"Filter",value:delegate.getFilter()}],
+            values:[{name:"filter",label:"Filter",value:"eq($Plate,\'SFZ-1000\')"}]
+        };
+        dialogs.showDialog(o);
+    }
+
+    Visuals.prototype.editFilterZ =
+    function(delegate)
+    {
         if (_filterDelegate != null)
         {
             return;

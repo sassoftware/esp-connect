@@ -1757,7 +1757,7 @@ define([
 
         request += "</properties>";
 
-        this._api.send(request);
+        this._connection.send(request);
 
         if (load)
         {
@@ -1850,15 +1850,13 @@ define([
     EventCollection.prototype.loadPage =
     function(page)
     {
-        var request = {"event-collection":{}};
-        var o = request["event-collection"];
-        o["id"] = this._id;
-        o["action"] = "load";
+        var request = "<load";
         if (page != null)
         {
-            o["page"] = page;
+            request += " page='" + page + "'";
         }
-        this._api.sendObject(request);
+        request += "/>";
+        this._connection.send(request);
     }
 
     EventCollection.prototype.setSchemaFromXml =
@@ -2151,7 +2149,7 @@ define([
 
         request += "</properties>";
 
-        this._api.send(request);
+        this._connection.send(request);
     }
 
     EventStream.prototype.close =

@@ -1364,7 +1364,6 @@ define([
     LogViewer.prototype.handleLog =
     function(connection,message)
     {
-console.log(message);
         var text = message.messageContent.replace(this._newlines,"<br/>");
         text = text.replace(this._spaces,"&nbsp;");
         message.messageContent = text;

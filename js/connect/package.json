@@ -1,6 +1,6 @@
 {
   "name": "@sassoftware/esp-connect",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Package used to connect to an ESP server (version 6.2+)",
   "main": "connect.js",
   "keywords": [

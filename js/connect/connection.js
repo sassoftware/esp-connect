@@ -714,7 +714,6 @@ define([
             return;
         }
 
-        //console.log("SEND: " + data);
 		this._websocket.send(data);
 	}
 

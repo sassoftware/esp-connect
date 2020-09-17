@@ -28,13 +28,15 @@ define([
 	"./codec",
 	"./options",
 	"./router",
+	"./k8s",
 	"./formatter"
-], function(ServerConnection,ajax,xpath,resources,tools,codec,Options,Router,Formatter)
+], function(ServerConnection,ajax,xpath,resources,tools,codec,Options,Router,k8s,Formatter)
 {
 	var	__api =
 	{
 		_args:null,
         _config:null,
+        _k8s:null,
 
 		isNode:function()
         {
@@ -43,34 +45,89 @@ define([
 
 		connect:function(url,delegate,options,start)
 		{
-            var opts = new Options(options);
-            var token = null;
-            var credentials = null;
+            var u = tools.createUrl(decodeURI(url));
+            var connection = null;
 
-            if (opts.hasOpt("token"))
+            if (u.protocol.toString() == "k8s:")
             {
-                token = opts.getOptAndClear("token");
+                if (this._k8s == null)
+                {
+                    tools.exception("there is no Kubernetes server defined");
+                }
+
+                if (u.host == null || u.host.length == 0)
+                {
+                    tools.exception("URL must be in form k8s://<namespace>/<project>");
+                }
+
+                if (u.path == null || u.path.length <= 1)
+                {
+                    tools.exception("URL must be in form k8s://<namespace>/<project>");
+                }
+
+                var c = this;
+
+                var o =
+                {
+                    handleProjects:function(data)
+                    {
+                        var item = data[0];
+                        var k8sUrl = "";
+                        k8sUrl += "https://";
+                        k8sUrl += item.access.externalURL;
+                        k8sUrl += "/SASEventStreamProcessingServer";
+                        k8sUrl += "/" + opts.getOpt("name");
+		                c.connect(k8sUrl,delegate,options,start);
+                    },
+
+                    projectNotFound:function(request,opts)
+                    {
+                        tools.exception("project not found: " + opts);
+                    },
+
+                    error:function(request,error)
+                    {
+                        tools.exception("error: " + opts);
+                    }
+                };
+
+                var opts = new Options();
+                opts.setOpt("ns",u.host);
+                opts.setOpt("name",u.path.substr(1));
+
+                this._k8s.getProjects(o,opts.getOpts());
             }
-
-            if (opts.hasOpt("credentials"))
+            else
             {
-                credentials = opts.getOptAndClear("credentials");
-            }
+                var opts = new Options(options);
+                var token = null;
+                var credentials = null;
 
-            var connection = ServerConnection.create(this,url,delegate,opts.getOpts());
+                if (opts.hasOpt("token"))
+                {
+                    token = opts.getOptAndClear("token");
+                }
 
-            if (token != null)
-            {
-                connection.setBearer(token);
-            }
-            else if (credentials != null)
-            {
-                connection.setBasic(credentials);
-            }
+                if (opts.hasOpt("credentials"))
+                {
+                    credentials = opts.getOptAndClear("credentials");
+                }
 
-            if (start == null || start)
-            {
-                connection.start();
+                connection = ServerConnection.create(this,url,delegate,opts.getOpts());
+
+                if (token != null)
+                {
+                    connection.setBearer(token);
+                }
+                else if (credentials != null)
+                {
+                    connection.setBasic(credentials);
+                }
+
+                if (start == null || start)
+                {
+                    connection.start();
+                }
             }
 
             return(connection);
@@ -245,6 +302,17 @@ define([
         createBuffer:function(s)
         {
             return(tools.createBuffer(s));
+        },
+
+        stringFromBytes:function(bytes)
+        {
+            var s = "";
+
+            bytes.forEach((b) => {
+                s += String.fromCharCode(b);
+            });
+
+            return(s);
         },
 
         b64Encode:function(o)
@@ -446,6 +514,16 @@ define([
 
         set(value) {
             this._config = value;
+        }
+    });
+
+    Object.defineProperty(__api,"k8s", {
+        get() {
+            return(this._k8s);
+        },
+
+        set(value) {
+            this._k8s = (value != null) ? new k8s(value) : null;
         }
     });
 

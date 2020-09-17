@@ -48,11 +48,12 @@ ready(connection)
 function
 showUsage()
 {
-    console.log("");
-    console.log("usage: node <yourprogram> -server");
-    console.log("");
-    console.log("options:");
-    console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
-    console.log("\t-cert\t\tcertificate to use for secure connections");
-    console.log("");
+    esp.usage({
+        name:"template",
+        summary:"add summary here",
+        options:[
+            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true}
+        ],
+        description:"add description here."
+    });
 }

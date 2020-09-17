@@ -320,6 +320,7 @@ define([
             if (nodeUrl != null)
             {
                 var o = nodeUrl.parse(url);
+                u["protocol"] = o["protocol"];
                 u["host"] = o["hostname"];
                 u["port"] = o["port"];
                 u["path"] = o["path"];
@@ -329,6 +330,7 @@ define([
             {
                 var    a = document.createElement("a");
                 a.href = url;
+                u["protocol"] = o["protocol"];
                 u["host"] = a.hostname;
                 u["port"] = a.port;
                 u["path"] = a.pathname;

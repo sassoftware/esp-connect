@@ -20,6 +20,8 @@ if (server == null)
     process.exit(0);
 }
 
+esp.k8s = opts.getOptAndClear("k8s");
+
 var config = {};
 var cert = opts.getOptAndClear("cert");
 

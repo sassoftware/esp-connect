@@ -514,7 +514,7 @@ define([
                 }
                 else
                 {
-                    html += "<input id='" + id + "' type='" + opts.getOpt("type","text") + "' value='" + value + "'";
+                    html += "<input id='" + id + "' type='" + opts.getOpt("type","text") + "' value=\"" + value + "\"";
                     if (style != null)
                     {
                         html += " style='" + style + "'";

@@ -231,7 +231,7 @@ define([
 
         this._data.forEach((item) => {
 
-            mapdata.selected.push(this._datasource.isSelected(value));
+            mapdata.selected.push(this._datasource.isSelected(item));
 
             key = "";
 
