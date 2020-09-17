@@ -11,6 +11,7 @@
 <script type="text/javascript">
 
 var _server = null;
+var _k8s = null;
 var _api = null;
 
 function
@@ -19,6 +20,11 @@ esp(api)
     _api = api;
 
     _api.handleLayout();
+
+    if (_api.hasParm("k8s"))
+    {
+        _k8s = _api.getParm("k8s");
+    }
 
     if (_api.hasParm("server"))
     {
@@ -43,26 +49,35 @@ connect(server)
 function
 go(example)
 {
-    var url = example;
+    var s = "";
+
+    if (_k8s != null)
+    {
+        s += "?";
+        s += "k8s=" + _k8s;
+    }
 
     if (_server != null)
     {
-        url += "?";
-        url += "server=" + _server;
+        s += ((s.length > 0) ? "&" : "?");
+        s += "server=" + _server;
     }
 
     var parms = _api.getParms();
 
     for (var x in parms)
     {
-        if (x == "server")
+        if (x == "k8s" || x == "server")
         {
             continue;
         }
 
-        url += "&";
-        url += (x + "=" + parms[x]);
+        s += ((s.length > 0) ? "&" : "?");
+        s += (x + "=" + parms[x]);
     }
+
+    var url = example;
+    url += s;
 
     window.open(url);
 }

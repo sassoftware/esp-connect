@@ -29,6 +29,11 @@ esp(api)
 
     var parms = _esp.getParms();
 
+    if (parms.hasOwnProperty("k8s"))
+    {
+        _esp.k8s = parms["k8s"];
+    }
+
     _visuals = _esp.createVisuals(parms);
 
     _visuals.createWrapper("colors",{header:"Click on the colored areas to generate events",style:{width:"98%",height:"150px"}});

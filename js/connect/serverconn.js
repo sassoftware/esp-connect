@@ -42,7 +42,16 @@ define([
 
         if (delegate != null)
         {
-            this._delegates.push(delegate);
+            if (Array.isArray(delegate))
+            {
+                delegate.forEach((d) => {
+                    tools.addTo(this._delegates,d);
+                });
+            }
+            else
+            {
+                tools.addTo(this._delegates,delegate);
+            }
         }
 
         this._impl = null;
@@ -127,7 +136,10 @@ define([
                     url += this.host;
                     url += ":";
                     url += this.port;
+                    url += "/";
+                    url += this.path;
                     url += "/eventStreamProcessing/v1/server";
+console.log("URL: " + url);
                     if (_prompted.hasOwnProperty(url) == false)
                     {
                         _prompted[url] = true;

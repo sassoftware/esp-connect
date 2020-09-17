@@ -32,6 +32,11 @@ esp(api)
 
     var parms = _esp.getParms();
 
+    if (parms.hasOwnProperty("k8s"))
+    {
+        _esp.k8s = parms["k8s"];
+    }
+
     _visuals = _esp.createVisuals(parms);
     _visuals.dateformat = "%c";
 

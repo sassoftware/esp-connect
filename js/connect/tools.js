@@ -328,13 +328,17 @@ define([
             }
             else
             {
-                var    a = document.createElement("a");
-                a.href = url;
+                var o = new URL(url,document.URL);
                 u["protocol"] = o["protocol"];
-                u["host"] = a.hostname;
-                u["port"] = a.port;
-                u["path"] = a.pathname;
-                u["secure"] = (a["protocol"] == "https:" || a["protocol"] == "wss:");
+                if (o["protocol"] != "http")
+                {
+                    o["protocol"] = "http";
+                    o = new URL(o.toString());
+                }
+                u["host"] = o.hostname;
+                u["port"] = o.port;
+                u["path"] = o.pathname;
+                u["secure"] = (u["protocol"] == "https:" || u["protocol"] == "wss:");
             }
 
             return(u);

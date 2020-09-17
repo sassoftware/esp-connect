@@ -318,6 +318,12 @@ define([
             }
         });
 
+        Object.defineProperty(this,"path", {
+            get() {
+                return(this._path);
+            }
+        });
+
         Object.defineProperty(this,"isSecure", {
             get() {
                 return(this._secure);

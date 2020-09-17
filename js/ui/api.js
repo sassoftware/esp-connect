@@ -22,10 +22,13 @@ define([
 
 		connect:function(url,delegate,options)
 		{
-            var conn = connect.connect(url,delegate,options,false);
-            conn.addDelegate(this);
-            conn.start();
-            return(conn);
+            var delegates = [];
+            if (delegate != null)
+            {
+                delegates.push(delegate);
+            }
+            delegates.push(this);
+            connect.connect(url,delegates,options,true);
 		},
 
         authenticate:function(connection,scheme)
@@ -476,6 +479,16 @@ define([
             }
         }
     }
+
+    Object.defineProperty(__api,"k8s", {
+        get() {
+            return(connect.k8s);
+        },
+
+        set(value) {
+            connect.k8s = value;
+        }
+    });
 
 	return(__api);
 });

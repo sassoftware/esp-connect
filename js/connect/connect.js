@@ -46,7 +46,6 @@ define([
 		connect:function(url,delegate,options,start)
 		{
             var u = tools.createUrl(decodeURI(url));
-            var connection = null;
 
             if (u.protocol.toString() == "k8s:")
             {
@@ -129,8 +128,6 @@ define([
                     connection.start();
                 }
             }
-
-            return(connection);
 		},
 
         closed:function(connection)

@@ -75,6 +75,11 @@ setup()
 
     _parms = _esp.getParms();
 
+    if (_parms.hasOwnProperty("k8s"))
+    {
+        _esp.k8s = _parms["k8s"];
+    }
+
     if (_esp.hasParm("server") == false && _storage.hasOpt("server"))
     {
         _esp.setParm("server",_storage.getOpt("server"));

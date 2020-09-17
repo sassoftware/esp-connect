@@ -29,6 +29,11 @@ esp(api)
 
     var parms = _esp.getParms();
 
+    if (parms.hasOwnProperty("k8s"))
+    {
+        _esp.k8s = parms["k8s"];
+    }
+
     _appid = parms.hasOwnProperty("appid") ? parms["appid"] : "";
 
     document.getElementById("appid").value = _appid;

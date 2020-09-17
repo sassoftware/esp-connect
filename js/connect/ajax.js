@@ -203,11 +203,14 @@ define([
 				{
 					if (this._protocol == "https:")
 					{
+                        /*
 						var	url = this._protocol;
 						url += "//";
-						url += this._a.host;
-						url += "/SASESP";
+						url += url.host;
+						url += "/eventStreamProcessing/v1/server";
 						window.open(url,url,"");
+                        */
+						//window.open(this._url,this._url,"");
 					}
 					else if (tools.supports(this._ajax._delegate,"error"))
 					{
@@ -407,6 +410,7 @@ define([
         this._url = url;
         this._delegate = delegate;
         this._context = context;
+		this._requestHeaders = new Object();
         this._options = {};
         this._response = null;
         this._responseText = "";
@@ -519,9 +523,12 @@ define([
 
                 ajax._responseText = content;
 
-                if (contentType.indexOf("text/xml") != -1 || contentType.indexOf("application/xml") != -1)
+                if (contentType != null)
                 {
-                    ajax._xml = xpath.createXml(content);
+                    if (contentType.indexOf("text/xml") != -1 || contentType.indexOf("application/xml") != -1)
+                    {
+                        ajax._xml = xpath.createXml(content);
+                    }
                 }
 
                 if (tools.supports(ajax._delegate,"response"))
