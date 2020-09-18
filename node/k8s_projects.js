@@ -12,15 +12,13 @@ if (opts.getOpt("help",false))
     process.exit(1);
 }
 
-var k8s = opts.getOptAndClear("k8s");
+var server = opts.getOptAndClear("k8s");
 
-if (k8s == null)
+if (server == null)
 {
     showUsage();
     process.exit(0);
 }
-
-esp.k8s = k8s;
 
 var o =
 {
@@ -36,7 +34,7 @@ var o =
     }
 };
 
-esp.k8s.getProjects(o,opts.getOpts());
+esp.createK8S(server).getProjects(o,opts.getOpts());
 
 function
 showUsage()
@@ -45,7 +43,7 @@ showUsage()
         name:"k8s_projects",
         summary:"Retrieve K8S projects",
         options:[
-            {name:"server",arg:"Kubernetes server",description:"Kubernetes server to which to connect",required:true},
+            {name:"k8s",arg:"Kubernetes server",description:"Kubernetes server to which to connect",required:true},
             {name:"ns",arg:"Kubernetes Namespace",description:"Return projects for this namespace",required:false},
             {name:"name",arg:"Project Name",description:"Return projects with this name",required:false}
         ],

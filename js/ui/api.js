@@ -76,7 +76,7 @@ define([
             }
         },
 
-        showConnectDialog:function(delegate)
+        showConnectDialog:function(delegate,connection)
         {
             if (connect.getTools().supports(delegate,"connect") == false)
             {
@@ -89,19 +89,70 @@ define([
             var o = {
                 ok:function(data) {
                     var server = data.server.trim();
+
+                    if (server.length == 0)
+                    {
+                        server = data.k8s.trim();
+                    }
+
                     if (server.length == 0)
                     {
                         return(false);
                     }
+
                     storage.setOpt("esp-server",server);
                     delegate.connect(server);
+
                     return(true);
                 },
                 header:"Connect to ESP Server",
-                values:[{name:"server",label:"ESP Server",value:server}]
             };
 
-            dialogs.showDialog(o);
+            var values = [];
+            var k8s = (connection != null) ? connection.k8s : null;
+
+            if (k8s != null)
+            {
+                var value = {name:"k8s",label:"ESP K8S Server",type:"select"};
+                var options = {};
+                options[""] = "";
+
+                var handler =
+                {
+                    handleProjects:function(data)
+                    {
+                        data.forEach((p) => {
+                            var url = "";
+                            url += k8s.k8sUrl;
+                            url += "/" + p.metadata.namespace;
+                            url += "/" + p.metadata.name;
+                            var s = p.metadata.namespace + "/" + p.metadata.name;
+                            options[s] = url;
+                        });
+
+                        values.push({name:"server",label:"ESP Server",value:""});
+
+                        value.options = options;
+                        values.push(value);
+
+                        o.values = values;
+                        dialogs.showDialog(o);
+                    },
+
+                    error:function(request,error)
+                    {
+                        tools.exception("error: " + opts);
+                    }
+                };
+
+                k8s.getProjects(handler);
+            }
+            else
+            {
+                values.push({name:"server",label:"ESP Server",value:server});
+                o.values = values;
+                dialogs.showDialog(o);
+            }
         },
 
         showCodeDialog:function(header,code,options)
@@ -171,6 +222,11 @@ define([
 		{
 			return(connect.createOptionsFromArgs());
 		},
+
+        createK8S:function(server)
+        {
+            return(connect.createK8S(server));
+        },
 
 		getArgs:function()
         {
@@ -479,16 +535,6 @@ define([
             }
         }
     }
-
-    Object.defineProperty(__api,"k8s", {
-        get() {
-            return(connect.k8s);
-        },
-
-        set(value) {
-            connect.k8s = value;
-        }
-    });
 
 	return(__api);
 });

@@ -494,9 +494,28 @@ define([
 				    html += "<tr><td class='dialogLabel'>" + label + "</td></tr>";
                 }
 				html += "<tr><td class='" + classname + "'>";
-                if (type == "textarea")
+                if (type == "select")
                 {
-                    html += "<textarea id='" + id + "' type='" + opts.getOpt("type","text") + "' value='" + value + "'";
+                    html += "<select id='" + id + "'";
+                    if (style != null)
+                    {
+                        html += " style='" + style + "'";
+                    }
+                    html += ">";
+                    if (opts.hasOpt("options"))
+                    {
+                        var tmp = opts.getOpt("options");
+                        var option;
+                        for (var name in tmp)
+                        {
+                            html += "<option value='" + tmp[name] + "'>" + name + "</option>";
+                        }
+                    }
+                    html += "</select>";
+                }
+                else if (type == "textarea")
+                {
+                    html += "<textarea id='" + id + "' value='" + value + "'";
                     if (style != null)
                     {
                         html += " style='" + style + "'";

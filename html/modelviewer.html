@@ -126,7 +126,7 @@ setup()
     }
     else
     {
-        _esp.showConnectDialog({connect:connect});
+        _esp.showConnectDialog({connect:connect},_connection);
     }
 
     _opcodes = document.createElement("select");
@@ -1459,7 +1459,7 @@ div#banner td.icon
                     </select>
                 </td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_esp.showConnectDialog({connect:connect})">&#xf137;</a>
+                    <a class="icon" href="javascript:_esp.showConnectDialog({connect:connect},_connection)">&#xf137;</a>
                 </td>
             </tr>
         </table>

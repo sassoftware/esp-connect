@@ -60,7 +60,7 @@ setup()
         _maxentries = 100;
     }
 
-    document.getElementById("maxentries").value = _maxentries;
+    //document.getElementById("maxentries").value = _maxentries;
 
     _parms = _esp.getParms();
 
@@ -85,12 +85,11 @@ setup()
 
     if (_esp.hasParm("server"))
     {
-        document.getElementById("server").value = _esp.getParm("server");
         connect(encodeURI(_esp.getParm("server")));
     }
     else
     {
-        _esp.getDialogs().pushModal("connect");
+        _esp.showConnectDialog({connect:connect},_connection);
     }
 
     var fields = new Array();
@@ -112,7 +111,7 @@ connect(server)
         server = encodeURI(document.getElementById('server').value);
     }
 
-    _maxentries = parseInt(document.getElementById("maxentries").value);
+    //_maxentries = parseInt(document.getElementById("maxentries").value);
 
     if (_maxentries == 0 || isNaN(_maxentries))
     {
@@ -236,7 +235,7 @@ select#loglevel
             <tr>
                 <td id="bannerTitle">ESP Log Viewer</td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('connect')">&#xf137;</a>
+                    <a class="icon" href="javascript:_esp.showConnectDialog({connect:connect},_connection)">&#xf137;</a>
                     <a class="icon" href="javascript:showLoggers()">&#xf3ca;</a>
                 </td>
             </tr>
@@ -249,6 +248,7 @@ select#loglevel
 
     <div id="footer">&nbsp;</div>
 
+    <!--
     <div id="connect" class="dialog" style="width:50%">
 
         <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
@@ -286,6 +286,7 @@ select#loglevel
             </table>
         </div>
     </div>
+    -->
 
     <div id="contexts" class="dialog" style="width:50%">
 

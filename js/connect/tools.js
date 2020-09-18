@@ -341,6 +341,11 @@ define([
                 u["secure"] = (u["protocol"] == "https:" || u["protocol"] == "wss:");
             }
 
+            u.toString = function()
+            {
+                return(this.protocol + "//" + this.host + ":" + this.port + this.path);
+            }
+
             return(u);
         },
 

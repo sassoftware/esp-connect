@@ -36,7 +36,6 @@ define([
 	{
 		_args:null,
         _config:null,
-        _k8s:null,
 
 		isNode:function()
         {
@@ -47,54 +46,15 @@ define([
 		{
             var u = tools.createUrl(decodeURI(url));
 
-            if (u.protocol.toString() == "k8s:")
+            if (u.protocol == "k8s:" || u.protocol == "k8ss:")
             {
-                if (this._k8s == null)
+                var project = k8s.createProject(url);
+                if (options == null)
                 {
-                    tools.exception("there is no Kubernetes server defined");
+                    options = {};
                 }
-
-                if (u.host == null || u.host.length == 0)
-                {
-                    tools.exception("URL must be in form k8s://<namespace>/<project>");
-                }
-
-                if (u.path == null || u.path.length <= 1)
-                {
-                    tools.exception("URL must be in form k8s://<namespace>/<project>");
-                }
-
-                var c = this;
-
-                var o =
-                {
-                    handleProjects:function(data)
-                    {
-                        var item = data[0];
-                        var k8sUrl = "";
-                        k8sUrl += "https://";
-                        k8sUrl += item.access.externalURL;
-                        k8sUrl += "/SASEventStreamProcessingServer";
-                        k8sUrl += "/" + opts.getOpt("name");
-		                c.connect(k8sUrl,delegate,options,start);
-                    },
-
-                    projectNotFound:function(request,opts)
-                    {
-                        tools.exception("project not found: " + opts);
-                    },
-
-                    error:function(request,error)
-                    {
-                        tools.exception("error: " + opts);
-                    }
-                };
-
-                var opts = new Options();
-                opts.setOpt("ns",u.host);
-                opts.setOpt("name",u.path.substr(1));
-
-                this._k8s.getProjects(o,opts.getOpts());
+                options["k8s"] = project;
+                project.connect(this,delegate,options,start);
             }
             else
             {
@@ -112,7 +72,7 @@ define([
                     credentials = opts.getOptAndClear("credentials");
                 }
 
-                connection = ServerConnection.create(this,url,delegate,opts.getOpts());
+                var connection = ServerConnection.create(this,url,delegate,opts.getOpts());
 
                 if (token != null)
                 {
@@ -279,6 +239,11 @@ define([
         createTimer:function()
         {
             return(tools.createTimer());
+        },
+
+        createK8S:function(server)
+        {
+            return(k8s.create(server));
         },
 
         formatDate:function(date,format)
@@ -511,16 +476,6 @@ define([
 
         set(value) {
             this._config = value;
-        }
-    });
-
-    Object.defineProperty(__api,"k8s", {
-        get() {
-            return(this._k8s);
-        },
-
-        set(value) {
-            this._k8s = (value != null) ? new k8s(value) : null;
         }
     });
 

@@ -102,6 +102,12 @@ define([
             }
         });
 
+        Object.defineProperty(this,"k8s", {
+            get() {
+                return(this.getOpt("k8s"));
+            }
+        });
+
         this._closed = false;
 
         Object.defineProperty(this,"closed", {
