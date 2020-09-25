@@ -59,23 +59,32 @@ function
 connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-    _esp.connect(server,{ready:ready,closed:closed});
+    var url = new URL("model.xml",document.URL).toString();
+    _esp.connect(server,{ready:ready,error:error},{model:{name:"p",url:url},overwrite:true});
+
     _esp.handleLayout();
 }
+
+var _imagePublisher = null;
+var _objectPublisher = null;
+var _model = null;
 
 function
 ready(connection)
 {
     _conn = connection;
 
-    if (_esp.getParm("load",true))
-    {
-        _conn.loadProjectFrom("p","model.xml",{loaded:loaded,error:error},{overwrite:true});
-    }
-    else
-    {
-        loaded();
-    }
+    _imagePublisher = _conn.getPublisher({window:"p/cq_1/w_data",binary:true});
+    _objectPublisher = _conn.getPublisher({window:"p/cq_2/s",binary:true});
+    _conn.publishUrl("p/cq_1/w_request",new URL("yolo.csv",document.URL).toString(),{publishComplete:createVisuals});
+
+    _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
+}
+
+function
+error(message)
+{
+    console.log(message);
 }
 
 function
@@ -103,28 +112,6 @@ select(ds)
             }
         }
     }
-}
-
-var _imagePublisher = null;
-var _objectPublisher = null;
-var _model = null;
-
-function
-loaded()
-{
-    _imagePublisher = _conn.getPublisher({window:"p/cq_1/w_data",binary:true});
-    _objectPublisher = _conn.getPublisher({window:"p/cq_2/s",binary:true});
-
-    if (_esp.getParm("load",true))
-    {
-        _conn.publishUrl("p/cq_1/w_request",new URL("yolo.csv",document.URL).toString(),{publishComplete:createVisuals});
-    }
-    else
-    {
-        createVisuals();
-    }
-
-    _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
 }
 
 function

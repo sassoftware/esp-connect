@@ -34,7 +34,7 @@ var o =
     }
 };
 
-esp.createK8S(server).getProjects(o,opts.getOpts());
+esp.createK8S(server).getProjects(o,opts.getOpt("name"),opts.getOpt("ns"));
 
 function
 showUsage()

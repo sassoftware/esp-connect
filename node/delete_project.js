@@ -20,38 +20,34 @@ if (server == null)
     process.exit(0);
 }
 
+var fs = require("fs");
+
 var config = {};
 var cert = opts.getOptAndClear("cert");
 
 if (cert != null)
 {
-    const   fs = require("fs");
     config.ca = fs.readFileSync(cert);
 }
 
 esp.config = config;
 
-var names = ["access_token","token","credentials"];
-var o = opts.clone(names);
-opts.clearOpts(names);
-
-esp.connect(server,{ready:ready,error:error},o);
+esp.connect(server,{ready:ready,error:error},opts.getOpts());
 
 function
 ready(connection)
 {
-    var delegate = {
-        handleLog:function(log,message)
-        {
-            console.log(JSON.stringify(message,null,2));
+    var o = {
+        deleted:function() {
+            console.log("project deleted");
+            process.exit(0);
+        },
+        error:function(conn,name,message) {
+            console.log(message);
+            process.exit(1);
         }
     };
-
-    if (opts.hasOpt("filter"))
-    {
-        connection.getLog().filter = opts.getOpt("filter");
-    }
-    connection.getLog().addDelegate(delegate);
+    connection.deleteProject(opts.getOpt("name",""),o);
 }
 
 function
@@ -65,13 +61,14 @@ function
 showUsage()
 {
     esp.usage({
-        name:"logs",
-        summary:"view realtime ESP server logs",
+        name:"load_project",
+        summary:"Load an ESP project from a file",
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
+            {name:"name",arg:"project name",description:"name of the ESP project",required:false},
             {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
         ],
-        description:"This command sets up a connection to an ESP server and reads the server logs. The logs are output to the screen.",
+        description:"This command sends an ESP model from a file to the ESP server.",
         see_also:[
         {
             name:"ESP User Guide",

@@ -35,16 +35,29 @@ var names = ["access_token","token","credentials"];
 var o = opts.clone(names);
 opts.clearOpts(names);
 
-esp.connect(server,{ready:ready},o);
+esp.connect(server,{ready:ready,error:error,debug:true},o);
 
 function
 ready(connection)
 {
-    var delegate = {response:function(connection,data,xml) {
-        console.log("" + esp.getXPath().xmlString(xml));
-        process.exit(0);
-    }};
+    var delegate = {
+        response:function(connection,data,xml) {
+            console.log("" + esp.getXPath().xmlString(xml));
+            process.exit(0);
+        },
+        error:function(message) {
+            console.log(message);
+            process.exit(0);
+        }
+    };
     connection.getProjectXml(opts.getOpt("name"),delegate);
+}
+
+function
+error(message)
+{
+    console.log(message);
+    process.exit(0);
 }
 
 function

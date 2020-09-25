@@ -54,7 +54,8 @@ function
 connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-    _esp.connect(server,{ready:ready});
+    var url = new URL("model.xml",document.URL).toString();
+    _esp.connect(server,{ready:ready,error:error},{model:{name:"p",url:url},overwrite:true});
     _esp.handleLayout();
 }
 
@@ -62,34 +63,28 @@ function
 ready(connection)
 {
     _conn = connection;
-
-    _esp.showStatus("Loading project...");
-    _conn.loadUrl("model","model.xml",{loaded:sendModel});
     _conn.loadUrl("trip","paris_trip.csv",{loaded:function(name,text){_trip = text;}});
-    _esp.size();
-}
 
-var _model = null;
+    _conn.loadModel({modelLoaded:function(model) {_model = model}},{schema:true});
 
-function
-sendModel(name,text,data)
-{
-    _model = new _conn.createModel(data);
-    _conn.loadProject("p",text,{loaded:loaded},{overwrite:true});
-}
-
-var _modelXml = null;
-
-function
-loaded(p,conn)
-{
     _conn.getPublisher({window:"p/cq/circles_in"}).publishCsvFrom("circles_in.csv",{close:true,opcodes:true,flags:true});
     _conn.getPublisher({window:"p/cq/poly_in"}).publishCsvFrom("poly_in.csv",{close:true,opcodes:true,flags:true});
     setTimeout(createVisuals,1000);
-    _conn.getProjectXml("p",{response:function(c,data){_modelXml = data;}});
+    _conn.getProjectXml("myproject",{response:function(c,data){_modelXml = data;}});
 
     _esp.clearStatus();
+
+    _esp.size();
 }
+
+function
+error(message)
+{
+    console.log(message);
+}
+
+var _model = null;
+var _modelXml = null;
 
 function
 createVisuals()

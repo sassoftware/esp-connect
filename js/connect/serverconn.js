@@ -22,8 +22,10 @@ define([
     "./connection",
     "./v6",
     "./v7",
-    "./tools"
-], function(Connection,v6,v7,tools)
+    "./tools",
+    "./ajax",
+    "./options"
+], function(Connection,v6,v7,tools,ajax,Options)
 {
     var _prompted = {};
 
@@ -78,12 +80,95 @@ define([
         {
             this._impl.version = version;
 
-            for (var d of this._delegates)
+            if (this._impl.k8s == null && this.hasOpt("model"))
             {
-                if (tools.supports(d,"ready"))
+                var model = this.getOptAndClear("model");
+                var opts = new Options(model);
+                var name = opts.getOpt("name");
+                var data = opts.getOpt("data");
+                var url = opts.getOpt("url");
+
+                if (name == null)
                 {
-                    d.ready(this._impl);
+                    tools.exception("the model must contain a name value");
                 }
+
+                if (data == null && url == null)
+                {
+                    tools.exception("the model must contain either a data or url field");
+                }
+
+                var conn = this;
+
+                if (url != null)
+                {
+                    var o = {
+                        response:function(request,text,data) {
+                            var o1 = {
+                                loaded:function(connection,name) {
+                                    conn._delegates.forEach((d) => {
+                                        if (tools.supports(d,"ready"))
+                                        {
+                                            d.ready(conn._impl);
+                                        }
+                                    });
+                                },
+                                error:function(connection,name,message) {
+                                    conn._delegates.forEach((d) => {
+                                        if (tools.supports(d,"error"))
+                                        {
+                                            d.error(message);
+                                        }
+                                    });
+                                }
+                            };
+                            conn._impl.loadProject(model.name,text,o1,conn.getOpts());
+                        },
+                        error:function(request,error) {
+                            conn._delegates.forEach((d) => {
+                                if (tools.supports(d,"error"))
+                                {
+                                    d.error(conn._impl,error);
+                                }
+                            });
+                        }
+                    };
+
+                    ajax.create("load",url,o).get();
+                }
+                else
+                {
+                    var o = {
+                        loaded:function(connection,name) {
+                        console.log("loaded");
+                            conn._delegates.forEach((d) => {
+                                if (tools.supports(d,"ready"))
+                                {
+                                    d.ready(conn._impl);
+                                }
+                            });
+                        },
+                        error:function(connection,name,message) {
+                        console.log("error");
+                            conn._delegates.forEach((d) => {
+                                if (tools.supports(d,"error"))
+                                {
+                                    d.error(message);
+                                }
+                            });
+                        }
+                    };
+                    this._impl.loadProject(model.name,model.data,o,this.getOpts());
+                }
+            }
+            else
+            {
+                this._delegates.forEach((d) => {
+                    if (tools.supports(d,"ready"))
+                    {
+                        d.ready(this._impl);
+                    }
+                });
             }
         }
     }
@@ -139,7 +224,6 @@ define([
                     url += "/";
                     url += this.path;
                     url += "/eventStreamProcessing/v1/server";
-console.log("URL: " + url);
                     if (_prompted.hasOwnProperty(url) == false)
                     {
                         _prompted[url] = true;

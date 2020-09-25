@@ -26,16 +26,6 @@ define([
     "./tools"
 ], function(xpath,tools)
 {
-    var _node = null;
-
-    try
-    {
-        _node = require("xmlhttprequest");
-    }
-    catch (exception)
-    {
-    }
-
 	function
 	Ajax(name,url,delegate,context)
 	{
@@ -88,45 +78,16 @@ define([
 			this._method = method;
 		}
 
-        var url = _node ? new URL(this._url) : new URL(this._url,document.URL);
+        var url = new URL(this._url,document.URL);
 		var protocol = url.protocol.toLowerCase();
 
         if (protocol == "file:")
         {
-            if (_node != null)
-            {
-                var filename = this._url.substr(7);
-                var request = this;
-
-                require("fs").readFile(filename,"utf8",function(error,contents) {
-                    if (error != null)
-                    {
-                        if (tools.supports(request._delegate,"error"))
-                        {
-                            request._delegate.error(request,error);
-                        }
-                    }
-					else if (tools.supports(request._delegate,"response"))
-					{
-						request._delegate.response(request,contents,null);
-                    }
-                });
-            }
-
-            return;
+            tools.exception("file protocol is not supported");
         }
 
-        var request = null;
+        var request = new XMLHttpRequest();
 		var	received = false;
-
-        if (_node != null)
-        {
-		    request = new _node.XMLHttpRequest();
-        }
-        else
-        {
-		    request = new XMLHttpRequest();
-        }
 
 		request._url = this._url;
 		request._protocol = protocol;
@@ -187,6 +148,7 @@ define([
 
 				if (this._ajax._method != null && this._ajax._method == "HEAD")
 				{
+                    /*
 					if (this.status == 0 || this.status >= 400)
 					{
 						if (tools.supports(this._ajax._delegate,"error"))
@@ -195,6 +157,8 @@ define([
 						}
 					}
 					else if (tools.supports(this._ajax._delegate,"response"))
+                    */
+					if (tools.supports(this._ajax._delegate,"response"))
 					{
 						this._ajax._delegate.response(this._ajax,null,null);
 					}
@@ -203,14 +167,7 @@ define([
 				{
 					if (this._protocol == "https:")
 					{
-                        /*
-						var	url = this._protocol;
-						url += "//";
-						url += url.host;
-						url += "/eventStreamProcessing/v1/server";
-						window.open(url,url,"");
-                        */
-						//window.open(this._url,this._url,"");
+						window.open(this._url,this._url,"");
 					}
 					else if (tools.supports(this._ajax._delegate,"error"))
 					{
@@ -221,14 +178,7 @@ define([
 				{
 					var	contentType = this.getResponseHeader("content-type");
 
-                    if (_node != null)
-                    {
-                        if (contentType.indexOf("text/xml") != -1 || contentType.indexOf("application/xml") != -1)
-                        {
-                            this._ajax._xml = xpath.createXml(this.responseText);
-                        }
-                    }
-					else if (this.responseXML != null)
+					if (this.responseXML != null)
 					{
 						this._ajax._xml = this.responseXML;
 					}
@@ -256,6 +206,7 @@ define([
 							this._ajax._delegate.error(this._ajax,null,null);
 						}
 					}
+                    /*
 					else if (this.status >= 400)
 					{
 						if (tools.supports(this._ajax._delegate,"error"))
@@ -274,6 +225,7 @@ define([
 							this._ajax._delegate.error(this._ajax,text,this._ajax._xml);
 						}
 					}
+                    */
 					else if (tools.supports(this._ajax._delegate,"response"))
 					{
 						this._ajax._delegate.response(this._ajax,this.responseText,this._ajax._xml);
@@ -449,7 +401,6 @@ define([
     NodeAjax.prototype.head =
     function()
     {
-        this.setOptions(options);
         this.send("HEAD");
     }
 
@@ -508,6 +459,11 @@ define([
         var request = (protocol == "https:") ? _https.request(this._options) : _http.request(this._options);
         var ajax = this;
 
+        for (var name in this._requestHeaders)
+        {
+            request.setHeader(name,this._requestHeaders[name]);
+        }
+
         request.on("response", function (response) {
 
             ajax._response = response;
@@ -533,7 +489,7 @@ define([
 
                 if (tools.supports(ajax._delegate,"response"))
                 {
-                    ajax._delegate.response(this._ajax,content,ajax._xml);
+                    ajax._delegate.response(ajax,content,ajax._xml);
                 }
             });
         });

@@ -12,15 +12,15 @@ define([
     "./serverconn",
     "./tools",
     "./ajax",
+    "./xpath",
     "./options"
-], function(ServerConnection,tools,ajax,Options)
+], function(ServerConnection,tools,ajax,xpath,Options)
 {
     function
     K8S(url)
     {
         this._url = tools.createUrl(decodeURI(url));
 
-console.log("URL: " + this._url);
         Object.defineProperty(this,"k8sProtocol", {
             get() {
                 var protocol = "";
@@ -108,26 +108,25 @@ console.log("URL: " + this._url);
     }
 
     K8S.prototype.getProjects =
-    function(delegate,options)
+    function(delegate,project,ns)
     {
         if (tools.supports(delegate,"handleProjects") == false)
         {
             tools.exception("the delegate must implement the handleProjects function");
         }
 
-        var opts = new Options(options);
         var url = this.url;
 
-        if (opts.hasOpt("ns"))
+        if (ns != null)
         {
-            url += "/namespaces/" + opts.getOpt("ns");
+            url += "/namespaces/" + ns;
         }
 
         url += "/espservers";
 
-        if (opts.hasOpt("name"))
+        if (project != null)
         {
-            url += "/" + opts.getOpt("name");
+            url += "/" + project;
         }
 
         var k8s = this;
@@ -137,13 +136,20 @@ console.log("URL: " + this._url);
 
                 if (data.code == 404)
                 {
+                    var s = "";
+                    if (k8s._ns != null)
+                    {
+                        s += k8s._ns + "/";
+                    }
+                    s += k8s._project;
+
                     if (tools.supports(delegate,"projectNotFound"))
                     {
-                        delegate.projectNotFound(request,opts.toString());
+                        delegate.projectNotFound(s);
                     }
                     else
                     {
-                        console.log("project not found: " + opts.toString());
+                        tools.exception("project not found: " + s);
                     }
                 }
                 else
@@ -170,7 +176,7 @@ console.log("URL: " + this._url);
                 }
                 else
                 {
-                    console.log("error: " + error);
+                    tools.exception("error: " + error);
                 }
             }
         };
@@ -196,8 +202,35 @@ console.log("URL: " + this._url);
             tools.exception("URL must be in form k8s://server/<namespace>/<project>");
         }
 
+        Object.defineProperty(this,"espurl", {
+            get() {
+                var url = "";
+                if (this._config != null)
+                {
+                    url += this.httpProtocol + "//";
+                    url += this._config.access.externalURL;
+                    url += "/SASEventStreamProcessingServer";
+                    url += "/" + this._project;
+                }
+                return(url);
+            }
+        });
+
+        Object.defineProperty(this,"modelXml", {
+            get() {
+                var xml = "";
+                if (this._config != null)
+                {
+                    xml = this._config.spec.espProperties["server.xml"];
+                }
+                return(xml);
+            }
+        });
+
         this._ns = a[0];
         this._project = a[1];
+
+        this._config = null;
     }
 
     K8SProject.prototype = Object.create(K8S.prototype);
@@ -206,34 +239,57 @@ console.log("URL: " + this._url);
     K8SProject.prototype.connect =
     function(connect,delegate,options,start)
     {
+        var opts = new Options(options);
+        var model = opts.getOptAndClear("model");
         var k8s = this;
-        var opts = new Options();
-        opts.setOpt("ns",this._ns);
-        opts.setOpt("project",this._project);
 
-        var o =
+        var handler =
         {
-            handleProjects:function(data)
+            loaded:function()
             {
-                var item = data[0];
-                var k8sUrl = "";
-                k8sUrl += k8s.httpProtocol + "//";
-                k8sUrl += item.access.externalURL;
-                k8sUrl += "/SASEventStreamProcessingServer";
-                k8sUrl += "/" + opts.getOpt("project");
-                connect.connect(k8sUrl,delegate,options,start);
+                if (model == null)
+                {
+                    connect.connect(k8s.espurl,delegate,options,start);
+                }
+                else
+                {
+                    var o = {
+                        modelHandler:function(model) {
+                            k8s.load(model,opts.getOpts(),{
+                                loaded:function() {
+                                    connect.connect(k8s.espurl,delegate,options,start);
+                                }
+                            });
+                        }
+                    };
+
+                    k8s.getModel(model,o);
+                }
             },
 
-            projectNotFound:function(request)
+            notfound:function(project)
             {
-                var delegate = 
+                if (model == null)
                 {
-                    projectCreated:function()
+                    if (tools.supports(delegate,"error"))
                     {
+                        delegate.error("project not found: " + project);
                     }
-                };
+                }
+                else
+                {
+                    var o = {
+                        modelHandler:function(model) {
+                            k8s.load(model,opts.getOpts(),{
+                                loaded:function() {
+                                    connect.connect(k8s.espurl,delegate,options,start);
+                                }
+                            });
+                        }
+                    };
 
-                k8s.createProject(delegate,opts.getOpts());
+                    k8s.getModel(model,o);
+                }
             },
 
             error:function(request,error)
@@ -242,63 +298,236 @@ console.log("URL: " + this._url);
             }
         };
 
-        this.getProjects(o,opts.getOpts());
+        this.loadConfig(handler);
     }
 
-    K8SProject.prototype.create =
-    function(delegate,options)
+    K8SProject.prototype.loadConfig =
+    function(delegate)
     {
-        var opts = new Options(options);
-        var url = this._server;
-        url += "/apis/iot.sas.com/v1alpha1";
+        this._config = null;
 
-        if (opts.hasOpt("ns"))
+        var url = this.url;
+
+        if (this._ns != null)
         {
-            url += "/namespaces/" + opts.getOpt("ns");
+            url += "/namespaces/" + this._ns;
         }
 
         url += "/espservers";
+        url += "/" + this._project;
 
-        var yaml = this.getProjectYaml(options);
+        var k8s = this;
         var o = {
             response:function(request,text) {
                 var data = JSON.parse(text);
-                console.log(JSON.stringify(data,null,2));
+
+                if (data.code == 404)
+                {
+                    if (tools.supports(delegate,"notfound"))
+                    {
+                        delegate.notfound();
+                    }
+                }
+                else
+                {
+                    k8s._config = data;
+                    if (tools.supports(delegate,"loaded"))
+                    {
+                        delegate.loaded();
+                    }
+                }
+            },
+            error:function(request,error) {
+                tools.exception("error: " + error);
+            }
+        };
+        var request = ajax.create("load",url,o);
+		request.setRequestHeader("accept","application/json");
+        request.get();
+    }
+
+    K8SProject.prototype.load =
+    function(model,options,delegate)
+    {
+        var opts = new Options(options);
+        var xml = xpath.createXml(model);
+        xml.documentElement.setAttribute("name",this._project);
+
+        var newmodel = "b64" + tools.b64Encode(xpath.xmlString(xml));
+
+        if (newmodel == this.modelXml)
+        {
+            if (opts.getOpt("force",false) == false)
+            {
+                if (tools.supports(delegate,"loaded"))
+                {
+                    delegate.loaded();
+                }
+
+                return;
+            }
+        }
+
+        var k8s = this;
+
+        if (this._config != null)
+        {
+            var o = {
+                deleted:function() {
+                    k8s._config = null;
+                    k8s.load(model,opts.getOpts(),delegate);
+                },
+                error:function(message) {
+                    tools.exception(message);
+                }
+            };
+
+            this.del(o);
+        }
+        else
+        {
+            var url = this.url;
+
+            if (this._ns != null)
+            {
+                url += "/namespaces/" + this._ns;
+            }
+
+            url += "/espservers";
+
+            var o = {
+                response:function(request,text) {
+
+                    const   code = request.getStatus();
+
+                    if (code != 200 && code != 201)
+                    {
+                        tools.exception(text);
+                    }
+
+                    k8s.loadConfig();
+
+                    k8s.isReady({
+                        ready:function() {
+                            if (tools.supports(delegate,"loaded"))
+                            {
+                                delegate.loaded();
+                            }
+                        }
+                    });
+                },
+                error:function(request,error) {
+                    if (tools.supports(delegate,"error"))
+                    {
+                        delegate.error(request,error);
+                    }
+                    else
+                    {
+                        tools.exception("error: " + error);
+                    }
+                }
+            };
+
+            var content = this.getYaml(newmodel);
+            //console.log(content);
+            var request = ajax.create("create",url,o);
+            request.setRequestHeader("content-type","application/yaml");
+            request.setRequestHeader("accept","application/json");
+            request.setData(content);
+            request.post();
+        }
+    }
+
+    K8SProject.prototype.del =
+    function(delegate)
+    {
+        var url = this.url;
+
+        if (this._ns != null)
+        {
+            url += "/namespaces/" + this._ns;
+        }
+
+        url += "/espservers/";
+        url += this._project;
+
+        var o = {
+            response:function(request,text) {
+                if (tools.supports(delegate,"deleted"))
+                {
+                    delegate.deleted();
+                }
             },
             error:function(request,error) {
                 if (tools.supports(delegate,"error"))
                 {
-                    delegate.error(request,error);
+                    delegate.error(error);
                 }
                 else
                 {
-                    console.log("error: " + error);
+                    tools.exception("error: " + error);
                 }
             }
-        };
+        }; 
+
         var request = ajax.create("create",url,o);
-		request.setRequestHeader("content-type","text/x-yaml");
 		request.setRequestHeader("accept","application/json");
-        console.log(yaml);
-        request.setData(yaml);
-        request.post();
+        request.del();
+    }
+
+    K8SProject.prototype.getModel =
+    function(model,delegate)
+    {
+        if (tools.supports(delegate,"modelHandler") == false)
+        {
+            tools.exception("the delegate must implement the modelHandler function");
+        }
+
+        var modelOpts = new Options(model);
+        var data = modelOpts.getOpt("data");
+        var url = modelOpts.getOpt("url");
+
+        if (data == null && url == null)
+        {
+            tools.exception("the model must contain either a data or url field");
+        }
+
+        if (data != null)
+        {
+            delegate.modelHandler(data);
+        }
+        else
+        {
+            var k8s = this;
+            var o = {
+                response:function(request,text,data) {
+                    delegate.modelHandler(text);
+                },
+                error:function(request,error) {
+                }
+            };
+
+            ajax.create("load",url,o).get();
+        }
     }
 
     K8SProject.prototype.getYaml =
-    function(options)
+    function(model)
     {
-        var opts = new Options(options);
         var s = "";
 
         s += "apiVersion: iot.sas.com/v1alpha1\n";
         s += "kind: ESPServer\n";
         s += "metadata:\n";
-        s += "  name: " + opts.getOpt("name") + "\n";
-        s += "  namespace: " + opts.getOpt("ns","") + "\n";
+        s += "  name: " + this._project + "\n";
+        if (this._ns != null)
+        {
+            s += "  namespace: " + this._ns + "\n";
+        }
         s += "spec:\n";
         s += "    loadBalancePolicy: \"default\" \n";
         s += "    espProperties:\n";
-        s += "      server.xml: \n";
+        s += "      server.xml: \"" + model + "\"\n";
         s += "      meta.meteringhost: \"sas-event-stream-processing-metering-app.roleve\"\n";
         s += "      meta.meteringport: \"80\"\n";
         s += "    projectTemplate:\n";
@@ -350,6 +579,52 @@ console.log("URL: " + this._url);
         return(s);
     }
 
+    K8SProject.prototype.isReady =
+    function(delegate)
+    {
+        if (tools.supports(delegate,"ready") == false)
+        {
+            tools.exception("the delegate must implement the ready function");
+        }
+
+        var state = "";
+
+        if (this._config != null)
+        {
+            state = this._config.access.state;
+        }
+
+        var ready = false;
+
+        if (state == "Succeeded")
+        {
+            var url = this.espurl;
+            url += "/internal/ready";
+            ajax.create("ready",url,{
+                response(request,text) {
+                    if (request.getStatus() == 200)
+                    {
+                        ready = true;
+                        delegate.ready(this);
+                    }
+                },
+                error(request,text) {
+                    tools.exception(text);
+                }
+            }).head();
+        }
+        else
+        {
+            this.loadConfig();
+        }
+
+        if (ready == false)
+        {
+            const   k8s = this;
+            setTimeout(function(){k8s.isReady(delegate)},500);
+        }
+    }
+
     var _api =
     {
         create:function(server)
@@ -357,9 +632,9 @@ console.log("URL: " + this._url);
             return(new K8S(server));
         },
 
-        createProject:function(connect,url)
+        createProject:function(url)
         {
-            return(new K8SProject(connect,url));
+            return(new K8SProject(url));
         }
     };
 

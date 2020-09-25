@@ -136,6 +136,7 @@ define([
         this._publisherDelegates = {};
         this._guidDelegates = {};
         this._loadDelegates = {};
+        this._deleteDelegates = {};
         this._responseDelegates = {};
         this._projectUpdateDelegates = [];
         this._gets = {};
@@ -340,6 +341,31 @@ define([
                 }
 
                 delete this._loadDelegates[id];
+            }
+        }
+        else if (json.hasOwnProperty("delete-project"))
+        {
+            var o = json["delete-project"];
+            var id = o["@id"];
+
+            if (this._deleteDelegates.hasOwnProperty(id))
+            {
+                var d = this._deleteDelegates[id];
+                var code = o["@code"];
+
+                if (code == 0)
+                {
+                    if (tools.supports(d.delegate,"deleted"))
+                    {
+                        d.delegate.deleted(this,d.request.project.name);
+                    }
+                }
+                else
+                {
+                    this.handleError(d.request.project.name,d.delegate);
+                }
+
+                delete this._deleteDelegates[id];
             }
         }
         else if (json.hasOwnProperty("stats"))
@@ -904,24 +930,31 @@ define([
     Api.prototype.loadProject =
     function(name,data,delegate,options)
     {
-        var id = tools.guid();
-        var request = {"project":{}};
-        var o = request["project"];
-        o["name"] = name;
-        o["id"] = id;
-        o["action"] = "load";
-        if (options != null)
+        if (this.k8s != null)
         {
-            for (var x in options)
-            {
-                o[x] = options[x];
-            }
+            this.k8s.load(data,delegate);
         }
-        o["data"] = tools.b64Encode(data);
+        else
+        {
+            var id = tools.guid();
+            var request = {"project":{}};
+            var o = request["project"];
+            o["name"] = name;
+            o["id"] = id;
+            o["action"] = "load";
+            if (options != null)
+            {
+                for (var x in options)
+                {
+                    o[x] = options[x];
+                }
+            }
+            o["data"] = tools.b64Encode(data);
 
-        this._loadDelegates[id] = {connection:this,request:request,delegate:delegate};
+            this._loadDelegates[id] = {connection:this,request:request,delegate:delegate};
 
-        this.sendObject(request);
+            this.sendObject(request);
+        }
     }
 
     Api.prototype.loadRouter =
@@ -950,12 +983,27 @@ define([
     Api.prototype.deleteProject =
     function(name,delegate)
     {
-        var url = this.url;
-        var request = {"project":{}};
-        var o = request["project"];
-        o["name"] = name;
-        o["action"] = "delete";
-        this.sendObject(request);
+        if (this.k8s != null)
+        {
+            this.k8s.del(delegate);
+        }
+        else
+        {
+            var id = tools.guid();
+            var url = this.url;
+            var request = {"project":{}};
+            var o = request["project"];
+            o["name"] = name;
+            o["id"] = id;
+            o["action"] = "delete";
+
+            if (delegate != null)
+            {
+                this._deleteDelegates[id] = {connection:this,request:request,delegate:delegate};
+            }
+
+            this.sendObject(request);
+        }
     }
 
     Api.prototype.getProjectXml =
@@ -1060,6 +1108,36 @@ define([
     function(delegate)
     {
         return(eventsources.createEventSources(this,delegate));
+    }
+
+    Api.prototype.handleError =
+    function(o,delegate)
+    {
+        var message = "";
+
+        if (o.hasOwnProperty("text"))
+        {
+            message += o["text"];
+        }
+
+        if (o.hasOwnProperty("details"))
+        {
+            var details = o["details"];
+            for (var detail of details)
+            {
+                message += "\n";
+                message += detail["detail"];
+            }
+        }
+
+        if (tools.supports(delegate,"error"))
+        {
+            delegate.error(message);
+        }
+        else
+        {
+            console.log(message);
+        }
     }
 
     Api.prototype.toString =
