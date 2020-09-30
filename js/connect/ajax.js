@@ -146,19 +146,20 @@ define([
 					return;
 				}
 
-				if (this._ajax._method != null && this._ajax._method == "HEAD")
+				if (this._ajax._method == "HEAD")
 				{
-                    /*
-					if (this.status == 0 || this.status >= 400)
-					{
-						if (tools.supports(this._ajax._delegate,"error"))
-						{
-							this._ajax._delegate.error(this._ajax,null,null);
-						}
-					}
-					else if (tools.supports(this._ajax._delegate,"response"))
-                    */
-					if (tools.supports(this._ajax._delegate,"response"))
+				    if (received == false)
+                    {
+                        if (this._protocol == "https:")
+                        {
+                            window.open(this._url,this._url,"");
+                        }
+                        else if (tools.supports(this._ajax._delegate,"error"))
+                        {
+                            this._ajax._delegate.error(this._ajax,null,null);
+                        }
+                    }
+                    else if (tools.supports(this._ajax._delegate,"response"))
 					{
 						this._ajax._delegate.response(this._ajax,null,null);
 					}

@@ -46,7 +46,7 @@ define([
 		{
             var u = tools.createUrl(decodeURI(url));
 
-            if (u.protocol == "k8s:" || u.protocol == "k8ss:")
+            if (u.protocol.startsWith("k8s"))
             {
                 var project = k8s.createProject(url);
                 if (options == null)
@@ -100,80 +100,7 @@ define([
 
         createWebSocket:function(url,delegate)
         {
-            var ws = null;
-
-            if (this.isNode())
-            {
-                if (process.env.NODE_WEBSOCKETS == "ws")
-                {
-                    const   WS = require("ws");
-
-                    ws = new WS(url);
-
-                    if (tools.supports(delegate,"open"))
-                    {
-                        ws.on("open",delegate.open);
-                    }
-                    if (tools.supports(delegate,"close"))
-                    {
-                        ws.on("close",delegate.close);
-                    }
-                    if (tools.supports(delegate,"error"))
-                    {
-                        ws.on("error",delegate.error);
-                    }
-                    if (tools.supports(delegate,"message"))
-                    {
-                        ws.on("message",delegate.message);
-                    }
-                }
-                else
-                {
-                    var W3CWS = require("websocket").w3cwebsocket;
-
-                    ws = new W3CWS(url);
-
-                    if (tools.supports(delegate,"open"))
-                    {
-                        ws.onopen = delegate.open;
-                    }
-                    if (tools.supports(delegate,"close"))
-                    {
-                        ws.onclose = delegate.close;
-                    }
-                    if (tools.supports(delegate,"error"))
-                    {
-                        ws.onerror = delegate.error;
-                    }
-                    if (tools.supports(delegate,"message"))
-                    {
-                        ws.onmessage = delegate.message;
-                    }
-                }
-            }
-            else
-            {
-                ws = new WebSocket(url);
-
-                if (tools.supports(delegate,"open"))
-                {
-                    ws.onopen = delegate.open;
-                }
-                if (tools.supports(delegate,"close"))
-                {
-                    ws.onclose = delegate.close;
-                }
-                if (tools.supports(delegate,"error"))
-                {
-                    ws.onerror = delegate.error;
-                }
-                if (tools.supports(delegate,"message"))
-                {
-                    ws.onmessage = delegate.message;
-                }
-            }
-
-            return(ws);
+            return(tools.createWebSocket(url,delegate));
         },
 
 		getAjax:function()
@@ -184,6 +111,11 @@ define([
 		getTools:function()
 		{
 			return(tools);
+		},
+
+		getFormatter:function()
+		{
+			return(new Formatter());
 		},
 
 		getXPath:function()
@@ -268,13 +200,12 @@ define([
 
         stringFromBytes:function(bytes)
         {
-            var s = "";
+            return(tools.stringFromBytes(bytes));
+        },
 
-            bytes.forEach((b) => {
-                s += String.fromCharCode(b);
-            });
-
-            return(s);
+        bytesFromString:function(s)
+        {
+            return(tools.bytesFromString(s));
         },
 
         b64Encode:function(o)

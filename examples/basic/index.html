@@ -78,7 +78,7 @@ function
 connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-    _esp.connect(server,{ready:ready,error:error},{model:{name:"myproject",data:_xml},overwrite:true});
+    _esp.connect(server,{ready:ready,error:error},{model:{name:"p",data:_xml},overwrite:true});
     _esp.handleLayout();
 }
 
@@ -91,17 +91,16 @@ ready(conn)
 
     _visuals.createLogViewer("logs",_conn,{header:"Log Viewer"});
 
-    var clicks  = _conn.getEventCollection({window:"myproject/cq/clicksAggr"});
+    var clicks  = _conn.getEventCollection({window:"p/cq/clicksAggr"});
 
     _visuals.createBarChart("barchart",clicks,{y:"count",header:"Clicks Chart",xrange:[0,100],orientation:"horizontal",get_color:barcolor});
     _visuals.createGauge("gauges",clicks,{value:"count",segments:5,header:"Clicks Indicators",width:200,range:[0,100],bar_color:"rgba(255,255,255,.7)"});
 
-    _conn.getProjectXml("myproject",{response:function(c,data){_model = data;}});
+    _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
 
-    _publisher = _conn.getPublisher({window:"myproject/cq/clicks"});
+    _publisher = _conn.getPublisher({window:"p/cq/clicks"});
 
     _esp.size(100);
-
 }
 
 function
@@ -153,7 +152,7 @@ publish(evt)
                 <td id="bannerTitle"></td>
                 <td class="icon">
                     <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
-                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'myproject',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'p',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
                     <a class="icon" href="javascript:_esp.showFrameDialog('ESP Basic Example','help.html',{width:'50%',height:'50%'})" title="Help">&#xf30b;</a>
                 </td>
             </tr>

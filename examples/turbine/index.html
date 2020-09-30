@@ -9,12 +9,12 @@
 
 <title>ESP Wind Turbine Example</title>
 
-<link rel="stylesheet" href="/esp-connect/style/connect.css" />
+<link rel="stylesheet" href="../../style/connect.css" />
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="/esp-connect/js/ui/main"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/ui/main"></script>
 
 <script type="text/javascript">
 
@@ -55,30 +55,9 @@ function
 connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-    _esp.connect(server,{ready:ready,closed:closed});
+    var url = new URL("model.xml",document.URL).toString();
+    _esp.connect(server,{ready:ready,error:error},{model:{name:"p",url:url},overwrite:true});
     _esp.handleLayout();
-}
-
-function
-ready(connection)
-{
-    _conn = connection;
-
-    if (_esp.getParm("load",true))
-    {
-        _esp.showStatus("Loading project...");
-        _conn.loadProjectFrom("p",new URL("model.xml",document.URL).toString(),{loaded:loaded},{overwrite:true});
-    }
-    else
-    {
-        loaded();
-    }
-}
-
-function
-closed(connection)
-{
-    _timer.stop();
 }
 
 var _eventsources = null;
@@ -87,8 +66,10 @@ var _alerts = null;
 var _model = null;
 
 function
-loaded()
+ready(connection)
 {
+    _conn = connection;
+
     _esp.clearStatus();
 
     _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
@@ -119,6 +100,18 @@ loaded()
     {
         playPause();
     }
+}
+
+function
+error(message)
+{
+    console.log(message);
+}
+
+function
+closed(connection)
+{
+    _timer.stop();
 }
 
 function

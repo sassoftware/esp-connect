@@ -23,7 +23,6 @@ define([
     "./options"
 ], function(Options)
 {
-
     function
     Formatter(options)
     {
@@ -251,6 +250,42 @@ define([
         }
 
         return(s);
+    }
+
+    Formatter.prototype.listing =
+    function(data,fields)
+    {
+        var listing = "";
+        var lengths = {};
+
+        fields.forEach((f) => {
+            lengths[f] = 0;
+        });
+
+        var s;
+
+        data.forEach((item) => {
+
+            fields.forEach((f) => {
+                s = item.getOpt(f,"");
+
+                if (s.length > lengths[f])
+                {
+                    lengths[f] = new Number(s.length);
+                }
+            });
+        });
+
+        data.forEach((item) => {
+            fields.forEach((f) => {
+                s = item.getOpt(f,"");
+                listing += s;
+                listing += this.spaces((lengths[f] - s.length) + 2);
+            });
+            listing += "\n";
+        });
+
+        return(listing);
     }
 
     Formatter.prototype.spaces =

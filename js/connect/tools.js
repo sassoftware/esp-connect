@@ -373,6 +373,110 @@ define([
             return(dv.buffer);
         },
 
+        stringFromBytes:function(bytes)
+        {
+            var s = "";
+
+            bytes.forEach((b) => {
+                s += String.fromCharCode(b);
+            });
+
+            return(s);
+        },
+
+        bytesFromString:function(s)
+        {
+            var bytes = [];
+
+            for (var i = 0; i < s.length; i++)
+            {
+console.log("HERE: " + s.charCodeAt(i));
+                //bytes.concat(s.charCodeAt(i));
+                bytes.push(s.charCodeAt(i));
+            }
+
+console.log("bytes: " + bytes + " :: " + bytes.length);
+            return(bytes);
+        },
+
+        createWebSocket:function(url,delegate)
+        {
+            var ws = null;
+
+            if (_isNode)
+            {
+                if (process.env.NODE_WEBSOCKETS == "ws")
+                {
+                    const   WS = require("ws");
+
+                    ws = new WS(url);
+
+                    if (tools.supports(delegate,"open"))
+                    {
+                        ws.on("open",delegate.open);
+                    }
+                    if (tools.supports(delegate,"close"))
+                    {
+                        ws.on("close",delegate.close);
+                    }
+                    if (tools.supports(delegate,"error"))
+                    {
+                        ws.on("error",delegate.error);
+                    }
+                    if (tools.supports(delegate,"message"))
+                    {
+                        ws.on("message",delegate.message);
+                    }
+                }
+                else
+                {
+                    var W3CWS = require("websocket").w3cwebsocket;
+
+                    ws = new W3CWS(url);
+
+                    if (this.supports(delegate,"open"))
+                    {
+                        ws.onopen = delegate.open;
+                    }
+                    if (this.supports(delegate,"close"))
+                    {
+                        ws.onclose = delegate.close;
+                    }
+                    if (this.supports(delegate,"error"))
+                    {
+                        ws.onerror = delegate.error;
+                    }
+                    if (this.supports(delegate,"message"))
+                    {
+                        ws.onmessage = delegate.message;
+                    }
+                }
+            }
+            else
+            {
+                ws = new WebSocket(url);
+
+                if (this.supports(delegate,"open"))
+                {
+                    ws.onopen = delegate.open;
+                }
+                if (this.supports(delegate,"close"))
+                {
+                    ws.onclose = delegate.close;
+                }
+                if (this.supports(delegate,"error"))
+                {
+                    ws.onerror = delegate.error;
+                }
+                if (this.supports(delegate,"message"))
+                {
+                    ws.onmessage = delegate.message;
+                }
+            }
+
+            return(ws);
+        },
+
         createDataFromCsv:function(csv,options)
         {
             var opts = new Options(options);
@@ -767,7 +871,7 @@ define([
 
         getOffset:function(element)
         {
-            var	offset = new Object();
+            var offset = new Object();
             offset._x = 0;
             offset._y = 0;
             offset._parentX = -1;
@@ -775,7 +879,7 @@ define([
             offset._width = 0;
             offset._height = 0;
 
-            var	e = element;
+            var e = element;
 
             if (element.firstChild != null)
             {
@@ -903,6 +1007,11 @@ define([
             }
         }
     };
+
+    String.prototype.splitNoSpaces = function()
+    {
+         return(this.split(" ").filter(function(i){return i}));
+     };
 
     return(__tools);
 });

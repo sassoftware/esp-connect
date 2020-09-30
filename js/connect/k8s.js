@@ -20,6 +20,39 @@ define([
     K8S(url)
     {
         this._url = tools.createUrl(decodeURI(url));
+        this._proxy = null;
+
+        if (this._url.protocol.indexOf("-") != -1)
+        {
+            var a = this._url.protocol.split("-");
+
+            this._url.protocol = a[0] + ":";
+            a = a[1].split(":");
+            if (a[0].length == 0)
+            {
+                this._proxy = "/";
+            }
+            else
+            {
+                this._proxy = "/" + a[0] + "/";
+            }
+        }
+
+        this._ns = null;
+        this._project = null;
+        this._pod = null;
+
+        var a = (this._url.path != null) ? this._url.path.substr(1).split("/") : [];
+
+        if (a.length > 0)
+        {
+            this._ns = a[0];
+
+            if (a.length > 1)
+            {
+                this._project = a[1];
+            }
+        }
 
         Object.defineProperty(this,"k8sProtocol", {
             get() {
@@ -42,7 +75,11 @@ define([
             get() {
                 var protocol = "";
 
-                if (this._url.protocol == "k8ss:" || this._url.protocol == "https:")
+                if (this._proxy != null)
+                {
+                    protocol = "http:";
+                }
+                else if (this._url.protocol == "k8ss:" || this._url.protocol == "https:")
                 {
                     protocol = "https:";
                 }
@@ -55,9 +92,46 @@ define([
             }
         });
 
-        Object.defineProperty(this,"server", {
+        Object.defineProperty(this,"wsProtocol", {
             get() {
-                return(this.httpProtocol + "//" + this.host + ":" + this.port);
+                var protocol = "";
+
+                if (this._proxy != null)
+                {
+                    protocol = "ws:";
+                }
+                else if (this._url.protocol == "k8ss:" || this._url.protocol == "https:")
+                {
+                    protocol = "wss:";
+                }
+                else
+                {
+                    protocol = "ws:";
+                }
+
+                return(protocol);
+            }
+        });
+
+        Object.defineProperty(this,"baseUrl", {
+            get() {
+                var s = this.httpProtocol + "//" + this.host + ":" + this.port;
+                if (this._proxy != null)
+                {
+                    s += this._proxy;
+                }
+                return(s);
+            }
+        });
+
+        Object.defineProperty(this,"baseWsUrl", {
+            get() {
+                var s = this.wsProtocol + "//" + this.host + ":" + this.port;
+                if (this._proxy != null)
+                {
+                    s += this._proxy;
+                }
+                return(s);
             }
         });
 
@@ -85,17 +159,12 @@ define([
             }
         });
 
-        Object.defineProperty(this,"baseurl", {
-            get() {
-                var url = this.server;
-                return(url);
-            }
-        });
-
         Object.defineProperty(this,"url", {
             get() {
-                var url = this.baseurl;
-                url += "/apis/iot.sas.com/v1alpha1";
+                var url = this.baseUrl;
+                console.log("base: " + url);
+                url += "apis/iot.sas.com/v1alpha1";
+                console.log(url);
                 return(url);
             }
         });
@@ -105,10 +174,28 @@ define([
                 return(this.k8sProtocol + "//" + this.host + ":" + this.port);
             }
         });
+
+        Object.defineProperty(this,"namespace", {
+            get() {
+                return(this._ns);
+            }
+        });
+
+        Object.defineProperty(this,"project", {
+            get() {
+                return(this._project);
+            }
+        });
+
+        Object.defineProperty(this,"pod", {
+            get() {
+                return(this._pod);
+            }
+        });
     }
 
     K8S.prototype.getProjects =
-    function(delegate,project,ns)
+    function(delegate)
     {
         if (tools.supports(delegate,"handleProjects") == false)
         {
@@ -117,16 +204,16 @@ define([
 
         var url = this.url;
 
-        if (ns != null)
+        if (this._ns != null)
         {
-            url += "/namespaces/" + ns;
+            url += "/namespaces/" + this._ns;
         }
 
         url += "/espservers";
 
-        if (project != null)
+        if (this._project != null)
         {
-            url += "/" + project;
+            url += "/" + this._project;
         }
 
         var k8s = this;
@@ -185,19 +272,403 @@ define([
         request.get();
     }
 
+    K8S.prototype.getPods =
+    function(delegate)
+    {
+        if (tools.supports(delegate,"handlePods") == false)
+        {
+            tools.exception("the delegate must implement the handlePods function");
+        }
+
+        var url = this.baseUrl;
+        url += "api/v1";
+
+        if (this._ns != null)
+        {
+            url += "/namespaces/" + this._ns;
+        }
+
+        url += "/pods";
+
+        var k8s = this;
+
+        var o = {
+            response:function(request,text) {
+                var data = JSON.parse(text);
+                    var a = [];
+
+                    if (k8s.project != null)
+                    {
+                        var match = k8s.project + "-";
+                        for (var item of data.items)
+                        {
+                            if (item.metadata.name.startsWith(match))
+                            {
+                                a.push(item);
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        a = data.items;
+                    }
+
+                    delegate.handlePods(a);
+            },
+            error:function(request,error) {
+                if (tools.supports(delegate,"error"))
+                {
+                    delegate.error(request,error);
+                }
+                else
+                {
+                    tools.exception("error: " + error);
+                }
+            }
+        };
+
+        var request = ajax.create("pods",url,o);
+		request.setRequestHeader("accept","application/json");
+        request.get();
+    }
+
+    K8S.prototype.getPod =
+    function(delegate)
+    {
+        if (tools.supports(delegate,"handlePod") == false)
+        {
+            tools.exception("the delegate must implement the handlePod function");
+        }
+
+        if (this.namespace == null || this.project == null)
+        {
+            tools.exception("the instance requires both namespace and project name to get the pod");
+        }
+
+        this.getPods({
+            handlePods:function(pods) {
+                if (pods.length == 0)
+                {
+                    if (tools.supports(delegate,"notFound"))
+                    {
+                        delegate.notFound();
+                    }
+                }
+                else
+                {
+                    delegate.handlePod(pods[0]);
+                }
+            }
+        });
+    }
+
+    K8S.prototype.ls =
+    function(path,delegate)
+    {
+        if (tools.supports(delegate,"handleFiles") == false)
+        {
+            tools.exception("the delegate must implement the handleFiles function");
+        }
+
+        var handler = {
+            message:function(message) {
+                var decoder = new TextDecoder();
+                var s = decoder.decode(message.data);
+
+                if (s.length <= 1)
+                {
+                    return;
+                }
+
+                var lines = s.split("\n");
+                var files = [];
+                for (var line of lines)
+                {
+                    if (line.length == 0)
+                    {
+                        continue;
+                    }
+
+                    var type = line[0]; 
+
+                    if (type != '-' && type != 'd')
+                    {
+                        continue;
+                    }
+
+                    line = line.substr(1);
+
+                    var a = line.splitNoSpaces();
+                    var file = new Options();
+                    file.setOpt("name",a[8]);
+                    file.setOpt("perms",a[0]);
+                    file.setOpt("owner",a[2]);
+                    file.setOpt("group",a[3]);
+                    file.setOpt("size",a[4]);
+                    file.setOpt("modified",a[5] + " " + a[6] + " " + a[7]);
+                    file.setOpt("directory",((type == 'd') ? true : false));
+
+                    files.push(file);
+                }
+
+                delegate.handleFiles(files);
+            },
+
+            error:function(message) {
+                tools.exception(message);
+            }
+        }
+
+        if (this._pod == null)
+        {
+            var k8s = this;
+            this.getPod({handlePod:function(pod) {
+                k8s._pod = pod;
+                k8s.exec(["ls","-l",path],k8s._pod,handler);
+            }});
+        }
+        else
+        {
+            this.exec(["ls","-l",path],this._pod,handler);
+        }
+    }
+
+    K8S.prototype.get =
+    function(path,delegate)
+    {
+        if (tools.supports(delegate,"handleFile") == false)
+        {
+            tools.exception("the delegate must implement the handleFile function");
+        }
+
+        var buffers = [];
+
+        var handler = {
+            message:function(message) {
+                console.log("message: " + message.data.byteLength);
+                if (message.data.byteLength == 1)
+                {
+                    return;
+                }
+
+                var dv = new DataView(message.data);
+                var channel = dv.getUint8(0);
+
+                if (channel == 1)
+                {
+                    buffers.push(message.data.slice(1));
+                }
+            },
+
+            close:function() {
+                var size = 0;
+                buffers.forEach((buf) => {
+                    size += buf.byteLength;
+                });
+
+                var dv = new DataView(new ArrayBuffer(size));
+                var index = 0;
+
+                buffers.forEach((b) => {
+                    var source = new DataView(b);
+                    for (var i = 0; i < b.byteLength; i++)
+                    {
+                        dv.setUint8(index,source.getUint8(i));
+                        index++;
+                    }
+                });
+
+                var tar = new Tar();
+                tar.parse(dv.buffer);
+                delegate.handleFile(tar);
+            },
+            error:function(message) {
+                tools.exception(message);
+            }
+        }
+
+        if (this._pod == null)
+        {
+            var k8s = this;
+            this.getPod({handlePod:function(pod) {
+                k8s._pod = pod;
+                k8s.exec(["tar","cf","-",path],k8s._pod,handler);
+            }});
+        }
+        else
+        {
+            this.exec(["tar","cf","-",path],this._pod,handler);
+        }
+    }
+
+    K8S.prototype.put =
+    function(data,path,delegate)
+    {
+        /*
+        if (tools.supports(delegate,"handleFile") == false)
+        {
+            tools.exception("the delegate must implement the handleFile function");
+        }
+        */
+
+        var handler = {
+            open:function() {
+
+                var buf = null;
+
+                if (data instanceof String)
+                {
+                    buf = new ArrayBuffer(data.length + 1);
+
+                    var dv = new DataView(buf);
+                    var index = 1;
+
+                    dv.setUint8(0,0);
+
+                    for (var i = 0; i < data.length; i++)
+                    {
+                        dv.setUint8(index,data.charCodeAt(i));
+                        index++;
+                    }
+                }
+                else
+                {
+                    console.log("data: " + data);
+                    console.log("is ab: " + data instanceof Buffer);
+                    var inputData = new ArrayBuffer(data.byteLength);
+                    var tmp = new DataView(inputData);
+
+                    for (var i = 0; i < data.byteLength; i++)
+                    {
+                        tmp[i] = data[i];
+                    }
+                    buf = new ArrayBuffer(data.byteLength + 1);
+                    var input = new DataView(inputData);
+                    var dv = new DataView(buf);
+
+                    dv.setUint8(0,0);
+
+                    var index = 1;
+
+                    for (var i = 0; i < input.byteLength; i++)
+                    {
+                        dv[index] = input[i];
+                        index++;
+                    }
+                }
+
+                console.log("SENDING: " + buf.byteLength);
+                this.send(buf);
+
+                var ws = this;
+                setTimeout(function(){ws.close()},1000);
+            },
+
+            message:function(message) {
+                console.log(message.data);
+                console.log("message: " + new TextDecoder().decode(message.data));
+            },
+
+            error:function(message) {
+                tools.exception(message);
+                this.send(data);
+            }
+        }
+
+        const   rgx = new RegExp("/","g");
+
+        path = path.replace(rgx,"%2F");
+
+        if (this._pod == null)
+        {
+            var k8s = this;
+            this.getPod({handlePod:function(pod) {
+                k8s._pod = pod;
+                //k8s.exec(["tar","-xm","-f","-","-C",path],k8s._pod,handler);
+                k8s.exec(["tar","-xmf","-","-C",path],k8s._pod,handler);
+            }});
+        }
+        else
+        {
+            this.exec(["tar","cf","-",path],this._pod,handler);
+            this.exec(["tar","-xmf","-","-C",path],this._pod,handler);
+        }
+    }
+
+    K8S.prototype.rm =
+    function(path,delegate)
+    {
+        /*
+        if (tools.supports(delegate,"handleFile") == false)
+        {
+            tools.exception("the delegate must implement the handleFile function");
+        }
+        */
+
+        var handler = {
+            message:function(message) {
+                var decoder = new TextDecoder();
+                var s = decoder.decode(message.data);
+                console.log("message: " + s);
+            },
+
+            error:function(message) {
+                tools.exception(message);
+            }
+        }
+
+        if (this._pod == null)
+        {
+            var k8s = this;
+            this.getPod({handlePod:function(pod) {
+                k8s._pod = pod;
+                k8s.exec(["rm",path],k8s._pod,handler);
+            }});
+        }
+        else
+        {
+            this.exec(["rm",path],this._pod,handler);
+        }
+    }
+
+    K8S.prototype.exec =
+    function(command,pod,delegate)
+    {
+        var url = this.baseWsUrl;
+        url += "api/v1/namespaces/";
+        url += this.namespace;
+        url += "/pods/";
+        url += this._pod.metadata.name;
+        url += "/exec";
+
+        for (i = 0; i < command.length; i++)
+        {
+            url += ((i == 0) ? "?" : "&");
+            url += "command=" + command[i];
+        }
+
+        url += "&container=" + pod.spec.containers[0].name;
+        /*
+        url += "&stdin=true";
+        */
+        url += "&stdout=true";
+        url += "&stderr=true";
+        console.log(url);
+        tools.createWebSocket(url,delegate);
+    }
+
     function
     K8SProject(url)
     {
         K8S.call(this,url);
 
-        if (this.protocol != "k8s:" && this.protocol != "k8ss:")
+        if (this._url.protocol.startsWith("k8s") == false)
         {
-            tools.exception("The K8S url must use the k8s or k8ss protocol.");
+            tools.exception("The protocol must start with k8s");
         }
 
-        var a = (this.path != null) ? this.path.substr(1).split("/") : [];
-
-        if (a.length < 2)
+        if (this._project == null)
         {
             tools.exception("URL must be in form k8s://server/<namespace>/<project>");
         }
@@ -207,7 +678,18 @@ define([
                 var url = "";
                 if (this._config != null)
                 {
-                    url += this.httpProtocol + "//";
+                    if (this._url.protocol == "k8ss:" || this._url.protocol == "https:")
+                    {
+                        url += "https://";
+                    }
+                    else if (this._url.protocol == "k8ss-proxy:" || this._url.protocol == "https-proxy:")
+                    {
+                        url += "https://";
+                    }
+                    else
+                    {
+                        url += "http://";
+                    }
                     url += this._config.access.externalURL;
                     url += "/SASEventStreamProcessingServer";
                     url += "/" + this._project;
@@ -226,9 +708,6 @@ define([
                 return(xml);
             }
         });
-
-        this._ns = a[0];
-        this._project = a[1];
 
         this._config = null;
     }
@@ -249,7 +728,13 @@ define([
             {
                 if (model == null)
                 {
-                    connect.connect(k8s.espurl,delegate,options,start);
+                    k8s.getPod({
+                        handlePod:function(pod)
+                        {
+                            k8s._pod = pod;
+                            connect.connect(k8s.espurl,delegate,options,start);
+                        }
+                    });
                 }
                 else
                 {
@@ -267,11 +752,20 @@ define([
                 }
             },
 
-            notfound:function(project)
+            notFound:function(project)
             {
                 if (model == null)
                 {
-                    if (tools.supports(delegate,"error"))
+                    if (opts.getOpt("create",true))
+                    {
+                        var model = k8s.getDefaultModel(project);
+                        k8s.load(model,opts.getOpts(),{
+                            loaded:function() {
+                                connect.connect(k8s.espurl,delegate,options,start);
+                            }
+                        });
+                    }
+                    else if (tools.supports(delegate,"error"))
                     {
                         delegate.error("project not found: " + project);
                     }
@@ -323,9 +817,9 @@ define([
 
                 if (data.code == 404)
                 {
-                    if (tools.supports(delegate,"notfound"))
+                    if (tools.supports(delegate,"notFound"))
                     {
-                        delegate.notfound();
+                        delegate.notFound(k8s.namespace + "/" + k8s.project);
                     }
                 }
                 else
@@ -579,6 +1073,29 @@ define([
         return(s);
     }
 
+    K8SProject.prototype.getDefaultModel =
+    function(name)
+    {
+        var s = "";
+		s += "<project pubsub='auto' threads='4'>\n";
+		s += "    <contqueries>\n";
+		s += "        <contquery name='cq'>\n";
+		s += "            <windows>\n";
+		s += "                <window-source name='s'>\n";
+		s += "                    <schema>\n";
+		s += "                        <fields>\n";
+		s += "                            <field name='id' type='string' key='true'/>\n";
+		s += "                            <field name='data' type='string'/>\n";
+		s += "                        </fields>\n";
+		s += "                    </schema>\n";
+		s += "                </window-source>\n";
+		s += "            </windows>\n";
+		s += "        </contquery>\n";
+		s += "    </contqueries>\n";
+		s += "</project>\n";
+        return(s);
+    }
+
     K8SProject.prototype.isReady =
     function(delegate)
     {
@@ -594,7 +1111,7 @@ define([
             state = this._config.access.state;
         }
 
-        var ready = false;
+        const   k8s = this;
 
         if (state == "Succeeded")
         {
@@ -604,8 +1121,17 @@ define([
                 response(request,text) {
                     if (request.getStatus() == 200)
                     {
-                        ready = true;
-                        delegate.ready(this);
+                        k8s.getPod({
+                            handlePod:function(pod)
+                            {
+                                k8s._pod = pod;
+                                delegate.ready(this);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        setTimeout(function(){k8s.isReady(delegate)},500);
                     }
                 },
                 error(request,text) {
@@ -616,13 +1142,91 @@ define([
         else
         {
             this.loadConfig();
-        }
-
-        if (ready == false)
-        {
-            const   k8s = this;
             setTimeout(function(){k8s.isReady(delegate)},500);
         }
+    }
+
+	function
+	Tar()
+	{
+        Options.call(this);
+
+        this._content = null;
+
+        Object.defineProperty(this,"content", {
+            get() {
+                return(this._content);
+            }
+        });
+    }
+
+    Tar.prototype = Object.create(Options.prototype);
+    Tar.prototype.constructor = Tar;
+
+    Tar.prototype.parse =
+    function(data)
+    {
+        this._index = 0;
+        this._dv = new DataView(data);
+
+        this.setOpt("name",this.readString(100));
+        this.setOpt("mode",this.readString(8));
+        this.setOpt("userId",this.readString(8));
+        this.setOpt("groupId",this.readString(8));
+
+        var size = parseInt(this.readString(12),8);
+        this.setOpt("size",size);
+        this.setOpt("modified",this.readString(12));
+        this.setOpt("checksum",this.readString(8));
+        this.setOpt("type",this.readString(1));
+        this.setOpt("link",this.readString(100));
+
+        this.setOpt("ustar",this.readString(6));
+        this.setOpt("ustarVersion",this.readString(2));
+        this.setOpt("ownerName",this.readString(32));
+        this.setOpt("ownerGroup",this.readString(32));
+        this.setOpt("deviceMajor",this.readString(8));
+        this.setOpt("deviceMinor",this.readString(8));
+        this.setOpt("prefix",this.readString(155));
+
+        this._index = 512;
+        var size = parseInt(this.getOpt("size"),8);
+
+        this._content = this.read(this.getOpt("size"));
+    }
+
+    Tar.prototype.readString =
+    function(bytes)
+    {
+        var s = "";
+        var b;
+
+        for (var i = 0; i < bytes; i++)
+        {
+            b = this._dv.getUint8(this._index);
+            if (b > 0)
+            {
+                s += String.fromCharCode(b);
+            }
+            this._index++;
+        }
+
+        return(s);
+    }
+
+    Tar.prototype.read =
+    function(bytes)
+    {
+        var buf = new ArrayBuffer(bytes);
+        var dv = new DataView(buf);
+
+        for (var i = 0; i < bytes; i++)
+        {
+            dv.setUint8(i,this._dv.getUint8(this._index));
+            this._index++;
+        }
+
+        return(buf);
     }
 
     var _api =
