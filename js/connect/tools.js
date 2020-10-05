@@ -373,6 +373,17 @@ define([
             return(dv.buffer);
         },
 
+        bufferToArrayBuffer:function(buf)
+        {
+            var out = new ArrayBuffer(buf.length);
+            var dv = new Uint8Array(out);
+            for (var i = 0; i < buf.length; i++)
+            {
+                dv[i] = buf[i];
+            }
+            return(out);
+        },
+
         stringFromBytes:function(bytes)
         {
             var s = "";
@@ -384,18 +395,28 @@ define([
             return(s);
         },
 
+        stringFromArrayBuffer:function(buf)
+        {
+            var s = "";
+            var dv = new DataView(buf);
+
+            for (var i = 0; i < buf.byteLength; i++)
+            {
+                s += String.fromCharCode(dv.getUint8(i));
+            }
+
+            return(s);
+        },
+
         bytesFromString:function(s)
         {
             var bytes = [];
 
             for (var i = 0; i < s.length; i++)
             {
-console.log("HERE: " + s.charCodeAt(i));
-                //bytes.concat(s.charCodeAt(i));
                 bytes.push(s.charCodeAt(i));
             }
 
-console.log("bytes: " + bytes + " :: " + bytes.length);
             return(bytes);
         },
 
@@ -411,19 +432,19 @@ console.log("bytes: " + bytes + " :: " + bytes.length);
 
                     ws = new WS(url);
 
-                    if (tools.supports(delegate,"open"))
+                    if (this.supports(delegate,"open"))
                     {
                         ws.on("open",delegate.open);
                     }
-                    if (tools.supports(delegate,"close"))
+                    if (this.supports(delegate,"close"))
                     {
                         ws.on("close",delegate.close);
                     }
-                    if (tools.supports(delegate,"error"))
+                    if (this.supports(delegate,"error"))
                     {
                         ws.on("error",delegate.error);
                     }
-                    if (tools.supports(delegate,"message"))
+                    if (this.supports(delegate,"message"))
                     {
                         ws.on("message",delegate.message);
                     }
@@ -1008,10 +1029,26 @@ console.log("bytes: " + bytes + " :: " + bytes.length);
         }
     };
 
-    String.prototype.splitNoSpaces = function()
+    String.prototype.splitNoSpaces =
+    function()
     {
-         return(this.split(" ").filter(function(i){return i}));
-     };
+        return(this.split(" ").filter(function(i){return i}));
+    };
+
+    String.prototype.pad =
+    function(length,c)
+    {
+        var s = "";
+
+        for (var i = 0; i < length - this.length; i++)
+        {
+            s += c;
+        }
+
+        s += this;
+
+        return(s);
+    };
 
     return(__tools);
 });

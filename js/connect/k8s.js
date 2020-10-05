@@ -28,14 +28,7 @@ define([
 
             this._url.protocol = a[0] + ":";
             a = a[1].split(":");
-            if (a[0].length == 0)
-            {
-                this._proxy = "/";
-            }
-            else
-            {
-                this._proxy = "/" + a[0] + "/";
-            }
+            this._proxy = (a[0].length == 0) ? "" : a[0];
         }
 
         this._ns = null;
@@ -60,12 +53,19 @@ define([
 
                 if (this._url.protocol == "k8ss:" || this._url.protocol == "https:")
                 {
-                    protocol = "k8ss:";
+                    protocol = "k8ss";
                 }
                 else
                 {
-                    protocol = "k8s:";
+                    protocol = "k8s";
                 }
+
+                if (this._proxy != null)
+                {
+                    protocol += "-" + this._proxy;
+                }
+
+                protocol += ":";
 
                 return(protocol);
             }
@@ -118,7 +118,16 @@ define([
                 var s = this.httpProtocol + "//" + this.host + ":" + this.port;
                 if (this._proxy != null)
                 {
-                    s += this._proxy;
+                    s += "/";
+
+                    if (this._proxy.length > 0)
+                    {
+                        s += this._proxy + "/";
+                    }
+                }
+                else
+                {
+                    s += "/";
                 }
                 return(s);
             }
@@ -129,7 +138,16 @@ define([
                 var s = this.wsProtocol + "//" + this.host + ":" + this.port;
                 if (this._proxy != null)
                 {
-                    s += this._proxy;
+                    s += "/";
+
+                    if (this._proxy.length > 0)
+                    {
+                        s += this._proxy + "/";
+                    }
+                }
+                else
+                {
+                    s += "/";
                 }
                 return(s);
             }
@@ -162,9 +180,8 @@ define([
         Object.defineProperty(this,"url", {
             get() {
                 var url = this.baseUrl;
-                console.log("base: " + url);
                 url += "apis/iot.sas.com/v1alpha1";
-                console.log(url);
+                console.log("URL: " + url);
                 return(url);
             }
         });
@@ -195,7 +212,7 @@ define([
     }
 
     K8S.prototype.getProjects =
-    function(delegate)
+    function(delegate,namespace,name)
     {
         if (tools.supports(delegate,"handleProjects") == false)
         {
@@ -204,16 +221,16 @@ define([
 
         var url = this.url;
 
-        if (this._ns != null)
+        if (namespace != null)
         {
-            url += "/namespaces/" + this._ns;
+            url += "/namespaces/" + namespace;
         }
 
         url += "/espservers";
 
-        if (this._project != null)
+        if (name != null)
         {
-            url += "/" + this._project;
+            url += "/" + name;
         }
 
         var k8s = this;
@@ -372,15 +389,9 @@ define([
         }
 
         var handler = {
-            message:function(message) {
+            out:function(ws,data) {
                 var decoder = new TextDecoder();
-                var s = decoder.decode(message.data);
-
-                if (s.length <= 1)
-                {
-                    return;
-                }
-
+                var s = decoder.decode(data);
                 var lines = s.split("\n");
                 var files = [];
                 for (var line of lines)
@@ -413,10 +424,6 @@ define([
                 }
 
                 delegate.handleFiles(files);
-            },
-
-            error:function(message) {
-                tools.exception(message);
             }
         }
 
@@ -434,6 +441,36 @@ define([
         }
     }
 
+    K8S.prototype.cat =
+    function(path,delegate)
+    {
+        if (tools.supports(delegate,"output") == false)
+        {
+            tools.exception("the delegate must implement the output function");
+        }
+
+        var handler = {
+            out:function(ws,data) {
+                var decoder = new TextDecoder();
+                var s = decoder.decode(data);
+                delegate.output(s);
+            }
+        }
+
+        if (this._pod == null)
+        {
+            var k8s = this;
+            this.getPod({handlePod:function(pod) {
+                k8s._pod = pod;
+                k8s.exec(["cat",path],k8s._pod,handler);
+            }});
+        }
+        else
+        {
+            this.exec(["cat",path],this._pod,handler);
+        }
+    }
+
     K8S.prototype.get =
     function(path,delegate)
     {
@@ -445,23 +482,11 @@ define([
         var buffers = [];
 
         var handler = {
-            message:function(message) {
-                console.log("message: " + message.data.byteLength);
-                if (message.data.byteLength == 1)
-                {
-                    return;
-                }
-
-                var dv = new DataView(message.data);
-                var channel = dv.getUint8(0);
-
-                if (channel == 1)
-                {
-                    buffers.push(message.data.slice(1));
-                }
+            out:function(ws,data) {
+                buffers.push(data.slice(1));
             },
 
-            close:function() {
+            closed:function() {
                 var size = 0;
                 buffers.forEach((buf) => {
                     size += buf.byteLength;
@@ -483,8 +508,13 @@ define([
                 tar.parse(dv.buffer);
                 delegate.handleFile(tar);
             },
-            error:function(message) {
-                tools.exception(message);
+            err:function(ws,message) {
+                var text = new TextDecoder().decode(message);
+
+                if (text.indexOf("Removing leading") < 0)
+                {
+                    tools.exception(text);
+                }
             }
         }
 
@@ -503,117 +533,124 @@ define([
     }
 
     K8S.prototype.put =
-    function(data,path,delegate)
+    function(data,path,options,delegate)
     {
-        /*
-        if (tools.supports(delegate,"handleFile") == false)
+        if (data instanceof Buffer)
         {
-            tools.exception("the delegate must implement the handleFile function");
+            data = tools.bufferToArrayBuffer(data);
         }
-        */
 
         var handler = {
-            open:function() {
+           ready:function(ws) {
+                var tar = new Tar();
+                tar.create(data,options);
 
-                var buf = null;
+                const   bufsize = 513;
 
-                if (data instanceof String)
+                var buf = new ArrayBuffer(tar.buffer.byteLength + 1);
+                var dv = new DataView(new ArrayBuffer(bufsize));
+
+                dv.setUint8(0,0);
+
+                var index = 1;
+
+                for (var i = 0; i < tar.dv.byteLength; i++)
                 {
-                    buf = new ArrayBuffer(data.length + 1);
+                    dv.setUint8(index,tar.dv.getUint8(i));
 
-                    var dv = new DataView(buf);
-                    var index = 1;
+                    index++;
 
-                    dv.setUint8(0,0);
-
-                    for (var i = 0; i < data.length; i++)
+                    if (index == bufsize)
                     {
-                        dv.setUint8(index,data.charCodeAt(i));
-                        index++;
-                    }
-                }
-                else
-                {
-                    console.log("data: " + data);
-                    console.log("is ab: " + data instanceof Buffer);
-                    var inputData = new ArrayBuffer(data.byteLength);
-                    var tmp = new DataView(inputData);
-
-                    for (var i = 0; i < data.byteLength; i++)
-                    {
-                        tmp[i] = data[i];
-                    }
-                    buf = new ArrayBuffer(data.byteLength + 1);
-                    var input = new DataView(inputData);
-                    var dv = new DataView(buf);
-
-                    dv.setUint8(0,0);
-
-                    var index = 1;
-
-                    for (var i = 0; i < input.byteLength; i++)
-                    {
-                        dv[index] = input[i];
-                        index++;
+                        ws.send(dv.buffer);
+                        dv.setUint8(0,0);
+                        index = 1;
                     }
                 }
 
-                console.log("SENDING: " + buf.byteLength);
-                this.send(buf);
+                var end = new DataView(new ArrayBuffer(2));
+                end.setUint8(0,0);
+                end.setUint8(0,4);
+                ws.send(end.buffer);
 
-                var ws = this;
-                setTimeout(function(){ws.close()},1000);
+                ws.close();
             },
 
-            message:function(message) {
-                console.log(message.data);
-                console.log("message: " + new TextDecoder().decode(message.data));
+            closed:function(ws) {
+                if (tools.supports(delegate,"done"))
+                {
+                    delegate.done();
+                }
             },
 
-            error:function(message) {
-                tools.exception(message);
-                this.send(data);
+            out:function(ws,message) {
+                console.log(new TextDecoder().decode(message));
             }
         }
 
+        /*
         const   rgx = new RegExp("/","g");
-
         path = path.replace(rgx,"%2F");
+        */
 
         if (this._pod == null)
         {
             var k8s = this;
             this.getPod({handlePod:function(pod) {
                 k8s._pod = pod;
-                //k8s.exec(["tar","-xm","-f","-","-C",path],k8s._pod,handler);
                 k8s.exec(["tar","-xmf","-","-C",path],k8s._pod,handler);
             }});
         }
         else
         {
-            this.exec(["tar","cf","-",path],this._pod,handler);
             this.exec(["tar","-xmf","-","-C",path],this._pod,handler);
         }
+    }
+
+    K8S.prototype.puturl =
+    function(url,path,options,delegate)
+    {
+        var opts = new Options(options);
+        var k8s = this;
+
+        var o = {
+            response:function(request,text) {
+                k8s.put(text,path,opts.getOpts(),delegate);
+            },
+            error:function(request,error) {
+                tools.exception("error: " + error);
+            }
+        };
+
+        if (opts.hasOpt("name") == false)
+        {
+            const   index = url.lastIndexOf("/");
+            if (index != -1)
+            {
+                opts.setOpt("name",url.substr(index));
+            }
+        }
+
+        ajax.create("load",url,o).get();
     }
 
     K8S.prototype.rm =
     function(path,delegate)
     {
-        /*
-        if (tools.supports(delegate,"handleFile") == false)
-        {
-            tools.exception("the delegate must implement the handleFile function");
-        }
-        */
-
         var handler = {
-            message:function(message) {
+            message:function(ws,message) {
                 var decoder = new TextDecoder();
                 var s = decoder.decode(message.data);
-                console.log("message: " + s);
             },
 
-            error:function(message) {
+            closed:function(ws) {
+                if (tools.supports(delegate,"done"))
+                {
+                    delegate.done();
+                }
+            },
+
+            error:function(ws,message) {
                 tools.exception(message);
             }
         }
@@ -629,6 +666,41 @@ define([
         else
         {
             this.exec(["rm",path],this._pod,handler);
+        }
+    }
+
+    K8S.prototype.mkdir =
+    function(path,delegate)
+    {
+        var handler = {
+            message:function(message) {
+                var decoder = new TextDecoder();
+                var s = decoder.decode(message.data);
+            },
+
+            closed:function(ws) {
+                if (tools.supports(delegate,"done"))
+                {
+                    delegate.done();
+                }
+            },
+
+            error:function(message) {
+                tools.exception(message);
+            }
+        }
+
+        if (this._pod == null)
+        {
+            var k8s = this;
+            this.getPod({handlePod:function(pod) {
+                k8s._pod = pod;
+                k8s.exec(["mkdir","-p",path],k8s._pod,handler);
+            }});
+        }
+        else
+        {
+            this.exec(["mkdir","-p",path],this._pod,handler);
         }
     }
 
@@ -649,13 +721,86 @@ define([
         }
 
         url += "&container=" + pod.spec.containers[0].name;
-        /*
         url += "&stdin=true";
+        /*
         */
         url += "&stdout=true";
         url += "&stderr=true";
-        console.log(url);
-        tools.createWebSocket(url,delegate);
+
+        var o = {
+            open:function()
+            {
+                if (tools.supports(delegate,"ready"))
+                {
+                    delegate.ready(this);
+                }
+            },
+
+            error:function(message)
+            {
+                if (tools.supports(delegate,"error"))
+                {
+                    delegate.error(this,message);
+                }
+                else
+                {
+                    tools.exception(new TextDecoder().decode(message.data));
+                }
+            },
+
+            close:function()
+            {
+                if (tools.supports(delegate,"closed"))
+                {
+                    delegate.closed(this);
+                }
+            },
+
+            message:function(message) {
+
+                var buf = null;
+
+                if (message.constructor.name == "Buffer")
+                {
+                    buf = tools.bufferToArrayBuffer(message);
+                }
+                else
+                {
+                    buf = message.data;
+                }
+                var dv = new DataView(buf);
+                var channel = dv.getUint8(0);
+
+                if (dv.byteLength == 1)
+                {
+                    return;
+                }
+
+                if (channel == 1)
+                {
+                    if (tools.supports(delegate,"out"))
+                    {
+                        delegate.out(this,message.data);
+                    }
+                    else
+                    {
+                        console.log(new TextDecoder().decode(message.data));
+                    }
+                }
+                else if (channel == 2)
+                {
+                    if (tools.supports(delegate,"err"))
+                    {
+                        delegate.err(this,message.data);
+                    }
+                    else
+                    {
+                        tools.exception(new TextDecoder().decode(message.data));
+                    }
+                }
+            }
+        };
+        tools.createWebSocket(url,o);
     }
 
     function
@@ -923,7 +1068,6 @@ define([
             };
 
             var content = this.getYaml(newmodel);
-            //console.log(content);
             var request = ajax.create("create",url,o);
             request.setRequestHeader("content-type","application/yaml");
             request.setRequestHeader("accept","application/json");
@@ -1151,6 +1295,9 @@ define([
 	{
         Options.call(this);
 
+        this._index = 0;
+        this._dv = null;
+
         this._content = null;
 
         Object.defineProperty(this,"content", {
@@ -1158,10 +1305,136 @@ define([
                 return(this._content);
             }
         });
+
+        Object.defineProperty(this,"dv", {
+            get() {
+                return(this._dv);
+            }
+        });
+
+        Object.defineProperty(this,"buffer", {
+            get() {
+                return(this._dv.buffer);
+            }
+        });
     }
 
     Tar.prototype = Object.create(Options.prototype);
     Tar.prototype.constructor = Tar;
+
+    Tar.prototype.create =
+    function(data,options)
+    {
+        var opts = new Options(options);
+
+        if (opts.hasOpt("name") == false)
+        {
+            tools.exception("must supply name for remote file");
+        }
+
+        var dv = null;
+        var size = 0;
+
+        if (typeof(data) == "string" || data instanceof String)
+        {
+            size = data.length;
+            dv = new DataView(tools.createBuffer(data));
+        }
+        else
+        {
+            size = data.byteLength;
+            dv = new DataView(data);
+        }
+
+        var bytes = (size + (512 - (size % 512))) + 512 + (512 * 2);
+        this._dv = new DataView(new ArrayBuffer(bytes));
+
+        this.putString(opts.getOpt("name"),0,100);
+
+        const   mode = "000" + opts.getOpt("mode","644") + " ";
+        this.putString(mode,100,8);
+
+        this.putString(opts.getOpt("userid","001001 "),108,8);
+        this.putString(opts.getOpt("groupid","001001 "),116,8);
+
+        this.putString("0",156,1);
+        this.putString("ustar",257,6);
+        this.putString("00",263,2);
+
+        this.putString(opts.getOpt("owner","sas"),265,32);
+        this.putString(opts.getOpt("group","sas"),297,32);
+
+        var s;
+
+        s = size.toString(8);
+        s = s.pad(11,'0');
+        s += " ";
+        this.putString(s,124,12);
+
+        /*
+        s = "13735354337 ";
+        this.putString(s,136,12);
+        */
+
+        s = " ";
+        s = s.pad(8,' ');
+        this.putString(s,148,8);
+        s += " ";
+
+        s = "0";
+        s = s.pad(6,'0');
+        s += " ";
+        this.putString(s,329,8);
+
+        this.putString(s,337,8);
+
+        s = this.checksum();
+        s = s.pad(6,'0');
+        this.putString(s,148,6);
+        this._dv.setUint8(154,0);
+
+        var index = 512;
+
+        for (var i = 0; i < size; i++)
+        {
+            this._dv.setUint8(index + i,dv.getUint8(i));
+        }
+    }
+
+    Tar.prototype.getString =
+    function(s,index,length)
+    {
+        var s = "";
+        var b;
+
+        for (var i = 0; i < bytes; i++)
+        {
+            b = this._dv.getUint8(index);
+            if (b > 0)
+            {
+                s += String.fromCharCode(b);
+            }
+            index++;
+        }
+
+        return(s);
+    }
+
+    Tar.prototype.putString =
+    function(s,index,length)
+    {
+        for (var i = 0; i < length; i++)
+        {
+            if (s.length > i)
+            {
+                this._dv.setUint8(index + i,s.charCodeAt(i));
+            }
+            else
+            {
+                //this._dv.setUint8(0);
+            }
+        }
+    }
 
     Tar.prototype.parse =
     function(data)
@@ -1227,6 +1500,21 @@ define([
         }
 
         return(buf);
+    }
+
+    Tar.prototype.checksum =
+    function()
+    {
+        var value = 0;
+
+        for (var i = 0; i < this._dv.byteLength; i++)
+        {
+            value += this._dv.getUint8(i);
+        }
+
+        var s = value.toString(8);
+
+        return(s);
     }
 
     var _api =

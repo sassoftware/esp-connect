@@ -68,9 +68,9 @@ if (opts.getOpt("pod",false))
     });
 }
 
-if (opts.getOpt("ls",false))
+if (opts.hasOpt("ls"))
 {
-    var path = opts.getOpt("path","/");
+    var path = opts.getOpt("ls","/");
     k8s.ls(path, {
         handleFiles:function(files)
         {
@@ -82,9 +82,22 @@ if (opts.getOpt("ls",false))
     });
 }
 
-if (opts.getOpt("get",false))
+if (opts.hasOpt("cat"))
 {
-    k8s.get(opts.getOpt("path","/"), {
+    var path = opts.getOpt("cat");
+    k8s.cat(path, {
+        output:function(data)
+        {
+            console.log(data);
+        }
+    });
+}
+
+if (opts.hasOpt("get"))
+{
+    var path = opts.getOpt("get");
+
+    k8s.get(path,{
         handleFile:function(tar)
         {
             var outfile = opts.getOpt("out");
@@ -96,27 +109,52 @@ if (opts.getOpt("get",false))
             }
             const   fs = require("fs");
             const   data = fs.writeFileSync(outfile,new DataView(tar.content));
+
+            console.log("\nfile transfer complete\n");
         }
     });
 }
 
-if (opts.getOpt("put",false))
+if (opts.hasOpt("put"))
 {
-    const   fs = require("fs");
-    const   data = fs.readFileSync("/tmp/x.tar");
+    const   url = opts.getOpt("put");
+    const   path = opts.getOpt("path");
 
-    //k8s.put("ajsfjajfjasfjasdfj",opts.getOpt("path","/"), {
-    k8s.put(data,opts.getOpt("path","/"), {
-        handleFile:function(data)
+    if (url == null || path == null)
+    {
+        esp.getTools().exception("you must specify input URL and -path <remote path>");
+    }
+
+    console.log("\ncopying data...");
+
+    k8s.puturl(url,path,opts.getOpts(),{
+        done:function()
         {
-            console.log("file");
+            console.log("copy complete\n");
+        }
+    });
+}
+
+if (opts.getOpt("mkdir",false))
+{
+    const   path = opts.getOpt("mkdir");
+    k8s.mkdir(path,{
+        done:function()
+        {
+            console.log("\n" + path + " created\n");
         }
     });
 }
 
 if (opts.getOpt("rm",false))
 {
-    k8s.rm(opts.getOpt("path"));
+    const   path = opts.getOpt("rm");
+    k8s.rm(path,{
+        done:function()
+        {
+            console.log("\n" + path + " removed\n");
+        }
+    });
 }
 
 if (opts.getOpt("test",false))
