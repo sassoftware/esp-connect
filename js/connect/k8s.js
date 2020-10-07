@@ -8,6 +8,16 @@ if (typeof(define) !== "function")
     var define = require("amdefine")(module);
 }
 
+var _isNode = false;
+
+try
+{
+    _isNode = (require("detect-node") != null);
+}
+catch (e)
+{
+}
+
 define([
     "./serverconn",
     "./tools",
@@ -39,11 +49,14 @@ define([
 
         if (a.length > 0)
         {
-            this._ns = a[0];
-
-            if (a.length > 1)
+            if (a[0].length > 0)
             {
-                this._project = a[1];
+                this._ns = a[0];
+
+                if (a.length > 1 && a[1].length > 0)
+                {
+                    this._project = a[1];
+                }
             }
         }
 
@@ -181,7 +194,33 @@ define([
             get() {
                 var url = this.baseUrl;
                 url += "apis/iot.sas.com/v1alpha1";
-                console.log("URL: " + url);
+                return(url);
+            }
+        });
+
+        Object.defineProperty(this,"httpUrl", {
+            get() {
+                var url = "";
+
+                if (this._url.protocol == "k8ss:" || this._url.protocol == "https:")
+                {
+                    url += "https";
+                }
+                else
+                {
+                    url += "http";
+                }
+
+                if (this._proxy != null)
+                {
+                    url += "-" + this._proxy;
+                }
+
+                url += "://";
+                url += this.host;
+                url += ":";
+                url += this.port;
+
                 return(url);
             }
         });
@@ -374,8 +413,70 @@ define([
                 }
                 else
                 {
+//console.log(JSON.stringify(pods[0],null,2));
                     delegate.handlePod(pods[0]);
                 }
+            }
+        });
+    }
+
+    K8S.prototype.getLog =
+    function(delegate)
+    {
+        if (tools.supports(delegate,"handleLog") == false)
+        {
+            tools.exception("the delegate must implement the handleLog function");
+        }
+
+        if (this.namespace == null || this.project == null)
+        {
+            tools.exception("the instance requires both namespace and project name to get the pod");
+        }
+
+        var k8s = this;
+
+        this.getPod({
+            handlePod:function(pod)
+            {
+                var url = k8s.baseUrl;
+                url += "api/v1";
+                url += "/namespaces/" + k8s.namespace;
+                url += "/pods/" + pod.metadata.name;
+                url += "/log";
+
+                ajax.create("log",url,{
+                    response:function(request,text) {
+                        var log = [];
+                        var o;
+                        text.split("\n").forEach((line) => {
+                            if (line.length > 0)
+                            {
+                                try
+                                {
+                                    o = JSON.parse(line);
+                                }
+                                catch (exception)
+                                {
+                                    o = {};
+                                    o.message = line;
+                                }
+
+                                log.push(o);
+                            }
+                        });;
+                        delegate.handleLog(log);
+                    },
+                    error:function(request,error) {
+                        if (tools.supports(delegate,"error"))
+                        {
+                            delegate.error(request,error);
+                        }
+                        else
+                        {
+                            tools.exception("error: " + error);
+                        }
+                    }
+                }).get();
             }
         });
     }
@@ -427,18 +528,7 @@ define([
             }
         }
 
-        if (this._pod == null)
-        {
-            var k8s = this;
-            this.getPod({handlePod:function(pod) {
-                k8s._pod = pod;
-                k8s.exec(["ls","-l",path],k8s._pod,handler);
-            }});
-        }
-        else
-        {
-            this.exec(["ls","-l",path],this._pod,handler);
-        }
+        this.run(["ls","-l",path],handler);
     }
 
     K8S.prototype.cat =
@@ -457,18 +547,7 @@ define([
             }
         }
 
-        if (this._pod == null)
-        {
-            var k8s = this;
-            this.getPod({handlePod:function(pod) {
-                k8s._pod = pod;
-                k8s.exec(["cat",path],k8s._pod,handler);
-            }});
-        }
-        else
-        {
-            this.exec(["cat",path],this._pod,handler);
-        }
+        this.run(["cat",path],handler);
     }
 
     K8S.prototype.get =
@@ -518,26 +597,18 @@ define([
             }
         }
 
-        if (this._pod == null)
-        {
-            var k8s = this;
-            this.getPod({handlePod:function(pod) {
-                k8s._pod = pod;
-                k8s.exec(["tar","cf","-",path],k8s._pod,handler);
-            }});
-        }
-        else
-        {
-            this.exec(["tar","cf","-",path],this._pod,handler);
-        }
+        this.run(["tar","cf","-",path],handler);
     }
 
     K8S.prototype.put =
     function(data,path,options,delegate)
     {
-        if (data instanceof Buffer)
+        if (_isNode)
         {
-            data = tools.bufferToArrayBuffer(data);
+            if (data instanceof Buffer)
+            {
+                data = tools.bufferToArrayBuffer(data);
+            }
         }
 
         var handler = {
@@ -588,23 +659,7 @@ define([
             }
         }
 
-        /*
-        const   rgx = new RegExp("/","g");
-        path = path.replace(rgx,"%2F");
-        */
-
-        if (this._pod == null)
-        {
-            var k8s = this;
-            this.getPod({handlePod:function(pod) {
-                k8s._pod = pod;
-                k8s.exec(["tar","-xmf","-","-C",path],k8s._pod,handler);
-            }});
-        }
-        else
-        {
-            this.exec(["tar","-xmf","-","-C",path],this._pod,handler);
-        }
+        this.run(["tar","-xmf","-","-C",path],handler);
     }
 
     K8S.prototype.puturl =
@@ -655,18 +710,7 @@ define([
             }
         }
 
-        if (this._pod == null)
-        {
-            var k8s = this;
-            this.getPod({handlePod:function(pod) {
-                k8s._pod = pod;
-                k8s.exec(["rm",path],k8s._pod,handler);
-            }});
-        }
-        else
-        {
-            this.exec(["rm",path],this._pod,handler);
-        }
+        this.run(["rm",path],handler);
     }
 
     K8S.prototype.mkdir =
@@ -690,17 +734,30 @@ define([
             }
         }
 
+        this.run(["mkdir","-p",path],handler);
+    }
+
+    K8S.prototype.run =
+    function(command,delegate)
+    {
+        if (this.namespace == null || this.project == null)
+        {
+            tools.exception("the instance requires both namespace and project name to execute a command");
+        }
+
+        const   a = (Array.isArray(command)) ? command : command.split(" ");
+
         if (this._pod == null)
         {
             var k8s = this;
             this.getPod({handlePod:function(pod) {
                 k8s._pod = pod;
-                k8s.exec(["mkdir","-p",path],k8s._pod,handler);
+                k8s.exec(a,k8s._pod,delegate);
             }});
         }
         else
         {
-            this.exec(["mkdir","-p",path],this._pod,handler);
+            this.exec(a,this._pod,delegate);
         }
     }
 
@@ -711,7 +768,7 @@ define([
         url += "api/v1/namespaces/";
         url += this.namespace;
         url += "/pods/";
-        url += this._pod.metadata.name;
+        url += pod.metadata.name;
         url += "/exec";
 
         for (i = 0; i < command.length; i++)
@@ -726,6 +783,8 @@ define([
         */
         url += "&stdout=true";
         url += "&stderr=true";
+        
+        const   k8s = this;
 
         var o = {
             open:function()
@@ -800,6 +859,7 @@ define([
                 }
             }
         };
+
         tools.createWebSocket(url,o);
     }
 
@@ -808,14 +868,16 @@ define([
     {
         K8S.call(this,url);
 
+        /*
         if (this._url.protocol.startsWith("k8s") == false)
         {
             tools.exception("The protocol must start with k8s");
         }
+        */
 
         if (this._project == null)
         {
-            tools.exception("URL must be in form k8s://server/<namespace>/<project>");
+            tools.exception("URL must be in form protocol://server/<namespace>/<project>");
         }
 
         Object.defineProperty(this,"espurl", {
@@ -855,6 +917,8 @@ define([
         });
 
         this._config = null;
+
+        this.loadConfig();
     }
 
     K8SProject.prototype = Object.create(K8S.prototype);
@@ -1006,6 +1070,8 @@ define([
                 return;
             }
         }
+        /*
+        */
 
         var k8s = this;
 
@@ -1014,7 +1080,7 @@ define([
             var o = {
                 deleted:function() {
                     k8s._config = null;
-                    k8s.load(model,opts.getOpts(),delegate);
+                    setTimeout(function(){k8s.load(model,opts.getOpts(),delegate)},1000);
                 },
                 error:function(message) {
                     tools.exception(message);
@@ -1259,29 +1325,40 @@ define([
 
         if (state == "Succeeded")
         {
-            var url = this.espurl;
-            url += "/internal/ready";
-            ajax.create("ready",url,{
-                response(request,text) {
-                    if (request.getStatus() == 200)
+            k8s.getPod({
+                handlePod:function(pod)
+                {
+                    var ready = false;
+
+                    if (pod.status.phase == "Running")
                     {
-                        k8s.getPod({
-                            handlePod:function(pod)
+                        for (var i = 0; i < pod.status.conditions.length; i++)
+                        {
+                            var condition = pod.status.conditions[i];
+
+                            if (condition.status != "True")
                             {
-                                k8s._pod = pod;
-                                delegate.ready(this);
+                                break;
                             }
-                        });
+                        }
+
+                        ready = (i == pod.status.conditions.length);
+                    }
+
+                    if (ready)
+                    {
+                        k8s._pod = pod;
+                        setTimeout(function(){delegate.ready(k8s)},1000);
+                        /*
+                        delegate.ready(k8s);
+                        */
                     }
                     else
                     {
-                        setTimeout(function(){k8s.isReady(delegate)},500);
+                        setTimeout(function(){k8s.isReady(delegate)},1000);
                     }
-                },
-                error(request,text) {
-                    tools.exception(text);
                 }
-            }).head();
+            });
         }
         else
         {
@@ -1289,6 +1366,65 @@ define([
             setTimeout(function(){k8s.isReady(delegate)},500);
         }
     }
+
+    K8SProject.prototype.readiness =
+    function(delegate)
+    {
+        var url = this.espurl;
+        url += "/internal/ready";
+        const   req = ajax.create("ready",url,{
+            response(request,text) {
+                console.log("ready status: " + request.getStatus());
+                if (request.getStatus() == 200)
+                {
+                    delegate.ready(this);
+                }
+                else
+                {
+                    setTimeout(function(){k8s.readiness(delegate)},500);
+                }
+            },
+            error(request,text) {
+                tools.exception(text);
+            }
+        });
+        setTimeout(function() {req.head()},1000);
+    }
+
+    /*
+    K8SProject.prototype.readiness =
+    function(delegate)
+    {
+        var url = this.espurl;
+        url += "/internal/ready";
+        const   req = ajax.create("ready",url,{
+            response(request,text) {
+                console.log("ready status: " + request.getStatus());
+                if (request.getStatus() == 200)
+                {
+                    k8s.getPod({
+                        handlePod:function(pod)
+                        {
+                            k8s._pod = pod;
+                            delegate.ready(this);
+                        }
+                    });
+                }
+                else
+                {
+                    setTimeout(function(){k8s.isReady(delegate)},500);
+                }
+            },
+            error(request,text) {
+                tools.exception(text);
+            }
+        });
+        var certConfirm  = this.espurl;
+        certConfirm  += "/eventStreamProcessing/v1/server";
+        req.setOpt("cert-confirm-url",certConfirm);
+        setTimeout(function() {req.head()},1000);
+    }
+    */
 
 	function
 	Tar()
@@ -1519,14 +1655,21 @@ define([
 
     var _api =
     {
-        create:function(server)
+        create:function(url)
         {
-            return(new K8S(server));
-        },
+            var u = tools.createUrl(decodeURI(url));
+            var o = null;
 
-        createProject:function(url)
-        {
-            return(new K8SProject(url));
+            if (u.path.split("/").length == 3)
+            {
+                o = new K8SProject(url);
+            }
+            else
+            {
+                o = new K8S(url);
+            }
+
+            return(o);
         }
     };
 

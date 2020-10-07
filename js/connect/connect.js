@@ -48,7 +48,7 @@ define([
 
             if (u.protocol.startsWith("k8s"))
             {
-                var project = k8s.createProject(url);
+                var project = k8s.create(url);
                 if (options == null)
                 {
                     options = {};
@@ -173,9 +173,9 @@ define([
             return(tools.createTimer());
         },
 
-        createK8S:function(server)
+        createK8S:function(url)
         {
-            return(k8s.create(server));
+            return(k8s.create(url));
         },
 
         formatDate:function(date,format)

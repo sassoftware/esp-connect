@@ -23,12 +23,14 @@ var _http = _isNode ? require("http") : null;
 
 define([
     "./xpath",
-    "./tools"
-], function(xpath,tools)
+    "./tools",
+    "./options"
+], function(xpath,tools,Options)
 {
 	function
 	Ajax(name,url,delegate,context)
 	{
+        Options.call(this);
 		this._name = name;
 		this._url = url;
 		this._delegate = delegate;
@@ -39,6 +41,9 @@ define([
 		this._method = null;
 		this._xml = null;
 	}
+
+    Ajax.prototype = Object.create(Options.prototype);
+    Ajax.prototype.constructor = Ajax;
 
 	Ajax.prototype.get =
 	function()
@@ -152,7 +157,11 @@ define([
                     {
                         if (this._protocol == "https:")
                         {
-                            window.open(this._url,this._url,"");
+                            if (this._ajax.hasOpt("cert-confirm-url"))
+                            {
+                                var url = this._ajax.getOpt("cert-confirm-url");
+                                window.open(url,url,"");
+                            }
                         }
                         else if (tools.supports(this._ajax._delegate,"error"))
                         {
@@ -168,7 +177,11 @@ define([
 				{
 					if (this._protocol == "https:")
 					{
-						window.open(this._url,this._url,"");
+                        if (this._ajax.hasOpt("cert-confirm-url"))
+                        {
+                            var url = this._ajax.getOpt("cert-confirm-url");
+                            window.open(url,url,"");
+                        }
 					}
 					else if (tools.supports(this._ajax._delegate,"error"))
 					{

@@ -68,6 +68,18 @@ if (opts.getOpt("pod",false))
     });
 }
 
+if (opts.getOpt("log",false))
+{
+    k8s.getLog({
+        handleLog:function(log)
+        {
+            log.forEach((entry) => {
+                console.log(JSON.stringify(entry,null,2));
+            });
+        }
+    });
+}
+
 if (opts.hasOpt("ls"))
 {
     var path = opts.getOpt("ls","/");
@@ -155,6 +167,30 @@ if (opts.getOpt("rm",false))
             console.log("\n" + path + " removed\n");
         }
     });
+}
+
+if (opts.getOpt("exec",false))
+{
+    const   command = opts.getOpt("_end");
+
+    k8s.run(command,{
+        out:function(ws,message)
+        {
+            console.log(new TextDecoder().decode(message));
+        },
+        error:function(message)
+        {
+            console.log("error: " + message);
+        }
+    });
+}
+
+if (opts.getOpt("esp",false))
+{
+    setTimeout(function() {
+        console.log(k8s.espurl);
+    },1000
+    );
 }
 
 if (opts.getOpt("test",false))

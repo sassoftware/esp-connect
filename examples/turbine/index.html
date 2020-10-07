@@ -32,21 +32,15 @@ esp(api)
 
     var parms = _esp.getParms();
 
-    if (parms.hasOwnProperty("k8s"))
-    {
-        _esp.k8s = parms["k8s"];
-    }
-
     _visuals = _esp.createVisuals(parms);
 
-    if (parms.hasOwnProperty("server") == false)
+    var server = _esp.getServerFromParms(parms,"p");
+
+    if (server == null)
     {
         _esp.showConnectDialog({connect:connect});
         return;
     }
-
-    var server = parms["server"];
-    delete parms["server"];
 
     connect(server);
 }
@@ -55,6 +49,7 @@ function
 connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+    _esp.showStatus("Loading project...");
     var url = new URL("model.xml",document.URL).toString();
     _esp.connect(server,{ready:ready,error:error},{model:{name:"p",url:url},overwrite:true});
     _esp.handleLayout();
@@ -68,6 +63,8 @@ var _model = null;
 function
 ready(connection)
 {
+    _esp.clearStatus();
+
     _conn = connection;
 
     _esp.clearStatus();

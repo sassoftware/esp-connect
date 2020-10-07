@@ -17,10 +17,13 @@
 <script type="text/javascript">
 
 var _visuals = null;
+var _server = null;
 var _visual = null;
+var _model = null;
 var _appid = "";
 var _conn = null;
 var _esp = null;
+var _k8s = null;
 
 function
 esp(api)
@@ -31,7 +34,7 @@ esp(api)
 
     if (parms.hasOwnProperty("k8s"))
     {
-        _esp.k8s = parms["k8s"];
+        _k8s = _esp.createK8S(parms["k8s"]);
     }
 
     _appid = parms.hasOwnProperty("appid") ? parms["appid"] : "";
@@ -40,23 +43,40 @@ esp(api)
 
     _visuals = _esp.createVisuals(parms);
 
-    if (parms.hasOwnProperty("server") == false)
-    {
-        _esp.showConnectDialog({connect:connect});
-        return;
-    }
+    _esp.getAjax().create("model","model.xml", {
+        response:function(request,text) {
+            _model = text;
 
-    var server = parms["server"];
-    delete parms["server"];
+            var server = _esp.getServerFromParms(parms,"p");
 
-    connect(server);
+            if (server == null)
+            {
+                _esp.showConnectDialog({connect:connect});
+                return;
+            }
+
+            connect(server);
+        }
+    }).get();
 }
 
 function
 connect(server)
 {
+    _server = server;
+
+    if (_appid.length == 0)
+    {
+        _esp.getDialogs().pushModal("help");
+        return;
+    }
+
+    _model = _model.replace("@APPID@",_appid);
+
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-    _esp.connect(server,{ready:ready});
+
+    _esp.connect(server,{ready:ready,error:error},{model:{name:"p",data:_model},overwrite:true});
+
     _esp.handleLayout();
 }
 
@@ -65,23 +85,6 @@ ready(connection)
 {
     _conn = connection;
 
-    if (_appid.length > 0)
-    {
-        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true,parms:{appid:_appid,config:new URL("config.xml",document.URL).toString()}});
-    }
-    else
-    {
-        _esp.getDialogs().pushModal("help");
-    }
-
-    _esp.size();
-}
-
-var _model = null;
-
-function
-loaded()
-{
     _visuals.clear();
 
     var weather = _conn.getEventCollection({window:"p/cq/weather",pagesize:3});
@@ -100,7 +103,17 @@ loaded()
 
     _esp.size();
 
-    _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
+    _conn.getProjectXml("p",{
+        response:function(c,data){
+            _model = data;
+        }
+    });
+}
+
+function
+error(message)
+{
+    _esp.getDialogs().popup("Error",message);
 }
 
 function
@@ -123,11 +136,13 @@ function
 done()
 {
     _esp.getDialogs().popModal("help");
-    _appid = document.getElementById("appid").value;
 
-    if (_appid.length > 0)
+    const   appid = document.getElementById("appid").value;
+
+    if (appid != _appid)
     {
-        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true,parms:{appid:_appid,config:new URL("config.xml",document.URL).toString()}});
+        _appid = appid;
+        connect(_server);
     }
 }
 

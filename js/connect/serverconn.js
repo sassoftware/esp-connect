@@ -216,18 +216,15 @@ define([
             {
                 if (this.isSecure)
                 {
-                    var url = this.httpProtocol;
-                    url += "://";
-                    url += this.host;
-                    url += ":";
-                    url += this.port;
-                    url += "/";
-                    url += this.path;
-                    url += "/eventStreamProcessing/v1/server";
-                    if (_prompted.hasOwnProperty(url) == false)
+                    if (this.hasOpt("cert-confirm-url"))
                     {
-                        _prompted[url] = true;
-                        window.open(url,"espconnect","width=800,height=800");
+                        var url = this._ajax.getOpt("cert-confirm-url");
+
+                        if (_prompted.hasOwnProperty(url) == false)
+                        {
+                            _prompted[url] = true;
+                            window.open(url,"espconnect","width=800,height=800");
+                        }
                     }
                 }
             }

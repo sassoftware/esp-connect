@@ -12,28 +12,45 @@
 
 var _server = null;
 var _k8s = null;
-var _api = null;
+var _esp = null;
 
 function
 esp(api)
 {
-    _api = api;
+    _esp = api;
 
-    _api.handleLayout();
+    var parms = _esp.getParms();
 
-    if (_api.hasParm("k8s"))
+    if (parms.hasOwnProperty("k8s"))
     {
-        _k8s = _api.getParm("k8s");
+        _k8s = _esp.createK8S(parms["k8s"]);
+
+        if (_k8s.namespace == null)
+        {
+            _esp.getDialogs().popup("Invalid K8S URL","The K8S URL must include a namespace");
+            return;
+        }
     }
 
-    if (_api.hasParm("server"))
+    _esp.handleLayout();
+
+    if (_k8s != null)
     {
-        _server = _api.getParm("server");
+        _server = _k8s.httpUrl;
+        _server += "/" + _k8s.namespace;
         connect(_server);
     }
     else
     {
-        _api.showConnectDialog({connect:connect});
+        if (_esp.hasParm("server"))
+        {
+            _server = _esp.getParm("server");
+            connect(_server);
+        }
+        else
+        {
+            _esp.showConnectDialog({connect:connect});
+        }
     }
 }
 
@@ -41,9 +58,9 @@ function
 connect(server)
 {
     _server = server;
-    _api.getDialogs().clearModals();
+    _esp.getDialogs().clearModals();
     document.getElementById("bannerTitle").innerHTML = "ESP Connect Examples (" + _server + ")";
-    _api.size();
+    _esp.size();
 }
 
 function
@@ -54,16 +71,16 @@ go(example)
     if (_k8s != null)
     {
         s += "?";
-        s += "k8s=" + _k8s;
+        s += "k8s=" + _k8s.httpUrl;
+        s += "/" + _k8s.namespace;
     }
-
-    if (_server != null)
+    else if (_server != null)
     {
         s += ((s.length > 0) ? "&" : "?");
         s += "server=" + _server;
     }
 
-    var parms = _api.getParms();
+    var parms = _esp.getParms();
 
     for (var x in parms)
     {
@@ -108,7 +125,7 @@ ul.examples a
             <tr>
                 <td id="bannerTitle">ESP Connect Examples</td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_api.getDialogs().pushModal('connect')">&#xf137;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('connect')">&#xf137;</a>
                 </td>
             </tr>
         </table>

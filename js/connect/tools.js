@@ -711,13 +711,27 @@ define([
         {
             var opts = new Options();
             var key = null;
+            var end = null;
             var s;
 
             for (var i = 2; i < process.argv.length; i++)
             {
                 s = process.argv[i];
 
-                if (s[0] == '-')
+                if (end != null)
+                {
+                    if (end.length > 0)
+                    {
+                        end += " ";
+                    }
+                    end += s;
+                }
+                else if (s == '--')
+                {
+                    end = "";
+                    continue;
+                }
+                else if (s[0] == '-')
                 {
                     if (key != null)
                     {
@@ -731,6 +745,11 @@ define([
                     opts.setOpt(key,this.createValue(s));
                     key = null;
                 }
+            }
+
+            if (end != null)
+            {
+                opts.setOpt("_end",end);
             }
 
             if (key != null)

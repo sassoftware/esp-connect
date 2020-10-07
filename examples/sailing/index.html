@@ -42,16 +42,15 @@ esp(api)
 
     _visuals = _esp.createVisuals(parms);
 
-    if (parms.hasOwnProperty("server") == false)
+    _visuals.createWrapper("legend",{header:"Ships",style:{width:"98%",height:"5%","padding-top":"10px"},show_header:false});
+
+    var server = _esp.getServerFromParms(parms,"p");
+
+    if (server == null)
     {
         _esp.showConnectDialog({connect:connect});
         return;
     }
-
-    var server = parms["server"];
-    delete parms["server"];
-
-    _visuals.createWrapper("legend",{header:"Ships",style:{width:"98%",height:"5%","padding-top":"10px"},show_header:false});
 
     connect(server);
 }
@@ -60,6 +59,7 @@ function
 connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+    _esp.showStatus("Loading project...");
     var url = new URL("model.xml",document.URL).toString();
     _esp.connect(server,{ready:ready,error:error},{model:{name:"p",url:url},overwrite:true,parms:{config:new URL("config.xml",document.URL).toString()}});
     _esp.handleLayout();
@@ -71,6 +71,8 @@ var _model = null;
 function
 ready(connection)
 {
+    _esp.clearStatus();
+
     _conn = connection;
 
     _esp.clearStatus();

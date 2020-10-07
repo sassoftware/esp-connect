@@ -28,6 +28,7 @@ var _viewer = null;
 var _parms = null;
 var _init = false;
 var _esp = null;
+var _k8s = null;
 
 function
 esp(api)
@@ -66,7 +67,7 @@ setup()
 
     if (_parms.hasOwnProperty("k8s"))
     {
-        _esp.k8s = _parms["k8s"];
+        _k8s = _esp.createK8S(_parms["k8s"]);
     }
 
     _visuals = _esp.createVisuals(_esp.getParms());
@@ -89,7 +90,7 @@ setup()
     }
     else
     {
-        _esp.showConnectDialog({connect:connect},_connection);
+        _esp.showConnectDialog({connect:connect},_k8s);
     }
 
     var fields = new Array();
@@ -235,7 +236,7 @@ select#loglevel
             <tr>
                 <td id="bannerTitle">ESP Log Viewer</td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_esp.showConnectDialog({connect:connect},_connection)">&#xf137;</a>
+                    <a class="icon" href="javascript:_esp.showConnectDialog({connect:connect},_k8s)">&#xf137;</a>
                     <a class="icon" href="javascript:showLoggers()">&#xf3ca;</a>
                 </td>
             </tr>

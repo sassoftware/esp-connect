@@ -364,48 +364,6 @@ define([
             this.pushModal(this._frameDialog);
         },
 
-		showFrameDialogx:function(options)
-        {
-            var opts = new Options(options);
-
-            if (this._frameDialog == null)
-            {
-                this._frameDialog = document.createElement("div");
-                this._frameDialog.className = "dialog";
-                this._frameDialog.innerHTML = "<div class='dialogTop' style='height:70%;overflow:auto'>\
-                        <div class='dialogHeader'>\
-                            <div class='dialogTitle'>\
-                                <table style='width:100%;height:10%;border:0' cellspacing='0' cellpadding='0'>\
-                                    <tr>\
-                                        <td><div id='_dialogFrameHeader' class='dialogTitle'></div></td>\
-                                    </tr>\
-                                </table>\
-                            </div>\
-                        </div>\
-                        <div class='dialogContent' style='width:95%;height:85%;margin:auto'>\
-                            <iframe id='_dialogFrame' class='dialogFrame' frameborder='0'></iframe>\
-                        </div>\
-                    </div>\
-                    <div class='dialogButtons' style='height:10%;padding:0;padding-right:30px'>\
-                        <table style='width:100%;height:100%'>\
-                            <tr>\
-                                <td class='dialogButton' style='vertical-align:middle'>\
-                                    <span><button class='close' onclick='javascript:_dialogs_.clearFrameDialog()'>Done</button></span>\
-                                </td>\
-                            </tr>\
-                        </table>\
-                    </div>";
-            }
-
-            this._frameDialog.style.width = opts.getOpt("width","90%");
-            this._frameDialog.style.height = opts.getOpt("height","90%");
-
-            this.pushModal(this._frameDialog);
-
-            document.getElementById("_dialogFrameHeader").innerHTML = opts.getOpt("header","");
-            document.getElementById("_dialogFrame").src = opts.getOpt("url","");
-        },
-
 		clearFrameDialog:function(options)
         {
             if (this._frameDialog != null)

@@ -76,7 +76,7 @@ define([
             }
         },
 
-        showConnectDialog:function(delegate,connection)
+        showConnectDialog:function(delegate,k8s)
         {
             if (connect.getTools().supports(delegate,"connect") == false)
             {
@@ -88,11 +88,19 @@ define([
 
             var o = {
                 ok:function(data) {
-                    var server = data.server.trim();
+                    var server = "";
+
+                    if (data.hasOwnProperty("server"))
+                    {
+                        server = data.server.trim();
+                    }
 
                     if (server.length == 0)
                     {
-                        server = data.k8s.trim();
+                        if (data.hasOwnProperty("k8s"))
+                        {
+                            server = data.k8s.trim();
+                        }
                     }
 
                     if (server.length == 0)
@@ -109,7 +117,6 @@ define([
             };
 
             var values = [];
-            var k8s = (connection != null) ? connection.k8s : null;
 
             if (k8s != null)
             {
@@ -130,7 +137,7 @@ define([
                             options[s] = url;
                         });
 
-                        values.push({name:"server",label:"ESP Server",value:""});
+                        //values.push({name:"server",label:"ESP Server",value:""});
 
                         value.options = options;
                         values.push(value);
@@ -295,6 +302,33 @@ define([
             {
                 delete parms[name];
             }
+        },
+
+        getServerFromParms:function(parms,project)
+        {
+            var server = null;
+
+            if (parms.hasOwnProperty("k8s"))
+            {
+                const   k8s = this.createK8S(parms["k8s"]);
+
+                if (k8s.namespace == null)
+                {
+                    dialogs.popup("Invalid K8S URL","The K8S URL must include a namespace");
+                    return;
+                }
+
+                server = k8s.k8sUrl;
+                server += "/" + k8s.namespace + "/";
+                server += project;
+            }
+            else if (parms.hasOwnProperty("server"))
+            {
+                server = parms["server"];
+                delete parms["server"];
+            }
+
+            return(server);
         },
 
         createValue:function(s)

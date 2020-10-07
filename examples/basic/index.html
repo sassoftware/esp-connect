@@ -53,23 +53,17 @@ esp(api)
 
     var parms = _esp.getParms();
 
-    if (parms.hasOwnProperty("k8s"))
-    {
-        _esp.k8s = parms["k8s"];
-    }
-
     _visuals = _esp.createVisuals(parms);
 
     _visuals.createWrapper("colors",{header:"Click on the colored areas to generate events",style:{width:"98%",height:"150px"}});
 
-    if (parms.hasOwnProperty("server") == false)
+    var server = _esp.getServerFromParms(parms,"p");
+
+    if (server == null)
     {
         _esp.showConnectDialog({connect:connect});
         return;
     }
-
-    var server = parms["server"];
-    delete parms["server"];
 
     connect(server);
 }
@@ -78,6 +72,7 @@ function
 connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+    _esp.showStatus("Loading project...");
     _esp.connect(server,{ready:ready,error:error},{model:{name:"p",data:_xml},overwrite:true});
     _esp.handleLayout();
 }
@@ -85,6 +80,8 @@ connect(server)
 function
 ready(conn)
 {
+    _esp.clearStatus();
+
     _conn = conn;
 
     _esp.clearStatus();
