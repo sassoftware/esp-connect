@@ -124,9 +124,9 @@ error(message)
 }
 
 function
-error()
+error(message)
 {
-    alert("error");
+    _esp.getDialogs().popup("Error",message);
 }
 
 function

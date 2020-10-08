@@ -13,8 +13,9 @@ define([
     "../connect/options",
     "../connect/tools",
     "./chart",
-    "./simpletable"
-], function(Model,Options,tools,Chart,SimpleTable)
+    "./simpletable",
+    "./dialogs"
+], function(Model,Options,tools,Chart,SimpleTable,dialogs)
 {
     function
     Viewers(options)
@@ -1080,81 +1081,24 @@ define([
     /* Log Viewer */
 
     function
-    filterLogViewer()
-    {
-        this._viewer._connection.getLog().filter = this._viewer._filter.value;
-        this._viewer.draw();
-    }
-
-    function
-    clearLogViewer()
-    {
-        this._viewer.clear();
-    }
-
-    function
-    copyLog()
-    {
-        var copy = this._viewer._copy;
-
-        if (copy == null)
-        {
-            copy = document.createElement("textarea");
-            copy.style.display.width = "1px";
-            copy.style.display.height = "1px";
-            copy.style.display.left = "-10px";
-            copy.style.display.top = "-10px";
-            document.body.appendChild(copy);
-            this._viewer._copy = copy;
-        }
-
-        var s = "";
-        var value;
-
-        const   newlines = /\<br\/\>/gi;
-        const   spaces = /&nbsp;/gi;
-
-        this._viewer._table.items.forEach((item) => {
-            this._viewer._table.fields.forEach((field) => {
-                if (this._viewer._table.isHidden(field.name) == false)
-                {
-                    value = item[field.name];
-
-                    if (field.name == "messageContent")
-                    {
-                        value = value.replace(newlines,"\n");
-                        value = value.replace(spaces," ");
-                    }
-
-                    s += field.name;
-                    s += "=";
-                    s += value;
-                    s += "\n";
-                }
-            });
-
-            s += "------------------------------------------------------\n";
-        });
-
-        copy.value = s;
-        copy.setSelectionRange(0,copy.value.length);
-        copy.focus();
-        document.execCommand("copy");
-    }
-
-    function
-    playPauseLogViewer()
-    {
-        this._viewer.togglePlay();
-    }
-
-    function
     LogViewer(visuals,container,connection,options)
     {
-        ViewerBase.call(this,visuals,container,connection,options);
+        var opts = new Options(options);
+        var toolbar = [];
+        opts.setOpt("toolbar",toolbar);
 
-        this._filter = null;
-        this._playPause = null;
+        toolbar.push({name:"playPause",text:"&#xf4f4;",tooltip:"Pause"});
+        toolbar.push({name:"copyToClipboard",text:"&#xf3ca;",tooltip:"Copy Log to Clipboard"});
+        toolbar.push({name:"clear",text:"&#xf108;",tooltip:"Clear Log"});
+        toolbar.push({name:"contexts",text:"&#xf499;",tooltip:"Show Logging Contexts..."});
+
+        //toolbar.push({name:"clear",text:"&#xf108;",style:{paddingLeft:"10px"}});
+
+        opts.setOpt("toolbar",toolbar);
+        opts.setOpt("enable_filter",true);
+
+        ViewerBase.call(this,visuals,container,connection,opts.getOpts());
+
         this._paused = false;
         this._jsonformat = false;
         this._table = null;
@@ -1215,72 +1159,7 @@ define([
         this._logDiv.style.margin = 0;
         this._logDiv.style.padding = 0;
 
-        this._controlDiv = document.createElement("div");
-        this._controlDiv.style.display = "none";
-        this._controlDiv.className = "logcontrols";
-        var filter = this.getOpt("filter","");
-        var table = document.createElement("table");
-        var tr;
-        var td;
-
-        this._controlDiv.appendChild(table);
-
-        table.style.width = "100%";
-
-        table.appendChild(tr = document.createElement("tr"));
-
-        tr.appendChild(td = document.createElement("td"));
-
-        this._playPause = document.createElement("a");
-        this._playPause._viewer = this;
-        this._playPause.innerHTML = "&#xf4f4;";
-        this._playPause.className = "icon";
-        this._playPause.href = "#";
-        this._playPause.title = "Pause";
-        this._playPause.addEventListener("click",playPauseLogViewer);
-        td.appendChild(this._playPause);
-
-        var a = document.createElement("a");
-        a._viewer = this;
-        a.title = "Clear Log";
-        a.innerHTML = "&#xf108;";
-        a.className = "icon";
-        a.href = "#";
-        a.addEventListener("click",clearLogViewer);
-        td.appendChild(a);
-
-        a = document.createElement("a");
-        a._viewer = this;
-        a.title = "Copy to clipboard";
-        a.innerHTML = "&#xf141;";
-        a.className = "icon";
-        a.href = "#";
-        a.addEventListener("click",copyLog);
-        td.appendChild(a);
-
-        tr.appendChild(td = document.createElement("td"));
-        td.style.textAlign = "right";
-        this._filter = document.createElement("input");
-        this._filter.style.width = "500px";
-        this._filter.value = filter;
-        td.appendChild(this._filter);
-
-        var a = document.createElement("a");
-        a._viewer = this;
-        a.innerHTML = "&#xf25b;";
-        a.className = "icon";
-        a.href = "#";
-        a.title = "Filter Log";
-        a.addEventListener("click",filterLogViewer);
-        td.appendChild(a);
-
         this._content.appendChild(this._logDiv);
-        this._content.appendChild(this._controlDiv);
-
-        if (this.getOpt("enable_controls",false))
-        {
-            this._controlDiv.style.display = "block";
-        }
 
         var fields = [];
         fields.push({name:"id",type:"string",hidden:true});
@@ -1302,23 +1181,182 @@ define([
         this.size();
     }
 
+    LogViewer.prototype.toolbarClick =
+    function(opts)
+    {
+        var action = opts.getOpt("name","");
+
+        if (action == "playPause")
+        {
+            this.togglePlay();
+        }
+        else if (action == "copyToClipboard")
+        {
+            this.copyToClipboard();
+        }
+        else if (action == "clear")
+        {
+            this.clear();
+        }
+        else if (action == "contexts")
+        {
+            this.showContexts();
+        }
+    }
+
+    LogViewer.prototype.showContexts =
+    function()
+    {
+        if (this._loggerTable == null)
+        {
+            this._showContextsId = tools.guid();
+            this._contextDialog = document.createElement("div");
+            this._contextDialog.innerHTML = this.getContextHtml(this._showContextsId);
+            document.body.appendChild(this._contextDialog);
+
+            var fields = new Array();
+            fields.push({name:"@name",type:"string",label:"Logging Context"});
+            fields.push({name:"@level",type:"string",label:"Level"});
+
+            const   tableDiv = document.getElementById(this._showContextsId + "-table");
+            tableDiv.style.border = "1px solid #d8d8d8";
+            tableDiv.style.height = "300px";
+
+            const   viewer = this;
+
+            const    delegate = {
+                itemClicked:function(item) {
+
+                    viewer._loggerTable.deselectAll();
+                    item.selected = true;
+
+                    document.getElementById(viewer._showContextsId + "-loglevel").value = item["@level"].toLowerCase();
+                    document.getElementById(viewer._showContextsId + "-setLevel").disabled = false;
+                }
+            };
+
+            this._loggerTable = this._visuals.createSimpleTable(tableDiv,{name:"loggers",key:"@name"},delegate);
+            this._loggerTable.setFields(fields);
+            this._loggerTable.draw();
+
+            const   click = function() {
+                var item = viewer._loggerTable.getSelectedItem();
+                if (item != null)
+                {
+                    const   value = document.getElementById(viewer._showContextsId + "-loglevel").value;
+                    viewer._connection.setLogger(item["@name"],value,{response:function(connection,data){
+                        if (Array.isArray(data))
+                        {
+                            table.setData(data);
+                        }
+                    }
+                    });
+                }
+            };
+
+            document.getElementById(viewer._showContextsId + "-setLevel").addEventListener("click",click);
+        }
+
+        dialogs.pushModal(this._showContextsId);
+
+        const   table = this._loggerTable;
+
+        table.deselectAll();
+
+        this._connection.getLoggers({
+            response:function(connection,data)
+            {
+                if (Array.isArray(data))
+                {
+                    table.setData(data);
+                }
+            }
+        });
+    }
+
+    LogViewer.prototype.getFilter =
+    function()
+    {
+        return(this.getOpt("filter"));
+    }
+
+    LogViewer.prototype.setFilter =
+    function(value)
+    {
+        this._connection.getLog().filter = value;
+        this.setOpt("filter",value);
+        this.setHeader();
+    }
+
+    LogViewer.prototype.copyToClipboard =
+    function()
+    {
+        var copy = this._copy;
+
+        if (copy == null)
+        {
+            copy = document.createElement("textarea");
+            copy.style.display.width = "1px";
+            copy.style.display.height = "1px";
+            copy.style.display.left = "-10px";
+            copy.style.display.top = "-10px";
+            document.body.appendChild(copy);
+            this._copy = copy;
+        }
+
+        var s = "";
+        var value;
+
+        const   newlines = /\<br\/\>/gi;
+        const   spaces = /&nbsp;/gi;
+
+        this._table.items.forEach((item) => {
+
+            this._table.fields.forEach((field) => {
+                if (this._table.isHidden(field.getOpt("name")) == false)
+                {
+                    value = item[field.getOpt("name")];
+
+                    if (field.getOpt("name") == "messageContent")
+                    {
+                        value = value.replace(newlines,"\n");
+                        value = value.replace(spaces," ");
+                    }
+
+                    s += field.getOpt("name");
+                    s += "=";
+                    s += value;
+                    s += "\n";
+                }
+            });
+
+            s += "------------------------------------------------------\n";
+        });
+
+        copy.value = s;
+        copy.setSelectionRange(0,copy.value.length);
+        copy.focus();
+        document.execCommand("copy");
+    }
+
     LogViewer.prototype.togglePlay =
     function()
     {
         var code = false;
+        var item = this.getToolbarItem("playPause");
 
         if (this._paused)
         {
             this._paused = false;
             this._connection.getLog().addDelegate(this);
-            this._playPause.innerHTML = "&#xf4f4;";
+            item.innerHTML = "&#xf4f4;";
             code = true;
         }
         else
         {
             this._paused = true;
             this._connection.getLog().removeDelegate(this);
-            this._playPause.innerHTML = "&#xf513;";
+            item.innerHTML = "&#xf513;";
         }
 
         return(code);
@@ -1347,7 +1385,7 @@ define([
         {
             var	outerBorders = tools.getBorders(this._logDiv,true);
             this._logDiv.style.width = (this._content.offsetWidth - outerBorders.hsize) + "px";
-            this._logDiv.style.height = (this._content.offsetHeight - this._controlDiv.offsetHeight - outerBorders.vsize) + "px";
+            this._logDiv.style.height = (this._content.offsetHeight - outerBorders.vsize) + "px";
         }
     }
 
@@ -1384,6 +1422,62 @@ define([
         this._table.release();
 
         this.draw();
+    }
+
+    LogViewer.prototype.getContextHtml =
+    function(id)
+    {
+        var s = "";
+
+        s += "    <div id=\"" + id + "\" class=\"dialog\" style=\"width:50%\">\n";
+        s += "\n";
+        s += "        <table class=\"dialogClose\" style=\"width:100%\" cellspacing=\"0\" cellpadding=\"0\">\n";
+        s += "            <tr><td class=\"icon\"><a class=\"icon dialogTitle\" href=\"javascript:_esp.getDialogs().popModal('" + id + "')\">&#xf10c;</a></td></tr>\n";
+        s += "        </table>\n";
+        s += "\n";
+        s += "        <div class=\"dialogTop\">\n";
+        s += "\n";
+        s += "            <div  class=\"dialogHeader\">\n";
+        s += "                <div class=\"dialogTitle\">\n";
+        s += "                    <table style=\"width:100%;border:0\" cellspacing=\"0\" cellpadding=\"0\">\n";
+        s += "                        <tr>\n";
+        s += "                            <td><div class=\"dialogTitle\">Log Levels</div></td>\n";
+        s += "                        </tr>\n";
+        s += "                    </table>\n";
+        s += "                </div>\n";
+        s += "            </div>\n";
+        s += "\n";
+        s += "            <div class=\"dialogContent\">\n";
+        s += "                <div id=\"" + id + "-table\"></div>\n";
+        s += "                <table border=\"0\" style=\"width:100%;height:100%\" cellspacing=\"0\" cellpadding=\"0\">\n";
+        s += "                    <tr>\n";
+        s += "                        <td class=\"dialogLabel\">Level:</td>\n";
+        s += "                    </tr>\n";
+        s += "                    <tr>\n";
+        s += "                        <td class=\"dialogValue\">\n";
+        s += "                            <select id=\"" + id + "-loglevel\">\n";
+        s += "                                <option value=\"trace\">Trace</option>\n";
+        s += "                                <option value=\"debug\">Debug</option>\n";
+        s += "                                <option value=\"info\">Info</option>\n";
+        s += "                                <option value=\"warn\">Warn</option>\n";
+        s += "                                <option value=\"error\">Error</option>\n";
+        s += "                                <option value=\"fatal\">Fatal</option>\n";
+        s += "                                <option value=\"off\">None</option>\n";
+        s += "                            </select>\n";
+        s += "                        </td>\n";
+        s += "                    </tr>\n";
+        s += "                    <tr>\n";
+        s += "                        <td style=\"padding-top:10px\">\n";
+        s += "                            <button id=\"" + id + "-setLevel\" style=\"font-size:12pt\" disabled=\"true\">Set Level</button>\n";
+        s += "                        </td>\n";
+        s += "                    </tr>\n";
+        s += "                </table>\n";
+        s += "            </div>\n";
+        s += "        </div>\n";
+        s += "    </div>\n";
+        s += "\n";
+
+        return(s);
     }
 
     /* End Log Viewer */

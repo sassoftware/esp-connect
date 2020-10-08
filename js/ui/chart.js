@@ -78,7 +78,14 @@ define([
     function
     editFilter()
     {
-        this._chart._visuals.editFilter(this._chart._datasource);
+        if (this._chart._datasource != null)
+        {
+            this._chart._visuals.editFilter(this._chart._datasource);
+        }
+        else if (tools.supports(this._chart,"getFilter"))
+        {
+            this._chart._visuals.editFilter(this._chart);
+        }
     }
 
     function
@@ -140,6 +147,10 @@ define([
 
             this._chart.info();
         }
+        else if (this._chart._filterContainer != null)
+        {
+            this._chart._filterContainer.style.visibility = "visible";
+        }
 
         if (this._chart._share != null)
         {
@@ -179,6 +190,10 @@ define([
             {
                 this._chart._playPauseContainer.style.visibility = "hidden";
             }
+        }
+        else if (this._chart._filterContainer != null)
+        {
+            this._chart._filterContainer.style.visibility = "hidden";
         }
 
         if (this._chart._share != null)
@@ -370,11 +385,15 @@ define([
 
         this._header.appendChild(table);
 
+        this._toolbarItems = null;
+
         var icons = null;
         var toolbar = this.getOptAndClear("toolbar");
 
         if (toolbar != null)
         {
+            this._toolbarItems = {};
+
             if (icons == null)
             {
                 tr.appendChild(icons = document.createElement("td"));
@@ -387,7 +406,9 @@ define([
             icons.appendChild(this._custom);
 
             toolbar.forEach((info) => {
-                this._custom.appendChild(this.createToolbarItem(info));
+                var item = this.createToolbarItem(info);
+                this._custom.appendChild(item);
+                this._toolbarItems[item._opts.getOpt("name","")] = item;
             });
         }
 
@@ -578,6 +599,19 @@ define([
     Chart.prototype.init =
     function(schema)
     {
+    }
+
+    Chart.prototype.getToolbarItem =
+    function(name)
+    {
+        var item = null;
+
+        if (this._toolbarItems != null && this._toolbarItems.hasOwnProperty(name))
+        {
+            item = this._toolbarItems[name];
+        }
+
+        return(item);
     }
 
     Chart.prototype.getChild =
@@ -799,6 +833,7 @@ define([
         {
             a.title = opts.getOpt("tooltip");
         }
+
         a.href = "#";
         a.addEventListener("click",handleClick);
         a.addEventListener("mousedown",handleMouseDown);
@@ -1025,13 +1060,23 @@ define([
 
             if (this.getOpt("filter_in_title",true))
             {
-                filter = this._datasource.getOpt("filter");
+                var filter = this._datasource.getOpt("filter","");
 
-                if (filter != null)
+                if (filter.length > 0)
                 {
                     header += "<br>";
                     header += filter;
                 }
+            }
+        }
+        else if (this.hasOpt("filter"))
+        {
+            var filter = this.getOpt("filter","");
+
+            if (filter.length > 0)
+            {
+                header += "<br>";
+                header += "Filter: " + filter;
             }
         }
 

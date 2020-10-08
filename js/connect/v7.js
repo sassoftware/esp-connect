@@ -1264,7 +1264,6 @@ define([
     {
         this.setOpt("filter",value)
         this.set(true);
-
         this.deliverFilterChange();
     }
 

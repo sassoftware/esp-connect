@@ -148,7 +148,7 @@ define([
 
         if (field != null)
         {
-            code = field.getOpt(property);
+            code = field.getOpt(property,false);
         }
 
         return(code);

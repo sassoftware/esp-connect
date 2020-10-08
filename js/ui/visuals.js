@@ -751,66 +751,9 @@ define([
             },
             cancel:dialogs.hideDialog,
             header:"Edit Filter",
-            values:[{name:"filter",label:"Filter",value:delegate.getFilter()}],
-            values:[{name:"filter",label:"Filter",value:"eq($Plate,\'SFZ-1000\')"}]
+            values:[{name:"filter",label:"Filter",value:delegate.getFilter()}]
         };
         dialogs.showDialog(o);
-    }
-
-    Visuals.prototype.editFilterZ =
-    function(delegate)
-    {
-        if (_filterDelegate != null)
-        {
-            return;
-        }
-
-        if (this._filterDialog == null)
-        {
-            this._filterDialog = document.createElement("div");
-            this._filterDialog.id = "_editfilter_";
-            this._filterDialog.className = "dialog";
-            this._filterDialog.style.width = "60%";
-            this._filterDialog.innerHTML = "<div class='dialogTop'>\
-                    <div  class='dialogHeader'>\
-                        <div class='dialogTitle'>\
-                            <table style='width:100%;border:0' cellspacing='0' cellpadding='0'>\
-                                <tr>\
-                                    <td><div class='dialogTitle'>Edit Filter</div></td>\
-                                </tr>\
-                            </table>\
-                        </div>\
-                    </div>\
-                    <div class='dialogContent'>\
-                        <table border='0' style='width:100%;height:100%' cellspacing='0' cellpadding='0'>\
-                            <tr>\
-                                <td class='dialogLabel'>Filter:</td>\
-                            </tr>\
-                            <tr>\
-                                <td class='dialogValue'><input id='_filtertext_' type='text' style='width:90%'></input><a class='icon dialogTitle' href='javascript:_clearFilter_()'>&#xf10c;</a></td>\
-                            </tr>\
-                        </table>\
-                    </div>\
-                </div>\
-                <div class='dialogButtons'>\
-                    <table style='width:100%'>\
-                        <tr>\
-                            <td class='dialogButton'>\
-                                <span><button class='ok' onclick='javascript:_setFilter_()'>Ok</button></span>\
-                                <span><button class='cancel' onclick='javascript:_cancelFilterEdit_()'>Cancel</button></span>\
-                            </td>\
-                        </tr>\
-                    </table>\
-                </div>";
-
-            document.body.appendChild(this._filterDialog);
-        }
-
-        _filterDelegate = delegate;
-
-        document.getElementById("_filtertext_").value = _filterDelegate.getFilter();
-
-        dialogs.pushModal("_editfilter_");
     }
 
     /* Bar Chart */

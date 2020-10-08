@@ -19,7 +19,6 @@
 
 <script type="text/javascript">
 
-var _loggerTable = null;
 var _connection = null;
 var _maxentries = 100;
 var _visuals = null;
@@ -93,14 +92,6 @@ setup()
         _esp.showConnectDialog({connect:connect},_k8s);
     }
 
-    var fields = new Array();
-    fields.push({name:"@name",type:"string",label:"Logger"});
-    fields.push({name:"@level",type:"string",label:"Level"});
-
-    _loggerTable = _visuals.createSimpleTable(document.getElementById("loggers"),{name:"loggers",key:"@name"},{itemClicked:loggerSelected});
-    _loggerTable.setFields(fields);
-    _loggerTable.draw();
-
     _esp.handleLayout();
 }
 
@@ -156,48 +147,6 @@ ready(connection)
     }
 
     _viewer.connection = _connection;
-
-    document.getElementById("setLevel").disabled = true;
-
-    _connection.getLoggers({response:handleLoggers});
-}
-
-function
-showLoggers()
-{
-    document.getElementById("setLevel").disabled = true;
-    _loggerTable.deselectAll();
-    _esp.getDialogs().pushModal("contexts");
-    _loggerTable.draw();
-}
-
-function
-handleLoggers(connection,data)
-{
-    if (Array.isArray(data))
-    {
-        _loggerTable.setData(data);
-    }
-}
-
-function
-loggerSelected(item)
-{
-    _loggerTable.deselectAll();
-    item.selected = true;
-
-    document.getElementById("loglevel").value = item["@level"].toLowerCase();
-    document.getElementById("setLevel").disabled = false;
-}
-
-function
-setLogLevel()
-{
-    var item = _loggerTable.getSelectedItem();
-    if (item != null)
-    {
-        _connection.setLogger(item["@name"],document.getElementById("loglevel").value,{response:handleLoggers});
-    }
 }
 
 function
@@ -237,7 +186,6 @@ select#loglevel
                 <td id="bannerTitle">ESP Log Viewer</td>
                 <td class="icon">
                     <a class="icon" href="javascript:_esp.showConnectDialog({connect:connect},_k8s)">&#xf137;</a>
-                    <a class="icon" href="javascript:showLoggers()">&#xf3ca;</a>
                 </td>
             </tr>
         </table>
@@ -288,53 +236,6 @@ select#loglevel
         </div>
     </div>
     -->
-
-    <div id="contexts" class="dialog" style="width:50%">
-
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('contexts')">&#xf10c;</a></td></tr>
-        </table>
-
-        <div class="dialogTop">
-
-            <div  class="dialogHeader">
-                <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td><div class="dialogTitle">Log Levels</div></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-
-            <div class="dialogContent">
-                <div id="loggers"></div>
-                <table border="0" style="width:100%;height:100%" cellspacing="0" cellpadding="0">
-                    <tr>
-                        <td class="dialogLabel">Level:</td>
-                    </tr>
-                    <tr>
-                        <td class="dialogValue">
-                            <select id="loglevel">
-                                <option value="trace">Trace</option>
-                                <option value="debug">Debug</option>
-                                <option value="info">Info</option>
-                                <option value="warn">Warn</option>
-                                <option value="error">Error</option>
-                                <option value="fatal">Fatal</option>
-                                <option value="off">None</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding-top:10px">
-                            <button id="setLevel" style="font-size:12pt" onclick="javascript:setLogLevel()" disabled="true">Set Level</button>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-    </div>
 
 </body>
 

@@ -75,6 +75,8 @@ connect(server)
 
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
+    _esp.showStatus("Loading project...");
+
     _esp.connect(server,{ready:ready,error:error},{model:{name:"p",data:_model},overwrite:true});
 
     _esp.handleLayout();
@@ -83,6 +85,8 @@ connect(server)
 function
 ready(connection)
 {
+    _esp.clearStatus();
+
     _conn = connection;
 
     _visuals.clear();

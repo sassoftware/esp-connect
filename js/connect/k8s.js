@@ -30,15 +30,19 @@ define([
     K8S(url)
     {
         this._url = tools.createUrl(decodeURI(url));
-        this._proxy = null;
+        this._proxy = false;
 
         if (this._url.protocol.indexOf("-") != -1)
         {
             var a = this._url.protocol.split("-");
 
+            if (a[1] != "proxy:")
+            {
+                tools.exception("invalid protocol: " + this._url.protocol);
+            }
+
             this._url.protocol = a[0] + ":";
-            a = a[1].split(":");
-            this._proxy = (a[0].length == 0) ? "" : a[0];
+            this._proxy = true;
         }
 
         this._ns = null;
@@ -75,7 +79,7 @@ define([
 
                 if (this._proxy != null)
                 {
-                    protocol += "-" + this._proxy;
+                    protocol += "-proxy";
                 }
 
                 protocol += ":";
@@ -88,7 +92,7 @@ define([
             get() {
                 var protocol = "";
 
-                if (this._proxy != null)
+                if (this._proxy)
                 {
                     protocol = "http:";
                 }
@@ -109,7 +113,7 @@ define([
             get() {
                 var protocol = "";
 
-                if (this._proxy != null)
+                if (this._proxy)
                 {
                     protocol = "ws:";
                 }
@@ -128,40 +132,14 @@ define([
 
         Object.defineProperty(this,"baseUrl", {
             get() {
-                var s = this.httpProtocol + "//" + this.host + ":" + this.port;
-                if (this._proxy != null)
-                {
-                    s += "/";
-
-                    if (this._proxy.length > 0)
-                    {
-                        s += this._proxy + "/";
-                    }
-                }
-                else
-                {
-                    s += "/";
-                }
+                var s = this.httpProtocol + "//" + this.host + ":" + this.port + "/";
                 return(s);
             }
         });
 
         Object.defineProperty(this,"baseWsUrl", {
             get() {
-                var s = this.wsProtocol + "//" + this.host + ":" + this.port;
-                if (this._proxy != null)
-                {
-                    s += "/";
-
-                    if (this._proxy.length > 0)
-                    {
-                        s += this._proxy + "/";
-                    }
-                }
-                else
-                {
-                    s += "/";
-                }
+                var s = this.wsProtocol + "//" + this.host + ":" + this.port + "/";
                 return(s);
             }
         });
@@ -213,7 +191,7 @@ define([
 
                 if (this._proxy != null)
                 {
-                    url += "-" + this._proxy;
+                    url += "-proxy";
                 }
 
                 url += "://";
@@ -867,13 +845,6 @@ define([
     K8SProject(url)
     {
         K8S.call(this,url);
-
-        /*
-        if (this._url.protocol.startsWith("k8s") == false)
-        {
-            tools.exception("The protocol must start with k8s");
-        }
-        */
 
         if (this._project == null)
         {
