@@ -18,9 +18,12 @@
 
 <script type="text/javascript">
 
+var _project = "basic";
+
 var _esp = null;
 var _conn = null;
 var _visuals = null;
+
 var _xml = "<project threads='4' pubsub='auto'>\
                <contqueries>\
                  <contquery name='cq' trace='clicks'>\
@@ -53,11 +56,16 @@ esp(api)
 
     var parms = _esp.getParms();
 
+    if (parms.hasOwnProperty("project"))
+    {
+        _project = parms["project"];
+    }
+
     _visuals = _esp.createVisuals(parms);
 
     _visuals.createWrapper("colors",{header:"Click on the colored areas to generate events",style:{width:"98%",height:"150px"}});
 
-    var server = _esp.getServerFromParms(parms,"p");
+    var server = _esp.getServerFromParms(parms,_project);
 
     if (server == null)
     {
@@ -73,7 +81,7 @@ connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.showStatus("Loading project...");
-    _esp.connect(server,{ready:ready,error:error},{model:{name:"p",data:_xml},overwrite:true});
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_xml},overwrite:true,force:_esp.getParm("force",false)});
     _esp.handleLayout();
 }
 
@@ -88,14 +96,14 @@ ready(conn)
 
     _visuals.createLogViewer("logs",_conn,{header:"Log Viewer"});
 
-    var clicks  = _conn.getEventCollection({window:"p/cq/clicksAggr"});
+    var clicks  = _conn.getEventCollection({window:_project + "/cq/clicksAggr"});
 
     _visuals.createBarChart("barchart",clicks,{y:"count",header:"Clicks Chart",xrange:[0,100],orientation:"horizontal",get_color:barcolor});
     _visuals.createGauge("gauges",clicks,{value:"count",segments:5,header:"Clicks Indicators",width:200,range:[0,100],bar_color:"rgba(255,255,255,.7)"});
 
-    _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
+    _conn.getProjectXml(_project,{response:function(c,data){_model = data;}});
 
-    _publisher = _conn.getPublisher({window:"p/cq/clicks"});
+    _publisher = _conn.getPublisher({window:_project + "/cq/clicks"});
 
     _esp.size(100);
 }

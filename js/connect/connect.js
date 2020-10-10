@@ -225,8 +225,7 @@ define([
 
         usage:function(doc)
         {
-            var f = new Formatter();
-
+            var f = new Formatter(doc);
             var docopts = new Options(doc);
             var command = docopts.getOpt("name","");
             var summary = docopts.getOpt("summary","");
@@ -268,11 +267,11 @@ define([
 
                     if (opts.getOpt("required",false))
                     {
-                        s += "-" + name;
+                        s += "--" + name;
                     }
                     else
                     {
-                        s += "[-" + name + "]";
+                        s += "[--" + name + "]";
                     }
                 });
             }
@@ -321,28 +320,30 @@ define([
                         console.log("");
                     }
 
-                    if (s.length > maxoptlen)
-                    {
-                        var desc = f.format(opts.getOpt("description"),50 + maxoptlen,f.tab(2),f.tab(2));
-                        console.log("%s-%s \x1b[4m%s\x1b[0m",f.tab(),name,arg);
-                        console.log(desc);
-                    }
-                    else
-                    {
-                        var spaces = f.spaces(maxoptlen - s.length + 2);
-                        var desc = f.format(opts.getOpt("description"),50,f.tab() + f.spaces(maxoptlen + 3),spaces);
+                    var desc = f.format(opts.getOpt("description"),50 + maxoptlen,f.tab(2),f.tab(2));
+                    console.log("%s--%s \x1b[4m%s\x1b[0m",f.tab(),name,arg);
+                    console.log(desc);
 
-                        if (arg.length > 0)
-                        {
-                            console.log("%s-%s \x1b[4m%s\x1b[0m%s",f.tab(),name,arg,desc);
-                        }
-                        else
-                        {
-                            console.log("%s-%s%s%s",f.tab(),name,spaces,desc);
-                        }
+                    if (opts.hasOpt("examples"))
+                    {
+                        var spaces = f.spaces((maxoptlen - s.length + 2) * 2);
+                        console.log("");
+                        console.log("%s\x1b[1m%s\x1b[0m",f.tab(3),"Examples");
+                        var index = 0;
+                        opts.getOpt("examples").forEach((example) => {
+                            var opts = new Options(example);
+                            var title = opts.getOpt("title","Example " + index);
+                            title = f.format(title,null,f.tab(0),f.tab(0));
+                            console.log("%s\x1b[1m%s\x1b[0m",f.tab(4),title);
+                            console.log(f.tab(5) + "$ node " + command + " " + opts.getOpt("command",""));
+                            var output = f.format(opts.getOpt("output",""),null,f.tab(5),f.tab(5));
+                            console.log(output);
+                        });
                     }
 
                     index++;
+
+                    console.log("");
                 });
             }
 

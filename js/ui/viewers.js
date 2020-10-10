@@ -1222,6 +1222,11 @@ define([
             tableDiv.style.border = "1px solid #d8d8d8";
             tableDiv.style.height = "300px";
 
+            const   select = document.getElementById(this._showContextsId + "-loglevel");
+            const   button = document.getElementById(this._showContextsId + "-loglevel");
+            select.style.font = "14pt AvenirNextforSAS";
+            button.style.font = "14pt AvenirNextforSAS";
+
             const   viewer = this;
 
             const    delegate = {
@@ -1468,7 +1473,9 @@ define([
         s += "                    </tr>\n";
         s += "                    <tr>\n";
         s += "                        <td style=\"padding-top:10px\">\n";
+        s += "                        <div class=\"dialogButtons\" style=\"padding:0\">\n";
         s += "                            <button id=\"" + id + "-setLevel\" style=\"font-size:12pt\" disabled=\"true\">Set Level</button>\n";
+        s += "                        </div>\n";
         s += "                        </td>\n";
         s += "                    </tr>\n";
         s += "                </table>\n";

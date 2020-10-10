@@ -26,12 +26,14 @@ define([
     function
     Formatter(options)
     {
-		Options.call(this,options);
+        Options.call(this,options);
         this._index = 0;
         this._tabs = this.getOpt("tabs",4);
         this._incommand = false;
         this._command = null;
         this._prev = null;
+        this._text = null;
+        this._listing = null;
 
         this._cl = '<';
         this._cr = '>';
@@ -39,10 +41,10 @@ define([
         this._colors = {"black":30,"red":31,"green":32,"yellow":33,"blue":34,"magenta":35,"cyan":36,"white":37};
     }
 
-	Formatter.prototype = Object.create(Options.prototype);
-	Formatter.prototype.constructor = Formatter;
+    Formatter.prototype = Object.create(Options.prototype);
+    Formatter.prototype.constructor = Formatter;
 
-	Formatter.prototype.format =
+    Formatter.prototype.format =
     function(text,length,indent,init)
     {
         this._text = (init != null) ? init : "";
@@ -66,10 +68,11 @@ define([
         {
             this.process(text,length,indent);
         }
+
         return(this._text);
     }
 
-	Formatter.prototype.process =
+    Formatter.prototype.process =
     function(text,length,indent)
     {
         var word = "";
@@ -81,11 +84,17 @@ define([
 
             if (c == this._cl)
             {
+                this.word(word);
+                word = "";
+
                 this._incommand = true;
                 this._command = "";
             }
             else if (c == this._cr)
             {
+                this.word(word);
+                word = "";
+
                 if (this._incommand)
                 {
                     this._incommand = false;
@@ -96,10 +105,21 @@ define([
             {
                 this._command += c;
             }
+            else if (this._listing != null)
+            {
+                this._listing += c;
+            }
             else if (c == ' ' || c == '\t' || c == '\n' || c == '.')
             {
-                this.word(word);
+                if (c == ' ')
+                {
+                    if (this._index == 0 && word.length == 0)
+                    {
+                        continue;
+                    }
+                }
 
+                this.word(word);
                 word = "";
 
                 if (c == ' ')
@@ -141,9 +161,10 @@ define([
                         this._text += indent;
                     }
                 }
-                else
+                else if (c == '.')
                 {
                     this._text += c;
+                    //this._text += " ";
                 }
             }
             else
@@ -159,7 +180,7 @@ define([
         }
     }
 
-	Formatter.prototype.command =
+    Formatter.prototype.command =
     function(indent)
     {
         if (this._command == "note")
@@ -213,6 +234,29 @@ define([
         {
             this._text += "\x1b[47m";
         }
+        else if (this._command == "listing")
+        {
+            this._listing = "";
+        }
+        else if (this._command == "/listing")
+        {
+            const   listing = this.getListing(this._listing);
+            var     values = [];
+            listing.values.forEach((value) => {
+                values.push(new Options(value));
+            });
+            listing.values = values;
+            listing.indent = indent;
+            listing.headers = true;
+            this._text += "\n";
+            this._text += this.listing(listing);
+            this._text += "\n" + indent;
+            this._listing = null;
+        }
+        else if (this._command == "dot")
+        {
+            this._text += ".";
+        }
 
         /*
         if (_fs == null)
@@ -225,7 +269,7 @@ define([
         */
     }
 
-	Formatter.prototype.word =
+    Formatter.prototype.word =
     function(text)
     {
         this._text += text;
@@ -253,8 +297,12 @@ define([
     }
 
     Formatter.prototype.listing =
-    function(data,fields)
+    function(options)
     {
+        var opts = new Options(options);
+        var fields = opts.getOpt("fields");
+        var values = opts.getOpt("values");
+        var indent = opts.getOpt("indent","");
         var listing = "";
         var lengths = {};
 
@@ -264,7 +312,17 @@ define([
 
         var s;
 
-        data.forEach((item) => {
+        if (opts.getOpt("headers",false))
+        {
+            fields.forEach((f) => {
+                if (f.length > lengths[f])
+                {
+                    lengths[f] = new Number(f.length);
+                }
+            });
+        }
+
+        values.forEach((item) => {
 
             fields.forEach((f) => {
                 s = item.getOpt(f,"");
@@ -276,11 +334,33 @@ define([
             });
         });
 
-        data.forEach((item) => {
+        const   spacing = opts.getOpt("spacing",2);
+
+        if (opts.getOpt("headers",false))
+        {
+            fields.forEach((f) => {
+                listing += indent;
+                listing += f;
+                listing += this.spaces((lengths[f] - f.length) + spacing);
+            });
+            listing += "\n";
+
+            fields.forEach((f) => {
+                listing += indent;
+                s = "-";
+                s = s.pad(lengths[f],'-');
+                listing += s;
+                listing += this.spaces((lengths[f] - s.length) + spacing);
+            });
+            listing += "\n";
+        }
+
+        values.forEach((item) => {
             fields.forEach((f) => {
                 s = item.getOpt(f,"");
+                listing += indent;
                 listing += s;
-                listing += this.spaces((lengths[f] - s.length) + 2);
+                listing += this.spaces((lengths[f] - s.length) + spacing);
             });
             listing += "\n";
         });
@@ -299,6 +379,24 @@ define([
         }
 
         return(s);
+    }
+
+    Formatter.prototype.getListing =
+    function(name)
+    {
+        var listing = null;
+
+        if (this.getOpt("listings",false))
+        {
+            const   listings = this.getOpt("listings");
+
+            if (listings.hasOwnProperty(name))
+            {
+                listing = listings[name];
+            }
+        }
+
+        return(listing);
     }
 
     return(Formatter);

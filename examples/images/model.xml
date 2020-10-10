@@ -1,6 +1,6 @@
-<project name="p" pubsub="auto" threads="6" index="pi_EMPTY">
+<project name="p" pubsub="auto" threads="6" index="pi_HASH">
   <contqueries>
-    <contquery name="cq_1">
+    <contquery name="cq_1" trace="w_request">
       <windows>
         <window-calculate algorithm="ImageProcessing" name="resized">
           <schema>

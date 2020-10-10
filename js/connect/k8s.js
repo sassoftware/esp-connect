@@ -228,6 +228,12 @@ define([
         });
     }
 
+    K8S.prototype.getMyProjects =
+    function(delegate)
+    {
+        return(this.getProjects(delegate,this.namespace,this.project));
+    }
+
     K8S.prototype.getProjects =
     function(delegate,namespace,name)
     {
@@ -899,14 +905,14 @@ define([
     function(connect,delegate,options,start)
     {
         var opts = new Options(options);
-        var model = opts.getOptAndClear("model");
+        var modelconfig = opts.getOptAndClear("model");
         var k8s = this;
 
         var handler =
         {
             loaded:function()
             {
-                if (model == null)
+                if (modelconfig == null)
                 {
                     k8s.getPod({
                         handlePod:function(pod)
@@ -928,13 +934,13 @@ define([
                         }
                     };
 
-                    k8s.getModel(model,o);
+                    k8s.getModel(modelconfig,o);
                 }
             },
 
             notFound:function(project)
             {
-                if (model == null)
+                if (modelconfig == null)
                 {
                     if (opts.getOpt("create",true))
                     {
@@ -962,7 +968,7 @@ define([
                         }
                     };
 
-                    k8s.getModel(model,o);
+                    k8s.getModel(modelconfig,o);
                 }
             },
 
@@ -1040,6 +1046,7 @@ define([
 
                 return;
             }
+console.log("forcing it");
         }
         /*
         */
@@ -1631,7 +1638,7 @@ define([
             var u = tools.createUrl(decodeURI(url));
             var o = null;
 
-            if (u.path.split("/").length == 3)
+            if (u.path != null && u.path.split("/").length == 3)
             {
                 o = new K8SProject(url);
             }

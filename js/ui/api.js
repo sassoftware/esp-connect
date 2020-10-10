@@ -308,19 +308,21 @@ define([
         {
             var server = null;
 
-            if (parms.hasOwnProperty("k8s"))
+            if (parms.hasOwnProperty("namespace"))
             {
-                const   k8s = this.createK8S(parms["k8s"]);
+                const   namespace = parms["namespace"];
+                delete parms["namespace"];
 
-                if (k8s.namespace == null)
-                {
-                    dialogs.popup("Invalid K8S URL","The K8S URL must include a namespace");
-                    return;
-                }
+                const   url = new URL(".",document.URL);
+                const   s = "https://" + url.host + "/" + namespace;
+                const   k8s = this.createK8S(s);
 
                 server = k8s.k8sUrl;
-                server += "/" + k8s.namespace + "/";
-                server += project;
+                server += "/" + k8s.namespace;
+                if (project != null)
+                {
+                    server += "/" + project;
+                }
             }
             else if (parms.hasOwnProperty("server"))
             {

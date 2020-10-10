@@ -18,6 +18,8 @@
 
 <script type="text/javascript">
 
+var _project = "turbines";
+
 var _esp = null;
 var _conn = null;
 var _visuals = null;
@@ -32,9 +34,14 @@ esp(api)
 
     var parms = _esp.getParms();
 
+    if (parms.hasOwnProperty("project"))
+    {
+        _project = parms["project"];
+    }
+
     _visuals = _esp.createVisuals(parms);
 
-    var server = _esp.getServerFromParms(parms,"p");
+    var server = _esp.getServerFromParms(parms,_project);
 
     if (server == null)
     {
@@ -51,7 +58,7 @@ connect(server)
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.showStatus("Loading project...");
     var url = new URL("model.xml",document.URL).toString();
-    _esp.connect(server,{ready:ready,error:error},{model:{name:"p",url:url},overwrite:true});
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url},overwrite:true,force:_esp.getParm("force",false)});
     _esp.handleLayout();
 }
 
@@ -69,12 +76,12 @@ ready(connection)
 
     _esp.clearStatus();
 
-    _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
+    _conn.getProjectXml(_project,{response:function(c,data){_model = data;}});
 
-    _readings = _conn.getEventCollection({name:"readings",window:"p/cq/Readings_stats",interval:1000,pagesize:0});
+    _readings = _conn.getEventCollection({name:"readings",window:_project + "/cq/Readings_stats",interval:1000,pagesize:0});
     _readings.addDelegate({dataChanged:handleStats});
 
-    _alerts = _conn.getEventCollection({window:"p/cq/Union_1",pagesize:0});
+    _alerts = _conn.getEventCollection({window:_project + "/cq/Union_1",pagesize:0});
     _alerts.addDelegate({dataChanged:handleAlerts});
 
     var toolbar = [];
@@ -86,7 +93,7 @@ ready(connection)
     var delay = 10;
     var url = new URL("data.csv",document.URL).toString();
 
-    _eventsources.createEventSource({name:"data",type:"csv",window:"p/cq/Data_Stream",opcode:"insert",
+    _eventsources.createEventSource({name:"data",type:"csv",window:_project + "/cq/Data_Stream",opcode:"insert",
                                         dateformat:"%Y-%m-%d %H:%M:%S",url:url,delay:delay,opcodes:true,flags:true,maxevents:0});
 
     _esp.size();

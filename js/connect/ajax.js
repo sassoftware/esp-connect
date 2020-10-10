@@ -451,7 +451,7 @@ define([
             var filename = this._url.substr(7);
             var request = this;
 
-            require("fs").readFile(filename,"utf8",function(error,contents) {
+            require("fs").readFile(filename,null,function(error,contents) {
                 this._responseText = contents;
 
                 if (error != null)

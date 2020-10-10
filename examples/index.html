@@ -10,8 +10,8 @@
 
 <script type="text/javascript">
 
+var _namespace = null;
 var _server = null;
-var _k8s = null;
 var _esp = null;
 
 function
@@ -21,36 +21,22 @@ esp(api)
 
     var parms = _esp.getParms();
 
-    if (parms.hasOwnProperty("k8s"))
+    if (parms.hasOwnProperty("namespace"))
     {
-        _k8s = _esp.createK8S(parms["k8s"]);
-
-        if (_k8s.namespace == null)
-        {
-            _esp.getDialogs().popup("Invalid K8S URL","The K8S URL must include a namespace");
-            return;
-        }
+        _namespace = parms["namespace"];
     }
 
     _esp.handleLayout();
 
-    if (_k8s != null)
+    _server = _esp.getServerFromParms(parms);
+
+    if (_server != null)
     {
-        _server = _k8s.httpUrl;
-        _server += "/" + _k8s.namespace;
         connect(_server);
     }
     else
     {
-        if (_esp.hasParm("server"))
-        {
-            _server = _esp.getParm("server");
-            connect(_server);
-        }
-        else
-        {
-            _esp.showConnectDialog({connect:connect});
-        }
+        _esp.showConnectDialog({connect:connect});
     }
 }
 
@@ -68,23 +54,20 @@ go(example)
 {
     var s = "";
 
-    if (_k8s != null)
+    if (_namespace != null)
     {
-        s += "?";
-        s += "k8s=" + _k8s.httpUrl;
-        s += "/" + _k8s.namespace;
+        s += "?namespace=" + _namespace;
     }
     else if (_server != null)
     {
-        s += ((s.length > 0) ? "&" : "?");
-        s += "server=" + _server;
+        s += "?server=" + _server;
     }
 
     var parms = _esp.getParms();
 
     for (var x in parms)
     {
-        if (x == "k8s" || x == "server")
+        if (x == "namespace" || x == "server")
         {
             continue;
         }

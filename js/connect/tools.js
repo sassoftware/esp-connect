@@ -731,14 +731,14 @@ define([
                     end = "";
                     continue;
                 }
-                else if (s[0] == '-')
+                else if (s.startsWith("--"))
                 {
                     if (key != null)
                     {
                         opts.setOpt(key,true);
                     }
 
-                    key = s.substr(1);
+                    key = s.substr(2);
                 }
                 else if (key != null)
                 {

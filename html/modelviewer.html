@@ -76,9 +76,11 @@ setup()
 
     _parms = _esp.getParms();
 
-    if (_parms.hasOwnProperty("k8s"))
+    if (_parms.hasOwnProperty("namespace"))
     {
-        _k8s = _esp.createK8S(_parms["k8s"]);
+        const   server = _esp.getServerFromParms(_parms);
+        console.log("Server; " + server);
+        _k8s = _esp.createK8S(server);
     }
 
     if (_esp.hasParm("server") == false && _storage.hasOpt("server"))

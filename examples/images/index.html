@@ -30,11 +30,6 @@ esp(api)
 
     var parms = _esp.getParms();
 
-    if (parms.hasOwnProperty("k8s"))
-    {
-        _esp.k8s = parms["k8s"];
-    }
-
     _visuals = _esp.createVisuals(parms);
     _visuals.addDelegate({selectionChanged:select});
 
@@ -43,14 +38,13 @@ esp(api)
 
     document.getElementById("video").style.display = "inline";
 
-    if (parms.hasOwnProperty("server") == false)
+    var server = _esp.getServerFromParms(parms,"p");
+
+    if (server == null)
     {
         _esp.showConnectDialog({connect:connect});
         return;
     }
-
-    var server = parms["server"];
-    delete parms["server"];
 
     connect(server);
 }
@@ -60,6 +54,9 @@ connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     var url = new URL("model.xml",document.URL).toString();
+
+    _esp.showStatus("Loading project...");
+
     _esp.connect(server,{ready:ready,error:error},{model:{name:"p",url:url},overwrite:true});
 
     _esp.handleLayout();
@@ -72,6 +69,8 @@ var _model = null;
 function
 ready(connection)
 {
+    _esp.clearStatus();
+
     _conn = connection;
 
     _imagePublisher = _conn.getPublisher({window:"p/cq_1/w_data",binary:true});
