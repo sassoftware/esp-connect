@@ -176,29 +176,32 @@ define([
     ServerConnection.prototype.closed =
     function(conn)
     {
-        if (this._impl != null && this._impl.closed)
-        {
-            return;
-        }
-
-        for (var d of this._delegates)
-        {
-            if (tools.supports(d,"closed"))
-            {
-                d.closed(this._impl);
-            }
-        }
-
         if (this._impl != null)
         {
-            this._impl = null;
-        }
+            for (var d of this._delegates)
+            {
+                if (tools.supports(d,"closed"))
+                {
+                    d.closed(this._impl);
+                }
+            }
 
-        var reconnect = this.getOpt("reconnect",1);
+            const   closed = this._impl.closed;
 
-        if (reconnect > 0)
-        {
-            this.reconnect(reconnect);
+            if (this._impl != null)
+            {
+                this._impl = null;
+            }
+
+            if (closed == false)
+            {
+                var reconnect = this.getOpt("reconnect",1);
+
+                if (reconnect > 0)
+                {
+                    this.reconnect(reconnect);
+                }
+            }
         }
     }
 

@@ -56,7 +56,14 @@ go(example)
 
     if (_namespace != null)
     {
-        s += "?namespace=" + _namespace;
+        if (example == "../html/modelviewer.html" || example == "../html/logviewer.html")
+        {
+            s += "?k8s=true";
+        }
+        else
+        {
+            s += "?namespace=" + _namespace;
+        }
     }
     else if (_server != null)
     {

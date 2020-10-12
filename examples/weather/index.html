@@ -16,6 +16,8 @@
 
 <script type="text/javascript">
 
+var _project = "weather";
+
 var _visuals = null;
 var _server = null;
 var _visual = null;
@@ -23,7 +25,6 @@ var _model = null;
 var _appid = "";
 var _conn = null;
 var _esp = null;
-var _k8s = null;
 
 function
 esp(api)
@@ -32,9 +33,9 @@ esp(api)
 
     var parms = _esp.getParms();
 
-    if (parms.hasOwnProperty("k8s"))
+    if (parms.hasOwnProperty("project"))
     {
-        _k8s = _esp.createK8S(parms["k8s"]);
+        _project = parms["project"];
     }
 
     _appid = parms.hasOwnProperty("appid") ? parms["appid"] : "";
@@ -47,7 +48,7 @@ esp(api)
         response:function(request,text) {
             _model = text;
 
-            var server = _esp.getServerFromParms(parms,"p");
+            var server = _esp.getServerFromParms(parms,_project);
 
             if (server == null)
             {
@@ -77,7 +78,7 @@ connect(server)
 
     _esp.showStatus("Loading project...");
 
-    _esp.connect(server,{ready:ready,error:error},{model:{name:"p",data:_model},overwrite:true});
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_model},overwrite:true});
 
     _esp.handleLayout();
 }
@@ -91,8 +92,8 @@ ready(connection)
 
     _visuals.clear();
 
-    var weather = _conn.getEventCollection({window:"p/cq/weather",pagesize:3});
-    var aggr = _conn.getEventCollection({window:"p/cq/aggr"});
+    var weather = _conn.getEventCollection({window:_project + "/cq/weather",pagesize:3});
+    var aggr = _conn.getEventCollection({window:_project + "/cq/aggr"});
     var barColor = "rgba(255,255,255,.5)";
     var width = 400;
     var height = 60;
@@ -107,7 +108,7 @@ ready(connection)
 
     _esp.size();
 
-    _conn.getProjectXml("p",{
+    _conn.getProjectXml(_project,{
         response:function(c,data){
             _model = data;
         }
@@ -115,9 +116,9 @@ ready(connection)
 }
 
 function
-error(message)
+error(conn,message)
 {
-    _esp.getDialogs().popup("Error",message);
+    console.log("Error",message);
 }
 
 function

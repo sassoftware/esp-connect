@@ -84,7 +84,7 @@ define([
             }
 
             var storage = new StoredData("esp-connect");
-            var server = storage.getOpt("esp-server","");
+            var server = (k8s != null) ? storage.getOpt("k8s-server","") : storage.getOpt("esp-server","");
 
             var o = {
                 ok:function(data) {
@@ -93,6 +93,7 @@ define([
                     if (data.hasOwnProperty("server"))
                     {
                         server = data.server.trim();
+                        storage.setOpt("esp-server",server);
                     }
 
                     if (server.length == 0)
@@ -100,6 +101,7 @@ define([
                         if (data.hasOwnProperty("k8s"))
                         {
                             server = data.k8s.trim();
+                            storage.setOpt("k8s-server",server);
                         }
                     }
 
@@ -108,7 +110,6 @@ define([
                         return(false);
                     }
 
-                    storage.setOpt("esp-server",server);
                     delegate.connect(server);
 
                     return(true);
@@ -122,7 +123,12 @@ define([
             {
                 var value = {name:"k8s",label:"ESP K8S Server",type:"select"};
                 var options = {};
-                options[""] = "";
+                options.opts = [];
+                if (server != null)
+                {
+                    options.value = server;
+                }
+                options.opts.push({"":""});
 
                 var handler =
                 {
@@ -134,7 +140,9 @@ define([
                             url += "/" + p.metadata.namespace;
                             url += "/" + p.metadata.name;
                             var s = p.metadata.namespace + "/" + p.metadata.name;
-                            options[s] = url;
+                            var o = {};
+                            o[p.metadata.namespace + "/" + p.metadata.name] = url;
+                            options.opts.push(o);
                         });
 
                         //values.push({name:"server",label:"ESP Server",value:""});
@@ -148,7 +156,7 @@ define([
 
                     error:function(request,error)
                     {
-                        tools.exception("error: " + opts);
+                        throw("error: " + error);
                     }
                 };
 
@@ -230,9 +238,18 @@ define([
 			return(connect.createOptionsFromArgs());
 		},
 
-        createK8S:function(server)
+        createK8S:function(url)
         {
-            return(connect.createK8S(server));
+            if (url == null)
+            {
+                const   u = new URL(".",document.URL);
+                url = "";
+                url += u.protocol;
+                url += "//";
+                url += u.host;
+            }
+
+            return(connect.createK8S(url));
         },
 
 		getArgs:function()
@@ -422,6 +439,11 @@ define([
             {
                 footer.innerHTML = "&nbsp;";
             }
+        },
+
+        setLinkState:function(link,enabled)
+        {
+            tools.setLinkState(link,enabled);
         },
 
         guid:function()

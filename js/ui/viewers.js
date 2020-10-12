@@ -72,7 +72,14 @@ define([
     function
     projectChanged()
     {
-        this._viewer.project = this.value;
+        if (this.value.startsWith("k8s"))
+        {
+            this._viewer.loadK8S(this.value);
+        }
+        else
+        {
+            this._viewer.project = this.value;
+        }
     }
 
     function
@@ -190,6 +197,18 @@ define([
     function()
     {
         return("modelviewer");
+    }
+
+    ModelViewer.prototype.loadK8S =
+    function(server)
+    {
+        var mv = this;
+
+        this._visuals._api.connect(server,{
+            ready:function(conn) {
+                mv.connection = conn;
+            },
+        });
     }
 
     ModelViewer.prototype.reload =
@@ -603,43 +622,80 @@ define([
             this._projectSelect.remove(0);
         }
 
-        if (this._project != "*")
-        {
-            var exists = false;
-
-            for (var p of this._model._projects)
-            {
-                if (p["name"] == this._project)
-                {
-                    exists = true;
-                    break;
-                }
-            }
-
-            if (exists == false)
-            {
-                this._project = "*";
-            }
-        }
-
         var option;
         var name;
 
-        option = document.createElement("option");
-        option.value = "*";
-        option.appendChild(document.createTextNode("ALL"));
-        this._projectSelect.add(option);
-
-        for (var p of this._model._projects)
+        if (connection.k8s != null)
         {
-            option = document.createElement("option");
-            option.value = p["name"];
-            option.appendChild(document.createTextNode(option.value));
-            if (this._project != null && this._project == option.value)
+            this._project = "*";
+
+            var mv = this;
+
+            var handler =
             {
-                option.selected = true;
+                handleProjects:function(data)
+                {
+                    data.forEach((p) => {
+                        var url = "";
+                        url += connection.k8s.k8sUrl;
+                        url += "/" + p.metadata.namespace;
+                        url += "/" + p.metadata.name;
+                        option = document.createElement("option");
+                        option.value = url;
+                        option.appendChild(document.createTextNode(p.metadata.namespace + "/" + p.metadata.name));
+                        if (option.value == connection.k8s.projectUrl)
+                        {
+                            option.selected = true;
+                        }
+                        mv._projectSelect.add(option);
+                    });
+                },
+
+                error:function(request,error)
+                {
+                    tools.exception("error: " + opts);
+                }
+            };
+
+            connection.k8s.getProjects(handler);
+        }
+        else
+        {
+            if (this._project != "*")
+            {
+                var exists = false;
+
+                for (var p of this._model._projects)
+                {
+                    if (p["name"] == this._project)
+                    {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (exists == false)
+                {
+                    this._project = "*";
+                }
             }
+
+            option = document.createElement("option");
+            option.value = "*";
+            option.appendChild(document.createTextNode("ALL"));
             this._projectSelect.add(option);
+
+            for (var p of this._model._projects)
+            {
+                option = document.createElement("option");
+                option.value = p["name"];
+                option.appendChild(document.createTextNode(option.value));
+                if (this._project != null && this._project == option.value)
+                {
+                    option.selected = true;
+                }
+                this._projectSelect.add(option);
+            }
         }
 
         var colors = this._visuals._colors.colors;
@@ -1114,6 +1170,8 @@ define([
             },
 
             set(value) {
+                this.clear();
+
                 if (this._connection != null)
                 {
                     this._connection.getLog().removeDelegate(this);

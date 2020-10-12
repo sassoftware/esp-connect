@@ -33,6 +33,7 @@ var _opcodes = null;
 var _genGuid = null;
 var _visuals = null;
 var _publish = null;
+var	_common = null;
 var _viewer = null;
 var _schema = null;
 var _detail = null;
@@ -68,7 +69,12 @@ setup()
         return;
     }
 
+    _common = _esp.getStorage("esp-connect");
     _storage = _esp.getStorage("modelviewer");
+
+    const   k8s = _storage.getOpt("k8s",false);
+    document.getElementById("kubernetes").checked = k8s;
+    setKubernetes(k8s);
 
     var viewer = document.getElementById("viewer");
 	viewer.addEventListener("dragover",over,false);
@@ -76,18 +82,28 @@ setup()
 
     _parms = _esp.getParms();
 
-    if (_parms.hasOwnProperty("namespace"))
+    var server = null;
+
+    if (k8s)
     {
-        const   server = _esp.getServerFromParms(_parms);
-        console.log("Server; " + server);
-        _k8s = _esp.createK8S(server);
+        if (_common.hasOpt("k8s-server"))
+        {
+            server = _common.getOpt("k8s-server");
+        }
+    }
+    else
+    {
+        if (_esp.hasParm("server"))
+        {
+            server = encodeURI(_esp.getParm("server"));
+        }
+        else if (_common.hasOpt("esp-server"))
+        {
+            server = _common.getOpt("esp-server");
+        }
     }
 
-    if (_esp.hasParm("server") == false && _storage.hasOpt("server"))
-    {
-        _esp.setParm("server",_storage.getOpt("server"));
-    }
-    else if (_storage.hasOpt("xml"))
+    if (server == null && _storage.hasOpt("xml"))
     {
         _esp.setParm("xml",_storage.getOpt("xml"));
     }
@@ -118,10 +134,14 @@ setup()
 
     _viewer = _visuals.createModelViewer("viewer",null,_parms);
     _viewer.addDelegate({nodeSelected:nodeHandler,deselected:clear,projectLoaded:projectLoaded,modelLoaded:modelLoaded,handleStats:handleStats,propertyChanged:propertyChanged});
+    _viewer.loadK8S = function(server) {
+        close();
+        connect(server);
+    };
 
-    if (_esp.hasParm("server"))
+    if (server != null)
     {
-        connect(encodeURI(_esp.getParm("server")));
+        connect(server);
     }
     else if (_esp.hasParm("xml"))
     {
@@ -303,7 +323,7 @@ loadEventCollection()
         div.id = ds.id;
         var table = _visuals.createTable(div,ds,{enable_close:true,enable_filter:true,ds:ds});
         table.close = closeEvents;
-        _splitter.addCell(ds.id,div);
+        _splitter.addCell(ds.id,div,{events:true});
         table.size();
         _splitter.size();
         _esp.size();
@@ -327,7 +347,7 @@ loadEventStream()
         div.id = ds.id;
         var table = _visuals.createTable(div,ds,{enable_close:true,enable_filter:true,ds:ds});
         table.close = closeEvents;
-        _splitter.addCell(ds.id,div);
+        _splitter.addCell(ds.id,div,{events:true});
         table.size();
         _splitter.size();
         _esp.size();
@@ -367,6 +387,10 @@ ready(connection)
     {
         _viewer = _visuals.createModelViewer("viewer",null,_parms);
         _viewer.addDelegate({nodeSelected:nodeHandler,deselected:clear,projectLoaded:projectLoaded,modelLoaded:modelLoaded,handleStats:handleStats,propertyChanged:propertyChanged});
+        _viewer.loadK8S = function(server) {
+            close();
+            connect(server);
+        };
     }
 
     _viewer.connection = connection;
@@ -387,7 +411,52 @@ ready(connection)
 function
 closed(connection)
 {
-    _viewer = null;
+    if (connection == _connection)
+    {
+        _connection = null;
+        _viewer = null;
+    }
+}
+
+function
+k8sChanged(value)
+{
+    if (_connection != null)
+    {
+        _connection.close();
+    }
+
+    _storage.setOpt("k8s",value);
+
+    setKubernetes(value);
+
+    _esp.showConnectDialog({connect:connect},_k8s);
+}
+
+function
+setKubernetes(value)
+{
+    if (value)
+    {
+        _k8s = _esp.createK8S();
+        _k8s.getProjects({handleProjects:function() {
+            },
+            error:function(message) {
+                _esp.getDialogs().popup("Invalid Kubernetes Server","Failed to get ESP servers");
+                document.getElementById("kubernetes").checked = false;
+                _k8s = null;
+                return;
+            }
+        });
+
+        document.getElementById("kubernetes").checked = true;
+        _esp.setLinkState("connect",false);
+    }
+    else
+    {
+        _k8s = null;
+        _esp.setLinkState("connect",true);
+    }
 }
 
 function
@@ -395,8 +464,17 @@ close()
 {
     if (_connection != null)
     {
+        for (var id in _splitter.cells)
+        {
+            var cell = _splitter.cells[id];
+
+            if (cell.getOpt("events",false))
+            {
+                _splitter.removeCell(id);
+            }
+        }
+
         _connection.close();
-        _connection = null;
     }
 }
 
@@ -622,13 +700,31 @@ clear()
 function
 modelLoaded(viewer,model)
 {
+    if (_k8s != null)
+    {
+        _common.setOpt("k8s-server",_viewer.connection.k8s.projectUrl);
+    }
+    else
+    {
+        _common.setOpt("esp-server",_viewer.connection.httpurl);
+    }
+
     setTimeout(setProject,1000);
 }
 
 function
 setProject()
 {
-    if (_esp.hasParm("project"))
+    if (_viewer == null)
+    {
+    }
+    else if (_k8s != null)
+    {
+        const   url = (_viewer.connection != null && _viewer.connection.k8s != null) ? _viewer.connection.k8s.projectUrl : "";
+        document.getElementById("bannerTitle").innerHTML = "ESP Model Viewer (" + url + ")";
+        loadPublishWindows();
+    }
+    else if (_esp.hasParm("project"))
     {
         if (_viewer != null)
         {
@@ -1363,26 +1459,6 @@ div#footer table.footerIcons
     border-left:2px solid #d8d8d8;
 }
 
-div.splitterContainer
-{
-    //border:20px solid blue;
-}
-
-div.splitterRow
-{
-    //border:20px solid red;
-}
-
-div.splitter
-{
-    //border:2px solid red;
-}
-
-div#content
-{
-    //border:2px solid blue;
-}
-
 div#detail
 {
     overflow:auto;
@@ -1411,9 +1487,16 @@ div#banner td.theme
     text-align:right;
 }
 
-div#banner td.theme
+div#banner td.bannerTitle
 {
     color:white;
+    font-size:12pt;
+}
+
+/*
+div#banner td.theme
+{
+    color:black;
     font-size:10pt;
 }
 
@@ -1432,6 +1515,67 @@ div#banner td.icon
 {
     width:50px;
 }
+*/
+
+td.bannerControls
+{
+    text-align:right;
+    color:black;
+    width:400px;
+    font-size:12pt;
+	font-family:AvenirNextforSAS;
+}
+
+table.bannerControls
+{
+    background:#d8d8d8;
+    background:#3b99fc;
+    background:white;
+    border:1px solid black;
+    border:1px solid #d8d8d8;
+    border-radius:4px;
+    width:100%;
+    height:40px;
+}
+
+table.bannerControls td.k8sCell
+{
+    text-align:left;
+    width:80px;
+}
+
+table.bannerControls td#k8sProjectCell,
+table.bannerControls td#connectCell
+{
+    text-align:left;
+    text-align:right;
+}
+
+table.bannerControls td#connectCell
+{
+    vertical-align:center;
+    height:100%;
+}
+
+table.bannerControls td
+{
+    padding:4px;
+    color:black;
+}
+
+table.bannerControls select#k8sProjects
+{
+    width:200px;
+    border:2px solid #c0c0c0;
+    border-radius:4px;
+	font-family:AvenirNextforSAS;
+    font-size:12pt;
+}
+
+div#banner a
+{
+    color:black;
+}
 
 </style>
 
@@ -1443,26 +1587,37 @@ div#banner td.icon
         <table style="width:100%" cellspacing="0" cellpadding="0">
             <tr>
                 <td id="bannerTitle">ESP Model Viewer</td>
-                <td class="theme">
-                    <span>Theme:</span>
-                    <select id="theme" onchange="setTheme(this.value)">
-                        <option value="sas_corporate">Corporate</option>
-                        <option value="sas_dark">Dark</option>
-                        <option value="sas_highcontrast">High Contrast</option>
-                        <option value="sas_light">Light</option>
-                        <option value="sas_marine">Marine</option>
-                        <option value="sas_midnight">Midnight</option>
-                        <option value="sas_opal">Opal</option>
-                        <option value="sas_sail">Sail</option>
-                        <option value="sas_snow">Snow</option>
-                        <option value="sas_umstead">Umstead</option>
-                        <option value="sas_hcb">Hcb</option>
-                        <option value="sas_ignite">Ignite</option>
-                        <option value="sas_inspire">Inspire</option>
-                    </select>
-                </td>
-                <td class="icon">
-                    <a class="icon" href="javascript:_esp.showConnectDialog({connect:connect},_k8s)">&#xf137;</a>
+                <td class="bannerControls">
+                    <table class="bannerControls" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td class="k8sCell">
+                                <span>K8S</span>
+                                <input type="checkbox" id="kubernetes" onchange="k8sChanged(this.checked)"></input>
+                            </td>
+                            <td class="theme">
+                                <span>Theme:</span>
+                                <select id="theme" onchange="setTheme(this.value)">
+                                    <option value="sas_corporate">Corporate</option>
+                                    <option value="sas_dark">Dark</option>
+                                    <option value="sas_highcontrast">High Contrast</option>
+                                    <option value="sas_light">Light</option>
+                                    <option value="sas_marine">Marine</option>
+                                    <option value="sas_midnight">Midnight</option>
+                                    <option value="sas_opal">Opal</option>
+                                    <option value="sas_sail">Sail</option>
+                                    <option value="sas_snow">Snow</option>
+                                    <option value="sas_umstead">Umstead</option>
+                                    <option value="sas_hcb">Hcb</option>
+                                    <option value="sas_ignite">Ignite</option>
+                                    <option value="sas_inspire">Inspire</option>
+                                </select>
+                            </td>
+                            <td id="connectCell" class="icon">
+                                <a id="connect" class="icon" href="javascript:_esp.showConnectDialog({connect:connect},_k8s)">&#xf137;</a>
+                            </td>
+                        </tr>
+                        </tr>
+                    </table>
                 </td>
             </tr>
         </table>

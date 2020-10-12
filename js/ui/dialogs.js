@@ -464,10 +464,32 @@ define([
                     {
                         var tmp = opts.getOpt("options");
                         var option;
+
+                        const   value = (tmp.hasOwnProperty("value")) ? tmp.value : null;
+
+                        tmp.opts.forEach((opt) => {
+                            for (var name in opt)
+                            {
+                                html += "<option value='" + opt[name] + "'";
+                                if (opt[name] == value)
+                                {
+                                    html += " selected='true'";
+                                }
+                                html += ">" + name + "</option>";
+                            }
+                        });
+
+                        /*
                         for (var name in tmp)
                         {
-                            html += "<option value='" + tmp[name] + "'>" + name + "</option>";
+                            html += "<option value='" + tmp[name] + "'";
+                            if (tmp[name] == value)
+                            {
+                                html += " selected='true'";
+                            }
+                            html += ">" + name + "</option>";
                         }
+                        */
                     }
                     html += "</select>";
                 }

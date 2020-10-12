@@ -23,6 +23,7 @@ var _connection = null;
 var _maxentries = 100;
 var _visuals = null;
 var	_storage = null;
+var	_common = null;
 var _viewer = null;
 var _parms = null;
 var _init = false;
@@ -51,7 +52,12 @@ setup()
         return;
     }
 
+    _common = _esp.getStorage("esp-connect");
     _storage = _esp.getStorage("logviewer");
+
+    const   k8s = _storage.getOpt("k8s",false);
+    document.getElementById("kubernetes").checked = k8s;
+    setKubernetes(k8s);
 
     _maxentries = _storage.hasOpt("maxentries") ? _storage.getOpt("maxentries") : 0;
 
@@ -64,17 +70,7 @@ setup()
 
     _parms = _esp.getParms();
 
-    if (_parms.hasOwnProperty("k8s"))
-    {
-        _k8s = _esp.createK8S(_parms["k8s"]);
-    }
-
     _visuals = _esp.createVisuals(_esp.getParms());
-
-    if (_esp.hasParm("server") == false && _storage.hasOpt("server"))
-    {
-        _esp.setParm("server",_storage.getOpt("server"));
-    }
 
     if (_parms.hasOwnProperty("filter") == false)
     {
@@ -83,9 +79,30 @@ setup()
 
     _parms["header"] = "ESP Server Log";
 
-    if (_esp.hasParm("server"))
+    var server = null;
+
+    if (k8s)
     {
-        connect(encodeURI(_esp.getParm("server")));
+        if (_common.hasOpt("k8s-server"))
+        {
+            server = _common.getOpt("k8s-server");
+        }
+    }
+    else
+    {
+        if (_esp.hasParm("server"))
+        {
+            server = encodeURI(_esp.getParm("server"));
+        }
+        else if (_common.hasOpt("esp-server"))
+        {
+            server = _common.getOpt("esp-server");
+        }
+    }
+
+    if (server != null)
+    {
+        connect(server);
     }
     else
     {
@@ -147,12 +164,83 @@ ready(connection)
     }
 
     _viewer.connection = _connection;
+
+    loadK8sProjects();
 }
 
 function
 closed(connection)
 {
+    _connection = null;
     _viewer = null;
+}
+
+function
+k8sChanged(value)
+{
+    if (_connection != null)
+    {
+        _connection.close();
+    }
+
+    _storage.setOpt("k8s",value);
+
+    setKubernetes(value);
+
+    _esp.showConnectDialog({connect:connect},_k8s);
+}
+
+function
+setKubernetes(value)
+{
+    if (value)
+    {
+        _k8s = _esp.createK8S();
+        document.getElementById("kubernetes").checked = true;
+        document.getElementById("k8sProjectCell").style.display = "table-cell";
+        _esp.setLinkState("connect",false);
+        loadK8sProjects();
+    }
+    else
+    {
+        _k8s = null;
+        document.getElementById("k8sProjectCell").style.display = "none";
+        _esp.setLinkState("connect",true);
+    }
+}
+
+function
+loadK8sProjects()
+{
+    if (_k8s != null)
+    {
+        const   select = document.getElementById("k8sProjects");
+
+        while (select.length > 0)
+        {
+            select.remove(0);
+        }
+
+        _k8s.getProjects({handleProjects:function(projects) {
+
+            projects.forEach((p) => {
+                var url = _k8s.k8sUrl;
+                url += "/" + p.metadata.namespace;
+                url += "/" + p.metadata.name;
+                var option = document.createElement("option");
+                option.value = url;
+                option.appendChild(document.createTextNode(p.metadata.namespace + "/" + p.metadata.name));
+                if (_connection != null && _connection.k8s)
+                {
+                    if (option.value == _connection.k8s.projectUrl)
+                    {
+                        option.selected = true;
+                    }
+                }
+                select.add(option);
+            });
+        }});
+    }
 }
 
 </script>
@@ -164,15 +252,64 @@ div#content
     padding-top:20px;
 }
 
-div#loggers
+td.bannerControls
 {
-    border:1px solid #d8d8d8;
-    height:300px;
+    text-align:right;
+    color:black;
+    width:400px;
+    font-size:12pt;
+	font-family:AvenirNextforSAS;
+    white-space:nowrap;
 }
 
-select#loglevel
+table.bannerControls
 {
+    background:#d8d8d8;
+    background:#3b99fc;
+    background:white;
+    border:1px solid black;
+    border:1px solid #d8d8d8;
+    border-radius:4px;
+    width:100%;
+    height:40px;
+}
+
+table.bannerControls td.k8sCell
+{
+    text-align:left;
+    width:80px;
+}
+
+table.bannerControls td#k8sProjectCell,
+table.bannerControls td#connectCell
+{
+    text-align:left;
+    text-align:right;
+}
+
+table.bannerControls td#connectCell
+{
+    vertical-align:center;
+    height:100%;
+}
+
+table.bannerControls td
+{
+    padding:4px;
+}
+
+table.bannerControls select#k8sProjects
+{
+    width:200px;
+    border:2px solid #c0c0c0;
+    border-radius:4px;
+	font-family:AvenirNextforSAS;
     font-size:12pt;
+}
+
+div#banner a
+{
+    color:black;
 }
 
 </style>
@@ -184,8 +321,22 @@ select#loglevel
         <table style="width:100%" cellspacing="0" cellpadding="0">
             <tr>
                 <td id="bannerTitle">ESP Log Viewer</td>
-                <td class="icon">
-                    <a class="icon" href="javascript:_esp.showConnectDialog({connect:connect},_k8s)">&#xf137;</a>
+                <td class="bannerControls">
+                    <table class="bannerControls" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td class="k8sCell">
+                                <span>K8S</span>
+                                <input type="checkbox" id="kubernetes" onchange="k8sChanged(this.checked)"></input>
+                            </td>
+                            <td id="k8sProjectCell">
+                                <span>Projects:</span>
+                                <select id="k8sProjects" onchange="connect(this.value)"></select>
+                            </td>
+                            <td id="connectCell" class="icon">
+                                <a id="connect" class="icon" href="javascript:_esp.showConnectDialog({connect:connect},_k8s)">&#xf137;</a>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
         </table>

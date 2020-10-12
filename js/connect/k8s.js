@@ -66,16 +66,7 @@ define([
 
         Object.defineProperty(this,"k8sProtocol", {
             get() {
-                var protocol = "";
-
-                if (this._url.protocol == "k8ss:" || this._url.protocol == "https:")
-                {
-                    protocol = "k8ss";
-                }
-                else
-                {
-                    protocol = "k8s";
-                }
+                var protocol = "k8s";
 
                 if (this._proxy != null)
                 {
@@ -96,7 +87,7 @@ define([
                 {
                     protocol = "http:";
                 }
-                else if (this._url.protocol == "k8ss:" || this._url.protocol == "https:")
+                else if (this._url.protocol == "k8s:" || this._url.protocol == "https:")
                 {
                     protocol = "https:";
                 }
@@ -117,7 +108,7 @@ define([
                 {
                     protocol = "ws:";
                 }
-                else if (this._url.protocol == "k8ss:" || this._url.protocol == "https:")
+                else if (this._url.protocol == "k8s:" || this._url.protocol == "https:")
                 {
                     protocol = "wss:";
                 }
@@ -180,7 +171,7 @@ define([
             get() {
                 var url = "";
 
-                if (this._url.protocol == "k8ss:" || this._url.protocol == "https:")
+                if (this._url.protocol == "k8s:" || this._url.protocol == "https:")
                 {
                     url += "https";
                 }
@@ -206,6 +197,26 @@ define([
         Object.defineProperty(this,"k8sUrl", {
             get() {
                 return(this.k8sProtocol + "//" + this.host + ":" + this.port);
+            }
+        });
+
+        Object.defineProperty(this,"namespaceUrl", {
+            get() {
+                if (this.namespace == null)
+                {
+                    return(null);
+                }
+                return(this.k8sUrl + "/" + this.namespace);
+            }
+        });
+
+        Object.defineProperty(this,"projectUrl", {
+            get() {
+                if (this.namespace == null || this.project == null)
+                {
+                    return(null);
+                }
+                return(this.k8sUrl + "/" + this.namespace + "/" + this.project);
             }
         });
 
@@ -259,6 +270,21 @@ define([
         var k8s = this;
         var o = {
             response:function(request,text) {
+
+                if (request.getStatus() == 404)
+                {
+                    if (tools.supports(delegate,"error"))
+                    {
+                        delegate.error(request,"not found");
+                    }
+                    else
+                    {
+                        tools.exception("error: not found");
+                    }
+
+                    return;
+                }
+
                 var data = JSON.parse(text);
 
                 if (data.code == 404)
@@ -857,16 +883,16 @@ define([
             tools.exception("URL must be in form protocol://server/<namespace>/<project>");
         }
 
-        Object.defineProperty(this,"espurl", {
+        Object.defineProperty(this,"espUrl", {
             get() {
                 var url = "";
                 if (this._config != null)
                 {
-                    if (this._url.protocol == "k8ss:" || this._url.protocol == "https:")
+                    if (this._url.protocol == "k8s:" || this._url.protocol == "https:")
                     {
                         url += "https://";
                     }
-                    else if (this._url.protocol == "k8ss-proxy:" || this._url.protocol == "https-proxy:")
+                    else if (this._url.protocol == "k8s-proxy:" || this._url.protocol == "https-proxy:")
                     {
                         url += "https://";
                     }
@@ -918,7 +944,10 @@ define([
                         handlePod:function(pod)
                         {
                             k8s._pod = pod;
-                            connect.connect(k8s.espurl,delegate,options,start);
+                            /*
+                            k8s.readiness(delegate);
+                            */
+                            connect.connect(k8s.espUrl,delegate,options,start);
                         }
                     });
                 }
@@ -928,7 +957,7 @@ define([
                         modelHandler:function(model) {
                             k8s.load(model,opts.getOpts(),{
                                 loaded:function() {
-                                    connect.connect(k8s.espurl,delegate,options,start);
+                                    connect.connect(k8s.espUrl,delegate,options,start);
                                 }
                             });
                         }
@@ -947,7 +976,7 @@ define([
                         var model = k8s.getDefaultModel(project);
                         k8s.load(model,opts.getOpts(),{
                             loaded:function() {
-                                connect.connect(k8s.espurl,delegate,options,start);
+                                connect.connect(k8s.espUrl,delegate,options,start);
                             }
                         });
                     }
@@ -962,7 +991,7 @@ define([
                         modelHandler:function(model) {
                             k8s.load(model,opts.getOpts(),{
                                 loaded:function() {
-                                    connect.connect(k8s.espurl,delegate,options,start);
+                                    connect.connect(k8s.espUrl,delegate,options,start);
                                 }
                             });
                         }
@@ -1046,10 +1075,10 @@ define([
 
                 return;
             }
-console.log("forcing it");
         }
         /*
         */
+console.log("here same model");
 
         var k8s = this;
 
@@ -1287,6 +1316,7 @@ console.log("forcing it");
     K8SProject.prototype.isReady =
     function(delegate)
     {
+console.log("is ready");
         if (tools.supports(delegate,"ready") == false)
         {
             tools.exception("the delegate must implement the ready function");
@@ -1348,7 +1378,7 @@ console.log("forcing it");
     K8SProject.prototype.readiness =
     function(delegate)
     {
-        var url = this.espurl;
+        var url = this.espUrl;
         url += "/internal/ready";
         const   req = ajax.create("ready",url,{
             response(request,text) {
@@ -1366,6 +1396,12 @@ console.log("forcing it");
                 tools.exception(text);
             }
         });
+
+        /*
+        var certConfirm  = this.espUrl;
+        certConfirm  += "/eventStreamProcessing/v1/server";
+        req.setOpt("cert-confirm-url",certConfirm);
+        */
         setTimeout(function() {req.head()},1000);
     }
 
@@ -1373,7 +1409,7 @@ console.log("forcing it");
     K8SProject.prototype.readiness =
     function(delegate)
     {
-        var url = this.espurl;
+        var url = this.espUrl;
         url += "/internal/ready";
         const   req = ajax.create("ready",url,{
             response(request,text) {
@@ -1397,7 +1433,7 @@ console.log("forcing it");
                 tools.exception(text);
             }
         });
-        var certConfirm  = this.espurl;
+        var certConfirm  = this.espUrl;
         certConfirm  += "/eventStreamProcessing/v1/server";
         req.setOpt("cert-confirm-url",certConfirm);
         setTimeout(function() {req.head()},1000);
