@@ -51,9 +51,9 @@ ready(connection)
 }
 
 function
-error(message)
+error(conn)
 {
-    console.log(message);
+    console.log("error: " + conn.getUrl());
     process.exit(0);
 }
 

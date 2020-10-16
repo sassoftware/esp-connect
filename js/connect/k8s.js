@@ -273,9 +273,10 @@ define([
 
                 if (request.getStatus() == 404)
                 {
-                    if (tools.supports(delegate,"error"))
+for (var x in delegate) console.log(x);
+                    if (tools.supports(delegate,"notFound"))
                     {
-                        delegate.error(request,"not found");
+                        delegate.notFound(request,"not found");
                     }
                     else
                     {
@@ -296,9 +297,9 @@ define([
                     }
                     s += k8s._project;
 
-                    if (tools.supports(delegate,"projectNotFound"))
+                    if (tools.supports(delegate,"notFound"))
                     {
-                        delegate.projectNotFound(s);
+                        delegate.notFound(s);
                     }
                     else
                     {
@@ -336,6 +337,38 @@ define([
         var request = ajax.create("load",url,o);
 		request.setRequestHeader("accept","application/json");
         request.get();
+    }
+
+    K8S.prototype.getProject =
+    function(delegate,namespace,name)
+    {
+        if (tools.supports(delegate,"handleProject") == false)
+        {
+            tools.exception("the delegate must implement the handleProjects function");
+        }
+
+        if (namespace == null || name == null)
+        {
+            tools.exception("you must specify project namespace and name");
+        }
+
+        this.getProjects({
+            handleProjects:function(projects)
+            {
+                delegate.handleProject(projects[0]);
+            },
+            notFound:function()
+            {
+                if (tools.supports(delegate,"notFound"))
+                {
+                    delegate.notFound();
+                }
+                else
+                {
+                    tools.exception("error: not found");
+                }
+            }
+        },namespace,name);
     }
 
     K8S.prototype.getPods =
@@ -931,7 +964,7 @@ define([
     function(connect,delegate,options,start)
     {
         var opts = new Options(options);
-        var modelconfig = opts.getOptAndClear("model");
+        var modelconfig = opts.getOpt("model");
         var k8s = this;
 
         var handler =
@@ -1076,9 +1109,6 @@ define([
                 return;
             }
         }
-        /*
-        */
-console.log("here same model");
 
         var k8s = this;
 
@@ -1147,6 +1177,41 @@ console.log("here same model");
             request.setData(content);
             request.post();
         }
+    }
+
+    K8SProject.prototype.restart =
+    function(delegate)
+    {
+        const   k8s = this;
+        const   handler = {
+            handleProject:function(p) 
+            {
+                const   s = p.spec.espProperties["server.xml"];
+                const   xml = tools.b64Decode(s.substr(3)).toString();
+                const   delHandler = {
+                    deleted:function() {
+                        k8s.load(xml,{force:true},
+                        {
+                            loaded:function() 
+                            {
+                                if (tools.supports(delegate,"loaded"))
+                                {
+                                    delegate.loaded();
+                                }
+                            }
+                        });
+                    }
+                };
+
+                k8s.del(delHandler);
+            },
+            notFound:function()
+            {
+                tools.exception("project not found");
+            }
+        }
+
+        this.getProject(handler,this.namespace,this.project);
     }
 
     K8SProject.prototype.del =
@@ -1316,7 +1381,6 @@ console.log("here same model");
     K8SProject.prototype.isReady =
     function(delegate)
     {
-console.log("is ready");
         if (tools.supports(delegate,"ready") == false)
         {
             tools.exception("the delegate must implement the ready function");

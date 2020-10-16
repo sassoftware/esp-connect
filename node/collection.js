@@ -76,7 +76,7 @@ showUsage()
         examples:[
         {
             title:"Subscribe to events",
-            command:"-server http://espsrv01:7777 -window secondary/cq/brokerAlertsAggr"
+            command:"--server http://espsrv01:7777 --window secondary/cq/brokerAlertsAggr"
         }
         ],
         see_also:[

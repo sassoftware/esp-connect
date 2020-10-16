@@ -752,3 +752,9 @@ div.layout
 {
     padding-left:20px;
 }
+
+pre.help
+{
+	font-family:AvenirNextforSAS;
+    font-size:12pt;
+}

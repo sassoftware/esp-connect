@@ -63,11 +63,11 @@ showUsage()
         examples:[
         {
             title:"Retrieve all models",
-            command:"-server http://espsrv01:7777"
+            command:"--server http://espsrv01:7777"
         },
         {
             title:"Retrieve specific model",
-            command:"-server http://espsrv01:7777 -name mymodel"
+            command:"--server http://espsrv01:7777 --name mymodel"
         }
         ],
         see_also:[

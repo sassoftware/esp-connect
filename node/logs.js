@@ -37,13 +37,32 @@ opts.clearOpts(names);
 
 esp.connect(server,{ready:ready,error:error},o);
 
+const   json = opts.getOpt("json",false);
+
 function
 ready(connection)
 {
     var delegate = {
         handleLog:function(log,message)
         {
-            console.log(JSON.stringify(message,null,2));
+            var s = "";
+
+            if (json)
+            {
+                s = JSON.stringify(message,null,2);
+            }
+            else
+            {
+                for (var name in message)
+                {
+                    s += name;
+                    s += "=";
+                    s += message[name];
+                    s += "\n";
+                }
+            }
+
+            console.log(s);
         }
     };
 
@@ -55,9 +74,9 @@ ready(connection)
 }
 
 function
-error(message)
+error(conn)
 {
-    console.log(message);
+    console.log("error: " + conn.getUrl());
     process.exit(0);
 }
 

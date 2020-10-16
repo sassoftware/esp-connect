@@ -234,7 +234,7 @@ define([
     }
 
     Schema.prototype.fromJson =
-    function(json)
+    function(json,delegate)
     {
         this._fields = [];
         this._fieldMap = {};
@@ -312,6 +312,11 @@ define([
                 this._keyFields.push(o);
             }
         });
+
+        if (tools.supports(delegate,"completeSchema"))
+        {
+            delegate.completeSchema(this);
+        }
 
         for (var d of this._delegates)
         {
@@ -419,8 +424,8 @@ define([
         var opcodes = opts.getOpt("opcodes",false);
         var flags = opts.getOpt("flags",false);
 
-        var filter = (delegate != null && tools.supports(delegate,"filter")) ? delegate["filter"] : null;
-        var supplement = (delegate != null && tools.supports(delegate,"supplement")) ? delegate["supplement"] : null;
+        var filter = (tools.supports(delegate,"filter")) ? delegate["filter"] : null;
+        var supplement = (tools.supports(delegate,"supplement")) ? delegate["supplement"] : null;
 
         while (i < lines.length)
         {

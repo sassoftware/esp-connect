@@ -90,7 +90,7 @@ ready(connection)
                       header:"Sailing",popup:["boat_id","heading","speed"],marker_border:0,
                       poly_border_width:1,poly_fill_color:"rgba(0,255,0,.5)",
                       circle_border_width:1,circle_fill_color:"rgba(0,255,0,.5)",
-                      zoom:14,center:[56.000241,-3.424250],
+                      zoom:13,center:[56.000241,-3.424250],
                       polygons:{window:_project + "/cq/Areas_Of_Interest",mode:"collection",coords:"Poly_Data",radius:"Poly_Radius",text:"poly_desc",order:"lon_lat"},html:getSailboat};
 
     _map = _visuals.createMap("map",coll,config);
@@ -227,7 +227,7 @@ table.legend a.icon
                 <td id="bannerTitle"></td>
                 <td class="icon">
                     <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
-                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'p',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'sailing',type:true,memory:true,show_projects:false})" title="ESP Model">&#xf501;</a>
                     <a class="icon" href="javascript:_esp.showFrameDialog('ESP Sailing Example','help.html',{width:'80%',height:'80%'})">&#xf30b;</a>
                 </td>
             </tr>

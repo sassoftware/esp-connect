@@ -785,7 +785,7 @@ define([
         var opts = new Options(options);
         var blocksize = opts.getOpt("blocksize",1);
         var times = opts.getOpt("times",1);
-        var    o = {};
+        var o = {};
         var id = tools.guid();
 
         var request = {"url-publisher":{}};
@@ -1007,7 +1007,7 @@ define([
     }
 
     Api.prototype.getProjectXml =
-    function(name,delegate)
+    function(name,delegate,options)
     {
         var id = tools.guid();
         this._responseDelegates[id] = new ResponseDelegate(this,delegate);
@@ -1018,6 +1018,14 @@ define([
         if (name != null)
         {
             o["name"] = name;
+        }
+
+        if (options != null)
+        {
+            for (var n in options)
+            {
+                o[n] = options[n];
+            }
         }
 
         this.sendObject(request);
@@ -1320,7 +1328,7 @@ define([
     Datasource.prototype.setSchemaFromJson =
     function(json)
     {
-        this._schema.fromJson(json);
+        this._schema.fromJson(json,this);
     }
 
     Datasource.prototype.getKey =
@@ -2536,8 +2544,7 @@ define([
     EventStream.prototype.setSchemaFromXml =
     function(xml)
     {
-        Datasource.prototype.setSchemaFromXml.call(this,xml);
-        this.completeSchema();
+        Datasource.prototype.setSchemaFromXml.call(this,xml,this);
         this.deliverSchemaSet();
     }
 
@@ -2545,36 +2552,35 @@ define([
     function(json)
     {
         Datasource.prototype.setSchemaFromJson.call(this,json);
-        this.completeSchema();
         this.deliverSchemaSet();
     }
 
     EventStream.prototype.completeSchema =
-    function()
+    function(schema)
     {
-        for (var i = 0; i < this._schema._fields.length; i++)
+        for (var i = 0; i < schema._fields.length; i++)
         {
-            this._schema._fields[i].setOpt("isKey",false);
+            schema._fields[i].setOpt("isKey",false);
         }
 
         var f;
 
         f = new Options({"name":"@opcode","espType":"utf8str","type":"string","isKey":false,"isNumber":false,"isDate":false,"isTime":false});
-        this._schema._fields.unshift(f);
-        this._schema._columns.unshift(f.getOpt("name"));
-        this._schema._fieldMap[f.getOpt("name")] = f;
+        schema._fields.unshift(f);
+        schema._columns.unshift(f.getOpt("name"));
+        schema._fieldMap[f.getOpt("name")] = f;
 
         f = new Options({"name":"@timestamp","espType":"timestamp","type":"date","isKey":false,"isNumber":true,"isDate":false,"isTime":true});
-        this._schema._fields.unshift(f);
-        this._schema._columns.unshift(f.getOpt("name"));
-        this._schema._fieldMap[f.getOpt("name")] = f;
+        schema._fields.unshift(f);
+        schema._columns.unshift(f.getOpt("name"));
+        schema._fieldMap[f.getOpt("name")] = f;
 
         f = new Options({"name":"@counter","espType":"int32","type":"int","isKey":true,"isNumber":true,"isDate":false,"isTime":false});
-        this._schema._fields.unshift(f);
-        this._schema._columns.unshift(f.getOpt("name"));
-        this._schema._fieldMap[f.getOpt("name")] = f;
+        schema._fields.unshift(f);
+        schema._columns.unshift(f.getOpt("name"));
+        schema._fieldMap[f.getOpt("name")] = f;
 
-        this._schema._keyFields = [f];
+        schema._keyFields = [f];
     }
 
     EventStream.prototype.events =
@@ -3091,7 +3097,14 @@ define([
 
         if (text[0] == '{')
         {
-            o = JSON.parse(text);
+            try
+            {
+                o = JSON.parse(text);
+            }
+            catch (e)
+            {
+                console.log("log parse error");
+            }
         }
         else
         {
@@ -3296,7 +3309,7 @@ define([
     Publisher.prototype.setSchemaFromJson =
     function(json)
     {
-        this._schema.fromJson(json);
+        this._schema.fromJson(json,this);
         this.deliverSchemaSet();
 
         if (this._csv != null)

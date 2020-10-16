@@ -88,7 +88,7 @@ showUsage()
         examples:[
         {
             title:"View Loggers",
-            command:"",
+            command:"--server http://espsrv01:7777",
             output:"[\n\t{\n\t\t\"@level\": \"DEBUG\",\n\t\t\"@name\": \"DF.ESP\"\n\t},\n\t{\n\t\t\"@level\": \"INFO\",\n\t\t\"@name\": \"DF.ESP.AUTH\"\n\t},\n\t{\n\t\t\"@level\": \"DEBUG\",\n\t\t\"@name\": \"DF.ESP.ENGINE\"\n\t},\n\t{\n\t\t\"@level\": \"WARN\",\n\t\t\"@name\": \"DF.ESP.STATS\"\n\t}\n]\n"
         }
         ]

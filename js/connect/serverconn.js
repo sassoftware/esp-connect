@@ -24,15 +24,16 @@ define([
     "./v7",
     "./tools",
     "./ajax",
+    "./xpath",
     "./options"
-], function(Connection,v6,v7,tools,ajax,Options)
+], function(Connection,v6,v7,tools,ajax,xpath,Options)
 {
     var _prompted = {};
 
     function
     ServerConnection(connect,host,port,path,secure,delegate,options)
     {
-		Connection.call(this,host,port,path,secure,options,connect.config);
+        Connection.call(this,host,port,path,secure,options,connect.config);
         this._connect = connect;
         this._delegates = [];
 
@@ -59,11 +60,11 @@ define([
         this._impl = null;
     }
 
-	ServerConnection.prototype = Object.create(Connection.prototype);
-	ServerConnection.prototype.constructor = ServerConnection;
+    ServerConnection.prototype = Object.create(Connection.prototype);
+    ServerConnection.prototype.constructor = ServerConnection;
 
-	ServerConnection.prototype.handshakeComplete =
-	function()
+    ServerConnection.prototype.handshakeComplete =
+    function()
     {
         var version = this.getHeader("version");
 
@@ -82,7 +83,7 @@ define([
 
             if (this._impl.k8s == null && this.hasOpt("model"))
             {
-                var model = this.getOptAndClear("model");
+                var model = this.getOpt("model");
                 var opts = new Options(model);
                 var name = opts.getOpt("name");
                 var data = opts.getOpt("data");
@@ -98,13 +99,20 @@ define([
                     tools.exception("the model must contain either a data or url field");
                 }
 
-                var conn = this;
+                const   conn = this;
 
                 if (url != null)
                 {
                     var o = {
                         response:function(request,text,data) {
-                            var o1 = {
+
+                            if (model.hasOwnProperty("_xml") == false)
+                            {
+                                data.documentElement.removeAttribute("name");
+                                model.data = xpath.xmlString(data);
+                            }
+
+                            conn.load(model,{
                                 loaded:function(connection,name) {
                                     conn._delegates.forEach((d) => {
                                         if (tools.supports(d,"ready"))
@@ -121,8 +129,7 @@ define([
                                         }
                                     });
                                 }
-                            };
-                            conn._impl.loadProject(model.name,text,o1,conn.getOpts());
+                            });
                         },
                         error:function(request,error) {
                             conn._delegates.forEach((d) => {
@@ -138,9 +145,15 @@ define([
                 }
                 else
                 {
-                    var o = {
+                    if (model.hasOwnProperty("_xml") == false)
+                    {
+                        model._xml = xpath.createXml(model.data);
+                        model._xml.documentElement.removeAttribute("name");
+                        model.data = xpath.xmlString(model._xml);
+                    }
+
+                    this.load(model,{
                         loaded:function(connection,name) {
-                        console.log("loaded");
                             conn._delegates.forEach((d) => {
                                 if (tools.supports(d,"ready"))
                                 {
@@ -149,7 +162,6 @@ define([
                             });
                         },
                         error:function(connection,name,message) {
-                        console.log("error");
                             conn._delegates.forEach((d) => {
                                 if (tools.supports(d,"error"))
                                 {
@@ -157,8 +169,7 @@ define([
                                 }
                             });
                         }
-                    };
-                    this._impl.loadProject(model.name,model.data,o,this.getOpts());
+                    });
                 }
             }
             else
@@ -170,6 +181,53 @@ define([
                     }
                 });
             }
+        }
+    }
+
+    ServerConnection.prototype.load =
+    function(model,delegate)
+    {
+        if (this.getOpt("force",false))
+        {
+            this._impl.loadProject(model.name,model.data,delegate,this.getOpts());
+        }
+        else
+        {
+            const   conn = this;
+
+            this._impl.getProjectXml(model.name,{
+                response:function(request,text,xml) {
+                    var node = null;
+                    if (xml.nodeType == 1)
+                    {
+                        node = xml;
+                    }
+                    else if (xml.nodeType == 9)
+                    {
+                        node = xml.documentElement;
+                    }
+
+                    if (node == null)
+                    {
+                        conn._impl.loadProject(model.name,model.data,delegate,conn.getOpts());
+                    }
+                    else
+                    {
+                        node.removeAttribute("name",name);
+
+                        const   s = xpath.xmlString(node);
+
+                        if (model.data != s)
+                        {
+                            conn._impl.loadProject(model.name,model.data,delegate,conn.getOpts());
+                        }
+                        else
+                        {
+                            delegate.loaded(this,model.name);
+                        }
+                    }
+                }
+            });
         }
     }
 
@@ -206,7 +264,7 @@ define([
     }
 
     ServerConnection.prototype.error =
-    function(conn)
+    function()
     {
         if (this._impl != null && this._impl.closed)
         {
@@ -233,7 +291,7 @@ define([
             }
         }
 
-		if (tools.supports(this._delegate,"error"))
+        if (tools.supports(this._delegate,"error"))
         {
             this._delegate.error(this);
         }
@@ -254,14 +312,14 @@ define([
         }
     }
 
-	ServerConnection.prototype.message =
-	function(data)
-	{
-		if (this.isHandshakeComplete() == false)
-		{
-			Connection.prototype.message.call(this,data);
-			return;
-		}
+    ServerConnection.prototype.message =
+    function(data)
+    {
+        if (this.isHandshakeComplete() == false)
+        {
+            Connection.prototype.message.call(this,data);
+            return;
+        }
 
         if (this._impl != null)
         {
@@ -269,8 +327,8 @@ define([
         }
     }
 
-	ServerConnection.prototype.data =
-	function(o)
+    ServerConnection.prototype.data =
+    function(o)
     {
         if (this._impl != null)
         {
@@ -295,15 +353,15 @@ define([
         tools.removeFrom(this._delegates,delegate);
     }
 
-	ServerConnection.prototype.getUrl =
-	function()
-	{
-		var	url = "";
-		url += this.protocol;
-		url += "://";
-		url += this.host;
-		url += ":";
-		url += this.port;
+    ServerConnection.prototype.getUrl =
+    function()
+    {
+        var url = "";
+        url += this.protocol;
+        url += "://";
+        url += this.host;
+        url += ":";
+        url += this.port;
         if (this._path != null && this._path.length > 0)
         {
             url += this._path;
@@ -312,7 +370,7 @@ define([
         {
             url += "/";
         }
-		url += "eventStreamProcessing/v2/connect";
+        url += "eventStreamProcessing/v2/connect";
 
         if (this.hasOpt("access_token"))
         {
@@ -320,8 +378,8 @@ define([
             url += "access_token=" + this.getOpt("access_token");
         }
 
-		return(url);
-	}
+        return(url);
+    }
 
     ServerConnection.create =
     function(connect,url,delegate,options)

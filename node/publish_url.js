@@ -74,11 +74,11 @@ retrieve the events.",
         examples:[
         {
             title:"Publish events over HTTP",
-            command:"-server http://espsrv01:7777 -window primary/cq/trades -url http://espserver:21000/events.csv"
+            command:"--server http://espsrv01:7777 --window primary/cq/trades --url http://espserver:21000/events.csv"
         },
         {
             title:"Publish events from a file local to the ESP server",
-            command:"-server http://espsrv01:7777 -window primary/cq/trades -url file:///mnt/data/espdata/events.csv"
+            command:"--server http://espsrv01:7777 --window primary/cq/trades --url file:///mnt/data/espdata/events.csv"
         }
         ],
         see_also:[

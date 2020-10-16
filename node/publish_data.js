@@ -43,6 +43,8 @@ ready(connection)
 {
     var data = fs.readFileSync(opts.getOpt("events"));
 
+    console.log("begin publish...");
+
     var delegate = {
         publishComplete:function() {
             console.log("publish complete");

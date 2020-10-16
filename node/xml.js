@@ -42,7 +42,8 @@ ready(connection)
 {
     var delegate = {
         response:function(connection,data,xml) {
-            console.log("" + esp.getXPath().xmlString(xml));
+            //console.log("" + esp.getXPath().xmlString(xml));
+            console.log(data);
             process.exit(0);
         },
         error:function(message) {
@@ -50,13 +51,13 @@ ready(connection)
             process.exit(0);
         }
     };
-    connection.getProjectXml(opts.getOpt("name"),delegate);
+    connection.getProjectXml(opts.getOpt("name"),delegate,opts.getOpts());
 }
 
 function
-error(message)
+error(conn)
 {
-    console.log(message);
+    console.log("error: " + conn.getUrl());
     process.exit(0);
 }
 

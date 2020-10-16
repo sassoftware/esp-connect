@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<link rel="stylesheet" href="../../style/connect.css" />
+</head>
+
+<body class="help">
+This example pushes stock trade data through an ESP model looking for trade violations.
+<br/><br/>
+In order to publish data into the model, you must put the <a href="../data/trades1M.csv">trades data file</a> where the server can access it.
+<br/><br/>
+If you are running a standalone ESP server, just copy the file into the directory where the server is running.
+<br/><br/>
+If you are running under Kubernetes, perform the following commands using the esp-connect NodeJS k8s command (namespace is <i>myprojects</i> for this example):
+<
+<ol>
+<li>Change directories to the esp-connect/node directory</li>
+<li>Make a directory in the Kubernetes namespace
+<pre class="indent help">node k8s --server k8s-proxy://localhost:8001/myprojects/sas-event-stream-processing-client-config-server --exec -- mkdir -p /mnt/data/demo/trades</pre></li>
+<li>Copy the trades data file into Kubernetes
+<pre class="indent help">node k8s --server k8s-proxy://localhost:8001/myprojects/sas-event-stream-processing-client-config-server --put file://..//examples/data/trades1M.csv --path /mnt/data/demo/trades</pre></li>
+</li>
+<li>Make sure the file is in the right place
+<pre class="indent help">node k8s --server k8s-proxy://localhost:8001/myprojects/sas-event-stream-processing-client-config-server --ls /mnt/data/demo/trades</pre></li>
+</ol>
+<b>NOTE:</b>
+<div class="indent">You only need to copy the file once. If you want to make sure it is where it needs to be in K8S,
+<pre class="indent help">node k8s --server k8s-proxy://localhost:8001/myprojects/sas-event-stream-processing-client-config-server --ls /mnt/data/demo/trades</pre></li>
+</div>
+
+After you have done this, do the following:
+<ol>
+<li>Bring up the <a href="../../html/modelviewer.html" target="_blank">ESP Model Viewer</a>.</li>
+<li>Navigate to the <i>trades</i> project (either in K8S or standalone).</li>
+<li>Make sure the Publish window is selected.</li>
+<li>Select the <i>trades</i> window.</li>
+<li>In the <i>Publish URL</i> field, enter either <i>file:///mnt/data/demo/trades/trades1M.csv</i> for K8S, or <i>file://trades1M.csv</i> for standalone.</li>
+<li>Enter the desired blocksize (try 1000 or so).</li>
+<li>Enter the amount of repetitions (1 million trades per).</li>
+<li>Hit Publish.</li>
+<li>Go back to trades demo to watch the stream.</li>
+</ol>
+</body>
+
+</html>

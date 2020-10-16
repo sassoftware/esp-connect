@@ -1114,8 +1114,9 @@ publishData()
     {
         var url = document.getElementById("publishUrl").value;
         var times = document.getElementById("publishUrlTimes").value;
+        var blocksize = document.getElementById("blocksize").value;
         _storage.setOpt("publishUrl",url);
-        _connection.publishUrl(path,new URL(url,document.URL).toString(),null,{format:"bin",times:times});
+        _connection.publishUrl(path,new URL(url,document.URL).toString(),null,{format:"bin",times:times,blocksize:blocksize});
     }
     else if (_tabs.getSelectedIndex() == 1)
     {
@@ -1688,6 +1689,10 @@ div#banner a
             <tr>
                 <td class="label">Publish URL:</td>
                 <td class="value"><input id="publishUrl" type="text"/></td>
+            </tr>
+            <tr>
+                <td class="label">Blocksize?</td>
+                <td class="value"><input id="blocksize" type="text" value="1"/></td>
             </tr>
             <tr>
                 <td class="label">How many times?</td>

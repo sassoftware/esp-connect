@@ -31,15 +31,26 @@ if (opts.getOpt("projects",false))
             var o = {};
 
             data.forEach((item) => {
-                o = esp.createOptions();
-                o.setOpt("name",item.metadata.name);
-                o.setOpt("namespace",item.metadata.namespace);
-                o.setOpt("esp",item.access.externalURL);
-                a.push(o);
 
-                if (opts.getOpt("info",false))
+                if (item.metadata.name != "sas-event-stream-processing-client-config-server")
                 {
-                    console.log(JSON.stringify(item,null,2));
+                    o = esp.createOptions();
+                    o.setOpt("name",item.metadata.name);
+                    o.setOpt("namespace",item.metadata.namespace);
+
+                    var s = "";
+                    s += "https://";
+                    s += item.access.externalURL;
+                    s += "/SASEventStreamProcessingServer";
+                    s += "/" + item.metadata.name;
+                    s += "/eventStreamProcessing/v1";
+                    o.setOpt("esp",s);
+                    a.push(o);
+
+                    if (opts.getOpt("info",false))
+                    {
+                        console.log(JSON.stringify(item,null,2));
+                    }
                 }
             });
 
@@ -49,6 +60,24 @@ if (opts.getOpt("projects",false))
             listing.headers = true;
 
             console.log(esp.getFormatter().listing(listing));
+        }
+    });
+}
+
+if (opts.getOpt("restart",false))
+{
+    if (esp.getTools().supports(k8s,"restart") == false)
+    {
+        console.log("you must specify a project to restart");
+        process.exit(1);
+    }
+
+    console.log("restarting...");
+
+    k8s.restart({
+        loaded:function()
+        {
+            console.log("project restarted");
         }
     });
 }
@@ -186,7 +215,7 @@ if (opts.getOpt("exec",false))
 if (opts.getOpt("espurl",false))
 {
     setTimeout(function() {
-        console.log(k8s.espurl + "/eventStreamProcessing/v1");
+        console.log(k8s.espUrl + "/eventStreamProcessing/v1");
     },1000
     );
 }
@@ -201,11 +230,11 @@ showUsage()
         The protocol is as follows:\n\
         <listing>protocols</listing>\
         The host and port point either directly to the K8S server\n\n \
-        k8ss://espdev-m1<dot>espkafkabroker<dot>sashq-r<dot>openstack<dot>sas<dot>com:6443/\n\n \
+        k8s://espdev-m1<dot>espkafkabroker<dot>sashq-r<dot>openstack<dot>sas<dot>com:6443/\n\n \
         or to a proxy (usually running on localhost):\n\n \
-        k8ss-proxy://localhost:8001/\n\n \
+        k8s-proxy://localhost:8001/\n\n \
         You can also specify a namespace and a project in the URL:\n\n \
-        k8ss-proxy://localhost:8001/mynamespace/trades\n\n \
+        k8s-proxy://localhost:8001/mynamespace/trades\n\n \
         The above URL would point directly to an ESP project.\
         ",
         options:[
@@ -213,16 +242,16 @@ showUsage()
             {name:"projects",description:"Retrieve the ESP projects from the K8S server. You can optionally filter the projects by project name and/or K8S namespace.", required:false,
                 examples:[
                 {
-                    title:"Retrieve all ESP servers",
-                    command:"--server k8ss-proxy://localhost:8001 --projects"
+                    title:"Retrieve all ESP projects",
+                    command:"--server k8s-proxy://localhost:8001 --projects"
                 },
                 {
-                    title:"Retrieve ESP servers for namespace myns",
-                    command:"--server k8ss-proxy://localhost:8001/myns --projects"
+                    title:"Retrieve ESP projects for namespace myns",
+                    command:"--server k8s-proxy://localhost:8001/myns --projects"
                 },
                 {
-                    title:"Retrieve ESP servers for project myproject in namespace myns",
-                    command:"--server k8ss-proxy://localhost:8001/myns/myproject --projects"
+                    title:"Retrieve ESP projects for project myproject in namespace myns",
+                    command:"--server k8s-proxy://localhost:8001/myns/myproject --projects"
                 }
             ]},
             {name:"pods",description:"Retrieve the pods from the K8S server."},
@@ -230,14 +259,14 @@ showUsage()
                 examples:[
                 {
                     title:"Get <fg:blue>hello.txt</fg> from /tmp",
-                    command:"--server k8ss-proxy://localhost:8001/myns/myproject --get /tmp/hello.txt"
+                    command:"--server k8s-proxy://localhost:8001/myns/myproject --get /tmp/hello.txt"
                 }]
             },
             {name:"put",description:"Copy a file into a pod. The parameter value should be a URL pointing to the file to copy.",
                 examples:[
                 {
                     title:"Put <fg:blue>hello.txt</fg> into /tmp",
-                    command:"--server k8ss-proxy://localhost:8001/myns/myproject --put file://hello.txt -path /tmp"
+                    command:"--server k8s-proxy://localhost:8001/myns/myproject --put file://hello.txt -path /tmp"
                 }]
             },
             {name:"log",description:"Retrieve the log from a K8S pod. The URL must contain both a namespace and a project name."},
@@ -245,7 +274,7 @@ showUsage()
                 examples:[
                 {
                     title:"Show files in /tmp",
-                    command:"--server k8ss-proxy://localhost:8001/myns/myproject --ls /tmp",
+                    command:"--server k8s-proxy://localhost:8001/myns/myproject --ls /tmp",
                     output:"\nListing for /tmp\n\n\
                     perms      owner  group  size      modified      name              \n\
                     ---------  -----  -----  --------  ------------  ----------------  \n\
@@ -262,7 +291,7 @@ showUsage()
                 examples:[
                 {
                     title:"Get ESP server URL",
-                    command:"--server k8ss-proxy://localhost:8001/myns/myproject --espurl",
+                    command:"--server k8s-proxy://localhost:8001/myns/myproject --espurl",
                     output:"https://myns.ingress-nginx.espdev-m1.espkafkabroker.sashq-r.openstack.sas.com/SASEventStreamProcessingServer/myproject/eventStreamProcessing/v1"
                 }]
             },
@@ -271,7 +300,7 @@ showUsage()
                 examples:[
                 {
                     title:"Cat a file from the pod",
-                    command:"--server k8ss-proxy://localhost:8001/myns/myproject --exec -- cat /tmp/hello.txt",
+                    command:"--server k8s-proxy://localhost:8001/myns/myproject --exec -- cat /tmp/hello.txt",
                     output:"hello, world"
                 }]
             }
@@ -279,8 +308,8 @@ showUsage()
         listings:{"protocols":
                     {"fields":["Protocol","Description"],
                     "values":[
-                        {"Protocol":"k8ss:","Description":"Use this to connect directly to the K8S server"},
-                        {"Protocol":"k8ss-proxy:","Description":"Use this to connect to the K8S server through a K8S proxy (preferred)"}
+                        {"Protocol":"k8s:","Description":"Use this to connect directly to the K8S server"},
+                        {"Protocol":"k8s-proxy:","Description":"Use this to connect to the K8S server through a K8S proxy (preferred)"}
                     ]
                 }
             }

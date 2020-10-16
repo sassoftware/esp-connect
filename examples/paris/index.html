@@ -76,8 +76,6 @@ ready(connection)
     setTimeout(createVisuals,1000);
     _conn.getProjectXml("myproject",{response:function(c,data){_modelXml = data;}});
 
-    _esp.clearStatus();
-
     _esp.size();
 }
 

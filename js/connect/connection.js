@@ -177,7 +177,6 @@ define([
 
                     if (conn != null)
                     {
-                        console.log("websocket error: " + conn.getUrl());
                         conn.clear();
                         conn.error();
                     }
