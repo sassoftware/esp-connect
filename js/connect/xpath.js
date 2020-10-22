@@ -19,23 +19,15 @@ if (tools.isNode)
             console.log("import error on xpath: " + e);
         });
 
-    import("w3c-xmlserializer").
+    import("xmldom").
         then((module) => {
-            _serialize = module.default;
+            var DOMParser = module.default.DOMParser;
+            var XMLSerializer = module.default.XMLSerializer;
+            _dom = new DOMParser();
+            _serialize = new XMLSerializer();
         }).
         catch((e) => {
-            console.log("import error on jsdom: " + e);
-        });
-
-
-    import("jsdom").
-        then((module) => {
-            const   jsdom = module.default;
-            const{JSDOM} = jsdom;
-            _dom = new JSDOM("");
-        }).
-        catch((e) => {
-            console.log("import error on jsdom: " + e);
+            console.log("import error on xmldom: " + e);
         });
 }
 
@@ -152,7 +144,7 @@ var _api =
     {
         if (tools.isNode)
         {
-            return(_serialize(xml));
+            return(_serialize.serializeToString(xml));
         }
         else
         {
@@ -292,7 +284,9 @@ var _api =
 
         if (tools.isNode)
         {
-            xml = new _dom.window.DOMParser().parseFromString(s,"application/xml");
+            //xml = new _dom.window.DOMParser().parseFromString(s,"application/xml");
+            xml = _dom.parseFromString(s,"application/xml");
+console.log(xml);
         }
         else
         {

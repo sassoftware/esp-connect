@@ -6,7 +6,7 @@
 import {Options} from "../connect/options.js";
 import {tools} from "../connect/tools.js";
 
-var	_dialogs_ = null;
+window._dialogs_ = null;
 
 var	_api =
 {
@@ -879,6 +879,6 @@ var	_api =
     },
 };
 
-_dialogs_ = _api;
+window._dialogs_ = _api;
 
 export {_api as dialogs};

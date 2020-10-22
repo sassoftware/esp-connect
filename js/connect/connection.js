@@ -114,8 +114,9 @@ if (tools.isNode)
     }
     else
     {
-        //W3CWS = require("websocket").w3cwebsocket;
-        //import {w3cwebsocket} as W3CWS from "websocket"; 
+        /*
+        W3CWS = require("websocket").w3cwebsocket;
+        import {w3cwebsocket} as W3CWS from "websocket"; 
 
         function
         WebSocketClient(url,connection)
@@ -129,6 +130,7 @@ if (tools.isNode)
 
         WebSocketClient.prototype = Object.create(W3CWS.prototype);
         WebSocketClient.prototype.constructor = WebSocketClient;
+        */
 
         _nodeWebsockets = {
             open:function()
@@ -486,13 +488,45 @@ class Connection extends Options
                     ws.on("message",_nodeWS.message);
                 }
             }
-            else if (W3CWS != null)
+            else
             {
-                var ws = new WebSocketClient(url,this);
-                ws.onopen = _nodeWebsockets.open;
-                ws.onclose = _nodeWebsockets.close;
-                ws.onerror = _nodeWebsockets.error;
-                ws.onmessage = _nodeWebsockets.message;
+                if (W3CWS == null)
+                {
+                    import("websocket").
+                        then((module) => {
+                            W3CWS = module.default.w3cwebsocket;
+
+                            function
+                            WebSocketClient(url,connection)
+                            {
+                                this._conn = connection;
+                                this.binaryType = "arraybuffer";
+                                var config = {};
+                                config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
+                                W3CWS.call(this,url,null,null,null,null,config);
+                            }
+
+                            WebSocketClient.prototype = Object.create(W3CWS.prototype);
+                            WebSocketClient.prototype.constructor = WebSocketClient;
+
+                            var ws = new WebSocketClient(url,this);
+                            ws.onopen = _nodeWebsockets.open;
+                            ws.onclose = _nodeWebsockets.close;
+                            ws.onerror = _nodeWebsockets.error;
+                            ws.onmessage = _nodeWebsockets.message;
+                        }).
+                        catch((e) => {
+                            console.log("import error on ws: " + e);
+                        });
+                }
+                else
+                {
+                    var ws = new WebSocketClient(url,this);
+                    ws.onopen = _nodeWebsockets.open;
+                    ws.onclose = _nodeWebsockets.close;
+                    ws.onerror = _nodeWebsockets.error;
+                    ws.onmessage = _nodeWebsockets.message;
+                }
             }
         }
         else

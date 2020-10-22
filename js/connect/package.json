@@ -22,7 +22,7 @@
   "dependencies": {
     "websocket": "latest",
     "ws": "latest",
-    "jsdom": "latest",
+    "xmldom": "latest",
     "xpath": "latest",
     "xmlhttprequest": "latest",
     "readline-sync": "latest"
