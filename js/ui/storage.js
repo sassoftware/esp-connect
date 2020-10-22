@@ -3,51 +3,37 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {Options} from "../connect/options.js";
 
-define([
-    "../connect/options"
-], function(Options)
+class StoredData extends Options
 {
-	function
-	StoredData(name)
+	constructor(name)
 	{
-		this._name = name;
-
 		var	options = localStorage.getItem(name);
-        Options.call(this,options);
+        super(options);
+		this._name = name;
 	}
 
-    StoredData.prototype = Object.create(Options.prototype);
-    StoredData.prototype.constructor = StoredData;
-
-    StoredData.prototype.optionSet =
-    function(name,value)
+    optionSet(name,value)
 	{
 		this.save();
 	}
 
-    StoredData.prototype.optionCleared =
-    function(name,value)
+    optionCleared(name,value)
 	{
 		this.save();
 	}
 
-	StoredData.prototype.save =
-	function()
+	save()
 	{
 		localStorage.setItem(this._name,this.toString());
 	}
 
-	StoredData.prototype.recreate =
-	function()
+	recreate()
 	{
         this.reset();
 		this.save();
 	}
+}
 
-	return(StoredData);
-});
+export {StoredData as Storage};

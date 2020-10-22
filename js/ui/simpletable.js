@@ -3,21 +3,15 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {Options} from "../connect/options.js";
+import {Schema} from "../connect/schema.js";
+import {tools} from "../connect/tools.js";
 
-define([
-    "../connect/options",
-    "../connect/schema",
-    "../connect/tools"
-], function(Options,Schema,tools)
+class SimpleTable extends Options
 {
-    function
-    SimpleTable(container,options,delegate)
+    constructor(container,options,delegate)
     {
-        Options.call(this,options);
+        super(options);
 
         this._container = container;
         this._delegate = delegate;
@@ -73,17 +67,12 @@ define([
         });
     }
 
-    SimpleTable.prototype = Object.create(Options.prototype);
-    SimpleTable.prototype.constructor = SimpleTable;
-
-    SimpleTable.prototype.getType =
-    function()
+    getType()
     {
         return("simpletable");
     }
 
-    SimpleTable.prototype.setFields =
-    function(fields)
+    setFields(fields)
     {
         this._schema.setFields(fields);
 
@@ -100,26 +89,22 @@ define([
         });
     }
 
-    SimpleTable.prototype.hide =
-    function(name)
+    hide(name)
     {
         this.setProperty(name,"hidden");
     }
 
-    SimpleTable.prototype.unhide =
-    function(name)
+    unhide(name)
     {
         this.unsetProperty(name,"hidden");
     }
 
-    SimpleTable.prototype.isHidden =
-    function(name)
+    isHidden(name)
     {
         return(this.isSet(name,"hidden"));
     }
 
-    SimpleTable.prototype.setProperty =
-    function(name,property)
+    setProperty(name,property)
     {
         var field = this._schema.getField(name);
 
@@ -129,8 +114,7 @@ define([
         }
     }
 
-    SimpleTable.prototype.unsetProperty =
-    function(name,property)
+    unsetProperty(name,property)
     {
         var field = this._schema.getField(name);
 
@@ -140,8 +124,7 @@ define([
         }
     }
 
-    SimpleTable.prototype.isSet =
-    function(name,property)
+    isSet(name,property)
     {
         var code = false;
         var field = this._schema.getField(name);
@@ -154,8 +137,7 @@ define([
         return(code);
     }
 
-    SimpleTable.prototype.setData =
-    function(data,clear)
+    setData(data,clear)
     {
         this.hold();
         if (clear)
@@ -172,8 +154,7 @@ define([
         this.release();
     }
 
-    SimpleTable.prototype.setItem =
-    function(data,itemKey)
+    setItem(data,itemKey)
     {
         var key = itemKey;
 
@@ -205,6 +186,9 @@ define([
                 get() {
                     var key = (this.hasOwnProperty("_key")) ? this._key : "";
                     return(key);
+                },
+                set(value) {
+                    this._key = value;
                 }
             });
 
@@ -269,14 +253,12 @@ define([
         return(item);
     }
 
-    SimpleTable.prototype.getItem =
-    function(key)
+    getItem(key)
     {
         return(this._map.hasOwnProperty(key) ? this._map[key] : null);
     }
 
-    SimpleTable.prototype.removeItem =
-    function(data)
+    removeItem(data)
     {
         var key = (typeof data == "string") ? data : ((data.hasOwnProperty(this._keyfield)) ? data[this._keyfield] : null);
 
@@ -298,8 +280,7 @@ define([
         return(code);
     }
 
-    SimpleTable.prototype.removeHead =
-    function(num)
+    removeHead(num)
     {
         var items = this._list.splice(0,num);
         items.forEach((item) => {
@@ -308,8 +289,7 @@ define([
         this.draw();
     }
 
-    SimpleTable.prototype.draw =
-    function()
+    draw()
     {
         while (this._table.rows.length > 0)
         {
@@ -469,14 +449,12 @@ define([
         }
     }
 
-    SimpleTable.prototype.hold =
-    function()
+    hold()
     {
         this._hold++;
     }
 
-    SimpleTable.prototype.release =
-    function(force)
+    release(force)
     {
         if (force)
         {
@@ -500,20 +478,17 @@ define([
         }
     }
 
-    SimpleTable.prototype.clear =
-    function()
+    clear()
     {
         this._list = [];
         this._map = {};
     }
 
-    SimpleTable.prototype.refresh =
-    function()
+    refresh()
     {
     }
 
-    SimpleTable.prototype.size =
-    function()
+    size()
     {
         if (this._table != null)
         {
@@ -521,22 +496,19 @@ define([
         }
     }
 
-    SimpleTable.prototype.sortFunc =
-    function(a,b)
+    sortFunc(a,b)
     {
         return(b[b._sort.field] - a[a._sort.field]);
     }
 
-    SimpleTable.prototype.deselectAll =
-    function()
+    deselectAll()
     {
         this._list.forEach((item) => {
             item.selected = false;
         });
     }
 
-    SimpleTable.prototype.select =
-    function(key)
+    select(key)
     {
         if (this._map.hasOwnProperty(key))
         {
@@ -549,8 +521,7 @@ define([
         }
     }
 
-    SimpleTable.prototype.deselect =
-    function(key)
+    deselect(key)
     {
         if (this._map.hasOwnProperty(key))
         {
@@ -558,8 +529,7 @@ define([
         }
     }
 
-    SimpleTable.prototype.clicked =
-    function(e)
+    clicked(e)
     {
         if (e.currentTarget.hasOwnProperty("context"))
         {
@@ -571,8 +541,7 @@ define([
         }
     }
 
-    SimpleTable.prototype.getSelectedItems =
-    function()
+    getSelectedItems()
     {
         var items = [];
 
@@ -586,15 +555,13 @@ define([
         return(items);
     }
 
-    SimpleTable.prototype.getSelectedItem =
-    function()
+    getSelectedItem()
     {
         var items = this.getSelectedItems();
         return(items.length > 0 ? items[0] : null);
     }
 
-    SimpleTable.prototype.getSelectedKeys =
-    function()
+    getSelectedKeys()
     {
         var keys = [];
 
@@ -608,14 +575,12 @@ define([
         return(keys);
     }
 
-    SimpleTable.prototype.drawCell =
-    function(table,name,item,td)
+    drawCell(table,name,item,td)
     {
         td.innerHTML = "&nbsp;";
     }
 
-    SimpleTable.prototype.addClassTo =
-    function(element,c)
+    addClassTo(element,c)
     {
         var	className = element.className;
 
@@ -626,8 +591,7 @@ define([
         }
     }
 
-    SimpleTable.prototype.removeClassFrom =
-    function(element,c)
+    removeClassFrom(element,c)
     {
         var	className = element.className;
 
@@ -638,20 +602,17 @@ define([
         }
     }
 
-    SimpleTable.prototype.hideToolbar =
-    function()
+    hideToolbar()
     {
     }
 
-    SimpleTable.prototype.sizeContent =
-    function()
+    sizeContent()
     {
         this.size();
     }
 
     /*
-    SimpleTable.prototype.toString =
-    function()
+    toString()
     {
         var s = "";
 
@@ -669,6 +630,6 @@ define([
         return(s);
     }
     */
+}
 
-    return(SimpleTable);
-});
+export {SimpleTable};

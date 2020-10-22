@@ -3,214 +3,213 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-define([
-    "../connect/options",
-    "../connect/tools"
-], function(Options,tools)
+import {Options} from "../connect/options.js";
+import {tools} from "../connect/tools.js";
+
+var _windows = (navigator.platform.toLowerCase().indexOf("win") != -1);
+var _input = null;
+
+function
+next()
 {
-    var _windows = (navigator.platform.toLowerCase().indexOf("win") != -1);
-    var _input = null;
+    this._chart._datasource.next();
+    this._chart.info();
+}
 
-    function
-    next()
+function
+prev()
+{
+    this._chart._datasource.prev();
+    this._chart.info();
+}
+
+function
+first()
+{
+    this._chart._datasource.first();
+    this._chart.info();
+}
+
+function
+last()
+{
+    this._chart._datasource.last();
+    this._chart.info();
+}
+
+function
+playPause()
+{
+    var code = this._chart._datasource.togglePlay();
+
+    if (this._chart._playPause != null)
     {
-        this._chart._datasource.next();
-        this._chart.info();
-    }
-
-    function
-    prev()
-    {
-        this._chart._datasource.prev();
-        this._chart.info();
-    }
-
-    function
-    first()
-    {
-        this._chart._datasource.first();
-        this._chart.info();
-    }
-
-    function
-    last()
-    {
-        this._chart._datasource.last();
-        this._chart.info();
-    }
-
-    function
-    playPause()
-    {
-        var code = this._chart._datasource.togglePlay();
-
-        if (this._chart._playPause != null)
+        if (code)
         {
-            if (code)
-            {
-                this._chart._playPause.innerHTML = "&#xf4f4;";
-            }
-            else
-            {
-                this._chart._playPause.innerHTML = "&#xf513;";
-            }
+            this._chart._playPause.innerHTML = "&#xf4f4;";
+        }
+        else
+        {
+            this._chart._playPause.innerHTML = "&#xf513;";
         }
     }
+}
 
-    function
-    handleClick()
+function
+handleClick()
+{
+    this._chart.toolbarClick(this._opts);
+}
+
+function
+handleMouseDown()
+{
+    this._chart.toolbarMouseDown(this._opts);
+}
+
+function
+handleMouseUp()
+{
+    this._chart.toolbarMouseUp(this._opts);
+}
+
+function
+editFilter()
+{
+    if (this._chart._datasource != null)
     {
-        this._chart.toolbarClick(this._opts);
+        this._chart._visuals.editFilter(this._chart._datasource);
+    }
+    else if (tools.supports(this._chart,"getFilter"))
+    {
+        this._chart._visuals.editFilter(this._chart);
+    }
+}
+
+function
+closeChart()
+{
+    this._chart.close();
+}
+
+function
+open()
+{
+    var url = this._chart.getUrl();
+    window.open(url);
+}
+
+function
+copy()
+{
+    if (_input == null)
+    {
+        _input = document.createElement("input");
+        _input.style.width = "1px"; 
+        _input.style.height = "1px"; 
+        _input.style.left = "-100px"; 
+        _input.style.top = "-100px"; 
+        document.body.appendChild(_input);
     }
 
-    function
-    handleMouseDown()
-    {
-        this._chart.toolbarMouseDown(this._opts);
-    }
+    var url = this._chart.getUrl();
 
-    function
-    handleMouseUp()
-    {
-        this._chart.toolbarMouseUp(this._opts);
-    }
+    _input.value = url;
+    _input.setSelectionRange(0,_input.value.length);
+    _input.focus();
 
-    function
-    editFilter()
+    document.execCommand("copy");
+}
+
+function
+over()
+{
+    this._chart._visuals.hideToolbars();
+
+    if (this._chart._datasource != null)
     {
-        if (this._chart._datasource != null)
+        if (this._chart._navigation != null)
         {
-            this._chart._visuals.editFilter(this._chart._datasource);
-        }
-        else if (tools.supports(this._chart,"getFilter"))
-        {
-            this._chart._visuals.editFilter(this._chart);
-        }
-    }
-
-    function
-    closeChart()
-    {
-        this._chart.close();
-    }
-
-    function
-    open()
-    {
-        var url = this._chart.getUrl();
-        window.open(url);
-    }
-
-    function
-    copy()
-    {
-        if (_input == null)
-        {
-            _input = document.createElement("input");
-            _input.style.width = "1px"; 
-            _input.style.height = "1px"; 
-            _input.style.left = "-100px"; 
-            _input.style.top = "-100px"; 
-            document.body.appendChild(_input);
+            this._chart._navigation.style.visibility = "visible";
         }
 
-        var url = this._chart.getUrl();
-
-        _input.value = url;
-        _input.setSelectionRange(0,_input.value.length);
-        _input.focus();
-
-        document.execCommand("copy");
-    }
-
-    function
-    over()
-    {
-        this._chart._visuals.hideToolbars();
-
-        if (this._chart._datasource != null)
-        {
-            if (this._chart._navigation != null)
-            {
-                this._chart._navigation.style.visibility = "visible";
-            }
-
-            if (this._chart._filterContainer != null)
-            {
-                this._chart._filterContainer.style.visibility = "visible";
-            }
-
-            if (this._chart._playPauseContainer != null)
-            {
-                this._chart._playPauseContainer.style.visibility = "visible";
-            }
-
-            this._chart.info();
-        }
-        else if (this._chart._filterContainer != null)
+        if (this._chart._filterContainer != null)
         {
             this._chart._filterContainer.style.visibility = "visible";
         }
 
-        if (this._chart._share != null)
+        if (this._chart._playPauseContainer != null)
         {
-            if (this._chart._mail != null)
-            {
-                var subject = document.title;
-                subject += " : ";
-                subject += encodeURIComponent(this._chart.getOpt("header","ESP"));
-                this._chart._mail.href = "mailto:?subject=" + subject + "&body=" + encodeURIComponent(this._chart.getUrl());
-            }
-
-            this._chart._share.style.visibility = "visible";
+            this._chart._playPauseContainer.style.visibility = "visible";
         }
 
-        if (this._chart._custom != null)
-        {
-            this._chart._custom.style.visibility = "visible";
-        }
+        this._chart.info();
+    }
+    else if (this._chart._filterContainer != null)
+    {
+        this._chart._filterContainer.style.visibility = "visible";
     }
 
-    function
-    out()
+    if (this._chart._share != null)
     {
-        if (this._chart._navigation != null)
+        if (this._chart._mail != null)
         {
-            this._chart._navigation.style.visibility = "hidden";
+            var subject = document.title;
+            subject += " : ";
+            subject += encodeURIComponent(this._chart.getOpt("header","ESP"));
+            this._chart._mail.href = "mailto:?subject=" + subject + "&body=" + encodeURIComponent(this._chart.getUrl());
         }
 
-        if (this._chart._datasource != null)
-        {
-            if (this._chart._filterContainer != null)
-            {
-                this._chart._filterContainer.style.visibility = "hidden";
-            }
+        this._chart._share.style.visibility = "visible";
+    }
 
-            if (this._chart._playPauseContainer != null)
-            {
-                this._chart._playPauseContainer.style.visibility = "hidden";
-            }
-        }
-        else if (this._chart._filterContainer != null)
+    if (this._chart._custom != null)
+    {
+        this._chart._custom.style.visibility = "visible";
+    }
+}
+
+function
+out()
+{
+    if (this._chart._navigation != null)
+    {
+        this._chart._navigation.style.visibility = "hidden";
+    }
+
+    if (this._chart._datasource != null)
+    {
+        if (this._chart._filterContainer != null)
         {
             this._chart._filterContainer.style.visibility = "hidden";
         }
 
-        if (this._chart._share != null)
+        if (this._chart._playPauseContainer != null)
         {
-            this._chart._share.style.visibility = "hidden";
-        }
-
-        if (this._chart._custom != null)
-        {
-            this._chart._custom.style.visibility = "hidden";
+            this._chart._playPauseContainer.style.visibility = "hidden";
         }
     }
-
-    function
-    Chart(visuals,container,datasource,options)
+    else if (this._chart._filterContainer != null)
     {
-        Options.call(this,options);
+        this._chart._filterContainer.style.visibility = "hidden";
+    }
+
+    if (this._chart._share != null)
+    {
+        this._chart._share.style.visibility = "hidden";
+    }
+
+    if (this._chart._custom != null)
+    {
+        this._chart._custom.style.visibility = "hidden";
+    }
+}
+
+class Chart extends Options
+{
+    constructor(visuals,container,datasource,options)
+    {
+        super(options);
 
         this._visuals = visuals;
         this._datasource = datasource;
@@ -581,28 +580,21 @@ define([
         }
     }
 
-    Chart.prototype = Object.create(Options.prototype);
-    Chart.prototype.constructor = Chart;
-
-    Chart.prototype.getType =
-    function()
+    getType()
     {
         return("");
     }
 
-    Chart.prototype.schemaReady =
-    function(schema)
+    schemaReady(schema)
     {
         this._schemaReady = true;
     }
 
-    Chart.prototype.init =
-    function(schema)
+    init(schema)
     {
     }
 
-    Chart.prototype.getToolbarItem =
-    function(name)
+    getToolbarItem(name)
     {
         var item = null;
 
@@ -614,15 +606,13 @@ define([
         return(item);
     }
 
-    Chart.prototype.getChild =
-    function(keyvalue)
+    getChild(keyvalue)
     {
         var child = (this._children != null && this._children.hasOwnProperty(keyvalue)) ? this._children[keyvalue] : null;
         return(child);
     }
 
-    Chart.prototype.addChild =
-    function(value)
+    addChild(value)
     {
         var child = this.getChild(value);
 
@@ -668,14 +658,12 @@ define([
         return(child);
     }
 
-    Chart.prototype.createChild =
-    function()
+    createChild()
     {
         return(null);
     }
 
-    Chart.prototype.usesConnection =
-    function(connection)
+    usesConnection(connection)
     {
         var code = false;
 
@@ -687,14 +675,12 @@ define([
         return(code);
     }
 
-    Chart.prototype.close =
-    function()
+    close()
     {
         this.container.innerHTML = "";
     }
 
-    Chart.prototype.getUrl =
-    function()
+    getUrl()
     {
         var url = "/esp-connect/html/visual.html";
         if (this._datasource != null)
@@ -729,8 +715,7 @@ define([
         return(a.toString());
     }
 
-    Chart.prototype.addToUrl =
-    function(o,name,json)
+    addToUrl(o,name,json)
     {
         var s = "";
 
@@ -808,8 +793,7 @@ define([
         return(s);
     }
 
-    Chart.prototype.createToolbarItem =
-    function(info)
+    createToolbarItem(info)
     {
         var a = document.createElement("a");
         var opts = new Options(info);
@@ -842,8 +826,7 @@ define([
         return(a);
     }
 
-    Chart.prototype.getBorderSize =
-    function()
+    getBorderSize()
     {
         var container = this.container;
         var containerBorders = tools.getBorders(container,true);
@@ -860,8 +843,7 @@ define([
         return({width:w,height:h});
     }
 
-    Chart.prototype.sizeContent =
-    function()
+    sizeContent()
     {
         var size = this.getBorderSize();
         var container = this.container;
@@ -879,41 +861,34 @@ define([
         }
     }
 
-    Chart.prototype.getVerticalPadding =
-    function()
+    getVerticalPadding()
     {
         var padding = this._header.offsetHeight;
         return(padding);
     }
 
-    Chart.prototype.toolbarClick =
-    function(info)
+    toolbarClick(info)
     {
     }
 
-    Chart.prototype.toolbarMouseDown =
-    function(opts)
+    toolbarMouseDown(opts)
     {
     }
 
-    Chart.prototype.toolbarMouseUp =
-    function(opts)
+    toolbarMouseUp(opts)
     {
     }
 
-    Chart.prototype.size =
-    function(opts)
+    size(opts)
     {
     }
 
-    Chart.prototype.refresh =
-    function()
+    refresh()
     {
         this.draw();
     }
 
-    Chart.prototype.hideToolbar =
-    function()
+    hideToolbar()
     {
         if (this._navigation != null)
         {
@@ -937,8 +912,7 @@ define([
         }
     }
 
-    Chart.prototype.info =
-    function()
+    info()
     {
         if (this._datasource != null)
         {
@@ -970,19 +944,16 @@ define([
         this.setHeader();
     }
 
-    Chart.prototype.filterChanged =
-    function()
+    filterChanged()
     {
     }
 
-    Chart.prototype.isCtrl =
-    function(e)
+    isCtrl(e)
     {
         return(_windows ? e.ctrlKey : e.metaKey);
     }
 
-    Chart.prototype.clicked =
-    function(data)
+    clicked(data)
     {
         var keys = [];
 
@@ -998,8 +969,7 @@ define([
         this._datasource.toggleSelectedKeys(keys,this.isCtrl(data.event) == false);
     }
 
-    Chart.prototype.selected =
-    function(data)
+    selected(data)
     {
         if (data == null)
         {
@@ -1016,8 +986,7 @@ define([
         this._datasource.setSelectedIndices(indices);
     }
 
-    Chart.prototype.setHandlers =
-    function()
+    setHandlers()
     {
         if (this._handlers == false)
         {
@@ -1035,8 +1004,7 @@ define([
         }
     }
 
-    Chart.prototype.setHeader =
-    function(header)
+    setHeader(header)
     {
         if (header == null)
         {
@@ -1091,8 +1059,7 @@ define([
         }
     }
 
-    Chart.prototype.getValues =
-    function(name)
+    getValues(name)
     {
         var values = [];
         var value = this.getOpt(name);
@@ -1115,8 +1082,7 @@ define([
         return(values);
     }
 
-    Chart.prototype.remove =
-    function(name)
+    remove(name)
     {
         if (window.Plotly != null)
         {
@@ -1124,9 +1090,11 @@ define([
         }
         this._div.innerHTML = "";
     }
+}
 
-    function
-    Controller()
+class Controller
+{
+    constructor()
     {
         this.setLinkState = function(link,enabled)
         {
@@ -1157,9 +1125,9 @@ define([
 
             return(enabled);
         };
-    };
+    }
+}
 
-    var _controller = new Controller();
+var _controller = new Controller();
 
-    return(Chart);
-});
+export {Chart};

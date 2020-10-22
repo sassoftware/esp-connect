@@ -3,22 +3,14 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {Options} from "./Options.js";
+import {ajax} from "./ajax.js";
+import {xpath} from "./xpath.js";
+import {tools} from "./tools.js";
 
-define([
-    "./options",
-    "./ajax",
-    "./xpath",
-    "./tools"
-], function(Options,ajax,xpath,tools)
+class EventSources
 {
-    /* EventSources */
-
-    function
-    EventSources(api,delegate)
+    constructor(api,delegate)
     {
         this._api = api;
         this._delegate = delegate;
@@ -58,8 +50,7 @@ define([
         this._api.connection.addDelegate(this);
     }
 
-    EventSources.prototype.ready =
-    function(conn)
+    ready(conn)
     {
         if (this._restart)
         {
@@ -68,8 +59,7 @@ define([
         }
     }
 
-    EventSources.prototype.closed =
-    function(conn)
+    closed(conn)
     {
         Object.values(this._eventsources).forEach((es) => {
             es.reset();
@@ -78,8 +68,7 @@ define([
         this._restart = true;
     }
 
-    EventSources.prototype.configure =
-    function(config,parms)
+    configure(config,parms)
     {
         this._config = config;
 
@@ -141,8 +130,7 @@ define([
         });
     }
 
-    EventSources.prototype.configureFromUrl =
-    function(url,parms,delegate)
+    configureFromUrl(url,parms,delegate)
     {
         var eventsources = this;
         var opts = new Options(parms);
@@ -169,8 +157,7 @@ define([
         ajax.create("request",url,o).get();
     }
 
-    EventSources.prototype.createEventSource =
-    function(options)
+    createEventSource(options)
     {
         var opts = new Options(options);
         var type = opts.getOpt("type","");
@@ -210,8 +197,7 @@ define([
         return(eventsource);
     }
 
-    EventSources.prototype.addEventSource =
-    function(eventsource)
+    addEventSource(eventsource)
     {
         if ("name" in eventsource == false)
         {
@@ -226,8 +212,7 @@ define([
         this._eventsources[eventsource.name] = eventsource;
     }
 
-    EventSources.prototype.addEdge =
-    function(source,target)
+    addEdge(source,target)
     {
         var s = this.getEventSource(source);
 
@@ -246,21 +231,18 @@ define([
         t._sources.push(s);
     }
 
-    EventSources.prototype.getEventSource =
-    function(name)
+    getEventSource(name)
     {
         return(this._eventsources.hasOwnProperty(name) ? this._eventsources[name] : null);
     }
 
-    EventSources.prototype.togglePause =
-    function()
+    togglePause()
     {
         this._paused = this._paused ? false : true;
         return(this._paused);
     }
 
-    EventSources.prototype.start =
-    function()
+    start()
     {
         Object.values(this._eventsources).forEach((es) => {
             es.init();
@@ -272,8 +254,7 @@ define([
         setTimeout(function(){eventsources.run()},1000);
     }
 
-    EventSources.prototype.run =
-    function()
+    run()
     {
         if (this._paused)
         {
@@ -355,8 +336,7 @@ define([
         }
     }
 
-    EventSources.prototype.publish =
-    function(name,options)
+    publish(name,options)
     {
         if (this._eventsources.hasOwnProperty(name) == false)
         {
@@ -367,15 +347,13 @@ define([
 
         es.process(options);
     }
+}
 
-    /* End EventSources */
-
-    /* EventSource */
-
-    function
-    EventSource(eventsources,options)
+class EventSource extends Options
+{
+    constructor(eventsources,options)
     {
-		Options.call(this,options);
+		super(options);
 
         this._window = this.getOpt("window");
 
@@ -470,6 +448,9 @@ define([
         Object.defineProperty(this,"done", {
             get() {
                 return(this._done && this.sending == false);
+            },
+            set(value) {
+                this._done = value;
             }
         });
 
@@ -480,11 +461,7 @@ define([
         });
     }
 
-	EventSource.prototype = Object.create(Options.prototype);
-	EventSource.prototype.constructor = EventSource;
-
-    EventSource.prototype.configure =
-    function(config)
+    configure(config)
     {
         var xml = null;
 
@@ -510,8 +487,7 @@ define([
         });
     }
 
-    EventSource.prototype.init =
-    function()
+    init()
     {
         this._times = 0;
         this._timestamp = 0;
@@ -531,8 +507,7 @@ define([
         this._publisher.addSchemaDelegate(this);
     }
 
-    EventSource.prototype.reset =
-    function()
+    reset()
     {
         this._times = 0;
         this._timestamp = 0;
@@ -540,20 +515,17 @@ define([
         this._publisher = null;
     }
 
-    EventSource.prototype.schemaSet =
-    function(publisher,schema)
+    schemaSet(publisher,schema)
     {
         this._ready = true;
     }
 
-    EventSource.prototype.send =
-    function(data)
+    send(data)
     {
         new Sender(this,data).run();
     }
 
-    EventSource.prototype.dependsOn =
-    function(es)
+    dependsOn(es)
     {
         var code = false;
 
@@ -569,8 +541,7 @@ define([
         return(code);
     }
 
-    EventSource.prototype.checkCycles =
-    function()
+    checkCycles()
     {
         for (var source of this._sources)
         {
@@ -583,8 +554,7 @@ define([
         }
     }
 
-    EventSource.prototype.checkDependencies =
-    function()
+    checkDependencies()
     {
         var code = true;
 
@@ -606,8 +576,7 @@ define([
         return(code);
     }
 
-    EventSource.prototype.process =
-    function(options)
+    process(options)
     {
         if (this.run(options))
         {
@@ -621,20 +590,17 @@ define([
         }
     }
 
-    EventSource.prototype.run =
-    function(options)
+    run(options)
     {
         return(false);
     }
+}
 
-    /* End EventSource */
-
-    /* URL EventSource */
-
-    function
-    UrlEventSource(eventsources,options)
+class UrlEventSource extends EventSource
+{
+    constructor(eventsources,options)
     {
-		EventSource.call(this,eventsources,options);
+		super(eventsources,options);
 
         this._transform = null;
 
@@ -648,11 +614,7 @@ define([
         });
     }
 
-	UrlEventSource.prototype = Object.create(EventSource.prototype);
-	UrlEventSource.prototype.constructor = UrlEventSource;
-
-    UrlEventSource.prototype.configure =
-    function(config)
+    configure(config)
     {
         EventSource.prototype.configure.call(this,config);
 
@@ -662,10 +624,9 @@ define([
         }
     }
 
-    UrlEventSource.prototype.init =
-    function()
+    init()
     {
-        EventSource.prototype.init.call(this);
+        super.init(this);
 
         if (this._transform == null)
         {
@@ -678,8 +639,7 @@ define([
         }
     }
 
-    UrlEventSource.prototype.run =
-    function(options)
+    run(options)
     {
         var code = false;
         var url = null;
@@ -747,27 +707,21 @@ define([
 
         return(code);
     }
+}
 
-    /* End URL EventSource */
-
-    /* CSV EventSource */
-
-    function
-    CsvEventSource(eventsources,options)
+class CsvEventSource extends EventSource
+{
+    constructor(eventsources,options)
     {
-		EventSource.call(this,eventsources,options);
+		super(eventsources,options);
         this._data = null;
         this._filter = null;
         this._supplement = null;
     }
 
-	CsvEventSource.prototype = Object.create(EventSource.prototype);
-	CsvEventSource.prototype.constructor = CsvEventSource;
-
-    CsvEventSource.prototype.init =
-    function()
+    init()
     {
-        EventSource.prototype.init.call(this);
+        super.init();
 
         if (this.hasOpt("csv") == false && this.hasOpt("url") == false)
         {
@@ -804,8 +758,7 @@ define([
         }
     }
 
-    CsvEventSource.prototype.run =
-    function(options)
+    run(options)
     {
         var code = false;
 
@@ -834,25 +787,19 @@ define([
 
         return(code);
     }
+}
 
-    /* End CSV EventSource */
-
-    /* Code EventSource */
-
-    function
-    CodeEventSource(eventsources,options)
+class CodeEventSource extends EventSource
+{
+    constructor(eventsources,options)
     {
-		EventSource.call(this,eventsources,options);
+		super(eventsources,options);
         this._code = null;
     }
 
-	CodeEventSource.prototype = Object.create(EventSource.prototype);
-	CodeEventSource.prototype.constructor = CodeEventSource;
-
-    CodeEventSource.prototype.configure =
-    function(config)
+    configure(config)
     {
-        EventSource.prototype.configure.call(this,config);
+        super.configure(config);
 
         if (this.hasOpt("code"))
         {
@@ -860,10 +807,9 @@ define([
         }
     }
 
-    CodeEventSource.prototype.init =
-    function()
+    init()
     {
-        EventSource.prototype.init.call(this);
+        super.init();
 
         if (this._code == null)
         {
@@ -871,19 +817,16 @@ define([
         }
     }
 
-    CodeEventSource.prototype.run =
-    function(options)
+    run(options)
     {
         this._code(this._eventsources,this._publisher);
         return(true);
     }
+}
 
-    /* End Code EventSource */
-
-    /* Sender */
-
-    function
-    Sender(eventsource,data)
+class Sender
+{
+    constructor(eventsource,data)
     {
         if (Array.isArray(data) == false)
         {
@@ -900,8 +843,7 @@ define([
         tools.addTo(this._eventsource._senders,this);
     }
 
-    Sender.prototype.run =
-    function()
+    run()
     {
         if (this._eventsource._publisher == null)
         {
@@ -954,17 +896,15 @@ define([
             tools.removeFrom(this._eventsource._senders,this);
         }
     }
+}
 
-    /* End Sender */
-
-    var _api =
+var _api =
+{
+    createEventSources:function(connection,delegate)
     {
-        createEventSources:function(connection,delegate)
-        {
-            var eventsources = new EventSources(connection,delegate);
-            return(eventsources);
-        }
-    };
+        var eventsources = new EventSources(connection,delegate);
+        return(eventsources);
+    }
+};
 
-    return(_api);
-});
+export {_api as eventsources};

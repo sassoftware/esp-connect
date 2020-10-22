@@ -3,18 +3,12 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {Options} from "../connect/options.js";
+import {tools} from "../connect/tools.js";
 
-define([
-    "../connect/options",
-    "../connect/tools"
-], function(Options,tools)
+class Splitter
 {
-    function
-    Splitter()
+    constructor()
     {
         this._div = document.createElement("div");
         this._div.className = "splitter";
@@ -65,8 +59,7 @@ define([
         });
     }
 
-    Splitter.prototype.addRow =
-    function()
+    addRow()
     {
         if (this._rows.length > 0)
         {
@@ -86,8 +79,7 @@ define([
         this.size();
     }
 
-    Splitter.prototype.setDefaultHeights =
-    function()
+    setDefaultHeights()
     {
         var height = this._div.clientHeight;
 
@@ -102,8 +94,7 @@ define([
         }
     }
 
-    Splitter.prototype.addCell =
-    function(id,element,options)
+    addCell(id,element,options)
     {
         if (this._cells.hasOwnProperty(id))
         {
@@ -124,8 +115,7 @@ define([
         return(cell);
     }
 
-    Splitter.prototype.removeCell =
-    function(id)
+    removeCell(id)
     {
         var cell = this.getCell(id);
         var code = false;
@@ -169,20 +159,17 @@ define([
         }
     }
 
-    Splitter.prototype.hasCell =
-    function(id)
+    hasCell(id)
     {
         return(this._cells.hasOwnProperty(id));
     }
 
-    Splitter.prototype.getCell =
-    function(id)
+    getCell(id)
     {
         return(this.hasCell(id) ? this._cells[id] : null);
     }
 
-    Splitter.prototype.getCellSize =
-    function(id)
+    getCellSize(id)
     {
         var size = {width:0,height:0};
         var cell = this.getCell(id);
@@ -196,8 +183,7 @@ define([
         return(size);
     }
 
-    Splitter.prototype.setCellWidth =
-    function(id,width)
+    setCellWidth(id,width)
     {
         var    cell = this.getCell(id);
 
@@ -211,8 +197,7 @@ define([
         }
     }
 
-    Splitter.prototype.getRow =
-    function(index)
+    getRow(index)
     {
         var    counter = 0;
 
@@ -234,8 +219,7 @@ define([
         return(null);
     }
 
-    Splitter.prototype.setRowHeight =
-    function(index,height)
+    setRowHeight(index,height)
     {
         var row = this.getRow(index);
 
@@ -246,8 +230,7 @@ define([
         }
     }
 
-    Splitter.prototype.setRowHeightPercentage =
-    function(index,percentage)
+    setRowHeightPercentage(index,percentage)
     {
         var    row = this.getRow(index);
 
@@ -259,8 +242,7 @@ define([
         }
     }
 
-    Splitter.prototype.attach =
-    function(to)
+    attach(to)
     {
         to._splitter = this;
         to.appendChild(this._div);
@@ -268,8 +250,7 @@ define([
         this.size();
     }
 
-    Splitter.prototype.create =
-    function()
+    create()
     {
         for (var i = 0; i < this._rows.length; i++)
         {
@@ -279,16 +260,14 @@ define([
         this.size();
     }
 
-    Splitter.prototype.clear =
-    function()
+    clear()
     {
         this._div.innerHTML = "";
         this._rows = new Array();
         this._cells = new Object();
     }
 
-    Splitter.prototype.size =
-    function()
+    size()
     {
         var container = this._div.parentNode;
 
@@ -355,13 +334,11 @@ define([
         this.sized();
     }
 
-    Splitter.prototype.sized =
-    function()
+    sized()
     {
     }
 
-    Splitter.prototype.draw =
-    function(name,value)
+    draw(name,value)
     {
         var    borders = tools.getBorders(this._div);
         var    y = this._div.offsetTop + borders.top;
@@ -378,14 +355,12 @@ define([
         }
     }
 
-    Splitter.prototype.setFlag =
-    function(name,value)
+    setFlag(name,value)
     {
         this._flags[name.toLowerCase()] = value;
     }
 
-    Splitter.prototype.getFlag =
-    function(name,dv)
+    getFlag(name,dv)
     {
         var    value = dv;
         var    s = name.toLowerCase();
@@ -396,8 +371,7 @@ define([
         return(value);
     }
 
-    Splitter.prototype.start =
-    function(event)
+    start(event)
     {
         for (var x in this._cells)
         {
@@ -411,8 +385,7 @@ define([
         event.dataTransfer.effectAllowed = "move";
     }
 
-    Splitter.prototype.over =
-    function(event)
+    over(event)
     {
         if (this._resize == null || this._point == null)
         {
@@ -458,8 +431,7 @@ define([
         */
     }
 
-    Splitter.prototype.drop =
-    function(event)
+    drop(event)
     {
         this._resize = null;
         this._point = null;
@@ -478,11 +450,13 @@ define([
 
         this.size();
     }
+}
 
-    function
-    SplitterCell(splitter,options)
+class SplitterCell extends Options
+{
+    constructor(splitter,options)
     {
-        Options.call(this,options);
+        super(options);
 
         Object.defineProperty(this,"type", {
             get() {
@@ -504,47 +478,40 @@ define([
         this._div.style.position = "absolute";
     }
 
-    SplitterCell.prototype = Object.create(Options.prototype);
-    SplitterCell.prototype.constructor = SplitterCell;
-
-    SplitterCell.prototype.size =
-    function()
+    size()
     {
     }
 
-    SplitterCell.prototype.draw =
-    function()
+    draw()
     {
     }
 
-    SplitterCell.prototype.isDivider =
-    function()
+    isDivider()
     {
         return(this.type == "horizontal" || this.type == "vertical");
     }
 
-    SplitterCell.prototype.isContainer =
-    function()
+    isContainer()
     {
         return(this.type == "container");
     }
 
-    SplitterCell.prototype.isRow =
-    function()
+    isRow()
     {
         return(this.type == "row");
     }
 
-    SplitterCell.prototype.div =
-    function()
+    div()
     {
         return(this._div);
     }
+}
 
-    function
-    SplitterRow(splitter,options)
+class SplitterRow extends SplitterCell
+{
+    constructor(splitter,options)
     {
-        SplitterCell.call(this,splitter,options);
+        super(splitter,options);
         this._div.className = "splitterRow";
         this._cells = new Array();
         this._numCells = 0;
@@ -576,11 +543,7 @@ define([
         });
     }
 
-    SplitterRow.prototype = Object.create(SplitterCell.prototype);
-    SplitterRow.prototype.constructor = SplitterRow;
-
-    SplitterRow.prototype.addCell =
-    function(id,element,options)
+    addCell(id,element,options)
     {
         if (element == null)
         {
@@ -620,8 +583,7 @@ define([
         return(cell);
     }
 
-    SplitterRow.prototype.removeCell =
-    function(id)
+    removeCell(id)
     {
         var index = -1;
 
@@ -660,8 +622,7 @@ define([
         return(index >= 0);
     }
 
-    SplitterRow.prototype.setDefaultWidths =
-    function()
+    setDefaultWidths()
     {
         var width = this._div.clientWidth;
 
@@ -676,8 +637,7 @@ define([
         }
     }
 
-    SplitterRow.prototype.size =
-    function()
+    size()
     {
         if (this._numCells == 0)
         {
@@ -701,7 +661,7 @@ define([
 
         for (var i = 0; i < this._cells.length; i++)
         {
-            cell = this._cells[i];
+            var cell = this._cells[i];
 
             div = cell.div();
             div.style.left = x + "px";
@@ -730,8 +690,7 @@ define([
         }
     }
 
-    SplitterRow.prototype.draw =
-    function()
+    draw()
     {
         var    x = 0;
         var    cell;
@@ -752,16 +711,17 @@ define([
         }
     }
 
-    SplitterRow.prototype.cells =
-    function()
+    cells()
     {
         return(this._cells);
     }
+}
 
-    function
-    SplitterContainer(id,element,row,options)
+class SplitterContainer extends SplitterCell
+{
+    constructor(id,element,row,options)
     {
-        SplitterCell.call(this,row._splitter,options);
+        super(row._splitter,options);
         this._id = id;
         this._row = row;
         this._div._splitter = this._row._splitter;
@@ -769,22 +729,17 @@ define([
         this._element = element;
         this._div.appendChild(this._element);
 
-        this._div.addEventListener("dragstart",splitterSupport.dragStart);
-        this._div.addEventListener("dragover",splitterSupport.dragOver);
-        this._div.addEventListener("drop",splitterSupport.drop);
+        this._div.addEventListener("dragstart",_support.dragStart);
+        this._div.addEventListener("dragover",_support.dragOver);
+        this._div.addEventListener("drop",_support.drop);
     }
 
-    SplitterContainer.prototype = Object.create(SplitterCell.prototype);
-    SplitterContainer.prototype.constructor = SplitterContainer;
-
-    SplitterContainer.prototype.isSplitter =
-    function()
+    isSplitter()
     {
         return(this._element.hasOwnProperty("_splitter"));
     }
 
-    SplitterContainer.prototype.size =
-    function()
+    size()
     {
         if (this.isSplitter())
         {
@@ -792,25 +747,26 @@ define([
         }
     }
 
-    SplitterContainer.prototype.draw =
-    function()
+    draw()
     {
         if (this.isSplitter())
         {
             this._element._splitter.draw();
         }
     }
+}
 
-    function
-    SplitterDivider(splitter,orientation)
+class SplitterDivider extends SplitterCell
+{
+    constructor(splitter,orientation)
     {
-        SplitterCell.call(this,splitter,orientation);
+        super(splitter,orientation);
 
         this._div.draggable = true;
 
-        this._div.addEventListener("dragstart",splitterSupport.dragStart);
-        this._div.addEventListener("dragover",splitterSupport.dragOver);
-        this._div.addEventListener("drop",splitterSupport.drop);
+        this._div.addEventListener("dragstart",_support.dragStart);
+        this._div.addEventListener("dragover",_support.dragOver);
+        this._div.addEventListener("drop",_support.drop);
         this._div.style.display = "flex";
         this._div.style.textAlign = "center";
 
@@ -834,79 +790,76 @@ define([
 
         this._div.appendChild(drag);
     }
+}
 
-    SplitterDivider.prototype = Object.create(SplitterCell.prototype);
-    SplitterDivider.prototype.constructor = SplitterDivider;
-
-    var    splitterSupport =
+const   _support =
+{
+    findSplitter:function(element)
     {
-        findSplitter:function(element)
+        var    e = element;
+
+        while (e != null)
         {
-            var    e = element;
-
-            while (e != null)
+            if (e.hasOwnProperty("_splitter"))
             {
-                if (e.hasOwnProperty("_splitter"))
-                {
-                    return(e._splitter);
-                }
-
-                e = e.parentNode;
+                return(e._splitter);
             }
 
-            return(null);
-        },
-
-        dragStart:function(event)
-        {
-            if (event.target.hasOwnProperty("_type") == false)
-            {
-                return(true);
-            }
-
-            if (event.target._type == "horizontal" || event.target._type == "vertical")
-            {
-                var    splitter = splitterSupport.findSplitter(event.target);
-
-                event.dataTransfer.setData("text/plain","");
-
-                if (splitter != null)
-                {
-                    splitter.start(event);
-                }
-                return(false);
-            }
-            else
-            {
-                return(true);
-            }
-        },
-
-        dragOver:function(event)
-        {
-            var    splitter = splitterSupport.findSplitter(event.target);
-
-            if (splitter != null)
-            {
-                splitter.over(event);
-            }
-        },
-
-        drop:function(event)
-        {
-            var splitter = splitterSupport.findSplitter(event.target);
-
-            if (splitter != null)
-            {
-                splitter.drop(event);
-            }
-        },
-
-        create:function()
-        {
-            return(new Splitter());
+            e = e.parentNode;
         }
-    };
 
-    return(splitterSupport);
-});
+        return(null);
+    },
+
+    dragStart:function(event)
+    {
+        if (event.target.hasOwnProperty("_type") == false)
+        {
+            return(true);
+        }
+
+        if (event.target._type == "horizontal" || event.target._type == "vertical")
+        {
+            var    splitter = _support.findSplitter(event.target);
+
+            event.dataTransfer.setData("text/plain","");
+
+            if (splitter != null)
+            {
+                splitter.start(event);
+            }
+            return(false);
+        }
+        else
+        {
+            return(true);
+        }
+    },
+
+    dragOver:function(event)
+    {
+        var    splitter = _support.findSplitter(event.target);
+
+        if (splitter != null)
+        {
+            splitter.over(event);
+        }
+    },
+
+    drop:function(event)
+    {
+        var splitter = _support.findSplitter(event.target);
+
+        if (splitter != null)
+        {
+            splitter.drop(event);
+        }
+    },
+
+    create:function()
+    {
+        return(new Splitter());
+    }
+};
+
+export {_support as splitter};

@@ -3,34 +3,18 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {Options} from "./Options.js";
+import {tools} from "./tools.js";
+import {xpath} from "./xpath.js";
 
-var _isNode = false;
+var _https = null;
+var _http = null;
 
-try
+class Ajax extends Options
 {
-    _isNode = (require("detect-node") != null);
-}
-catch (e)
-{
-}
-
-var _https = _isNode ? require("https") : null;
-var _http = _isNode ? require("http") : null;
-
-define([
-    "./xpath",
-    "./tools",
-    "./options"
-], function(xpath,tools,Options)
-{
-	function
-	Ajax(name,url,delegate,context)
+	constructor(name,url,delegate,context)
 	{
-        Options.call(this);
+        super();
 		this._name = name;
 		this._url = url;
 		this._delegate = delegate;
@@ -42,41 +26,32 @@ define([
 		this._xml = null;
 	}
 
-    Ajax.prototype = Object.create(Options.prototype);
-    Ajax.prototype.constructor = Ajax;
-
-	Ajax.prototype.get =
-	function()
+	get()
 	{
 		this.send("GET");
 	}
 
-	Ajax.prototype.post =
-	function()
+	post()
 	{
 		this.send("POST");
 	}
 
-	Ajax.prototype.put =
-	function()
+	put()
 	{
 		this.send("PUT");
 	}
 
-	Ajax.prototype.del =
-	function()
+	del()
 	{
 		this.send("DELETE");
 	}
 
-	Ajax.prototype.head =
-	function()
+	head()
 	{
 		this.send("HEAD");
 	}
 
-	Ajax.prototype.send =
-	function(method)
+	send(method)
 	{
 		if (method != null)
 		{
@@ -287,14 +262,12 @@ define([
 		}
 	}
 
-	Ajax.prototype.setAccept =
-	function(value)
+	setAccept(value)
 	{
 		this.setRequestHeader("accept",value);
 	}
 
-	Ajax.prototype.setRequestHeaders =
-	function(o)
+	setRequestHeaders(o)
 	{
         for (var x in o)
         {
@@ -302,21 +275,18 @@ define([
         }
 	}
 
-	Ajax.prototype.setRequestHeader =
-	function(name,value)
+	setRequestHeader(name,value)
 	{
 		this._requestHeaders[name] = value;
 	}
 
-	Ajax.prototype.getResponseHeader =
-	function(name)
+	getResponseHeader(name)
 	{
 		var	value = this._request.getResponseHeader(name);
 		return(value);
 	}
 
-	Ajax.prototype.setData =
-	function(data,type)
+	setData(data,type)
 	{
 		this._data = data;
 
@@ -326,38 +296,32 @@ define([
 		}
 	}
 
-	Ajax.prototype.getContext =
-	function(value)
+	getContext(value)
 	{
 		return(this._context);
 	}
 
-	Ajax.prototype.getName =
-	function()
+	getName()
 	{
 		return(this._name);
 	}
 
-	Ajax.prototype.getUrl =
-	function()
+	getUrl()
 	{
 		return(this._url);
 	}
 
-	Ajax.prototype.getResponseText =
-	function()
+	getResponseText()
 	{
 		return((this._request != null) ? this._request.responseText : "");
 	}
 
-	Ajax.prototype.getResponseXml =
-	function()
+	getResponseXml()
 	{
 		return((this._request != null) ? this._request._xml : null);
 	}
 
-	Ajax.prototype.getStatus =
-	function(token)
+	getStatus(token)
 	{
 		var	status = 0;
 
@@ -368,10 +332,13 @@ define([
 
 		return(status);
 	}
+}
 
-    function
-    NodeAjax(name,url,delegate,context)
+class NodeAjax extends Options
+{
+    constructor(name,url,delegate,context)
     {
+        super();
         this._name = name;
         this._url = url;
         this._delegate = delegate;
@@ -384,42 +351,36 @@ define([
         this._xml = null;
     }
 
-    NodeAjax.prototype.get =
-    function(options)
+    get(options)
     {
         this.setOptions(options);
         this.send("GET");
     }
 
-    NodeAjax.prototype.post =
-    function(options)
+    post(options)
     {
         this.setOptions(options);
         this.send("POST");
     }
 
-    NodeAjax.prototype.put =
-    function(options)
+    put(options)
     {
         this.setOptions(options);
         this.send("PUT");
     }
 
-    NodeAjax.prototype.del =
-    function(options)
+    del(options)
     {
         this.setOptions(options);
         this.send("DELETE");
     }
 
-    NodeAjax.prototype.head =
-    function()
+    head()
     {
         this.send("HEAD");
     }
 
-    NodeAjax.prototype.setOptions =
-    function(options)
+    setOptions(options)
     {
         if (options != null)
         {
@@ -430,8 +391,7 @@ define([
         }
     }
 
-    NodeAjax.prototype.send =
-    function(method)
+    send(method)
     {
         if (method != null)
         {
@@ -470,7 +430,46 @@ define([
             return;
         }
 
-        var request = (protocol == "https:") ? _https.request(this._options) : _http.request(this._options);
+        if (protocol == "https:")
+        {
+            if (_https == null)
+            {
+                import("https").
+                    then((module) => {
+                        _https = module.default;
+                        this.complete(_https.request(this._options));
+                    }).
+                    catch((e) => {
+                        console.log("import error on https: " + e);
+                    });
+            }
+            else
+            {
+                this.complete(_https.request(this._options));
+            }
+        }
+        else
+        {
+            if (_http == null)
+            {
+                import("http").
+                    then((module) => {
+                        _http = module.default;
+                        this.complete(_http.request(this._options));
+                    }).
+                    catch((e) => {
+                        console.log("import error on http: " + e);
+                    });
+            }
+            else
+            {
+                this.complete(_http.request(this._options));
+            }
+        }
+    }
+
+    complete(request)
+    {
         var ajax = this;
 
         for (var name in this._requestHeaders)
@@ -520,14 +519,12 @@ define([
         request.end();
     }
 
-    NodeAjax.prototype.setAccept =
-    function(value)
+    setAccept(value)
     {
         this.setRequestHeader("accept",value);
     }
 
-    NodeAjax.prototype.setRequestHeaders =
-    function(o)
+    setRequestHeaders(o)
     {
         for (var x in o)
         {
@@ -535,14 +532,12 @@ define([
         }
     }
 
-    NodeAjax.prototype.setRequestHeader =
-    function(name,value)
+    setRequestHeader(name,value)
     {
         this._requestHeaders[name] = value;
     }
 
-    NodeAjax.prototype.setData =
-    function(data,type)
+    setData(data,type)
     {
         this._data = data;
 
@@ -552,56 +547,52 @@ define([
         }
     }
 
-    NodeAjax.prototype.getContext =
-    function(value)
+    getContext(value)
     {
         return(this._context);
     }
 
-    NodeAjax.prototype.getName =
-    function()
+    getName()
     {
         return(this._name);
     }
 
-    NodeAjax.prototype.getUrl =
-    function()
+    getUrl()
     {
         return(this._url);
     }
 
-    NodeAjax.prototype.getResponseText =
-    function()
+    getResponseText()
     {
         return(this._responseText);
     }
 
-    NodeAjax.prototype.getResponseXml =
-    function()
+    getResponseXml()
     {
         return(this._xml);
     }
 
-    NodeAjax.prototype.getStatus =
-    function(token)
+    getStatus(token)
     {
         return((this._response != null) ? this._response.statusCode : 0);
     }
+}
 
-    var __ajax =
+var _api =
+{
+    create:function(name,url,delegate,context)
     {
-        create:function(name,url,delegate,context)
+        if (tools.isNode)
         {
-            if (_isNode)
-            {
-                return(new NodeAjax(name,url,delegate,context));
-            }
-            else
-            {
-                return(new Ajax(name,url,delegate,context));
-            }
+            return(new NodeAjax(name,url,delegate,context));
         }
-    };
+        else
+        {
+            return(new Ajax(name,url,delegate,context));
+        }
+    }
+};
 
-	return(__ajax);
-});
+//module.exports = _api;
+
+export {_api as ajax};

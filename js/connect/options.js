@@ -3,43 +3,32 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
+class Options
 {
-    var define = require("amdefine")(module);
-}
-
-define([
-], function()
-{
-    function
-    Options(options)
+    constructor(options)
     {
         this._options = {};
-
-        Object.defineProperty(this,"numOpts", {
-            get() {
-		        return(Object.keys(this._options).length);
-            }
-        });
-
-        Object.defineProperty(this,"keys", {
-            get() {
-                var keys = [];
-
-                for (var x in this._options)
-                {
-                    keys.push(x);
-                }
-
-                return(keys);
-            }
-        });
-
         this.setOpts(options);
     }
 
-	Options.prototype.setOpts =
-    function(options)
+    get numOpts()
+    {
+        return(Object.keys(this._options).length);
+    }
+
+    get keys()
+    {
+        var keys = [];
+
+        for (var x in this._options)
+        {
+            keys.push(x);
+        }
+
+        return(keys);
+    }
+
+    setOpts(options)
     {
         if (options != null)
         {
@@ -57,23 +46,20 @@ define([
         }
     }
 
-	Options.prototype.getOpts =
-    function()
+    getOpts()
     {
         return(this._options);
     }
 
-	Options.prototype.hasOpt =
-    function(name)
+    hasOpt(name)
     {
-		var	s = name.toLowerCase();
+        var	s = name.toLowerCase();
         //var code = (this._options.hasOwnProperty(s) && this._options[s] != null);
         var code = (this._options.hasOwnProperty(s));
         return(code);
     }
 
-	Options.prototype.hasOpts =
-    function(opts)
+    hasOpts(opts)
     {
         var code = true;
 
@@ -88,11 +74,10 @@ define([
         return(code);
     }
 
-	Options.prototype.getOpt =
-    function(name,dv)
+    getOpt(name,dv)
     {
         var value = null;
-		var	s = name.toLowerCase();
+        var	s = name.toLowerCase();
 
         if (this._options.hasOwnProperty(s))
         {
@@ -107,16 +92,14 @@ define([
         return(value);
     }
 
-	Options.prototype.getOptAndClear =
-    function(name,dv)
+    getOptAndClear(name,dv)
     {
         var value = this.getOpt(name,dv);
         this.clearOpt(name);
         return(value);
     }
 
-	Options.prototype.getInt =
-    function(name,dv)
+    getInt(name,dv)
     {
         var num = 0;
         var value = this.getOpt(name,dv);
@@ -129,8 +112,7 @@ define([
         return(num);
     }
 
-	Options.prototype.getArray =
-    function(name,dv)
+    getArray(name,dv)
     {
         var a = null;
         var value = this.getOpt(name,dv);
@@ -143,10 +125,9 @@ define([
         return(a);
     }
 
-	Options.prototype.setOpt =
-    function(name,value)
+    setOpt(name,value)
     {
-		var	s = name.toLowerCase();
+        var	s = name.toLowerCase();
 
         if (value == null)
         {
@@ -163,10 +144,9 @@ define([
         }
     }
 
-	Options.prototype.clearOpt =
-    function(name)
+    clearOpt(name)
     {
-		var	s = name.toLowerCase();
+        var	s = name.toLowerCase();
 
         if (this._options.hasOwnProperty(s))
         {
@@ -175,8 +155,7 @@ define([
         }
     }
 
-	Options.prototype.clearOpts =
-    function(names)
+    clearOpts(names)
     {
         for (var name of names)
         {
@@ -184,14 +163,12 @@ define([
         }
     }
 
-	Options.prototype.reset =
-    function()
+    reset()
     {
         this._options = {};
     }
 
-	Options.prototype.addOpts =
-    function(to,names)
+    addOpts(to,names)
     {
         if (names != null)
         {
@@ -211,18 +188,15 @@ define([
         }
     }
 
-	Options.prototype.optionSet =
-    function()
+    optionSet()
     {
     }
 
-	Options.prototype.optionCleared =
-    function()
+    optionCleared()
     {
     }
 
-	Options.prototype.resolve =
-    function(value)
+    resolve(value)
     {
         for (var name in this._options)
         {
@@ -233,19 +207,18 @@ define([
         return(value);
     }
 
-	Options.prototype.clone =
-    function(names)
+    clone(names)
     {
         var o = {};
         this.addOpts(o,names);
         return(o);
     }
 
-	Options.prototype.toString =
-    function()
+    toString()
     {
         return(JSON.stringify(this._options));
     }
+}
 
-    return(Options);
-});
+//module.exports = Options;
+export {Options};

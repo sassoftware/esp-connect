@@ -3,21 +3,15 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {Options} from "./Options.js";
+import {xpath} from "./xpath.js";
+import {tools} from "./tools.js";
 
-define([
-    "./xpath",
-    "./tools",
-    "./options"
-], function(xpath,tools,Options)
+class Schema extends Options
 {
-    function
-    Schema()
+    constructor()
     {
-        Options.call(this);
+        super();
 
         this._fields = [];
         this._fieldMap = {};
@@ -38,11 +32,7 @@ define([
         });
     }
 
-    Schema.prototype = Object.create(Options.prototype);
-    Schema.prototype.constructor = Schema;
-
-    Schema.prototype.addDelegate =
-    function(delegate)
+    addDelegate(delegate)
     {
         tools.addTo(this._delegates,delegate);
 
@@ -55,8 +45,7 @@ define([
         }
     }
 
-    Schema.prototype.setFields =
-    function(fields)
+    setFields(fields)
     {
         this._fields = [];
         this._fieldMap = {};
@@ -141,8 +130,7 @@ define([
         });
     }
 
-    Schema.prototype.fromXml =
-    function(xml)
+    fromXml(xml)
     {
         this._fields = [];
         this._fieldMap = {};
@@ -233,8 +221,7 @@ define([
         }
     }
 
-    Schema.prototype.fromJson =
-    function(json,delegate)
+    fromJson(json,delegate)
     {
         this._fields = [];
         this._fieldMap = {};
@@ -327,21 +314,18 @@ define([
         }
     }
 
-    Schema.prototype.getField =
-    function(name)
+    getField(name)
     {
         var f = (this._fieldMap.hasOwnProperty(name)) ? this._fieldMap[name] : null;
         return(f);
     }
 
-    Schema.prototype.getFields =
-    function(name)
+    getFields(name)
     {
         return(this._fields)
     }
 
-    Schema.prototype.getFieldDescriptors =
-    function(name)
+    getFieldDescriptors(name)
     {
         var a = [];
         this._fields.forEach((f) => {
@@ -350,14 +334,12 @@ define([
         return(a);
     }
 
-    Schema.prototype.getKeyFields =
-    function()
+    getKeyFields()
     {
         return(this._keyFields)
     }
 
-    Schema.prototype.getColumnFields =
-    function()
+    getColumnFields()
     {
         var fields = [];
 
@@ -372,14 +354,13 @@ define([
         return(fields);
     }
 
-    Schema.prototype.getKeyFieldNames =
-    function(name)
+    getKeyFieldNames(name)
     {
         var names = [];
         var fields = this.getKeyFields();
         if (fields != null)
         {
-            for (f of fields)
+            for (var f of fields)
             {
                 names.push(f.getOpt("name"));
             }
@@ -387,14 +368,12 @@ define([
         return(names);
     }
 
-    Schema.prototype.toString =
-    function()
+    toString()
     {
         return(tools.stringify(this._fieldMap));
     }
 
-    Schema.prototype.createDataFromCsv =
-    function(csv,options)
+    createDataFromCsv(csv,options)
     {
         var opts = new Options(options);
         var delegate = opts.getOpt("delegate");
@@ -585,6 +564,7 @@ define([
 
         return(data);
     }
+}
 
-    return(Schema);
-});
+//module.exports = Schema;
+export {Schema};

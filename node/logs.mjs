@@ -3,7 +3,8 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-var esp = require("@sassoftware/esp-connect");
+import {connect as esp} from "@sassoftware/esp-connect";
+
 var opts = esp.getArgs();
 
 if (opts.getOpt("help",false))
@@ -14,13 +15,11 @@ if (opts.getOpt("help",false))
 
 var server = opts.getOptAndClear("server");
 
-if (server == null || opts.hasOpts(["name","model"]) == false)
+if (server == null)
 {
     showUsage();
     process.exit(0);
 }
-
-var fs = require("fs");
 
 var config = {};
 var cert = opts.getOptAndClear("cert");
@@ -37,44 +36,62 @@ var names = ["access_token","token","credentials"];
 var o = opts.clone(names);
 opts.clearOpts(names);
 
-esp.connect(server,{ready:ready},o);
+esp.connect(server,{ready:ready,error:error},o);
+
+const   json = opts.getOpt("json",false);
 
 function
 ready(connection)
 {
-    var data = fs.readFileSync(opts.getOpt("model"));
-    var name = opts.getOpt("name");
-
     var delegate = {
-        loaded:function(connection,name) {
-            console.log("router loaded: " + name);
-            process.exit(0);
-        },
-        error:function(connection,name,message) {
-            console.log("error: " + message);
-            process.exit(0);
+        handleLog:function(log,message)
+        {
+            var s = "";
+
+            if (json)
+            {
+                s = JSON.stringify(message,null,2);
+            }
+            else
+            {
+                for (var name in message)
+                {
+                    s += name;
+                    s += "=";
+                    s += message[name];
+                    s += "\n";
+                }
+            }
+
+            console.log(s);
         }
     };
 
-    opts.clearOpts(["name","model"]);
+    if (opts.hasOpt("filter"))
+    {
+        connection.getLog().filter = opts.getOpt("filter");
+    }
+    connection.getLog().addDelegate(delegate);
+}
 
-    connection.loadRouter(name,data,delegate,opts.getOpts());
+function
+error(conn)
+{
+    console.log("error: " + conn.getUrl());
+    process.exit(0);
 }
 
 function
 showUsage()
 {
     esp.usage({
-        name:"load_router",
-        summary:"Load an ESP router from a file",
+        name:"logs",
+        summary:"view realtime ESP server logs",
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
-            {name:"name",arg:"router name",description:"name of the ESP router",required:true},
-            {name:"model",arg:"filename",description:"file containing the ESP router configuration",required:true},
-            {name:"overwrite",arg:"true | false",description:"overwrite router if it exists, defaults to false",required:false},
             {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
         ],
-        description:"This command sends an ESP router from a file to the ESP server.",
+        description:"This command sets up a connection to an ESP server and reads the server logs. The logs are output to the screen.",
         see_also:[
         {
             name:"ESP User Guide",

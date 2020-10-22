@@ -114,8 +114,10 @@ The following code must be added to bring in the Connect API:
 ```html
 <link rel="stylesheet" href="../../style/connect.css" />
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/main"></script>
+<script type="module" src="../../js/ui/main.js"></script>
 ```
+
+**NOTE** The value of the *src* attribute will depend on the location of your page.
 
 Now you must supply the *esp* function which is called when the module is ready to go. This function is usually used to create one or more connections to 
 ESP servers and perform other basic initialization.

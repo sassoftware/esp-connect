@@ -3,20 +3,14 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {tools} from "./tools.js";
+import {ajax} from "./ajax.js";
+import {xpath} from "./xpath.js";
 
-define([
-    "./ajax",
-    "./xpath",
-    "./tools"
-], function(ajax,xpath,tools)
+class Resources
 {
-	function
-	Resources()
-	{
+    constructor()
+    {
         this._languages = null;
 
         this._parms = null;
@@ -37,7 +31,7 @@ define([
             }
 
             var s = window.location.search;
-            var	o = new Object();
+            var o = new Object();
             s.replace(new RegExp("([^?=&]+)(=([^&]*))?","g"),function($0,$1,$2,$3){o[$1] = $3;});
 
             for (var x in o)
@@ -51,40 +45,36 @@ define([
         catch (exception)
         {
         }
-	}
+    }
 
-	Resources.prototype.getParm =
-	function(name)
-	{
-		var	value = null;
+    getParm(name)
+    {
+        var value = null;
 
-		if (this._parms != null && this._parms.hasOwnProperty(name))
-		{
-			value = unescape(this._parms[name]);
-		}
+        if (this._parms != null && this._parms.hasOwnProperty(name))
+        {
+            value = unescape(this._parms[name]);
+        }
 
-		return(value);
-	}
+        return(value);
+    }
 
-	Resources.prototype.getParms =
-	function()
-	{
-		return(this._parms);
-	}
+    getParms()
+    {
+        return(this._parms);
+    }
 
-	Resources.prototype.load =
-	function(config,delegate)
-	{
-		this._delegate = delegate;
+    load(config,delegate)
+    {
+        this._delegate = delegate;
 
-		var	request = ajax.create("resources",config,this);
-		request.get();
-	}
+        var request = ajax.create("resources",config,this);
+        request.get();
+    }
 
-	Resources.prototype.response =
-	function(request,text,xml)
-	{
-		this._strings = new Object();
+    response(request,text,xml)
+    {
+        this._strings = new Object();
 
         var inComment = false;
         var index;
@@ -130,145 +120,138 @@ define([
         {
             this._delegate.resourcesLoaded(this);
         }
-	}
+    }
 
-	Resources.prototype.error =
-	function(request)
-	{
-		var	text = request.getUrl();
-		text += "<br/>"
-		text += request.getResponseText();
-		alert(text);
-	}
+    error(request)
+    {
+        var text = request.getUrl();
+        text += "<br/>"
+        text += request.getResponseText();
+        alert(text);
+    }
 
-	Resources.prototype.getString =
-	function(name,parms)
-	{
-		var	s = null;
+    getString(name,parms)
+    {
+        var s = null;
 
-		if (this._strings != null && this._strings.hasOwnProperty(name))
-		{
-			s = this._strings[name];
-		}
+        if (this._strings != null && this._strings.hasOwnProperty(name))
+        {
+            s = this._strings[name];
+        }
 
-		if (s == null)
-		{
-			return(name + " not found");
-		}
+        if (s == null)
+        {
+            return(name + " not found");
+        }
 
-		if (parms != null)
-		{
-			for (var x in parms)
-			{
-				s = s.replace("$" + x,parms[x]);
-			}
-		}
+        if (parms != null)
+        {
+            for (var x in parms)
+            {
+                s = s.replace("$" + x,parms[x]);
+            }
+        }
 
-		return(s);
-	}
+        return(s);
+    }
 
-	Resources.prototype.findString =
-	function(name,parms)
-	{
-		var	s = null;
+    findString(name,parms)
+    {
+        var s = null;
 
-		if (this._strings != null && this._strings.hasOwnProperty(name))
-		{
-			s = this._strings[name];
-		}
+        if (this._strings != null && this._strings.hasOwnProperty(name))
+        {
+            s = this._strings[name];
+        }
 
-		if (s != null && parms != null)
-		{
-			for (var x in parms)
-			{
-				s = s.replace("$" + x,parms[x]);
-			}
-		}
+        if (s != null && parms != null)
+        {
+            for (var x in parms)
+            {
+                s = s.replace("$" + x,parms[x]);
+            }
+        }
 
-		return(s);
-	}
+        return(s);
+    }
 
-	Resources.prototype.getStrings =
-	function()
-	{
-		return(this._strings);
-	}
+    getStrings()
+    {
+        return(this._strings);
+    }
 
-	Resources.prototype.getLanguages =
-	function()
-	{
-		return(this._languages);
-	}
+    getLanguages()
+    {
+        return(this._languages);
+    }
 
-	Resources.prototype.getLocale =
-	function()
-	{
-		return(this._locale);
-	}
+    getLocale()
+    {
+        return(this._locale);
+    }
 
-	Resources.prototype.setClassText =
-	function(className,resource,opts)
-	{
-		var	o = (opts != null) ? opts : new Object();
-		var	contains = (o.hasOwnProperty("contains") && o.contains);
-		var	space = (o.hasOwnProperty("space") && o.space);
-		var	tips = o.hasOwnProperty("tips") ? o.tips : false;
-		var	element = (o.hasOwnProperty("element")) ? o.element : "*";
-		var	text = this.getString(resource);
-		var	search = "";
-		search += "//";
-		search += element;
-		if (contains)
-		{
-			search += "[contains(@class,'";
-			search += className;
-			if (space)
-			{
-				search += " ";
-			}
-			search += "')";
-		}
-		else
-		{
-			search += "[@class='";
-			search += className;
-			search += "'";
-		}
+    setClassText(className,resource,opts)
+    {
+        var o = (opts != null) ? opts : new Object();
+        var contains = (o.hasOwnProperty("contains") && o.contains);
+        var space = (o.hasOwnProperty("space") && o.space);
+        var tips = o.hasOwnProperty("tips") ? o.tips : false;
+        var element = (o.hasOwnProperty("element")) ? o.element : "*";
+        var text = this.getString(resource);
+        var search = "";
+        search += "//";
+        search += element;
+        if (contains)
+        {
+            search += "[contains(@class,'";
+            search += className;
+            if (space)
+            {
+                search += " ";
+            }
+            search += "')";
+        }
+        else
+        {
+            search += "[@class='";
+            search += className;
+            search += "'";
+        }
 
-		search += "]";
+        search += "]";
 
-		var	nodes = xpath.getNodes(search,document.body);
-		var	element;
+        var nodes = xpath.getNodes(search,document.body);
+        var element;
 
-		for (var i = 0; i < nodes.length; i++)
-		{
-			element = nodes[i];
+        for (var i = 0; i < nodes.length; i++)
+        {
+            element = nodes[i];
 
-			if (element.className.indexOf("icon") == -1)
-			{
-				element.textContent = text;
-			}
-			else
-			{
-				element.title = text;
-			}
-		}
-	}
+            if (element.className.indexOf("icon") == -1)
+            {
+                element.textContent = text;
+            }
+            else
+            {
+                element.title = text;
+            }
+        }
+    }
 
-	Resources.prototype.toString =
-	function()
-	{
-		var	s = "";
+    toString()
+    {
+        var s = "";
 
-		for (var x in this._strings)
-		{
-			s += x;
-			s += "=";
-			s += this._strings[x];
-		}
+        for (var x in this._strings)
+        {
+            s += x;
+            s += "=";
+            s += this._strings[x];
+        }
 
-		return(s);
-	}
+        return(s);
+    }
+}
 
-	return(new Resources());
-});
+//module.exports = Resources;
+export {Resources};

@@ -3,7 +3,8 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-var esp = require("@sassoftware/esp-connect");
+import {connect as esp} from "@sassoftware/esp-connect";
+
 var opts = esp.getArgs();
 
 if (opts.getOpt("help",false))
@@ -14,7 +15,7 @@ if (opts.getOpt("help",false))
 
 var server = opts.getOptAndClear("server");
 
-if (server == null)
+if (server == null || opts.hasOpts(["name","model"]) == false)
 {
     showUsage();
     process.exit(0);
@@ -32,28 +33,21 @@ if (cert != null)
 
 esp.config = config;
 
+opts.setOpt("model",{name:opts.getOpt("name"),url:opts.getOpt("model")});
+
 esp.connect(server,{ready:ready,error:error},opts.getOpts());
 
 function
 ready(connection)
 {
-    var o = {
-        deleted:function() {
-            console.log("project deleted");
-            process.exit(0);
-        },
-        error:function(conn,name,message) {
-            console.log(message);
-            process.exit(1);
-        }
-    };
-    connection.deleteProject(opts.getOpt("name",""),o);
+    console.log("project loaded and ready to go");
+    process.exit(0);
 }
 
 function
-error(conn)
+error(connection,message)
 {
-    console.log("error: " + conn.getUrl());
+    console.log(message);
     process.exit(0);
 }
 
@@ -65,7 +59,12 @@ showUsage()
         summary:"Load an ESP project from a file",
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
-            {name:"name",arg:"project name",description:"name of the ESP project",required:false},
+            {name:"name",arg:"project name",description:"name of the ESP project",required:true},
+            {name:"model",arg:"URL",description:"URL containing the ESP model",required:true},
+            {name:"connectors",arg:"true | false",description:"start connectors, defaults to true",required:false},
+            {name:"overwrite",arg:"true | false",description:"overwrite project if it exists, defaults to false",required:false},
+            {name:"validate",arg:"true | false",description:"validate project, defaults to true",required:false},
+            {name:"start",arg:"true | false",description:"start the project, defaults to true",required:false},
             {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
         ],
         description:"This command sends an ESP model from a file to the ESP server.",

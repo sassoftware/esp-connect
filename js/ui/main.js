@@ -3,6 +3,6 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-requirejs.config({
-});
-requirejs(["startup"]);
+import {esp as api} from "./api.js";
+
+esp(api);

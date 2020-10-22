@@ -3,20 +3,14 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {ServerConnection} from "./serverconn.js";
+import {tools} from "./tools.js";
+import {xpath} from "./xpath.js";
+import {Options} from "./Options.js";
 
-define([
-    "./serverconn",
-    "./xpath",
-    "./tools",
-    "./options"
-], function(ServerConnection,xpath,tools,Options)
+class Router
 {
-    function
-    Router()
+    constructor()
     {
         this._servers = {};
         this._connections = {};
@@ -26,8 +20,7 @@ define([
         this._errors = {};
     }
 
-    Router.prototype.configure =
-    function(config)
+    configure(config)
     {
         var xml = xpath.createXml(config);
 
@@ -129,45 +122,39 @@ define([
         });
     }
 
-    Router.prototype.addServer =
-    function(name,url)
+    addServer(name,url)
     {
         this._servers[name] = url;
     }
 
-    Router.prototype.addDestination =
-    function(name)
+    addDestination(name)
     {
         var destination = new Destination(this);
         this._destinations[name] = destination;
         return(destination);
     }
 
-    Router.prototype.addPublishDestination =
-    function(name)
+    addPublishDestination(name)
     {
         var destination = new PublishDestination(this);
         this._destinations[name] = destination;
         return(destination);
     }
 
-    Router.prototype.addRoute =
-    function(name)
+    addRoute(name)
     {
         var route = new Route(name,this);
         this._routes[name] = route;
         return(route);
     }
 
-    Router.prototype.ready =
-    function(connection)
+    ready(connection)
     {
         this._connections[connection.getOpt("name")] = connection;
         connection.loadModel(this);
     }
 
-    Router.prototype.error =
-    function(connection)
+    error(connection)
     {
         var name = connection.getOpt("name");
 
@@ -180,20 +167,17 @@ define([
         delete this._models[name];
     }
 
-    Router.prototype.getEngine =
-    function(name)
+    getEngine(name)
     {
         return(this._connections.hasOwnProperty(name) ? this._connections[name] : null);
     }
 
-    Router.prototype.getModel =
-    function(name)
+    getModel(name)
     {
         return(this._models.hasOwnProperty(name) ? this._models[name] : null);
     }
 
-    Router.prototype.modelLoaded =
-    function(model,connection)
+    modelLoaded(model,connection)
     {
         var name = connection.getOpt("name");
         this._models[name] = model;
@@ -220,8 +204,7 @@ define([
         }
     }
 
-    Router.prototype.start =
-    function()
+    start()
     {
         Object.values(this._connections).forEach((engine) => {
             engine.close();
@@ -236,33 +219,36 @@ define([
         });
     }
 
-    Router.prototype.stop =
-    function()
+    stop()
     {
         Object.values(this._connections).forEach((engine) => {
             engine.close();
         });
     }
+}
 
-    function
-    Destination(router)
+class Destination
+{
+    constructor(router)
     {
         this._router = router;
     }
 
-    Destination.prototype.init =
-    function()
+    init()
     {
         if (tools.supports(this,"process") == false)
         {
             throw("destination must implement the process(data) method");
         }
     }
+}
 
-    function
-    PublishDestination(router)
+class PublishDestination extends Destination
+{
+    constructor(router)
     {
-        Destination.call(this,router);
+        super(router);
+
         this._publishers = {};
         this._opcode = null;
         Object.defineProperty(this,"opcode", {
@@ -276,13 +262,9 @@ define([
         });
     }
 
-	PublishDestination.prototype = Object.create(Destination.prototype);
-	PublishDestination.prototype.constructor = PublishDestination;
-
-    PublishDestination.prototype.init =
-    function()
+    init()
     {
-		Destination.prototype.init.call(this);
+		super.init();
 
         ["getEngine","getProject","getContquery","getWindow"].forEach((method) => {
             if (tools.supports(this,method) == false)
@@ -294,8 +276,7 @@ define([
         this._publishers = {};
     }
 
-    PublishDestination.prototype.process =
-    function(data)
+    process(data)
     {
         var e = this.getEngine(data);
 
@@ -333,9 +314,11 @@ define([
         publisher.add(data);
         publisher.publish();
     }
+}
 
-    function
-    Route(name,router)
+class Route
+{
+    constructor(name,router)
     {
         this._name = name;
         this._router = router;
@@ -399,8 +382,7 @@ define([
         });
     }
 
-    Route.prototype.init =
-    function()
+    init()
     {
         if (this._to == null)
         {
@@ -462,8 +444,7 @@ define([
         });
     }
 
-    Route.prototype.dataChanged =
-    function(datasource,data,clear)
+    dataChanged(datasource,data,clear)
     {
         data.forEach((item) => {
             this._destinations.forEach((dest) => {
@@ -471,6 +452,7 @@ define([
             });
         });
     }
+}
 
-    return(Router);
-});
+//module.exports = Router;
+export {Router};

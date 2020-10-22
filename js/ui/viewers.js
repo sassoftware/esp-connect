@@ -3,87 +3,70 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
+import {Options} from "../connect/options.js";
+import {Model} from "../connect/model.js";
+import {tools} from "../connect/tools.js";
+import {Chart} from "./chart.js";
+import {SimpleTable} from "./simpletable.js";
+import {dialogs} from "./dialogs.js";
+
+function
+propertyChanged()
 {
-    var define = require("amdefine")(module);
+    this._viewer.setOpt(this.name,this.checked);
+    this._viewer.draw();
+    this._viewer.deliverPropertyChange(this.name,this.checked);
 }
 
-define([
-    "../connect/model",
-    "../connect/options",
-    "../connect/tools",
-    "./chart",
-    "./simpletable",
-    "./dialogs"
-], function(Model,Options,tools,Chart,SimpleTable,dialogs)
+function
+projectChanged()
 {
-    function
-    Viewers(options)
+    if (this.value.startsWith("k8s"))
     {
-        Options.call(this,options);
+        this._viewer.loadK8S(this.value);
+    }
+    else
+    {
+        this._viewer.project = this.value;
+    }
+}
+
+class Viewers extends Options
+{
+    constructor(options)
+    {
+        super(options);
     }
 
-	Viewers.prototype = Object.create(Options.prototype);
-	Viewers.prototype.constructor = Viewers;
-
-    Viewers.prototype.createModelViewer =
-    function(visuals,container,connection,options)
+    createModelViewer(visuals,container,connection,options)
     {
         return(new ModelViewer(visuals,container,connection,options));
     }
 
-    Viewers.prototype.createLogViewer =
-    function(visuals,container,connection,options)
+    createLogViewer(visuals,container,connection,options)
     {
         return(new LogViewer(visuals,container,connection,options));
     }
+}
 
-    /* Viewer Base */
-
-    function
-    ViewerBase(visuals,container,connection,options)
+class ViewerBase extends Chart
+{
+    constructor(visuals,container,connection,options)
     {
-        Chart.call(this,visuals,container,null,options);
+        super(visuals,container,null,options);
         this._connection = connection;
     }
 
-	ViewerBase.prototype = Object.create(Chart.prototype);
-	ViewerBase.prototype.constructor = ViewerBase;
-
-    ViewerBase.prototype.usesConnection =
-    function(connection)
+    usesConnection(connection)
     {
         var code = (this._connection == connection);
         return(code);
     }
+}
 
-    /* End Viewer Base */
-
-    /* Model Viewer */
-
-    function
-    propertyChanged()
-    {
-        this._viewer.setOpt(this.name,this.checked);
-        this._viewer.draw();
-        this._viewer.deliverPropertyChange(this.name,this.checked);
-    }
-
-    function
-    projectChanged()
-    {
-        if (this.value.startsWith("k8s"))
-        {
-            this._viewer.loadK8S(this.value);
-        }
-        else
-        {
-            this._viewer.project = this.value;
-        }
-    }
-
-    function
-    ModelViewer(visuals,container,connection,options)
+class ModelViewer extends ViewerBase
+{
+    constructor(visuals,container,connection,options)
     {
         var opts = new Options(options);
         var toolbar = [];
@@ -96,7 +79,7 @@ define([
 
         opts.setOpt("toolbar",toolbar);
 
-        ViewerBase.call(this,visuals,container,connection,opts.getOpts());
+        super(visuals,container,connection,opts.getOpts());
 
         this._project = null;
 
@@ -190,17 +173,12 @@ define([
         }
     }
 
-	ModelViewer.prototype = Object.create(ViewerBase.prototype);
-	ModelViewer.prototype.constructor = ModelViewer;
-
-    ModelViewer.prototype.getType =
-    function()
+    getType()
     {
         return("modelviewer");
     }
 
-    ModelViewer.prototype.loadK8S =
-    function(server)
+    loadK8S(server)
     {
         var mv = this;
 
@@ -211,8 +189,7 @@ define([
         });
     }
 
-    ModelViewer.prototype.reload =
-    function()
+    reload()
     {
         if (this._connection != null)
         {
@@ -220,14 +197,12 @@ define([
         }
     }
 
-    ModelViewer.prototype.addDelegate =
-    function(delegate)
+    addDelegate(delegate)
     {
         this._delegates.push(delegate);
     }
 
-    ModelViewer.prototype.init =
-    function()
+    init()
     {
         this._content.style.overflow = "hidden";
 
@@ -255,6 +230,9 @@ define([
 
         var controlTable = null;
         this._projectSelect = document.createElement("select");
+
+        var tr;
+        var td;
 
         if (this.getOpt("show_projects",true) || this.getOpt("show_controls",true))
         {
@@ -527,13 +505,11 @@ define([
         }
     }
 
-    ModelViewer.prototype.zoom =
-    function()
+    zoom()
     {
     }
 
-    ModelViewer.prototype.size =
-    function()
+    size()
     {
         if (this._modelDiv != null)
         {
@@ -546,8 +522,7 @@ define([
         }
     }
 
-    ModelViewer.prototype.draw =
-    function()
+    draw()
     {
         if (this._modelDiv == null)
         {
@@ -586,8 +561,7 @@ define([
         this.setHeader(header);
     }
 
-    ModelViewer.prototype.setStats =
-    function()
+    setStats()
     {
         this._data = {};
         this._stats.addDelegate(this);
@@ -599,15 +573,13 @@ define([
         this._stats.setOpt("counts",counts);
     }
 
-    ModelViewer.prototype.load =
-    function(data)
+    load(data)
     {
         var model = new Model(data);
         this.modelLoaded(model,null);
     }
 
-    ModelViewer.prototype.modelLoaded =
-    function(model,connection)
+    modelLoaded(model,connection)
     {
         if (this._modelDiv == null)
         {
@@ -739,8 +711,7 @@ define([
         });
     }
 
-    ModelViewer.prototype.deliverPropertyChange =
-    function(name,on)
+    deliverPropertyChange(name,on)
     {
         this._delegates.forEach((d) =>
         {
@@ -751,8 +722,7 @@ define([
         });
     }
 
-    ModelViewer.prototype.refresh =
-    function()
+    refresh()
     {
         this._windowColors = {};
 
@@ -779,15 +749,13 @@ define([
         this.build();
     }
 
-    ModelViewer.prototype.clearNetwork =
-    function()
+    clearNetwork()
     {
         this._nodes.clear();
         this._edges.clear();
     }
 
-    ModelViewer.prototype.build =
-    function()
+    build()
     {
         if (this._model == null)
         {
@@ -839,7 +807,7 @@ define([
 
         for (var a of this._model._windows)
         {
-            p = a["p"];
+            var p = a["p"];
 
             if (projects.includes(p) == false)
             {
@@ -867,7 +835,7 @@ define([
 
                 nodes.forEach((node) =>
                 {
-                    key = node["key"];
+                    var key = node["key"];
 
                     cpu = node.cpu;
                     count = node.count;
@@ -939,21 +907,18 @@ define([
         }
     }
 
-    ModelViewer.prototype.setNetworkOptions =
-    function(options)
+    setNetworkOptions(options)
     {
         this._network.setOptions(options);
         this.build();
     }
 
-    ModelViewer.prototype.selectNodes =
-    function(nodes)
+    selectNodes(nodes)
     {
         this._network.selectNodes(nodes);
     }
 
-    ModelViewer.prototype.handleStats =
-    function(stats)
+    handleStats(stats)
     {
         this._data = {};
 
@@ -1003,8 +968,7 @@ define([
         });
     }
 
-    ModelViewer.prototype.toolbarMouseDown =
-    function(opts)
+    toolbarMouseDown(opts)
     {
         var action = opts.getOpt("name","");
         var viewer = this;
@@ -1036,8 +1000,7 @@ define([
         }
     }
 
-    ModelViewer.prototype.toolbarMouseUp =
-    function(opts)
+    toolbarMouseUp(opts)
     {
         if (this._interval != null)
         {
@@ -1046,8 +1009,7 @@ define([
         }
     }
 
-    ModelViewer.prototype.toolbarClick =
-    function(opts)
+    toolbarClick(opts)
     {
         var action = opts.getOpt("name","");
 
@@ -1061,56 +1023,49 @@ define([
         }
     }
 
-    ModelViewer.prototype.zoomIn =
-    function()
+    zoomIn()
     {
         var scale = this._network.getScale();
         scale *= 1.1;
         this._network.moveTo({scale:scale});
     }
 
-    ModelViewer.prototype.zoomOut =
-    function()
+    zoomOut()
     {
         var scale = this._network.getScale();
         scale /= 1.1;
         this._network.moveTo({scale:scale});
     }
 
-    ModelViewer.prototype.moveUp =
-    function()
+    moveUp()
     {
         var position = this._network.getViewPosition();
         position.y -= 50;
         this._network.moveTo({position:position});
     }
 
-    ModelViewer.prototype.moveDown =
-    function()
+    moveDown()
     {
         var position = this._network.getViewPosition();
         position.y += 50;
         this._network.moveTo({position:position});
     }
 
-    ModelViewer.prototype.moveLeft =
-    function()
+    moveLeft()
     {
         var position = this._network.getViewPosition();
         position.x -= 50;
         this._network.moveTo({position:position});
     }
 
-    ModelViewer.prototype.moveRight =
-    function()
+    moveRight()
     {
         var position = this._network.getViewPosition();
         position.x += 50;
         this._network.moveTo({position:position});
     }
 
-    ModelViewer.prototype.fitNetwork =
-    function()
+    fitNetwork()
     {
         if (this._viewer != null)
         {
@@ -1118,8 +1073,7 @@ define([
         }
     }
 
-    ModelViewer.prototype.fit =
-    function(after)
+    fit(after)
     {
         if (after != null)
         {
@@ -1131,13 +1085,11 @@ define([
             this._network.fit();
         }
     }
+}
 
-    /* End Model Viewer */
-
-    /* Log Viewer */
-
-    function
-    LogViewer(visuals,container,connection,options)
+class LogViewer extends ViewerBase
+{
+    constructor(visuals,container,connection,options)
     {
         var opts = new Options(options);
         var toolbar = [];
@@ -1153,7 +1105,7 @@ define([
         opts.setOpt("toolbar",toolbar);
         opts.setOpt("enable_filter",true);
 
-        ViewerBase.call(this,visuals,container,connection,opts.getOpts());
+        super(visuals,container,connection,opts.getOpts());
 
         this._paused = false;
         this._jsonformat = false;
@@ -1198,17 +1150,12 @@ define([
         this.connection = connection;
     }
 
-	LogViewer.prototype = Object.create(ViewerBase.prototype);
-	LogViewer.prototype.constructor = LogViewer;
-
-    LogViewer.prototype.getType =
-    function()
+    getType()
     {
         return("logviewer");
     }
 
-    LogViewer.prototype.init =
-    function()
+    init()
     {
         this._content.style.overflow = "hidden";
 
@@ -1239,8 +1186,7 @@ define([
         this.size();
     }
 
-    LogViewer.prototype.toolbarClick =
-    function(opts)
+    toolbarClick(opts)
     {
         var action = opts.getOpt("name","");
 
@@ -1262,8 +1208,7 @@ define([
         }
     }
 
-    LogViewer.prototype.showContexts =
-    function()
+    showContexts()
     {
         if (this._loggerTable == null)
         {
@@ -1337,22 +1282,19 @@ define([
         });
     }
 
-    LogViewer.prototype.getFilter =
-    function()
+    getFilter()
     {
         return(this.getOpt("filter"));
     }
 
-    LogViewer.prototype.setFilter =
-    function(value)
+    setFilter(value)
     {
         this._connection.getLog().filter = value;
         this.setOpt("filter",value);
         this.setHeader();
     }
 
-    LogViewer.prototype.copyToClipboard =
-    function()
+    copyToClipboard()
     {
         var copy = this._copy;
 
@@ -1402,8 +1344,7 @@ define([
         document.execCommand("copy");
     }
 
-    LogViewer.prototype.togglePlay =
-    function()
+    togglePlay()
     {
         var code = false;
         var item = this.getToolbarItem("playPause");
@@ -1425,8 +1366,7 @@ define([
         return(code);
     }
 
-    LogViewer.prototype.draw =
-    function()
+    draw()
     {
         if (this._logDiv == null)
         {
@@ -1441,8 +1381,7 @@ define([
         this.setHeader();
     }
 
-    LogViewer.prototype.size =
-    function()
+    size()
     {
         if (this._logDiv != null)
         {
@@ -1452,8 +1391,7 @@ define([
         }
     }
 
-    LogViewer.prototype.clear =
-    function()
+    clear()
     {
         if (this._table != null)
         {
@@ -1462,8 +1400,7 @@ define([
         this.draw();
     }
 
-    LogViewer.prototype.handleLog =
-    function(connection,message)
+    handleLog(connection,message)
     {
         var text = message.messageContent.replace(this._newlines,"<br/>");
         text = text.replace(this._spaces,"&nbsp;");
@@ -1487,8 +1424,7 @@ define([
         this.draw();
     }
 
-    LogViewer.prototype.getContextHtml =
-    function(id)
+    getContextHtml(id)
     {
         var s = "";
 
@@ -1544,8 +1480,6 @@ define([
 
         return(s);
     }
+}
 
-    /* End Log Viewer */
-
-    return(Viewers);
-});
+export {Viewers};

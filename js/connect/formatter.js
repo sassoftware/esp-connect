@@ -3,30 +3,13 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {Options} from "./Options.js";
 
-var _isNode = false;
-var _fs = null;
-
-try
+class Formatter extends Options
 {
-    _isNode = (require("detect-node") != null);
-}
-catch (e)
-{
-}
-
-define([
-    "./options"
-], function(Options)
-{
-    function
-    Formatter(options)
+    constructor(options)
     {
-        Options.call(this,options);
+        super(options);
         this._index = 0;
         this._tabs = this.getOpt("tabs",4);
         this._incommand = false;
@@ -41,11 +24,7 @@ define([
         this._colors = {"black":30,"red":31,"green":32,"yellow":33,"blue":34,"magenta":35,"cyan":36,"white":37};
     }
 
-    Formatter.prototype = Object.create(Options.prototype);
-    Formatter.prototype.constructor = Formatter;
-
-    Formatter.prototype.format =
-    function(text,length,indent,init)
+    format(text,length,indent,init)
     {
         this._text = (init != null) ? init : "";
         this._index = 0;
@@ -72,8 +51,7 @@ define([
         return(this._text);
     }
 
-    Formatter.prototype.process =
-    function(text,length,indent)
+    process(text,length,indent)
     {
         var word = "";
         var c;
@@ -180,8 +158,7 @@ define([
         }
     }
 
-    Formatter.prototype.command =
-    function(indent)
+    command(indent)
     {
         if (this._command == "note")
         {
@@ -269,15 +246,13 @@ define([
         */
     }
 
-    Formatter.prototype.word =
-    function(text)
+    word(text)
     {
         this._text += text;
         this._index += text.length;
     }
 
-    Formatter.prototype.tab =
-    function(times)
+    tab(times)
     {
         var s = "";
 
@@ -296,8 +271,7 @@ define([
         return(s);
     }
 
-    Formatter.prototype.listing =
-    function(options)
+    listing(options)
     {
         var opts = new Options(options);
         var fields = opts.getOpt("fields");
@@ -368,8 +342,7 @@ define([
         return(listing);
     }
 
-    Formatter.prototype.spaces =
-    function(num)
+    spaces(num)
     {
         var s = "";
 
@@ -381,8 +354,7 @@ define([
         return(s);
     }
 
-    Formatter.prototype.getListing =
-    function(name)
+    getListing(name)
     {
         var listing = null;
 
@@ -398,6 +370,7 @@ define([
 
         return(listing);
     }
+}
 
-    return(Formatter);
-});
+//module.exports = Formatter;
+export {Formatter};

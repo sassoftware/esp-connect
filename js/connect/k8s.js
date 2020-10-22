@@ -3,31 +3,15 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {ServerConnection} from "./serverconn.js";
+import {tools} from "./tools.js";
+import {ajax} from "./ajax.js";
+import {xpath} from "./xpath.js";
+import {Options} from "./Options.js";
 
-var _isNode = false;
-
-try
+class K8S
 {
-    _isNode = (require("detect-node") != null);
-}
-catch (e)
-{
-}
-
-define([
-    "./serverconn",
-    "./tools",
-    "./ajax",
-    "./xpath",
-    "./options"
-], function(ServerConnection,tools,ajax,xpath,Options)
-{
-    function
-    K8S(url)
+    constructor(url)
     {
         this._url = tools.createUrl(decodeURI(url));
         this._proxy = false;
@@ -239,14 +223,12 @@ define([
         });
     }
 
-    K8S.prototype.getMyProjects =
-    function(delegate)
+    getMyProjects(delegate)
     {
         return(this.getProjects(delegate,this.namespace,this.project));
     }
 
-    K8S.prototype.getProjects =
-    function(delegate,namespace,name)
+    getProjects(delegate,namespace,name)
     {
         if (tools.supports(delegate,"handleProjects") == false)
         {
@@ -273,7 +255,6 @@ define([
 
                 if (request.getStatus() == 404)
                 {
-for (var x in delegate) console.log(x);
                     if (tools.supports(delegate,"notFound"))
                     {
                         delegate.notFound(request,"not found");
@@ -339,8 +320,7 @@ for (var x in delegate) console.log(x);
         request.get();
     }
 
-    K8S.prototype.getProject =
-    function(delegate,namespace,name)
+    getProject(delegate,namespace,name)
     {
         if (tools.supports(delegate,"handleProject") == false)
         {
@@ -371,8 +351,7 @@ for (var x in delegate) console.log(x);
         },namespace,name);
     }
 
-    K8S.prototype.getPods =
-    function(delegate)
+    getPods(delegate)
     {
         if (tools.supports(delegate,"handlePods") == false)
         {
@@ -432,8 +411,7 @@ for (var x in delegate) console.log(x);
         request.get();
     }
 
-    K8S.prototype.getPod =
-    function(delegate)
+    getPod(delegate)
     {
         if (tools.supports(delegate,"handlePod") == false)
         {
@@ -463,8 +441,7 @@ for (var x in delegate) console.log(x);
         });
     }
 
-    K8S.prototype.getLog =
-    function(delegate)
+    getLog(delegate)
     {
         if (tools.supports(delegate,"handleLog") == false)
         {
@@ -524,8 +501,7 @@ for (var x in delegate) console.log(x);
         });
     }
 
-    K8S.prototype.ls =
-    function(path,delegate)
+    ls(path,delegate)
     {
         if (tools.supports(delegate,"handleFiles") == false)
         {
@@ -574,8 +550,7 @@ for (var x in delegate) console.log(x);
         this.run(["ls","-l",path],handler);
     }
 
-    K8S.prototype.cat =
-    function(path,delegate)
+    cat(path,delegate)
     {
         if (tools.supports(delegate,"output") == false)
         {
@@ -593,8 +568,7 @@ for (var x in delegate) console.log(x);
         this.run(["cat",path],handler);
     }
 
-    K8S.prototype.get =
-    function(path,delegate)
+    get(path,delegate)
     {
         if (tools.supports(delegate,"handleFile") == false)
         {
@@ -643,10 +617,9 @@ for (var x in delegate) console.log(x);
         this.run(["tar","cf","-",path],handler);
     }
 
-    K8S.prototype.put =
-    function(data,path,options,delegate)
+    put(data,path,options,delegate)
     {
-        if (_isNode)
+        if (tools.isNode)
         {
             if (data instanceof Buffer)
             {
@@ -705,8 +678,7 @@ for (var x in delegate) console.log(x);
         this.run(["tar","-xmf","-","-C",path],handler);
     }
 
-    K8S.prototype.puturl =
-    function(url,path,options,delegate)
+    puturl(url,path,options,delegate)
     {
         var opts = new Options(options);
         var k8s = this;
@@ -732,8 +704,7 @@ for (var x in delegate) console.log(x);
         ajax.create("load",url,o).get();
     }
 
-    K8S.prototype.rm =
-    function(path,delegate)
+    rm(path,delegate)
     {
         var handler = {
             message:function(ws,message) {
@@ -756,8 +727,7 @@ for (var x in delegate) console.log(x);
         this.run(["rm",path],handler);
     }
 
-    K8S.prototype.mkdir =
-    function(path,delegate)
+    mkdir(path,delegate)
     {
         var handler = {
             message:function(message) {
@@ -780,8 +750,7 @@ for (var x in delegate) console.log(x);
         this.run(["mkdir","-p",path],handler);
     }
 
-    K8S.prototype.run =
-    function(command,delegate)
+    run(command,delegate)
     {
         if (this.namespace == null || this.project == null)
         {
@@ -804,8 +773,7 @@ for (var x in delegate) console.log(x);
         }
     }
 
-    K8S.prototype.exec =
-    function(command,pod,delegate)
+    exec(command,pod,delegate)
     {
         var url = this.baseWsUrl;
         url += "api/v1/namespaces/";
@@ -905,11 +873,13 @@ for (var x in delegate) console.log(x);
 
         tools.createWebSocket(url,o);
     }
+}
 
-    function
-    K8SProject(url)
+class K8SProject extends K8S 
+{
+    constructor(url)
     {
-        K8S.call(this,url);
+        super(url);
 
         if (this._project == null)
         {
@@ -957,11 +927,7 @@ for (var x in delegate) console.log(x);
         this.loadConfig();
     }
 
-    K8SProject.prototype = Object.create(K8S.prototype);
-    K8SProject.prototype.constructor = K8SProject;
-
-    K8SProject.prototype.connect =
-    function(connect,delegate,options,start)
+    connect(connect,delegate,options,start)
     {
         var opts = new Options(options);
         var modelconfig = opts.getOpt("model");
@@ -1043,8 +1009,7 @@ for (var x in delegate) console.log(x);
         this.loadConfig(handler);
     }
 
-    K8SProject.prototype.loadConfig =
-    function(delegate)
+    loadConfig(delegate)
     {
         this._config = null;
 
@@ -1088,8 +1053,7 @@ for (var x in delegate) console.log(x);
         request.get();
     }
 
-    K8SProject.prototype.load =
-    function(model,options,delegate)
+    load(model,options,delegate)
     {
         var opts = new Options(options);
         var xml = xpath.createXml(model);
@@ -1179,8 +1143,7 @@ for (var x in delegate) console.log(x);
         }
     }
 
-    K8SProject.prototype.restart =
-    function(delegate)
+    restart(delegate)
     {
         const   k8s = this;
         const   handler = {
@@ -1214,8 +1177,7 @@ for (var x in delegate) console.log(x);
         this.getProject(handler,this.namespace,this.project);
     }
 
-    K8SProject.prototype.del =
-    function(delegate)
+    del(delegate)
     {
         var url = this.url;
 
@@ -1251,8 +1213,7 @@ for (var x in delegate) console.log(x);
         request.del();
     }
 
-    K8SProject.prototype.getModel =
-    function(model,delegate)
+    getModel(model,delegate)
     {
         if (tools.supports(delegate,"modelHandler") == false)
         {
@@ -1287,8 +1248,7 @@ for (var x in delegate) console.log(x);
         }
     }
 
-    K8SProject.prototype.getYaml =
-    function(model)
+    getYaml(model)
     {
         var s = "";
 
@@ -1355,8 +1315,7 @@ for (var x in delegate) console.log(x);
         return(s);
     }
 
-    K8SProject.prototype.getDefaultModel =
-    function(name)
+    getDefaultModel(name)
     {
         var s = "";
 		s += "<project pubsub='auto' threads='4'>\n";
@@ -1378,8 +1337,7 @@ for (var x in delegate) console.log(x);
         return(s);
     }
 
-    K8SProject.prototype.isReady =
-    function(delegate)
+    isReady(delegate)
     {
         if (tools.supports(delegate,"ready") == false)
         {
@@ -1439,8 +1397,7 @@ for (var x in delegate) console.log(x);
         }
     }
 
-    K8SProject.prototype.readiness =
-    function(delegate)
+    readiness(delegate)
     {
         var url = this.espUrl;
         url += "/internal/ready";
@@ -1470,8 +1427,7 @@ for (var x in delegate) console.log(x);
     }
 
     /*
-    K8SProject.prototype.readiness =
-    function(delegate)
+    readiness(delegate)
     {
         var url = this.espUrl;
         url += "/internal/ready";
@@ -1503,11 +1459,13 @@ for (var x in delegate) console.log(x);
         setTimeout(function() {req.head()},1000);
     }
     */
+}
 
-	function
-	Tar()
+class Tar extends Options
+{
+	constructor()
 	{
-        Options.call(this);
+        super();
 
         this._index = 0;
         this._dv = null;
@@ -1533,11 +1491,7 @@ for (var x in delegate) console.log(x);
         });
     }
 
-    Tar.prototype = Object.create(Options.prototype);
-    Tar.prototype.constructor = Tar;
-
-    Tar.prototype.create =
-    function(data,options)
+    create(data,options)
     {
         var opts = new Options(options);
 
@@ -1615,8 +1569,7 @@ for (var x in delegate) console.log(x);
         }
     }
 
-    Tar.prototype.getString =
-    function(s,index,length)
+    getString(s,index,length)
     {
         var s = "";
         var b;
@@ -1634,8 +1587,7 @@ for (var x in delegate) console.log(x);
         return(s);
     }
 
-    Tar.prototype.putString =
-    function(s,index,length)
+    putString(s,index,length)
     {
         for (var i = 0; i < length; i++)
         {
@@ -1650,8 +1602,7 @@ for (var x in delegate) console.log(x);
         }
     }
 
-    Tar.prototype.parse =
-    function(data)
+    parse(data)
     {
         this._index = 0;
         this._dv = new DataView(data);
@@ -1682,8 +1633,7 @@ for (var x in delegate) console.log(x);
         this._content = this.read(this.getOpt("size"));
     }
 
-    Tar.prototype.readString =
-    function(bytes)
+    readString(bytes)
     {
         var s = "";
         var b;
@@ -1701,8 +1651,7 @@ for (var x in delegate) console.log(x);
         return(s);
     }
 
-    Tar.prototype.read =
-    function(bytes)
+    read(bytes)
     {
         var buf = new ArrayBuffer(bytes);
         var dv = new DataView(buf);
@@ -1716,8 +1665,7 @@ for (var x in delegate) console.log(x);
         return(buf);
     }
 
-    Tar.prototype.checksum =
-    function()
+    checksum()
     {
         var value = 0;
 
@@ -1730,26 +1678,27 @@ for (var x in delegate) console.log(x);
 
         return(s);
     }
+}
 
-    var _api =
+var _api =
+{
+    create:function(url)
     {
-        create:function(url)
+        var u = tools.createUrl(decodeURI(url));
+        var o = null;
+
+        if (u.path != null && u.path.split("/").length == 3)
         {
-            var u = tools.createUrl(decodeURI(url));
-            var o = null;
-
-            if (u.path != null && u.path.split("/").length == 3)
-            {
-                o = new K8SProject(url);
-            }
-            else
-            {
-                o = new K8S(url);
-            }
-
-            return(o);
+            o = new K8SProject(url);
         }
-    };
+        else
+        {
+            o = new K8S(url);
+        }
 
-    return(_api);
-});
+        return(o);
+    }
+};
+
+//module.exports = _api;
+export {_api as k8s};

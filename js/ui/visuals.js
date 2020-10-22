@@ -3,23 +3,22 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-define([
-    "../connect/options",
-    "../connect/tools",
-    "./chart",
-    "./viewers",
-    "./maps",
-    "./colors",
-    "./dialogs",
-    "./simpletable"
-], function(Options,tools,Chart,Viewers,Maps,Colors,dialogs,SimpleTable)
-{
-    var _dataHeader = "_data://";
+import {Options} from "../connect/options.js";
+import {tools} from "../connect/tools.js";
+import {Chart} from "./chart.js";
+import {Viewers} from "./viewers.js";
+import {Maps} from "./maps.js";
+import {Colors} from "./colors.js";
+import {dialogs} from "./dialogs.js";
+import {SimpleTable} from "./simpletable.js";
 
-    function
-    Visuals(api,options)
+var _dataHeader = "_data://";
+
+class Visuals extends Options
+{
+    constructor(api,options)
     {
-        Options.call(this,options);
+        super(options);
         this._api = api;
         this._viewers = new Viewers();
         this._maps = new Maps();
@@ -122,17 +121,12 @@ define([
         this._types = ["bar","line","timeseries","pie","radar","polar","bubble","gauge","compass","map","table","imageviewer"];
     }
 
-    Visuals.prototype = Object.create(Options.prototype);
-    Visuals.prototype.constructor = Visuals;
-
-    Visuals.prototype.isChartType =
-    function(type)
+    isChartType(type)
     {
         return(this._types.includes(type));
     }
 
-    Visuals.prototype.createChart =
-    function(type,container,datasource,options)
+    createChart(type,container,datasource,options)
     {
         var chart = null;
 
@@ -188,8 +182,7 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createBarChart =
-    function(container,datasource,options)
+    createBarChart(container,datasource,options)
     {
         datasource.addDelegate(this);
         var chart = new BarChart(this,container,datasource,options);
@@ -197,8 +190,7 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createLineChart =
-    function(container,datasource,options)
+    createLineChart(container,datasource,options)
     {
         datasource.addDelegate(this);
         var chart = new LineChart(this,container,datasource,options);
@@ -206,8 +198,7 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createTimeSeries =
-    function(container,datasource,options)
+    createTimeSeries(container,datasource,options)
     {
         datasource.addDelegate(this);
         var chart = new TimeSeries(this,container,datasource,options);
@@ -215,8 +206,7 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createPieChart =
-    function(container,datasource,options)
+    createPieChart(container,datasource,options)
     {
         datasource.addDelegate(this);
         var chart = new PieChart(this,container,datasource,options);
@@ -224,8 +214,7 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createRadarChart =
-    function(container,datasource,options)
+    createRadarChart(container,datasource,options)
     {
         datasource.addDelegate(this);
         var chart = new RadarChart(this,container,datasource,options);
@@ -233,8 +222,7 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createPolarChart =
-    function(container,datasource,options)
+    createPolarChart(container,datasource,options)
     {
         datasource.addDelegate(this);
         var chart = new PolarChart(this,container,datasource,options);
@@ -242,8 +230,7 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createBubbleChart =
-    function(container,datasource,options)
+    createBubbleChart(container,datasource,options)
     {
         datasource.addDelegate(this);
         var chart = new BubbleChart(this,container,datasource,options);
@@ -251,8 +238,7 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createGauge =
-    function(container,datasource,options)
+    createGauge(container,datasource,options)
     {
         datasource.addDelegate(this);
         var chart = new Gauge(this,container,datasource,options);
@@ -260,8 +246,7 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createCompass =
-    function(container,datasource,options)
+    createCompass(container,datasource,options)
     {
         datasource.addDelegate(this);
         var chart = new Compass(this,container,datasource,options);
@@ -269,8 +254,7 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createMap =
-    function(container,datasource,options)
+    createMap(container,datasource,options)
     {
         datasource.addDelegate(this);
         var chart = this._maps.createMap(this,container,datasource,options);
@@ -278,8 +262,7 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createTable =
-    function(container,datasource,options)
+    createTable(container,datasource,options)
     {
         datasource.addDelegate(this);
         var chart = new Table(this,container,datasource,options);
@@ -287,8 +270,7 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createImageViewer =
-    function(container,datasource,options)
+    createImageViewer(container,datasource,options)
     {
         datasource.addDelegate(this);
         var chart = new ImageViewer(this,container,datasource,options);
@@ -296,40 +278,35 @@ define([
         return(chart);
     }
 
-    Visuals.prototype.createSimpleTable =
-    function(container,options,delegate)
+    createSimpleTable(container,options,delegate)
     {
         var chart = new SimpleTable(container,options,delegate);
         this._visuals.push(chart);
         return(chart);
     }
 
-    Visuals.prototype.createWrapper =
-    function(container,options)
+    createWrapper(container,options)
     {
         var chart = new Wrapper(this,container,options);
         this._visuals.push(chart);
         return(chart);
     }
 
-    Visuals.prototype.createModelViewer =
-    function(container,connection,options)
+    createModelViewer(container,connection,options)
     {
         var chart = this._viewers.createModelViewer(this,container,connection,options);
         this._visuals.push(chart);
         return(chart);
     }
 
-    Visuals.prototype.createLogViewer =
-    function(container,connection,options)
+    createLogViewer(container,connection,options)
     {
         var chart = this._viewers.createLogViewer(this,container,connection,options);
         this._visuals.push(chart);
         return(chart);
     }
 
-    Visuals.prototype.showModel =
-    function(connection,options)
+    showModel(connection,options)
     {
         var div = (this._modelDivs.hasOwnProperty(connection.url)) ? this._modelDivs[connection.url] : null;
         var viewer = null;
@@ -352,14 +329,12 @@ define([
         this._api.size();
     }
 
-    Visuals.prototype.addDelegate =
-    function(delegate)
+    addDelegate(delegate)
     {
         tools.addTo(this._delegates,delegate);
     }
 
-    Visuals.prototype.getById =
-    function(id)
+    getById(id)
     {
         var visual = null;
 
@@ -375,14 +350,12 @@ define([
         return(visual);
     }
 
-    Visuals.prototype.closed =
-    function(connection)
+    closed(connection)
     {
         this.clear(connection);
     }
 
-    Visuals.prototype.clear =
-    function(connection)
+    clear(connection)
     {
         var i = 0;
         var v;
@@ -407,14 +380,12 @@ define([
         }
     }
 
-    Visuals.prototype.createGradientColors =
-    function(options)
+    createGradientColors(options)
     {
         return(this._colors.createGradientColors(options));
     }
 
-    Visuals.prototype.getSizes =
-    function(values,minSize,maxSize)
+    getSizes(values,minSize,maxSize)
     {
         var min = Math.min.apply(Math,values);
         var max = Math.max.apply(Math,values);
@@ -440,8 +411,7 @@ define([
         return(sizes);
     }
 
-    Visuals.prototype.hideToolbars =
-    function()
+    hideToolbars()
     {
         this._visuals.forEach(v =>
         {
@@ -449,8 +419,7 @@ define([
         });
     }
 
-    Visuals.prototype.formatTitle =
-    function(text,id)
+    formatTitle(text,id)
     {
         var content = "";
 
@@ -490,20 +459,17 @@ define([
         return(content)
     }
 
-    Visuals.prototype.getColorAt =
-    function(index)
+    getColorAt(index)
     {
         return(this._colors.get(index));
     }
 
-    Visuals.prototype.getColors =
-    function(index)
+    getColors(index)
     {
         return(this._colors.colors);
     }
 
-    Visuals.prototype.getTimeString =
-    function(value,format)
+    getTimeString(value,format)
     {
         var v = new Number(value) / 1000;
         var date = new Date(v);
@@ -534,8 +500,7 @@ define([
         return(text);
     }
 
-    Visuals.prototype.getDateString =
-    function(value,format)
+    getDateString(value,format)
     {
         var v = new Number(value) * 1000;
         var date = new Date(v);
@@ -554,8 +519,7 @@ define([
         return(text);
     }
 
-    Visuals.prototype.refresh =
-    function()
+    refresh()
     {
         this._visuals.forEach(function(visual)
         {
@@ -563,8 +527,7 @@ define([
         });
     }
 
-    Visuals.prototype.dataChanged =
-    function(datasource,data,clear)
+    dataChanged(datasource,data,clear)
     {
         this._visuals.forEach(function(visual)
         {
@@ -578,8 +541,7 @@ define([
         });
     }
 
-    Visuals.prototype.infoChanged =
-    function(datasource)
+    infoChanged(datasource)
     {
         this._visuals.forEach(function(visual)
         {
@@ -590,8 +552,7 @@ define([
         });
     }
 
-    Visuals.prototype.schemaReady =
-    function(api,datasource)
+    schemaReady(api,datasource)
     {
         this._visuals.forEach(function(visual)
         {
@@ -603,8 +564,7 @@ define([
         });
     }
 
-    Visuals.prototype.filterChanged =
-    function(datasource)
+    filterChanged(datasource)
     {
         this._visuals.forEach(function(visual)
         {
@@ -615,8 +575,7 @@ define([
         });
     }
 
-    Visuals.prototype.selectionChanged =
-    function(datasource)
+    selectionChanged(datasource)
     {
         this._visuals.forEach(visual =>
         {
@@ -635,8 +594,7 @@ define([
         });
     }
 
-    Visuals.prototype.size =
-    function()
+    size()
     {
         this._visuals.forEach((v) => {
             v.sizeContent();
@@ -650,14 +608,12 @@ define([
         });
     }
 
-    Visuals.prototype.getChartTextSize =
-    function(text)
+    getChartTextSize(text)
     {
         return(this.getTextSize(text,this._font.family,this._font.size));
     }
 
-    Visuals.prototype.getTextSize =
-    function(text,fontname,fontsize)
+    getTextSize(text,fontname,fontsize)
     {
         if (this._span == null)
         {
@@ -674,8 +630,7 @@ define([
         return({width:this._span.offsetWidth,height:this._span.offsetHeight});
     }
 
-    Visuals.prototype.addImageText =
-    function(image)
+    addImageText(image)
     {
         var data = image._data;
 
@@ -739,8 +694,7 @@ define([
         }
     }
 
-    Visuals.prototype.editFilter =
-    function(delegate)
+    editFilter(delegate)
     {
         var o =
         {
@@ -755,36 +709,30 @@ define([
         };
         dialogs.showDialog(o);
     }
+}
 
-    /* Bar Chart */
-
-    function
-    BarChart(visuals,container,datasource,options)
+class BarChart extends Chart
+{
+    constructor(visuals,container,datasource,options)
     {
-        Chart.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
         if (this.getOpt("stacked"))
         {
             this._layout["barmode"] = "stack";
         }
     }
 
-    BarChart.prototype = Object.create(Chart.prototype);
-    BarChart.prototype.constructor = BarChart;
-
-    BarChart.prototype.getType =
-    function()
+    getType()
     {
         return("bar");
     }
 
-    BarChart.prototype.createChild =
-    function(container,options)
+    createChild(container,options)
     {
         return(new BarChart(this._visuals,container,this._datasource,options));
     }
 
-    BarChart.prototype.draw =
-    function()
+    draw()
     {
         if (this.isInitialized == false)
         {
@@ -865,7 +813,7 @@ define([
 
             colors = [];
 
-            for (item of items)
+            for (var item of items)
             {
                 try
                 {
@@ -942,34 +890,26 @@ define([
         this.setHandlers();
         this.setHeader();
     }
+}
 
-    /* End Bar Chart */
-
-    /* Line Chart */
-
-    function
-    LineChart(visuals,container,datasource,options)
+class LineChart extends Chart
+{
+    constructor(visuals,container,datasource,options)
     {
-        Chart.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
     }
 
-    LineChart.prototype = Object.create(Chart.prototype);
-    LineChart.prototype.constructor = LineChart;
-
-    LineChart.prototype.getType =
-    function()
+    getType()
     {
         return("line");
     }
 
-    LineChart.prototype.createChild =
-    function(container,options)
+    createChild(container,options)
     {
         return(new LineChart(this._visuals,container,this._datasource,options));
     }
 
-    LineChart.prototype.draw =
-    function()
+    draw()
     {
         if (this.isInitialized == false)
         {
@@ -1058,15 +998,13 @@ define([
         this.setHeader();
         this.setHandlers();
     }
+}
 
-    /* End Line Chart */
-
-    /* Time Series */
-
-    function
-    TimeSeries(visuals,container,datasource,options)
+class TimeSeries extends LineChart
+{
+    constructor(visuals,container,datasource,options)
     {
-        LineChart.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
 
         if (this.hasOpt("time") == false)
         {
@@ -1085,17 +1023,12 @@ define([
         }
     }
 
-    TimeSeries.prototype = Object.create(LineChart.prototype);
-    TimeSeries.prototype.constructor = TimeSeries;
-
-    TimeSeries.prototype.getType =
-    function()
+    getType()
     {
         return("timeseries");
     }
 
-    TimeSeries.prototype.fired =
-    function()
+    fired()
     {
         var current = new Date().getTime();
 
@@ -1122,8 +1055,7 @@ define([
         }
     }
 
-    TimeSeries.prototype.draw =
-    function()
+    draw()
     {
         var x = this.getValues("time");
         var y = this.getValues("y");
@@ -1131,8 +1063,7 @@ define([
         this.render(values,y);
     }
 
-    TimeSeries.prototype.render =
-    function(values,y)
+    render(values,y)
     {
         if (this.isInitialized == false)
         {
@@ -1239,28 +1170,21 @@ define([
 
         this._rendered = new Date().getTime();
     }
+}
 
-    /* End Time Series */
-
-    /* Pie Chart */
-
-    function
-    PieChart(visuals,container,datasource,options)
+class PieChart extends Chart
+{
+    constructor(visuals,container,datasource,options)
     {
-        Chart.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
     }
 
-    PieChart.prototype = Object.create(Chart.prototype);
-    PieChart.prototype.constructor = PieChart;
-
-    PieChart.prototype.getType =
-    function()
+    getType()
     {
         return("pie");
     }
 
-    PieChart.prototype.draw =
-    function()
+    draw()
     {
         if (this.isInitialized == false)
         {
@@ -1349,28 +1273,21 @@ define([
         {
         }
     }
+}
 
-    /* End Pie Chart */
-
-    /* Radar Chart */
-
-    function
-    RadarChart(visuals,container,datasource,options)
+class RadarChart extends Chart
+{
+    constructor(visuals,container,datasource,options)
     {
-        Chart.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
     }
 
-    RadarChart.prototype = Object.create(Chart.prototype);
-    RadarChart.prototype.constructor = RadarChart;
-
-    RadarChart.prototype.getType =
-    function()
+    getType()
     {
         return("radar");
     }
 
-    RadarChart.prototype.draw =
-    function()
+    draw()
     {
         if (this.isInitialized == false)
         {
@@ -1465,28 +1382,21 @@ define([
             console.log(exc);
         }
     }
+}
 
-    /* End Radar Chart */
-
-    /* Polar Chart */
-
-    function
-    PolarChart(visuals,container,datasource,options)
+class PolarChart extends Chart
+{
+    constructor(visuals,container,datasource,options)
     {
-        Chart.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
     }
 
-    PolarChart.prototype = Object.create(Chart.prototype);
-    PolarChart.prototype.constructor = PolarChart;
-
-    PolarChart.prototype.getType =
-    function()
+    getType()
     {
         return("polar");
     }
 
-    PolarChart.prototype.draw =
-    function()
+    draw()
     {
         if (this.isInitialized == false)
         {
@@ -1612,28 +1522,21 @@ define([
         this.setHandlers();
         this.setHeader();
     }
+}
 
-    /* End Polar Chart */
-
-    /* Bubble Chart */
-
-    function
-    BubbleChart(visuals,container,datasource,options)
+class BubbleChart extends Chart
+{
+    constructor(visuals,container,datasource,options)
     {
-        Chart.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
     }
 
-    BubbleChart.prototype = Object.create(Chart.prototype);
-    BubbleChart.prototype.constructor = BubbleChart;
-
-    BubbleChart.prototype.getType =
-    function()
+    getType()
     {
         return("bubble");
     }
 
-    BubbleChart.prototype.draw =
-    function()
+    draw()
     {
         if (this.isInitialized == false)
         {
@@ -1798,15 +1701,13 @@ define([
         this.setHandlers();
         this.setHeader();
     }
+}
 
-    /* End Bubble Chart */
-
-    /* Compass */
-
-    function
-    Compass(visuals,container,datasource,options)
+class Compass extends Chart
+{
+    constructor(visuals,container,datasource,options)
     {
-        Chart.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
 
         this._content.style.display = "flex";
         this._content.style.flexWrap = "wrap";
@@ -1854,23 +1755,17 @@ define([
         this._lineWidth = this.getOpt("line_width",1);
     }
 
-    Compass.prototype = Object.create(Chart.prototype);
-    Compass.prototype.constructor = Compass;
-
-    Compass.prototype.getType =
-    function()
+    getType()
     {
         return("compass");
     }
 
-    Compass.prototype.init =
-    function()
+    init()
     {
         this._initialized = true;
     }
 
-    Compass.prototype.draw =
-    function(data,clear)
+    draw(data,clear)
     {
         if (this._initialized == false)
         {
@@ -1939,7 +1834,7 @@ define([
                     entry = this._entries[key];
                 }
 
-                value = parseFloat(o[field]);
+                var value = parseFloat(o[field]);
                 entry._heading = value;
             }
         }
@@ -1952,11 +1847,14 @@ define([
 
         this.setHeader();
     }
+}
 
-    function
-    CompassEntry(compass,options)
+class CompassEntry extends Options
+{
+    constructor(compass,options)
     {
-        Options.call(this,options);
+        super(options);
+
         this._compass = compass;
 
         var size = this._compass.getOpt("size",300);
@@ -1990,11 +1888,7 @@ define([
         this._initialized = false;
     }
 
-    CompassEntry.prototype = Object.create(Options.prototype);
-    CompassEntry.prototype.constructor = CompassEntry;
-
-    CompassEntry.prototype.init =
-    function()
+    init()
     {
         var size = this._compass.getOpt("size",300)
 
@@ -2035,6 +1929,9 @@ define([
         this._labels = [];
         //var headings = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
         var headings = ["N", "E", "S", "W"];
+        var fontsize;
+        var label;
+        var text;
 
         for (var i = 0; i < headings.length; i++)
         {
@@ -2106,8 +2003,7 @@ define([
         this._initialized == true;
     }
 
-    CompassEntry.prototype.draw =
-    function()
+    draw()
     {
         if (this._initialized == false)
         {
@@ -2193,8 +2089,7 @@ define([
         this.setHeader();
     }
 
-    CompassEntry.prototype.setHeader =
-    function()
+    setHeader()
     {
         var s = this.getOpt("title");
 
@@ -2203,20 +2098,18 @@ define([
             var heading = parseInt(this._heading);
             var tmp = "" + heading;
             tmp = tmp.padStart(3,"0");
-            title = s + " (" + tmp + ")";
+            var title = s + " (" + tmp + ")";
             title = this._compass._visuals.formatTitle(title);
             this._header.innerHTML = title;
         }
     }
+}
 
-    /* End Compass */
-
-    /* Table */
-
-    function
-    Table(visuals,container,datasource,options)
+class Table extends Chart
+{
+    constructor(visuals,container,datasource,options)
     {
-        Chart.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
         this._table = document.createElement("table");
         this._table.cellSpacing = 0;
         this._table.cellPadding = 0;
@@ -2227,17 +2120,12 @@ define([
         this.size();
     }
 
-    Table.prototype = Object.create(Chart.prototype);
-    Table.prototype.constructor = Table;
-
-    Table.prototype.getType =
-    function()
+    getType()
     {
         return("table");
     }
 
-    Table.prototype.size =
-    function()
+    size()
     {
         if (this._table != null)
         {
@@ -2245,8 +2133,7 @@ define([
         }
     }
 
-    Table.prototype.draw =
-    function(data,clear)
+    draw(data,clear)
     {
         this.clear();
 
@@ -2615,14 +2502,12 @@ define([
         }
     }
 
-    Table.prototype.addImageText =
-    function()
+    addImageText()
     {
         this._table._visuals.addImageText(this);
     }
 
-    Table.prototype.clicked =
-    function(e)
+    clicked(e)
     {
         if (e.currentTarget.hasOwnProperty("context"))
         {
@@ -2631,8 +2516,7 @@ define([
         }
     }
 
-    Table.prototype.clear =
-    function()
+    clear()
     {
         while (this._table.rows.length > 0)
         {
@@ -2640,8 +2524,7 @@ define([
         }
     }
 
-    Table.prototype.getTableValues =
-    function()
+    getTableValues()
     {
         var values = this.getValues("values");
 
@@ -2663,15 +2546,13 @@ define([
 
         return(values);
     }
+}
 
-    /* End Table */
-
-    /* Gauge */
-
-    function
-    Gauge(visuals,container,datasource,options)
+class Gauge extends Chart
+{
+    constructor(visuals,container,datasource,options)
     {
-        Chart.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
 
         this._content.style.display = "flex";
         this._content.style.flexWrap = "wrap";
@@ -2696,17 +2577,12 @@ define([
         this._decimals = this.getOpt("decimals",true);
     }
 
-    Gauge.prototype = Object.create(Chart.prototype);
-    Gauge.prototype.constructor = Gauge;
-
-    Gauge.prototype.getType =
-    function()
+    getType()
     {
         return("gauge");
     }
 
-    Gauge.prototype.init =
-    function()
+    init()
     {
         this._segments = this.getOpt("segments",3);
 
@@ -2750,8 +2626,7 @@ define([
         this._initialized = true;
     }
 
-    Gauge.prototype.draw =
-    function(data,clear)
+    draw(data,clear)
     {
         if (this._initialized == false)
         {
@@ -2822,7 +2697,7 @@ define([
                     entry = this._entries[key];
                 }
 
-                value = parseFloat(o[field]);
+                var value = parseFloat(o[field]);
                 entry.value = value;
             }
         }
@@ -2833,11 +2708,13 @@ define([
             this._entries[key].draw();
         }
     }
+}
 
-    function
-    GaugeEntry(gauge,options)
+class GaugeEntry extends Options
+{
+    constructor(gauge,options)
     {
-        Options.call(this,options);
+        super(options);
 
         this._gauge = gauge;
 
@@ -2888,11 +2765,7 @@ define([
         this._initialized = false;
     }
 
-    GaugeEntry.prototype = Object.create(Options.prototype);
-    GaugeEntry.prototype.constructor = GaugeEntry;
-
-    GaugeEntry.prototype.init =
-    function()
+    init()
     {
         this._data = {};
         this._data.type = "indicator";
@@ -2956,8 +2829,7 @@ define([
         Plotly.newPlot(this._container,[this._data],this._layout,this._gauge._defaults);
     }
 
-    GaugeEntry.prototype.draw =
-    function()
+    draw()
     {
         if (this._initialized == false)
         {
@@ -2987,15 +2859,13 @@ define([
 
         Plotly.react(this._container,[this._data],this._layout);
     }
+}
 
-    /* End Gauge */
-
-    /* Image */
-
-    function
-    ImageViewer(visuals,container,datasource,options)
+class ImageViewer extends Chart
+{
+    constructor(visuals,container,datasource,options)
     {
-        Chart.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
         this._viewerDiv = document.createElement("div");
         this._canvas = document.createElement("canvas");
         this._context = this._canvas.getContext("2d");
@@ -3023,23 +2893,17 @@ define([
         this.size();
     }
 
-    ImageViewer.prototype = Object.create(Chart.prototype);
-    ImageViewer.prototype.constructor = ImageViewer;
-
-    ImageViewer.prototype.getType =
-    function()
+    getType()
     {
         return("imageviewer");
     }
 
-    ImageViewer.prototype.loaded =
-    function()
+    loaded()
     {
         this._viewer.drawImage();
     }
 
-    ImageViewer.prototype.draw =
-    function(data,clear)
+    draw(data,clear)
     {
         if (data != null && data.length > 0)
         {
@@ -3055,8 +2919,7 @@ define([
         }
     }
 
-    ImageViewer.prototype.drawImage =
-    function()
+    drawImage()
     {
         this._context.clearRect(0,0,this._canvas.width,this._canvas.height);
 
@@ -3097,13 +2960,11 @@ define([
         }
     }
 
-    ImageViewer.prototype.drawn =
-    function(data,context)
+    drawn(data,context)
     {
     }
 
-    ImageViewer.prototype.size =
-    function()
+    size()
     {
         if (this._viewerDiv != null)
         {
@@ -3112,18 +2973,16 @@ define([
             this.drawImage();
         }
     }
+}
 
-    /* End Image */
-
-    /* Wrapper */
-
-    function
-    Wrapper(visuals,container,options)
+class Wrapper extends Chart
+{
+    constructor(visuals,container,options)
     {
         var opts = new Options(options);
         opts.setOpt("append_chart",false);
 
-        Chart.call(this,visuals,container,null,opts.toString());
+        super(visuals,container,null,opts.toString());
 
         this._wrapper = document.createElement("div");
         this._wrapper.style.margin = 0;
@@ -3165,22 +3024,16 @@ define([
         this.sizeContent();
     }
 
-    Wrapper.prototype = Object.create(Chart.prototype);
-    Wrapper.prototype.constructor = Wrapper;
-
-    Wrapper.prototype.getType =
-    function()
+    getType()
     {
         return("wrapper");
     }
 
-    Wrapper.prototype.remove =
-    function()
+    remove()
     {
     }
 
-    Wrapper.prototype.sizeContent =
-    function()
+    sizeContent()
     {
         if (this.getOpt("size_to_content",false))
         {
@@ -3191,44 +3044,41 @@ define([
         }
     }
 
-    Wrapper.prototype.draw =
+    draw()
+    {
+    }
+}
+
+var _filterDelegate = null;
+
+if (typeof window !== "undefined")
+{
+    window._setFilter_ = 
     function()
     {
+        if (_filterDelegate != null)
+        {
+            _filterDelegate.setFilter(document.getElementById("_filtertext_").value);
+        }
+
+        dialogs.popModal("_editfilter_");
+
+        _filterDelegate = null;
     }
 
-    /* End Wrapper */
-
-    var _filterDelegate = null;
-
-    if (typeof window !== "undefined")
+    window._cancelFilterEdit_ = 
+    function()
     {
-        window._setFilter_ = 
-        function()
-        {
-            if (_filterDelegate != null)
-            {
-                _filterDelegate.setFilter(document.getElementById("_filtertext_").value);
-            }
-
-            dialogs.popModal("_editfilter_");
-
-            _filterDelegate = null;
-        }
-
-        window._cancelFilterEdit_ = 
-        function()
-        {
-            dialogs.popModal("_editfilter_");
-            _filterDelegate = null;
-        }
-
-        window._clearFilter_ = 
-        function()
-        {
-            document.getElementById("_filtertext_").value = "";
-            document.getElementById("_filtertext_").focus();
-        }
+        dialogs.popModal("_editfilter_");
+        _filterDelegate = null;
     }
 
-    return(Visuals);
-});
+    window._clearFilter_ = 
+    function()
+    {
+        document.getElementById("_filtertext_").value = "";
+        document.getElementById("_filtertext_").focus();
+    }
+}
+
+export {Visuals};

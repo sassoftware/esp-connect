@@ -3,276 +3,260 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
+import {Options} from "./Options.js";
+import {tools} from "./tools.js";
+import {codec} from "./codec.js";
+
+var WS = null;
+var W3CWS = null;
+
+var _nodeWS = null;
+var _nodeWebsockets = null;
+
+if (tools.isNode)
 {
-    var define = require("amdefine")(module);
-}
-
-var _isNode = false;
-
-try
-{
-    _isNode = (require("detect-node") != null);
-}
-catch (e)
-{
-}
-
-define([
-    "./tools",
-    "./codec",
-    "./options"
-], function(tools,codec,Options)
-{
-    var WS = null;
-    var W3CWS = null;
-
-    var _nodeWS = null;
-    var _nodeWebsockets = null;
-
-    if (_isNode)
+    if (process.env.NODE_WEBSOCKETS == "ws")
     {
-        if (process.env.NODE_WEBSOCKETS == "ws")
-        {
-            WS = require("ws");
-            _nodeWS = {
-                open:function(e)
-                {
-                    var	conn = this._connection;
-
-                    if (conn != null)
-                    {
-                        conn._websocket = this;
-                        conn._ready = true;
-                        conn.ready();
-                    }
-                },
-
-                close:function(e)
-                {
-                    var	conn = this._connection;
-
-                    if (conn != null)
-                    {
-                        conn.clear();
-                        conn.closed();
-                    }
-                },
-
-                error:function(e)
-                {
-                    var	conn = this._connection;
-
-                    if (conn != null)
-                    {
-                        console.log(conn.getUrl() + ": " + e);
-                        conn.clear();
-                        conn.error();
-                    }
-                },
-
-                message:function(message)
-                {
-                    var	conn = this._connection;
-
-                    if (conn != null)
-                    {
-                        if (typeof(message) == "string")
-                        {
-                            conn.message(message);
-                        }
-                        else
-                        {
-                            var buffer = new ArrayBuffer(message.length);
-                            var view = new Uint8Array(buffer);
-                            for (var i = 0; i < message.length; ++i)
-                            {
-                               view[i] = message[i];
-                            }
-
-                            var o = codec.decode(buffer);
-                            conn.data(o);
-                        }
-                    }
-                },
-
-                data:function(stream)
-                {
-                    var	conn = this._connection;
-
-                    if (conn != null)
-                    {
-                        var data = Buffer.alloc(0);
-
-                        stream.on("readable",function()
-                        {
-                            var newData = stream.read();
-
-                            if (newData != null)
-                            {
-                                data = Buffer.concat([data,newData],data.length + newData.length);
-                            }
-                        });
-
-                        stream.on("end",function()
-                        {
-                            var buffer = new ArrayBuffer(data.length);
-                            var view = new Uint8Array(buffer);
-                            for (var i = 0; i < data.length; ++i)
-                            {
-                               view[i] = data[i];
-                            }
-
-                            var o = codec.decode(buffer);
-                            conn.data(o);
-                        });
-                    }
-                }
-            };
-        }
-        else
-        {
-            W3CWS = require("websocket").w3cwebsocket;
-
-            function
-            WebSocketClient(url,connection)
+        _nodeWS = {
+            open:function(e)
             {
-                this._conn = connection;
-                this.binaryType = "arraybuffer";
-                var config = {};
-                config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
-		        W3CWS.call(this,url,null,null,null,null,config);
-            }
+                var	conn = this._connection;
 
-            WebSocketClient.prototype = Object.create(W3CWS.prototype);
-            WebSocketClient.prototype.constructor = WebSocketClient;
-
-            _nodeWebsockets = {
-                open:function()
+                if (conn != null)
                 {
-                    var	conn = this._conn;
-
-                    if (conn != null)
-                    {
-                        conn._websocket = this;
-                        conn._ready = true;
-                        conn.ready();
-                    }
-                },
-
-                close:function(e)
-                {
-                    var	conn = this._conn;
-
-                    if (conn != null)
-                    {
-                        conn.clear();
-                        conn.closed();
-                    }
-                },
-
-                error:function(e)
-                {
-                    var	conn = this._conn;
-
-                    if (conn != null)
-                    {
-                        conn.clear();
-                        conn.error();
-                    }
-                },
-
-                message:function(e)
-                {
-                    var	conn = this._conn;
-
-                    if (conn != null)
-                    {
-                        if (typeof(e.data) == "string")
-                        {
-                            conn.message(e.data);
-                        }
-                        else
-                        {
-                            var o = codec.decode(e.data);
-                            conn.data(o);
-                        }
-                    }
+                    conn._websocket = this;
+                    conn._ready = true;
+                    conn.ready();
                 }
-            };
-        }
-    }
+            },
 
-    var	_websockets =
-	{
-        _established:new Object(),
+            close:function(e)
+            {
+                var	conn = this._connection;
 
-		open:function(e)
-		{
-			var	conn = this._connection;
-
-			if (conn != null)
-			{
-                _websockets._established[conn.getUrl()] = true;
-                conn._websocket = this;
-				conn._ready = true;
-                conn.ready();
-			}
-		},
-
-		close:function(e)
-		{
-			var	conn = this._connection;
-
-			if (conn != null)
-			{
-				conn.clear();
-                conn.closed();
-			}
-		},
-
-		error:function(e)
-		{
-			var	conn = this._connection;
-
-			if (conn != null)
-			{
-				conn.clear();
-                conn.error();
-			}
-		},
-
-		message:function(e)
-		{
-			var	conn = this._connection;
-
-			if (conn != null)
-			{
-                if (e.data instanceof ArrayBuffer || e.data instanceof Blob)
+                if (conn != null)
                 {
-                    var reader = new FileReader();
-                    reader.onload = function(e) {
-                        var o = codec.decode(e.target.result);
+                    conn.clear();
+                    conn.closed();
+                }
+            },
+
+            error:function(e)
+            {
+                var	conn = this._connection;
+
+                if (conn != null)
+                {
+                    console.log(conn.getUrl() + ": " + e);
+                    conn.clear();
+                    conn.error();
+                }
+            },
+
+            message:function(message)
+            {
+                var	conn = this._connection;
+
+                if (conn != null)
+                {
+                    if (typeof(message) == "string")
+                    {
+                        conn.message(message);
+                    }
+                    else
+                    {
+                        var buffer = new ArrayBuffer(message.length);
+                        var view = new Uint8Array(buffer);
+                        for (var i = 0; i < message.length; ++i)
+                        {
+                           view[i] = message[i];
+                        }
+
+                        var o = codec.decode(buffer);
                         conn.data(o);
-                    };
-                    reader.readAsArrayBuffer(e.data);
+                    }
                 }
-                else
-                {
-				    conn.message(e.data);
-                }
-			}
-		},
-        prompted:function(url)
-        {
-            return(this._prompted.hasOwnProperty(url));
-        }
-	};
+            },
 
-	function
-    Connection(host,port,path,secure,options,config)
+            data:function(stream)
+            {
+                var	conn = this._connection;
+
+                if (conn != null)
+                {
+                    var data = Buffer.alloc(0);
+
+                    stream.on("readable",function()
+                    {
+                        var newData = stream.read();
+
+                        if (newData != null)
+                        {
+                            data = Buffer.concat([data,newData],data.length + newData.length);
+                        }
+                    });
+
+                    stream.on("end",function()
+                    {
+                        var buffer = new ArrayBuffer(data.length);
+                        var view = new Uint8Array(buffer);
+                        for (var i = 0; i < data.length; ++i)
+                        {
+                           view[i] = data[i];
+                        }
+
+                        var o = codec.decode(buffer);
+                        conn.data(o);
+                    });
+                }
+            }
+        };
+    }
+    else
+    {
+        //W3CWS = require("websocket").w3cwebsocket;
+        //import {w3cwebsocket} as W3CWS from "websocket"; 
+
+        function
+        WebSocketClient(url,connection)
+        {
+            this._conn = connection;
+            this.binaryType = "arraybuffer";
+            var config = {};
+            config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
+            W3CWS.call(this,url,null,null,null,null,config);
+        }
+
+        WebSocketClient.prototype = Object.create(W3CWS.prototype);
+        WebSocketClient.prototype.constructor = WebSocketClient;
+
+        _nodeWebsockets = {
+            open:function()
+            {
+                var	conn = this._conn;
+
+                if (conn != null)
+                {
+                    conn._websocket = this;
+                    conn._ready = true;
+                    conn.ready();
+                }
+            },
+
+            close:function(e)
+            {
+                var	conn = this._conn;
+
+                if (conn != null)
+                {
+                    conn.clear();
+                    conn.closed();
+                }
+            },
+
+            error:function(e)
+            {
+                var	conn = this._conn;
+
+                if (conn != null)
+                {
+                    conn.clear();
+                    conn.error();
+                }
+            },
+
+            message:function(e)
+            {
+                var	conn = this._conn;
+
+                if (conn != null)
+                {
+                    if (typeof(e.data) == "string")
+                    {
+                        conn.message(e.data);
+                    }
+                    else
+                    {
+                        var o = codec.decode(e.data);
+                        conn.data(o);
+                    }
+                }
+            }
+        };
+    }
+}
+
+var	_websockets =
+{
+    _established:new Object(),
+
+    open:function(e)
+    {
+        var	conn = this._connection;
+
+        if (conn != null)
+        {
+            _websockets._established[conn.getUrl()] = true;
+            conn._websocket = this;
+            conn._ready = true;
+            conn.ready();
+        }
+    },
+
+    close:function(e)
+    {
+        var	conn = this._connection;
+
+        if (conn != null)
+        {
+            conn.clear();
+            conn.closed();
+        }
+    },
+
+    error:function(e)
+    {
+        var	conn = this._connection;
+
+        if (conn != null)
+        {
+            conn.clear();
+            conn.error();
+        }
+    },
+
+    message:function(e)
+    {
+        var	conn = this._connection;
+
+        if (conn != null)
+        {
+            if (e.data instanceof ArrayBuffer || e.data instanceof Blob)
+            {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var o = codec.decode(e.target.result);
+                    conn.data(o);
+                };
+                reader.readAsArrayBuffer(e.data);
+            }
+            else
+            {
+                conn.message(e.data);
+            }
+        }
+    },
+    prompted:function(url)
+    {
+        return(this._prompted.hasOwnProperty(url));
+    }
+};
+
+class Connection extends Options
+{
+    constructor(host,port,path,secure,options,config)
 	{
-		Options.call(this,options);
+		super(options);
         this._host = host;
         this._port = new Number(port);
         this._path = path;
@@ -431,37 +415,28 @@ define([
         });
 	}
 
-	Connection.prototype = Object.create(Options.prototype);
-	Connection.prototype.constructor = Connection;
-
-	Connection.prototype.getType =
-	function()
+	getType()
 	{
 		return(this.constructor.name);
 	}
 
-	Connection.prototype.ready =
-	function()
+	ready()
 	{
 	}
 
-	Connection.prototype.closed =
-	function()
+	closed()
 	{
 	}
 
-	Connection.prototype.error =
-	function()
+	error()
 	{
 	}
 
-	Connection.prototype.handshakeComplete =
-	function()
+	handshakeComplete()
 	{
 	}
 
-	Connection.prototype.start =
-	function()
+	start()
 	{
 		this._reconnect.timer = null;
 
@@ -481,22 +456,44 @@ define([
 
 		this._ready = false;
 
-        if (WS != null)
+        if (tools.isNode)
         {
-            var ws = new WS(url);
-            ws._connection = this;
-            ws.on("open",_nodeWS.open);
-            ws.on("close",_nodeWS.close);
-            ws.on("error",_nodeWS.error);
-            ws.on("message",_nodeWS.message);
-        }
-        else if (W3CWS != null)
-        {
-            var ws = new WebSocketClient(url,this);
-            ws.onopen = _nodeWebsockets.open;
-            ws.onclose = _nodeWebsockets.close;
-            ws.onerror = _nodeWebsockets.error;
-            ws.onmessage = _nodeWebsockets.message;
+            if (process.env.NODE_WEBSOCKETS == "ws")
+            {
+                if (WS == null)
+                {
+                    import("ws").
+                        then((module) => {
+                            WS = module.default;
+                            var ws = new WS(url);
+                            ws._connection = this;
+                            ws.on("open",_nodeWS.open);
+                            ws.on("close",_nodeWS.close);
+                            ws.on("error",_nodeWS.error);
+                            ws.on("message",_nodeWS.message);
+                        }).
+                        catch((e) => {
+                            console.log("import error on ws: " + e);
+                        });
+                }
+                else
+                {
+                    var ws = new WS(url);
+                    ws._connection = this;
+                    ws.on("open",_nodeWS.open);
+                    ws.on("close",_nodeWS.close);
+                    ws.on("error",_nodeWS.error);
+                    ws.on("message",_nodeWS.message);
+                }
+            }
+            else if (W3CWS != null)
+            {
+                var ws = new WebSocketClient(url,this);
+                ws.onopen = _nodeWebsockets.open;
+                ws.onclose = _nodeWebsockets.close;
+                ws.onerror = _nodeWebsockets.error;
+                ws.onmessage = _nodeWebsockets.message;
+            }
         }
         else
         {
@@ -509,8 +506,7 @@ define([
         }
 	}
 
-	Connection.prototype.stop =
-	function()
+	stop()
 	{
 		if (this.isConnected())
 		{
@@ -521,15 +517,13 @@ define([
 		return(false);
 	}
 
-	Connection.prototype.restart =
-	function()
+	restart()
 	{
 		this.clear();
         this.start();
 	}
 
-	Connection.prototype.reconnect =
-	function(interval)
+	reconnect(interval)
 	{
 		if (this._reconnect.timer != null)
 		{
@@ -548,8 +542,7 @@ define([
 		}
 	}
 
-	Connection.prototype.message =
-	function(data)
+	message(data)
 	{
 		if (this._handshakeComplete)
 		{
@@ -642,7 +635,7 @@ define([
                         message += "\n";
                         message += this.getHeader("www-authenticate","");
                         message += "\n";
-                        if (_isNode)
+                        if (tools.isNode)
                         {
                             throw new Error(message);
                         }
@@ -656,25 +649,21 @@ define([
 		}
 	}
 
-	Connection.prototype.setBearer =
-	function(token)
+	setBearer(token)
     {
         this.authorization = "Bearer " + token;
     }
 
-	Connection.prototype.setBasic =
-    function(credentials)
+	setBasic(credentials)
     {
         this.authorization = "Basic " + credentials;
     }
 
-	Connection.prototype.data =
-	function(data)
+	data(data)
     {
     }
 
-	Connection.prototype.clear =
-	function()
+	clear()
 	{
 		if (this._websocket != null)
 		{
@@ -688,8 +677,7 @@ define([
 		this._headers = null;
 	}
 
-	Connection.prototype.getHeader =
-	function(name,dv)
+	getHeader(name,dv)
 	{
 		var	value = dv;
 
@@ -704,14 +692,12 @@ define([
 		return(value);
 	}
 
-	Connection.prototype.isHandshakeComplete =
-	function()
+	isHandshakeComplete()
 	{
 		return(this._handshakeComplete);
 	}
 
-	Connection.prototype.send =
-	function(data)
+	send(data)
 	{
 		if (this._websocket == null)
         {
@@ -722,8 +708,7 @@ define([
 		this._websocket.send(data);
 	}
 
-	Connection.prototype.sendObject =
-	function(o)
+	sendObject(o)
 	{
         if (this.getOpt("debug",false))
         {
@@ -733,44 +718,57 @@ define([
         this.send(tools.stringify(o));
     }
 
-	Connection.prototype.sendBinary =
-	function(o)
+	sendBinary(o)
 	{
         var data = codec.encode(o);
         this.send(data);
     }
 
-	Connection.prototype.isConnected =
-	function()
+	isConnected()
 	{
 		return(this._websocket != null);
 	}
 
-	Connection.prototype.getUrl =
-	function()
+	getUrl()
     {
         return(this.url);
     }
 
-	Connection.prototype.established =
-	function()
+	established()
     {
         var url = this.getUrl();
         return(_websockets.established(url));
     }
 
-	function
-    DelegateConnection(delegate,host,port,path,secure,options,config)
+    static create(url,options)
     {
-		Connection.call(this,host,port,path,secure,options,config);
+        var u = tools.createUrl(decodeURI(url));
+        var conn = new Connection(u["host"],u["port"],u["path"],u["secure"],options);
+        return(conn);
+    }
+
+    static createDelegateConnection(delegate,url,options,config)
+    {
+        var u = tools.createUrl(decodeURI(url));
+        var conn = new DelegateConnection(delegate,u["host"],u["port"],u["path"],u["secure"],options,config);
+        return(conn);
+    }
+
+    static established(url)
+    {
+        return(_websockets._established.hasOwnProperty(url));
+    }
+}
+
+class DelegateConnection extends Connection
+{
+    constructor(delegate,host,port,path,secure,options,config)
+    {
+		super(host,port,path,secure,options,config);
         this._delegate = delegate;
     }
 
-	DelegateConnection.prototype = Object.create(Connection.prototype);
-	DelegateConnection.prototype.constructor = DelegateConnection;
-
-	DelegateConnection.prototype.ready =
-	function()
+	ready()
 	{
         if (tools.supports(this._delegate,"ready"))
         {
@@ -778,8 +776,7 @@ define([
         }
 	}
 
-	DelegateConnection.prototype.closed =
-	function()
+	closed()
 	{
         if (tools.supports(this._delegate,"closed"))
         {
@@ -787,8 +784,7 @@ define([
         }
 	}
 
-	DelegateConnection.prototype.error =
-	function()
+	error()
 	{
         if (tools.supports(this._delegate,"error"))
         {
@@ -796,8 +792,7 @@ define([
         }
 	}
 
-	DelegateConnection.prototype.handshakeComplete =
-	function()
+	handshakeComplete()
 	{
         if (tools.supports(this._delegate,"handshakeComplete"))
         {
@@ -805,12 +800,11 @@ define([
         }
 	}
 
-	DelegateConnection.prototype.message =
-	function(data)
+	message(data)
 	{
 		if (this.isHandshakeComplete() == false)
 		{
-			Connection.prototype.message.call(this,data);
+			super.message(data);
 			return;
 		}
 
@@ -820,36 +814,14 @@ define([
         }
 	}
 
-	DelegateConnection.prototype.data =
-	function(o)
+	data(o)
 	{
         if (tools.supports(this._delegate,"data"))
         {
             this._delegate.data(o);
-        }
+        }     
 	}
+}
 
-    Connection.create =
-    function(url,options)
-    {
-        var u = tools.createUrl(decodeURI(url));
-        var conn = new Connection(u["host"],u["port"],u["path"],u["secure"],options);
-        return(conn);
-    }
-
-    Connection.createDelegateConnection =
-    function(delegate,url,options,config)
-    {
-        var u = tools.createUrl(decodeURI(url));
-        var conn = new DelegateConnection(delegate,u["host"],u["port"],u["path"],u["secure"],options,config);
-        return(conn);
-    }
-
-    Connection.established =
-    function(url)
-    {
-        return(_websockets._established.hasOwnProperty(url));
-    }
-
-    return(Connection);
-});
+//module.exports = Connection;
+export {Connection};

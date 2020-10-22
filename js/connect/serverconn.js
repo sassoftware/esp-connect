@@ -3,37 +3,21 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {Connection} from "./connection.js";
+import {Options} from "./Options.js";
+import {v6} from "./v6.js";
+import {v7} from "./v7.js";
+import {tools} from "./tools.js";
+import {ajax} from "./ajax.js";
+import {xpath} from "./xpath.js";
 
-var _isNode = false;
+var _prompted = {};
 
-try
+class ServerConnection extends Connection
 {
-    _isNode = (require("detect-node") != null);
-}
-catch (e)
-{
-}
-
-define([
-    "./connection",
-    "./v6",
-    "./v7",
-    "./tools",
-    "./ajax",
-    "./xpath",
-    "./options"
-], function(Connection,v6,v7,tools,ajax,xpath,Options)
-{
-    var _prompted = {};
-
-    function
-    ServerConnection(connect,host,port,path,secure,delegate,options)
+    constructor(connect,host,port,path,secure,delegate,options)
     {
-        Connection.call(this,host,port,path,secure,options,connect.config);
+        super(host,port,path,secure,options,connect.config);
         this._connect = connect;
         this._delegates = [];
 
@@ -60,11 +44,7 @@ define([
         this._impl = null;
     }
 
-    ServerConnection.prototype = Object.create(Connection.prototype);
-    ServerConnection.prototype.constructor = ServerConnection;
-
-    ServerConnection.prototype.handshakeComplete =
-    function()
+    handshakeComplete()
     {
         var version = this.getHeader("version");
 
@@ -184,8 +164,7 @@ define([
         }
     }
 
-    ServerConnection.prototype.load =
-    function(model,delegate)
+    load(model,delegate)
     {
         if (this.getOpt("force",false))
         {
@@ -231,8 +210,7 @@ define([
         }
     }
 
-    ServerConnection.prototype.closed =
-    function(conn)
+    closed(conn)
     {
         if (this._impl != null)
         {
@@ -263,15 +241,14 @@ define([
         }
     }
 
-    ServerConnection.prototype.error =
-    function()
+    error()
     {
         if (this._impl != null && this._impl.closed)
         {
             return;
         }
 
-        if (_isNode == false)
+        if (tools.isNode == false)
         {
             if (Connection.established(this.getUrl()) == false)
             {
@@ -312,12 +289,11 @@ define([
         }
     }
 
-    ServerConnection.prototype.message =
-    function(data)
+    message(data)
     {
         if (this.isHandshakeComplete() == false)
         {
-            Connection.prototype.message.call(this,data);
+            super.message(data);
             return;
         }
 
@@ -327,8 +303,7 @@ define([
         }
     }
 
-    ServerConnection.prototype.data =
-    function(o)
+    data(o)
     {
         if (this._impl != null)
         {
@@ -336,8 +311,7 @@ define([
         }
     }
 
-    ServerConnection.prototype.addDelegate =
-    function(delegate)
+    addDelegate(delegate)
     {
         tools.addTo(this._delegates,delegate);
 
@@ -347,14 +321,12 @@ define([
         }
     }
 
-    ServerConnection.prototype.removeDelegate =
-    function(delegate)
+    removeDelegate(delegate)
     {
         tools.removeFrom(this._delegates,delegate);
     }
 
-    ServerConnection.prototype.getUrl =
-    function()
+    getUrl()
     {
         var url = "";
         url += this.protocol;
@@ -381,12 +353,12 @@ define([
         return(url);
     }
 
-    ServerConnection.create =
-    function(connect,url,delegate,options)
+    static create(connect,url,delegate,options)
     {
         var u = tools.createUrl(decodeURI(url));
         return(new ServerConnection(connect,u["host"],u["port"],u["path"],u["secure"],delegate,options));
     }
+}
 
-    return(ServerConnection);
-});
+//module.exports = ServerConnection;
+export {ServerConnection}

@@ -3,7 +3,8 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-var esp = require("@sassoftware/esp-connect");
+import {connect as esp} from "@sassoftware/esp-connect";
+
 var opts = esp.getArgs();
 
 if (opts.getOpt("help",false))
@@ -13,64 +14,42 @@ if (opts.getOpt("help",false))
 }
 
 var server = opts.getOptAndClear("server");
+var name = opts.getOptAndClear("name");
 
-if (server == null)
+if (server == null || name == null)
 {
     showUsage();
     process.exit(0);
 }
+
+import {default as fs} from "fs";
 
 var config = {};
 var cert = opts.getOptAndClear("cert");
 
 if (cert != null)
 {
-    const   fs = require("fs");
     config.ca = fs.readFileSync(cert);
 }
 
 esp.config = config;
 
-var names = ["access_token","token","credentials"];
-var o = opts.clone(names);
-opts.clearOpts(names);
-
-esp.connect(server,{ready:ready,error:error},o);
-
-const   json = opts.getOpt("json",false);
+esp.connect(server,{ready:ready,error:error},opts.getOpts());
 
 function
 ready(connection)
 {
-    var delegate = {
-        handleLog:function(log,message)
-        {
-            var s = "";
-
-            if (json)
-            {
-                s = JSON.stringify(message,null,2);
-            }
-            else
-            {
-                for (var name in message)
-                {
-                    s += name;
-                    s += "=";
-                    s += message[name];
-                    s += "\n";
-                }
-            }
-
-            console.log(s);
+    var o = {
+        deleted:function() {
+            console.log("project deleted");
+            process.exit(0);
+        },
+        error:function(conn,name,message) {
+            console.log(message);
+            process.exit(1);
         }
     };
-
-    if (opts.hasOpt("filter"))
-    {
-        connection.getLog().filter = opts.getOpt("filter");
-    }
-    connection.getLog().addDelegate(delegate);
+    connection.deleteProject(name,o);
 }
 
 function
@@ -84,13 +63,14 @@ function
 showUsage()
 {
     esp.usage({
-        name:"logs",
-        summary:"view realtime ESP server logs",
+        name:"delete_project",
+        summary:"Delete an ESP project from a server",
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
+            {name:"name",arg:"project name",description:"name of the ESP project",required:true},
             {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
         ],
-        description:"This command sets up a connection to an ESP server and reads the server logs. The logs are output to the screen.",
+        description:"This command deletes an ESP model from an ESP server.",
         see_also:[
         {
             name:"ESP User Guide",

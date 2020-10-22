@@ -3,26 +3,11 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
+import {tools} from "./tools.js";
+
+class JsonEncoder
 {
-    var define = require("amdefine")(module);
-}
-
-define([
-], function()
-{
-    var _node = null;
-
-    try
-    {
-        _node = require("nodejs-websocket");
-    }
-    catch (exception)
-    {
-    }
-
-    function
-    JsonEncoder(o)
+    constructor(o)
     {
         this._size = this.size(o) * 2;
         this._data = new ArrayBuffer(this._size);
@@ -38,8 +23,7 @@ define([
         this.encode(o);
     }
 
-    JsonEncoder.prototype.encode =
-    function(o,name)
+    encode(o,name)
     {
         if (o instanceof Object)
         {
@@ -74,8 +58,7 @@ define([
         }
     }
 
-    JsonEncoder.prototype.writeValue =
-    function(value,name)
+    writeValue(value,name)
     {
         var type = typeof value;
 
@@ -97,31 +80,7 @@ define([
         }
     }
 
-    /*
-    JsonEncoder.prototype.writeValue =
-    function(value,name)
-    {
-        var s = new String(value);
-        this.writeName(name);
-        this.writeType('S');
-        this.writeLength(s.length);
-
-        if (this._debug)
-        {
-            var tmp = (value.length > 50) ? (value.substr(0,20) + "...") : s;
-            console.log("index: " + this._index + " write string: " + tmp);
-        }
-
-        for (var i = 0; i < s.length; i++)
-        {
-            this._view.setUint8(this._index,s.charCodeAt(i));
-            this._index++;
-        }
-    }
-    */
-
-    JsonEncoder.prototype.writeString =
-    function(value,name)
+    writeString(value,name)
     {
         this.writeName(name);
         this.writeType('S');
@@ -140,8 +99,7 @@ define([
         }
     }
 
-    JsonEncoder.prototype.writeI32 =
-    function(value,name)
+    writeI32(value,name)
     {
         this.writeName(name);
         this.writeType('l');
@@ -154,8 +112,7 @@ define([
         this._index += 4;
     }
 
-    JsonEncoder.prototype.writeI64 =
-    function(value,name)
+    writeI64(value,name)
     {
         this.writeName(name);
         this.writeType('L');
@@ -168,8 +125,7 @@ define([
         this._index += 8;
     }
 
-    JsonEncoder.prototype.writeBuffer =
-    function(value,name)
+    writeBuffer(value,name)
     {
         this.writeName(name);
         this.writeType('B');
@@ -184,8 +140,7 @@ define([
         }
     }
 
-    JsonEncoder.prototype.writeName =
-    function(name)
+    writeName(name)
     {
         if (name != null && name.length > 0)
         {
@@ -203,8 +158,7 @@ define([
         }
     }
 
-    JsonEncoder.prototype.writeType =
-    function(type)
+    writeType(type)
     {
         if (this._debug)
         {
@@ -214,8 +168,7 @@ define([
         this._index++;
     }
 
-    JsonEncoder.prototype.writeLength =
-    function(length)
+    writeLength(length)
     {
         if (this._debug)
         {
@@ -225,32 +178,27 @@ define([
         this._index += 4;
     }
 
-    JsonEncoder.prototype.beginObject =
-    function()
+    beginObject()
     {
         this.writeType('{');
     }
 
-    JsonEncoder.prototype.endObject =
-    function()
+    endObject()
     {
         this.writeType('}');
     }
 
-    JsonEncoder.prototype.beginArray =
-    function()
+    beginArray()
     {
         this.writeType('[');
     }
 
-    JsonEncoder.prototype.endArray =
-    function()
+    endArray()
     {
         this.writeType(']');
     }
 
-    JsonEncoder.prototype.size =
-    function(object)
+    size(object)
     {
         var bytes = 0;
         var type = typeof object;
@@ -302,8 +250,7 @@ define([
         return(bytes);
     }
 
-    JsonEncoder.prototype.dump =
-    function()
+    dump()
     {
         var braces = 0;
         var c;
@@ -329,9 +276,11 @@ define([
             }
         }
     }
+}
 
-    function
-    JsonDecoder(data)
+class JsonDecoder
+{
+    constructor(data)
     {
         this._data = new DataView(data,0);
         this._size = this._data.buffer.byteLength;
@@ -343,8 +292,7 @@ define([
         this.addTo();
     }
 
-    JsonDecoder.prototype.addTo =
-    function(name,to)
+    addTo(name,to)
     {
         var type = this.getType(true);
 
@@ -362,8 +310,7 @@ define([
         }
     }
 
-    JsonDecoder.prototype.addObject =
-    function(name,to)
+    addObject(name,to)
     {
         if (this._debug)
         {
@@ -426,8 +373,7 @@ define([
         }
     }
 
-    JsonDecoder.prototype.addArray =
-    function(name,to)
+    addArray(name,to)
     {
         if (this._debug)
         {
@@ -480,8 +426,7 @@ define([
         }
     }
 
-    JsonDecoder.prototype.addValue =
-    function(name,to)
+    addValue(name,to)
     {
         if (this._debug)
         {
@@ -523,7 +468,7 @@ define([
 
                 value = new Uint8Array(this._data.buffer,this._index,length);
 
-                if (_node != null)
+                if (tools.isNode != null)
                 {
                     value = Buffer.from(value).toString("base64");
                 }
@@ -564,8 +509,7 @@ define([
         }
     }
 
-    JsonDecoder.prototype.getType =
-    function(increment)
+    getType(increment)
     {
         var type = String.fromCharCode(this._data.getInt8(this._index));
 
@@ -581,8 +525,7 @@ define([
         return(type);
     }
 
-    JsonDecoder.prototype.getLength =
-    function()
+    getLength()
     {
         var length = this._data.getInt32(this._index);
 
@@ -595,8 +538,7 @@ define([
         return(length);
     }
 
-    JsonDecoder.prototype.getString =
-    function(length)
+    getString(length)
     {
         var s = String.fromCharCode.apply(null,new Uint8Array(this._data.buffer,this._index,length));
 
@@ -609,8 +551,7 @@ define([
         return(s);
     }
 
-    JsonDecoder.prototype.getI32 =
-    function()
+    getI32()
     {
         var value = this._data.getInt32(this._index);
 
@@ -623,8 +564,7 @@ define([
         return(value);
     }
 
-    JsonDecoder.prototype.getI64 =
-    function()
+    getI64()
     {
         var value = this._data.getBigInt64(this._index);
 
@@ -637,8 +577,7 @@ define([
         return(value);
     }
 
-    JsonDecoder.prototype.getDouble =
-    function()
+    getDouble()
     {
         var value = this._data.getFloat64(this._index);
 
@@ -651,21 +590,22 @@ define([
 
         return(value);
     }
+}
 
-    var _support =
+var _api =
+{
+    encode:function(o)
     {
-        encode:function(o)
-        {
-            var encoder = new JsonEncoder(o);
-            return(encoder.data);
-        },
+        var encoder = new JsonEncoder(o);
+        return(encoder.data);
+    },
 
-        decode:function(data)
-        {
-            var data = new JsonDecoder(data);
-            return(data._o);
-        }
-    };
+    decode:function(data)
+    {
+        var data = new JsonDecoder(data);
+        return(data._o);
+    }
+};
 
-    return(_support);
-});
+//module.exports = _api;
+export {_api as codec};

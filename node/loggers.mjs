@@ -3,7 +3,8 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-var esp = require("@sassoftware/esp-connect");
+import {connect as esp} from "@sassoftware/esp-connect";
+
 var opts = esp.getArgs();
 
 if (opts.getOpt("help",false))
@@ -57,19 +58,6 @@ ready(connection)
     {
         connection.getLoggers(delegate);
     }
-}
-
-function
-showUsage()
-{
-    console.log("");
-    console.log("usage: node loggers -server [-context] [-level]");
-    console.log("");
-    console.log("options:");
-    console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
-    console.log("\t-context\tthe logging context to return (defaults to ALL)");
-    console.log("\t-level\t\ttrace | debug | info | warn | error | fatal | none (defaults to empty, do not set the log level)");
-    console.log("");
 }
 
 function

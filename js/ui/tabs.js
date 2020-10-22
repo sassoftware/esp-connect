@@ -3,17 +3,11 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {tools} from "../connect/tools.js";
 
-define([
-    "../connect/tools"
-], function(tools)
+class Tabs
 {
-    function
-    Tabs(orientation)
+    constructor(orientation)
     {
         this._orientation = (orientation != null) ? orientation : "horizontal";
 
@@ -48,14 +42,12 @@ define([
         });
     }
 
-    Tabs.prototype.setButtonClass =
-    function(buttonClass)
+    setButtonClass(buttonClass)
     {
         this._buttonClass = buttonClass;
     }
 
-    Tabs.prototype.addButton =
-    function(object)
+    addButton(object)
     {
         var    button = new Object();
         button._tabs = this;
@@ -128,8 +120,7 @@ define([
         return(button);
     }
 
-    Tabs.prototype.size =
-    function()
+    size()
     {
         var p = this.container.parentNode;
 
@@ -150,8 +141,7 @@ define([
         }
     }
 
-    Tabs.prototype.removeButton =
-    function(o)
+    removeButton(o)
     {
         var    button = this.getButton(o);
 
@@ -163,8 +153,7 @@ define([
         }
     }
 
-    Tabs.prototype.setEnabled =
-    function(o,value)
+    setEnabled(o,value)
     {
         var    button = this.getButton(o);
 
@@ -174,8 +163,7 @@ define([
         }
     }
 
-    Tabs.prototype.getButton =
-    function(o,operator)
+    getButton(o,operator)
     {
         var    button = null;
 
@@ -227,8 +215,7 @@ define([
         return(button);
     }
 
-    Tabs.prototype.select =
-    function(o)
+    select(o)
     {
         var    match = null;
         var    button;
@@ -261,8 +248,7 @@ define([
         }
     }
 
-    Tabs.prototype.selectIndex =
-    function(index)
+    selectIndex(index)
     {
         this._selectedIndex = -1;
 
@@ -324,8 +310,7 @@ define([
         }
     }
 
-    Tabs.prototype.selectFirst =
-    function()
+    selectFirst()
     {
         if (this._buttons.length > 0)
         {
@@ -334,8 +319,7 @@ define([
         }
     }
 
-    Tabs.prototype.selectLast =
-    function()
+    selectLast()
     {
         if (this._buttons.length > 0)
         {
@@ -344,20 +328,17 @@ define([
         }
     }
 
-    Tabs.prototype.getSelected =
-    function()
+    getSelected()
     {
         return(this._buttons[this._selectedIndex]);
     }
 
-    Tabs.prototype.getSelectedIndex =
-    function()
+    getSelectedIndex()
     {
         return(this._selectedIndex);
     }
 
-    Tabs.prototype.attach =
-    function(container)
+    attach(container)
     {
         this._container = (typeof(container) == "string") ? document.getElementById(container) : container;
         if (this._container != null)
@@ -368,13 +349,11 @@ define([
         }
     }
 
-    Tabs.prototype.selected =
-    function(index)
+    selected(index)
     {
     }
 
-    Tabs.prototype.selectDiv =
-    function()
+    selectDiv()
     {
         var tabs = this.getTabs();
         var selected = this.getSelected();
@@ -405,8 +384,7 @@ define([
         return(index);
     }
 
-    Tabs.prototype.clear =
-    function()
+    clear()
     {
         while (this._table.rows.length > 0)
         {
@@ -448,8 +426,7 @@ define([
         this._selectedIndex = -1;
     }
 
-    Tabs.prototype.getBefore =
-    function()
+    getBefore()
     {
         if (this._before == null)
         {
@@ -471,8 +448,7 @@ define([
         return(this._before);
     }
 
-    Tabs.prototype.getAfter =
-    function()
+    getAfter()
     {
         if (this._after == null)
         {
@@ -493,46 +469,46 @@ define([
 
         return(this._after);
     }
+}
 
-    var    tabSupport =
+var    tabSupport =
+{
+    climb:function(element,tag,inclusive)
     {
-        climb:function(element,tag,inclusive)
+        var    e = (inclusive) ? element : element.parentNode;
+
+        while (e != null)
         {
-            var    e = (inclusive) ? element : element.parentNode;
-
-            while (e != null)
+            if (e.tagName == tag)
             {
-                if (e.tagName == tag)
-                {
-                    return(e);
-                }
-
-                e = e.parentNode;
+                return(e);
             }
-        }
-    };
 
-    var    __tabs =
+            e = e.parentNode;
+        }
+    }
+};
+
+var    __tabs =
+{
+    select:function(e)
     {
-        select:function(e)
+        var    source = e.hasOwnProperty("srcElement") ? e.srcElement : e.target;
+        var    td = tabSupport.climb(source,"TD",true);
+
+        while (td != null && td.hasOwnProperty("_button") == false)
         {
-            var    source = e.hasOwnProperty("srcElement") ? e.srcElement : e.target;
-            var    td = tabSupport.climb(source,"TD",true);
-
-            while (td != null && td.hasOwnProperty("_button") == false)
-            {
-                td = tabSupport.climb(td,"TD",false);
-            }
-
-            if (td != null && td.hasOwnProperty("_button"))
-            {
-                var    button = td._button;
-                var    tabs = button._tabs;
-                tabs.selectIndex(button._index);
-                tabs.selected();
-            }
+            td = tabSupport.climb(td,"TD",false);
         }
-    };
 
-    return(Tabs);
-});
+        if (td != null && td.hasOwnProperty("_button"))
+        {
+            var    button = td._button;
+            var    tabs = button._tabs;
+            tabs.selectIndex(button._index);
+            tabs.selected();
+        }
+    }
+};
+
+export {Tabs};

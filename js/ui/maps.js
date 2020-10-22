@@ -3,60 +3,50 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
+import {Options} from "../connect/options.js";
+import {Chart} from "./chart.js";
+
+var _interval = null;
+
+function
+mousedown(chart,info)
 {
-    var define = require("amdefine")(module);
+    var msecs = 50;
+
+    if (info.name == "zoomin")
+    {
+        if (_interval == null)
+        {
+            _interval = setInterval(function(){chart.zoomIn()},msecs);
+        }
+    }
+    else if (info.name == "zoomout")
+    {
+        if (_interval == null)
+        {
+            _interval = setInterval(function(){chart.zoomOut()},msecs);
+        }
+    }
 }
 
-define([
-    "../connect/options",
-    "./chart"
-], function(Options,Chart)
+function
+mouseup(chart,info)
 {
-    var _interval = null;
-
-    function
-    mousedown(chart,info)
+    if (_interval != null)
     {
-        var msecs = 50;
+        clearInterval(_interval);
+        _interval = null;
+    }
+}
 
-        if (info.name == "zoomin")
-        {
-            if (_interval == null)
-            {
-                _interval = setInterval(function(){chart.zoomIn()},msecs);
-            }
-        }
-        else if (info.name == "zoomout")
-        {
-            if (_interval == null)
-            {
-                _interval = setInterval(function(){chart.zoomOut()},msecs);
-            }
-        }
+class Maps extends Options
+{
+    constructor(options)
+    {
+        super(options);
     }
 
-    function
-    mouseup(chart,info)
-    {
-        if (_interval != null)
-        {
-            clearInterval(_interval);
-            _interval = null;
-        }
-    }
-
-    function
-    Maps(options)
-    {
-        Options.call(this,options);
-    }
-
-    Maps.prototype = Object.create(Options.prototype);
-    Maps.prototype.constructor = Maps;
-
-    Maps.prototype.createMap =
-    function(visuals,container,datasource,options)
+    createMap(visuals,container,datasource,options)
     {
         var opts = new Options(options);
         var engine = opts.getOpt("engine","leaflet");
@@ -91,23 +81,19 @@ define([
 
         return(chart);
     }
+}
 
-    /* Map */
-
-    function
-    Map(visuals,container,datasource,options)
+class Map extends Chart
+{
+    constructor(visuals,container,datasource,options)
     {
-        Chart.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
         this._lat = null;
         this._lon = null;
         this._interval = null;
     }
 
-    Map.prototype = Object.create(Chart.prototype);
-    Map.prototype.constructor = Map;
-
-    Map.prototype.init =
-    function()
+    init()
     {
         this._lat = this.getOpt("lat");
 
@@ -126,8 +112,7 @@ define([
         this._initialized = true;
     }
 
-    Map.prototype.getData =
-    function()
+    getData()
     {
         if (this._datasource.schema == null)
         {
@@ -300,8 +285,7 @@ define([
         return(mapdata);
     }
 
-    Map.prototype.toolbarMouseDown =
-    function(opts)
+    toolbarMouseDown(opts)
     {
         var action = opts.getOpt("name","");
         var map = this;
@@ -323,8 +307,7 @@ define([
         }
     }
 
-    Map.prototype.toolbarMouseUp =
-    function(opts)
+    toolbarMouseUp(opts)
     {
         if (this._interval != null)
         {
@@ -333,41 +316,35 @@ define([
         }
     }
 
-    Map.prototype.getZoomDelta =
-    function()
+    getZoomDelta()
     {
         return(1);
     }
 
-    Map.prototype.getZoom =
-    function()
+    getZoom()
     {
         return(this.getOpt("zoom",10));
     }
 
-    Map.prototype.setZoom =
-    function(value)
+    setZoom(value)
     {
         this.setOpt("zoom",value);
         this.draw();
     }
 
-    Map.prototype.zoomIn =
-    function()
+    zoomIn()
     {
         var current = this.getZoom();
         this.setZoom(current + this.getZoomDelta());
     }
 
-    Map.prototype.zoomOut =
-    function()
+    zoomOut()
     {
         var current = this.getZoom();
         this.setZoom(current - this.getZoomDelta());
     }
 
-    Map.prototype.getText =
-    function(fields)
+    getText(fields)
     {
         var text = "";
         var type;
@@ -402,15 +379,13 @@ define([
 
         return(text);
     }
+}
 
-    /* End Map */
-
-    /* Leaflet Map */
-
-    function
-    LeafletMap(visuals,container,datasource,options)
+class LeafletMap extends Map
+{
+    constructor(visuals,container,datasource,options)
     {
-        Map.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
 
         if (window.L == null)
         {
@@ -471,17 +446,12 @@ define([
         this._data = null;
     }
 
-    LeafletMap.prototype = Object.create(Map.prototype);
-    LeafletMap.prototype.constructor = LeafletMap;
-
-    LeafletMap.prototype.getType =
-    function()
+    getType()
     {
         return("map");
     }
 
-    LeafletMap.prototype.init =
-    function(data,clear)
+    init(data,clear)
     {
 		Map.prototype.init.call(this);
 
@@ -496,8 +466,7 @@ define([
         }
     }
 
-    LeafletMap.prototype.draw =
-    function(data,clear)
+    draw(data,clear)
     {
         var mapdata = this.getData();
 
@@ -549,7 +518,7 @@ define([
 
             html = (mapdata.html != null) ? mapdata.html[i] : null;
 
-            latLng = new L.LatLng(mapdata.lat[i],mapdata.lon[i]);
+            var latLng = new L.LatLng(mapdata.lat[i],mapdata.lon[i]);
 
             if (points != null)
             {
@@ -683,8 +652,7 @@ define([
         }
     }
 
-    LeafletMap.prototype.clicked =
-    function(e)
+    clicked(e)
     {
         var key = null;
 
@@ -717,8 +685,7 @@ define([
         }
     }
 
-    LeafletMap.prototype.mouseover =
-    function(e)
+    mouseover(e)
     {
         var key = null;
 
@@ -744,15 +711,13 @@ define([
         }
     }
 
-    LeafletMap.prototype.setZoom =
-    function(value)
+    setZoom(value)
     {
         Map.prototype.setZoom.call(this,value);
         this._map.setZoom(value);
     }
 
-    LeafletMap.prototype.addCircles =
-    function(options)
+    addCircles(options)
     {
         var opts = new Options(options);
 
@@ -802,8 +767,7 @@ define([
         datasource.addDelegate(this);
     }
 
-    LeafletMap.prototype.loadCircles =
-    function(o)
+    loadCircles(o)
     {
         o["layers"].clearLayers()
 
@@ -885,8 +849,7 @@ define([
         }
     }
 
-    LeafletMap.prototype.addPolygons =
-    function(options)
+    addPolygons(options)
     {
         var opts = new Options(options);
         var datasource = null;
@@ -920,8 +883,7 @@ define([
         datasource.addDelegate(this);
     }
 
-    LeafletMap.prototype.loadPolygons =
-    function(o)
+    loadPolygons(o)
     {
         o["layers"].clearLayers()
 
@@ -984,7 +946,7 @@ define([
                 }
                 var lat = points[0][0];
                 var lon = points[0][1];
-                circle = L.circle([lat,lon],{radius:radius})
+                var circle = L.circle([lat,lon],{radius:radius})
 
                 var bw = this.getOpt("circle_border_width",2);
                 circle.setStyle({weight:bw});
@@ -1052,8 +1014,7 @@ define([
         }
     }
 
-    LeafletMap.prototype.dataChanged =
-    function(datasource,data,clear)
+    dataChanged(datasource,data,clear)
     {
         var o = null;
 
@@ -1087,20 +1048,17 @@ define([
         }
     }
 
-    LeafletMap.prototype.getZoomDelta =
-    function()
+    getZoomDelta()
     {
         return(this.getOpt("zoom_delta",.1));
     }
+}
 
-    /* End Map */
-
-    /* Plotly Map */
-
-    function
-    PlotlyMap(visuals,container,datasource,options)
+class PlotlyMap extends Map
+{
+    constructor(visuals,container,datasource,options)
     {
-        Map.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
         this._type = "scattergeo";
         this._geo = new Options({scope:"usa"});
         Object.defineProperty(this,"geo", {
@@ -1122,17 +1080,12 @@ define([
         this.keyProperty = "location";
     }
 
-    PlotlyMap.prototype = Object.create(Map.prototype);
-    PlotlyMap.prototype.constructor = PlotlyMap;
-
-    PlotlyMap.prototype.getType =
-    function()
+    getType()
     {
         return("map");
     }
 
-    PlotlyMap.prototype.draw =
-    function(data,clear)
+    draw(data,clear)
     {
         var mapdata = this.getData();
 
@@ -1200,14 +1153,12 @@ define([
         Plotly.react(this._content,data,this._layout,this._defaults);
     }
 
-    PlotlyMap.prototype.getZoomDelta =
-    function()
+    getZoomDelta()
     {
         return(.25);
     }
 
-    PlotlyMap.prototype.getZoom =
-    function()
+    getZoom()
     {
         var level = 1;
         var projection = this._geo.getOpt("projection");
@@ -1218,8 +1169,7 @@ define([
         return(level);
     }
 
-    PlotlyMap.prototype.setZoom =
-    function(value)
+    setZoom(value)
     {
         var projection = this._geo.hasOpt("projection") ? this._geo.getOpt("projection") : {};
         projection.scale = value;
@@ -1227,8 +1177,7 @@ define([
         this.draw();
     }
 
-    PlotlyMap.prototype.setCenter =
-    function(lat,lon,zoom)
+    setCenter(lat,lon,zoom)
     {
         this.center = {lat:lat,lon:lon};
         if (zoom != null)
@@ -1240,23 +1189,17 @@ define([
             this.draw();
         }
     }
+}
 
-    /* End Plotly Map */
-
-    /* Choropleth Map */
-
-    function
-    ChoroplethMap(visuals,container,datasource,options)
+class ChoroplethMap extends PlotlyMap
+{
+    constructor(visuals,container,datasource,options)
     {
-        PlotlyMap.call(this,visuals,container,datasource,options);
+        super(visuals,container,datasource,options);
         this._type = "choropleth";
     }
 
-    ChoroplethMap.prototype = Object.create(PlotlyMap.prototype);
-    ChoroplethMap.prototype.constructor = ChoroplethMap;
-
-    ChoroplethMap.prototype.draw =
-    function(data,clear)
+    draw(data,clear)
     {
         var mapdata = this.getData();
 
@@ -1355,8 +1298,6 @@ define([
         this.setHandlers();
         this.setHeader();
     }
+}
 
-    /* End Choropleth Map */
-
-    return(Maps);
-});
+export {Maps};

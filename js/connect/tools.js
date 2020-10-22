@@ -3,27 +3,24 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
-
 var _isNode = false;
 
-try
+if (typeof process === "object")
 {
-    _isNode = (require("detect-node") != null);
-}
-catch (e)
-{
+    if (process.hasOwnProperty("versions"))
+    {
+        if (process.versions.hasOwnProperty("node"))
+        {
+            _isNode = true;
+        }
+    }
 }
 
-define([
-    "./options",
-], function(Options)
+import {Options} from "./options.js";
+
+class Range
 {
-    function
-    Range(lower,upper,num)
+    constructor(lower,upper,num)
     {
         this._a = [];
 
@@ -60,8 +57,7 @@ define([
         });
     }
 
-    Range.prototype.index =
-    function(value)
+    index(value)
     {
         var index = -1;
 
@@ -77,8 +73,7 @@ define([
         return(index);
     }
 
-    Range.prototype.createSteps =
-    function(colors)
+    createSteps(colors)
     {
         var steps = [];
         var low;
@@ -94,30 +89,30 @@ define([
         return(steps);
     }
 
-    Range.prototype.toString =
-    function()
+    toString()
     {
         return(JSON.stringify(this._a));
     }
+}
 
-    function
-    Timer()
+class Timer
+{
+    constructor()
     {
         this._items = [];
         this._running = false;
     }
 
-    Timer.prototype.add =
-    function(item)
+    add(item)
     {
-        if (__tools.supports(item,"run") == false)
+        if (_api.supports(item,"run") == false)
         {
-            __tools.exception("The timer entry must implement the run method");
+            _api.exception("The timer entry must implement the run method");
         }
 
-        if (__tools.supports(item,"getInterval") == false)
+        if (_api.supports(item,"getInterval") == false)
         {
-            __tools.exception("The timer entry must implement the getInterval method");
+            _api.exception("The timer entry must implement the getInterval method");
         }
 
         item._fired = 0;
@@ -134,22 +129,19 @@ define([
         this._items.push(item);
     }
 
-    Timer.prototype.start =
-    function()
+    start()
     {
         this._running = true;
         var timer = this;
         setTimeout(function(){timer.run()},1000);
     }
 
-    Timer.prototype.stop =
-    function()
+    stop()
     {
         this._running = false;
     }
 
-    Timer.prototype.run =
-    function()
+    run()
     {
         var current = new Date();
         var items = [];
@@ -190,292 +182,251 @@ define([
             setTimeout(function(){timer.run()},minInterval);
         }
     }
+}
 
-    var __tools =
+var _api =
+{
+    s4:function()
     {
-        s4()
+        return(((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1); 
+    },
+
+    guid:function()
+    {
+        var guid = (this.s4() + this.s4() + "-" + this.s4() + "-4" + this.s4().substr(0,3) + "-" + this.s4() + "-" + this.s4() + this.s4() + this.s4()).toLowerCase();
+        return(guid);
+    },
+
+    supports:function(o,f)
+    {
+        return(o != null && (f in o) && typeof(o[f]) == "function");
+    },
+
+    contains:function(list,o)
+    {
+        if (list != null)
         {
-            return(((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1); 
-        },
-
-        guid()
-        {
-            var guid = (this.s4() + this.s4() + "-" + this.s4() + "-4" + this.s4().substr(0,3) + "-" + this.s4() + "-" + this.s4() + this.s4() + this.s4()).toLowerCase();
-            return(guid);
-        },
-    
-        supports(o,f)
-        {
-            return(o != null && (f in o) && typeof(o[f]) == "function");
-        },
-
-        contains(list,o)
-        {
-            if (list != null)
-            {
-                for (var i = 0; i < list.length; i++)
-                {
-                    if (list[i] == o)
-                    {
-                        return(true);
-                    }
-                }
-            }
-
-            return(false);
-        },
-
-        indexOf(list,o)
-        {
-            if (list != null)
-            {
-                for (var i = 0; i < list.length; i++)
-                {
-                    if (list[i] == o)
-                    {
-                        return(i);
-                    }
-                }
-            }
-
-            return(-1);
-        },
-
-        addTo(list,o)
-        {
-            if (this.contains(list,o) == false)
-            {
-                list.push(o);
-                return(true);
-            }
-
-            return(false);
-        },
-
-        setItem(list,o)
-        {
-            var item = null;
-
             for (var i = 0; i < list.length; i++)
             {
                 if (list[i] == o)
                 {
-                    item = list[i];
-                    break;
+                    return(true);
                 }
             }
+        }
 
-            if (item == null)
+        return(false);
+    },
+
+    indexOf:function(list,o)
+    {
+        if (list != null)
+        {
+            for (var i = 0; i < list.length; i++)
             {
-                item = o;
-                list.push(o);
+                if (list[i] == o)
+                {
+                    return(i);
+                }
+            }
+        }
+
+        return(-1);
+    },
+
+    addTo:function(list,o)
+    {
+        if (this.contains(list,o) == false)
+        {
+            list.push(o);
+            return(true);
+        }
+
+        return(false);
+    },
+
+    setItem:function(list,o)
+    {
+        var item = null;
+
+        for (var i = 0; i < list.length; i++)
+        {
+            if (list[i] == o)
+            {
+                item = list[i];
+                break;
+            }
+        }
+
+        if (item == null)
+        {
+            item = o;
+            list.push(o);
+        }
+        else
+        {
+            for (var x in o)
+            {
+                item[x] = o[x];
+            }
+        }
+
+        return(item);
+    },
+
+    removeFrom:function(list,o)
+    {
+        var index = this.indexOf(list,o);
+
+        if (index >= 0)
+        {
+            list.splice(index,1);
+            return(true);
+        }
+
+        return(false);
+    },
+
+    createRange:function(lower,upper,num)
+    {
+        return(new Range(lower,upper,num));
+    },
+
+    createTimer:function()
+    {
+        return(new Timer());
+    },
+
+    createUrl:function(url)
+    {
+        var u = {};
+        var base = null;
+        var o = _isNode ? new URL(url) : new URL(url,document.URL);
+
+        u["protocol"] = o["protocol"];
+        if (o["protocol"] != "http")
+        {
+            o["protocol"] = "http";
+            o = new URL(o.toString());
+        }
+        u["host"] = o.hostname;
+        u["port"] = o.port;
+        u["path"] = o.pathname;
+        u["secure"] = (u["protocol"] == "https:" || u["protocol"] == "wss:");
+
+        u.toString = function()
+        {
+            return(this.protocol + "//" + this.host + ":" + this.port + this.path);
+        }
+
+        return(u);
+    },
+
+    reverse:function(list)
+    {
+        var reversed = [];
+
+        for (var i = list.length - 1; i >= 0; i--)
+        {
+            reversed.push(list[i]);
+        }
+
+        return(reversed);
+    },
+
+    createBuffer:function(s)
+    {
+        var dv = new DataView(new ArrayBuffer(s.length));
+
+        for (var i = 0; i < s.length; i++)
+        {
+            dv.setUint8(i,s.charCodeAt(i));
+        }
+
+        return(dv.buffer);
+    },
+
+    bufferToArrayBuffer:function(buf)
+    {
+        var out = new ArrayBuffer(buf.length);
+        var dv = new Uint8Array(out);
+        for (var i = 0; i < buf.length; i++)
+        {
+            dv[i] = buf[i];
+        }
+        return(out);
+    },
+
+    stringFromBytes:function(bytes)
+    {
+        var s = "";
+
+        bytes.forEach((b) => {
+            s += String.fromCharCode(b);
+        });
+
+        return(s);
+    },
+
+    stringFromArrayBuffer:function(buf)
+    {
+        var s = "";
+        var dv = new DataView(buf);
+
+        for (var i = 0; i < buf.byteLength; i++)
+        {
+            s += String.fromCharCode(dv.getUint8(i));
+        }
+
+        return(s);
+    },
+
+    bytesFromString:function(s)
+    {
+        var bytes = [];
+
+        for (var i = 0; i < s.length; i++)
+        {
+            bytes.push(s.charCodeAt(i));
+        }
+
+        return(bytes);
+    },
+
+    createWebSocket:function(url,delegate)
+    {
+        var ws = null;
+
+        if (_isNode)
+        {
+            if (process.env.NODE_WEBSOCKETS == "ws")
+            {
+                const   WS = require("ws");
+
+                ws = new WS(url);
+
+                if (this.supports(delegate,"open"))
+                {
+                    ws.on("open",delegate.open);
+                }
+                if (this.supports(delegate,"close"))
+                {
+                    ws.on("close",delegate.close);
+                }
+                if (this.supports(delegate,"error"))
+                {
+                    ws.on("error",delegate.error);
+                }
+                if (this.supports(delegate,"message"))
+                {
+                    ws.on("message",delegate.message);
+                }
             }
             else
             {
-                for (var x in o)
-                {
-                    item[x] = o[x];
-                }
-            }
+                var W3CWS = require("websocket").w3cwebsocket;
 
-            return(item);
-        },
-
-        removeFrom(list,o)
-        {
-            var index = this.indexOf(list,o);
-
-            if (index >= 0)
-            {
-                list.splice(index,1);
-                return(true);
-            }
-
-            return(false);
-        },
-
-        createRange(lower,upper,num)
-        {
-            return(new Range(lower,upper,num));
-        },
-
-        createTimer()
-        {
-            return(new Timer());
-        },
-
-        createUrl(url)
-        {
-            var u = {};
-            var nodeUrl = null;
-
-            try
-            {
-                nodeUrl = require("url");
-            }
-            catch (exception)
-            {
-            }
-
-            if (nodeUrl != null)
-            {
-                var o = nodeUrl.parse(url);
-                u["protocol"] = o["protocol"];
-                u["host"] = o["hostname"];
-                u["port"] = o["port"];
-                u["path"] = o["path"];
-                u["secure"] = (o["protocol"] == "https:" || o["protocol"] == "wss:");
-            }
-            else
-            {
-                var o = new URL(url,document.URL);
-                u["protocol"] = o["protocol"];
-                if (o["protocol"] != "http")
-                {
-                    o["protocol"] = "http";
-                    o = new URL(o.toString());
-                }
-                u["host"] = o.hostname;
-                u["port"] = o.port;
-                u["path"] = o.pathname;
-                u["secure"] = (u["protocol"] == "https:" || u["protocol"] == "wss:");
-            }
-
-            u.toString = function()
-            {
-                return(this.protocol + "//" + this.host + ":" + this.port + this.path);
-            }
-
-            return(u);
-        },
-
-        reverse(list)
-        {
-            var reversed = [];
-
-            for (var i = list.length - 1; i >= 0; i--)
-            {
-                reversed.push(list[i]);
-            }
-
-            return(reversed);
-        },
-
-        createBuffer:function(s)
-        {
-            var dv = new DataView(new ArrayBuffer(s.length));
-
-            for (var i = 0; i < s.length; i++)
-            {
-                dv.setUint8(i,s.charCodeAt(i));
-            }
-
-            return(dv.buffer);
-        },
-
-        bufferToArrayBuffer:function(buf)
-        {
-            var out = new ArrayBuffer(buf.length);
-            var dv = new Uint8Array(out);
-            for (var i = 0; i < buf.length; i++)
-            {
-                dv[i] = buf[i];
-            }
-            return(out);
-        },
-
-        stringFromBytes:function(bytes)
-        {
-            var s = "";
-
-            bytes.forEach((b) => {
-                s += String.fromCharCode(b);
-            });
-
-            return(s);
-        },
-
-        stringFromArrayBuffer:function(buf)
-        {
-            var s = "";
-            var dv = new DataView(buf);
-
-            for (var i = 0; i < buf.byteLength; i++)
-            {
-                s += String.fromCharCode(dv.getUint8(i));
-            }
-
-            return(s);
-        },
-
-        bytesFromString:function(s)
-        {
-            var bytes = [];
-
-            for (var i = 0; i < s.length; i++)
-            {
-                bytes.push(s.charCodeAt(i));
-            }
-
-            return(bytes);
-        },
-
-        createWebSocket:function(url,delegate)
-        {
-            var ws = null;
-
-            if (_isNode)
-            {
-                if (process.env.NODE_WEBSOCKETS == "ws")
-                {
-                    const   WS = require("ws");
-
-                    ws = new WS(url);
-
-                    if (this.supports(delegate,"open"))
-                    {
-                        ws.on("open",delegate.open);
-                    }
-                    if (this.supports(delegate,"close"))
-                    {
-                        ws.on("close",delegate.close);
-                    }
-                    if (this.supports(delegate,"error"))
-                    {
-                        ws.on("error",delegate.error);
-                    }
-                    if (this.supports(delegate,"message"))
-                    {
-                        ws.on("message",delegate.message);
-                    }
-                }
-                else
-                {
-                    var W3CWS = require("websocket").w3cwebsocket;
-
-                    ws = new W3CWS(url);
-
-                    if (this.supports(delegate,"open"))
-                    {
-                        ws.onopen = delegate.open;
-                    }
-                    if (this.supports(delegate,"close"))
-                    {
-                        ws.onclose = delegate.close;
-                    }
-                    if (this.supports(delegate,"error"))
-                    {
-                        ws.onerror = delegate.error;
-                    }
-                    if (this.supports(delegate,"message"))
-                    {
-                        ws.onmessage = delegate.message;
-                    }
-                }
-            }
-            else
-            {
-                ws = new WebSocket(url);
+                ws = new W3CWS(url);
 
                 if (this.supports(delegate,"open"))
                 {
@@ -494,580 +445,608 @@ define([
                     ws.onmessage = delegate.message;
                 }
             }
-
-            return(ws);
-        },
-
-        createDataFromCsv:function(csv,options)
+        }
+        else
         {
-            var opts = new Options(options);
-            var data = [];
-            var lines = csv.split("\n");
-            var headers = null;
-            var fields = null;
-            var quotes = 0;
-            var i = 0;
-            var words;
-            var field;
-            var index;
-            var prev;
-            var word;
-            var c;
-            var s;
-            var o;
+            ws = new WebSocket(url);
 
-            if (opts.hasOpt("fields"))
+            if (this.supports(delegate,"open"))
             {
-                fields = opts.getOpt("fields");
+                ws.onopen = delegate.open;
             }
-            else if (opts.getOpt("header",false))
+            if (this.supports(delegate,"close"))
             {
-                s = lines[i].trim();
-                headers = s.split(",");
+                ws.onclose = delegate.close;
+            }
+            if (this.supports(delegate,"error"))
+            {
+                ws.onerror = delegate.error;
+            }
+            if (this.supports(delegate,"message"))
+            {
+                ws.onmessage = delegate.message;
+            }
+        }
+
+        return(ws);
+    },
+
+    createDataFromCsv:function(csv,options)
+    {
+        var opts = new Options(options);
+        var data = [];
+        var lines = csv.split("\n");
+        var headers = null;
+        var fields = null;
+        var quotes = 0;
+        var i = 0;
+        var words;
+        var field;
+        var index;
+        var prev;
+        var word;
+        var c;
+        var s;
+        var o;
+
+        if (opts.hasOpt("fields"))
+        {
+            fields = opts.getOpt("fields");
+        }
+        else if (opts.getOpt("header",false))
+        {
+            s = lines[i].trim();
+            headers = s.split(",");
+            i++;
+        }
+
+        while (i < lines.length)
+        {
+            s = lines[i].trim();
+
+            if (s.length == 0)
+            {
                 i++;
+                continue;
             }
 
-            while (i < lines.length)
+            words = [];
+            word = "";
+
+            for (var idx = 0; idx < s.length; idx++)
             {
-                s = lines[i].trim();
+                c = s[idx];
 
-                if (s.length == 0)
+                if (c == ',')
                 {
-                    i++;
-                    continue;
-                }
-
-                words = [];
-                word = "";
-
-                for (var idx = 0; idx < s.length; idx++)
-                {
-                    c = s[idx];
-
-                    if (c == ',')
-                    {
-                        if (quotes > 0)
-                        {
-                            word += c;
-                        }
-                        else
-                        {
-                            words.push(word);
-                            word = "";
-                        }
-                    }
-                    else if (c == '\"')
-                    {
-                        if (prev == '\\')
-                        {
-                            word += c;
-                        }
-                        else
-                        {
-                            quotes ^= 1;
-                        }
-                    }
-                    else if (c == '\\')
-                    {
-                        if (prev == '\\')
-                        {
-                            word += c;
-                        }
-                    }
-                    else
+                    if (quotes > 0)
                     {
                         word += c;
                     }
-
-                    prev = c;
-                }
-
-                if (word.length > 0)
-                {
-                    words.push(word);
-                }
-
-                if (fields != null)
-                {
-                    o = {};
-
-                    for (var j = 0; j < words.length; j++)
+                    else
                     {
-                        if (fields.hasOwnProperty(j))
-                        {
-                            o[fields[j]] = words[j];
-                        }
+                        words.push(word);
+                        word = "";
                     }
                 }
-                else if (headers != null)
+                else if (c == '\"')
                 {
-                    o = {};
-
-                    for (var j = 0; j < words.length; j++)
+                    if (prev == '\\')
                     {
-                        o[headers[j]] = words[j];
+                        word += c;
+                    }
+                    else
+                    {
+                        quotes ^= 1;
+                    }
+                }
+                else if (c == '\\')
+                {
+                    if (prev == '\\')
+                    {
+                        word += c;
                     }
                 }
                 else
                 {
-                    o = words;
+                    word += c;
                 }
 
-                data.push(o);
-
-                i++;
+                prev = c;
             }
 
-            return(data);
-        },
-
-        formatDate:function(date,format)
-        {
-            var field;
-            var s;
-            var c;
-
-            s = "";
-
-            for (var i = 0; i < format.length; i++)
+            if (word.length > 0)
             {
-                c = format[i];
+                words.push(word);
+            }
 
-                if (c == '%')
+            if (fields != null)
+            {
+                o = {};
+
+                for (var j = 0; j < words.length; j++)
                 {
-                    if (i < (format.length - 1))
+                    if (fields.hasOwnProperty(j))
                     {
-                        i++;
-                        field = format[i];
-
-                        if (field == 'm')
-                        {
-                            s += date.getUTCMonth();
-                        }
-                        else if (field == 'd' || field == 'e')
-                        {
-                            s += date.getUTCDate();
-                        }
-                        else if (field == 'Y')
-                        {
-                            s += date.getFullYear();
-                        }
-                        else if (field == '%')
-                        {
-                            s += '%';
-                        }
+                        o[fields[j]] = words[j];
                     }
                 }
-                else
-                {
-                    s += c;
-                }
             }
-
-            return(s);
-        },
-
-        b64Encode:function(s)
-        {
-            var value = null;
-
-            if (_isNode)
+            else if (headers != null)
             {
-                value = Buffer.from(s).toString("base64");
+                o = {};
+
+                for (var j = 0; j < words.length; j++)
+                {
+                    o[headers[j]] = words[j];
+                }
             }
             else
             {
-                value = btoa(s);
+                o = words;
             }
 
-            return(value);
-        },
+            data.push(o);
 
-        b64Decode:function(s)
+            i++;
+        }
+
+        return(data);
+    },
+
+    formatDate:function(date,format)
+    {
+        var field;
+        var s;
+        var c;
+
+        s = "";
+
+        for (var i = 0; i < format.length; i++)
         {
-            var value = null;
+            c = format[i];
 
-            if (_isNode)
+            if (c == '%')
             {
-                value = Buffer.from(s,"base64");
+                if (i < (format.length - 1))
+                {
+                    i++;
+                    field = format[i];
+
+                    if (field == 'm')
+                    {
+                        s += date.getUTCMonth();
+                    }
+                    else if (field == 'd' || field == 'e')
+                    {
+                        s += date.getUTCDate();
+                    }
+                    else if (field == 'Y')
+                    {
+                        s += date.getFullYear();
+                    }
+                    else if (field == '%')
+                    {
+                        s += '%';
+                    }
+                }
             }
             else
             {
-                value = atob(s);
+                s += c;
             }
+        }
 
-            return(value);
-        },
+        return(s);
+    },
 
-        stringify:function(o)
+    b64Encode:function(s)
+    {
+        var value = null;
+
+        if (_isNode)
         {
-            var tmp = JSON.parse(JSON.stringify(o,(key,value) =>
-            typeof value === "bigint" ? value.toString() : value
-            ));
-            return(JSON.stringify(tmp,null,"    "));
-        },
-
-        createCommandLineOpts:function()
+            value = Buffer.from(s).toString("base64");
+        }
+        else
         {
-            var opts = new Options();
-            var key = null;
-            var end = null;
-            var s;
+            value = btoa(s);
+        }
 
-            for (var i = 2; i < process.argv.length; i++)
-            {
-                s = process.argv[i];
+        return(value);
+    },
 
-                if (end != null)
-                {
-                    if (end.length > 0)
-                    {
-                        end += " ";
-                    }
-                    end += s;
-                }
-                else if (s == '--')
-                {
-                    end = "";
-                    continue;
-                }
-                else if (s.startsWith("--"))
-                {
-                    if (key != null)
-                    {
-                        opts.setOpt(key,true);
-                    }
+    b64Decode:function(s)
+    {
+        var value = null;
 
-                    key = s.substr(2);
-                }
-                else if (key != null)
-                {
-                    opts.setOpt(key,this.createValue(s));
-                    key = null;
-                }
-            }
+        if (_isNode)
+        {
+            value = Buffer.from(s,"base64");
+        }
+        else
+        {
+            value = atob(s);
+        }
+
+        return(value);
+    },
+
+    stringify:function(o)
+    {
+        var tmp = JSON.parse(JSON.stringify(o,(key,value) =>
+        typeof value === "bigint" ? value.toString() : value
+        ));
+        return(JSON.stringify(tmp,null,"    "));
+    },
+
+    createCommandLineOpts:function()
+    {
+        var opts = new Options();
+        var key = null;
+        var end = null;
+        var s;
+
+        for (var i = 2; i < process.argv.length; i++)
+        {
+            s = process.argv[i];
 
             if (end != null)
             {
-                opts.setOpt("_end",end);
-            }
-
-            if (key != null)
-            {
-                opts.setOpt(key,true);
-            }
-
-            return(opts);
-        },
-
-        createValue:function(s)
-        {
-            var value = s;
-
-            if (s.indexOf("[") == 0 && s.lastIndexOf("]") == (s.length - 1))
-            {
-                s = s.substr(1,s.length - 2);
-                s = s.split(",");
-                value = s;
-            }
-            else if (s.indexOf("{") == 0 && s.lastIndexOf("}") == (s.length - 1))
-            {
-                value = JSON.parse(s);
-            }
-            else if (s == "true")
-            {
-                value = true;
-            }
-            else if (s == "false")
-            {
-                value = false;
-            }
-
-            return(value);
-        },
-
-        getBorders:function(element,includePadding)
-        {
-            var o = {left:0,top:0,right:0,bottom:0};
-
-            Object.defineProperty(o,"hsize", {
-                get() {
-                    return(this.left + this.right);
+                if (end.length > 0)
+                {
+                    end += " ";
                 }
-            });
-
-            Object.defineProperty(o,"vsize", {
-                get() {
-                    return(this.top + this.bottom);
+                end += s;
+            }
+            else if (s == '--')
+            {
+                end = "";
+                continue;
+            }
+            else if (s.startsWith("--"))
+            {
+                if (key != null)
+                {
+                    opts.setOpt(key,true);
                 }
-            });
 
-            if (element == null || element.style.display == "none")
-            {
-                return(o);
+                key = s.substr(2);
             }
+            else if (key != null)
+            {
+                opts.setOpt(key,this.createValue(s));
+                key = null;
+            }
+        }
 
-            var style = window.getComputedStyle(element,null);
+        if (end != null)
+        {
+            opts.setOpt("_end",end);
+        }
 
-            o.left = parseInt(style.getPropertyValue('border-left-width'));
-            o.top = parseInt(style.getPropertyValue('border-top-width'));
-            o.right = parseInt(style.getPropertyValue('border-right-width'));
-            o.bottom = parseInt(style.getPropertyValue('border-bottom-width'));
+        if (key != null)
+        {
+            opts.setOpt(key,true);
+        }
 
-            if (includePadding)
-            {
-                o.left += parseInt(style.getPropertyValue('padding-left'));
-                o.top += parseInt(style.getPropertyValue('padding-top'));
-                o.right += parseInt(style.getPropertyValue('padding-right'));
-                o.bottom += parseInt(style.getPropertyValue('padding-bottom'));
-            }
+        return(opts);
+    },
 
-            if (isNaN(o.left))
-            {
-                o.left = 0;
-            }
-            if (isNaN(o.top))
-            {
-                o.top = 0;
-            }
-            if (isNaN(o.right))
-            {
-                o.right = 0;
-            }
-            if (isNaN(o.bottom))
-            {
-                o.bottom = 0;
-            }
+    createValue:function(s)
+    {
+        var value = s;
 
+        if (s.indexOf("[") == 0 && s.lastIndexOf("]") == (s.length - 1))
+        {
+            s = s.substr(1,s.length - 2);
+            s = s.split(",");
+            value = s;
+        }
+        else if (s.indexOf("{") == 0 && s.lastIndexOf("}") == (s.length - 1))
+        {
+            value = JSON.parse(s);
+        }
+        else if (s == "true")
+        {
+            value = true;
+        }
+        else if (s == "false")
+        {
+            value = false;
+        }
+
+        return(value);
+    },
+
+    getBorders:function(element,includePadding)
+    {
+        var o = {left:0,top:0,right:0,bottom:0};
+
+        Object.defineProperty(o,"hsize", {
+            get() {
+                return(this.left + this.right);
+            }
+        });
+
+        Object.defineProperty(o,"vsize", {
+            get() {
+                return(this.top + this.bottom);
+            }
+        });
+
+        if (element == null || element.style.display == "none")
+        {
             return(o);
-        },
+        }
 
-        getMargins:function(element)
+        var style = window.getComputedStyle(element,null);
+
+        o.left = parseInt(style.getPropertyValue('border-left-width'));
+        o.top = parseInt(style.getPropertyValue('border-top-width'));
+        o.right = parseInt(style.getPropertyValue('border-right-width'));
+        o.bottom = parseInt(style.getPropertyValue('border-bottom-width'));
+
+        if (includePadding)
         {
-            var margins = {left:0,top:0,right:0,bottom:0};
-
-            if (element == null || element.style.display == "none")
-            {
-                return(margins);
-            }
-
-            var style = window.getComputedStyle(element,null);
-
-            margins.left = parseInt(style['marginLeft']);
-            margins.top = parseInt(style['marginTop']);
-            margins.right = parseInt(style['marginRight']);
-            margins.bottom = parseInt(style['marginBottom']);
-
-            if (isNaN(margins.left))
-            {
-                margins.left = 0;
-            }
-            if (isNaN(margins.top))
-            {
-                margins.top = 0;
-            }
-            if (isNaN(margins.right))
-            {
-                margins.right = 0;
-            }
-            if (isNaN(margins.bottom))
-            {
-                margins.bottom = 0;
-            }
-
-            return(margins);
-        },
-
-        getPadding:function(element)
-        {
-            var o = {left:0,top:0,right:0,bottom:0};
-
-            Object.defineProperty(o,"hsize", {
-                get() {
-                    return(this.left + this.right);
-                }
-            });
-
-            Object.defineProperty(o,"vsize", {
-                get() {
-                    return(this.top + this.bottom);
-                }
-            });
-
-            if (element == null || element.style.display == "none")
-            {
-                return(o);
-            }
-
-            var    style = window.getComputedStyle(element,null);
-
             o.left += parseInt(style.getPropertyValue('padding-left'));
             o.top += parseInt(style.getPropertyValue('padding-top'));
             o.right += parseInt(style.getPropertyValue('padding-right'));
             o.bottom += parseInt(style.getPropertyValue('padding-bottom'));
+        }
 
+        if (isNaN(o.left))
+        {
+            o.left = 0;
+        }
+        if (isNaN(o.top))
+        {
+            o.top = 0;
+        }
+        if (isNaN(o.right))
+        {
+            o.right = 0;
+        }
+        if (isNaN(o.bottom))
+        {
+            o.bottom = 0;
+        }
+
+        return(o);
+    },
+
+    getMargins:function(element)
+    {
+        var margins = {left:0,top:0,right:0,bottom:0};
+
+        if (element == null || element.style.display == "none")
+        {
+            return(margins);
+        }
+
+        var style = window.getComputedStyle(element,null);
+
+        margins.left = parseInt(style['marginLeft']);
+        margins.top = parseInt(style['marginTop']);
+        margins.right = parseInt(style['marginRight']);
+        margins.bottom = parseInt(style['marginBottom']);
+
+        if (isNaN(margins.left))
+        {
+            margins.left = 0;
+        }
+        if (isNaN(margins.top))
+        {
+            margins.top = 0;
+        }
+        if (isNaN(margins.right))
+        {
+            margins.right = 0;
+        }
+        if (isNaN(margins.bottom))
+        {
+            margins.bottom = 0;
+        }
+
+        return(margins);
+    },
+
+    getPadding:function(element)
+    {
+        var o = {left:0,top:0,right:0,bottom:0};
+
+        Object.defineProperty(o,"hsize", {
+            get() {
+                return(this.left + this.right);
+            }
+        });
+
+        Object.defineProperty(o,"vsize", {
+            get() {
+                return(this.top + this.bottom);
+            }
+        });
+
+        if (element == null || element.style.display == "none")
+        {
             return(o);
-        },
+        }
 
-        getOffset:function(element)
+        var    style = window.getComputedStyle(element,null);
+
+        o.left += parseInt(style.getPropertyValue('padding-left'));
+        o.top += parseInt(style.getPropertyValue('padding-top'));
+        o.right += parseInt(style.getPropertyValue('padding-right'));
+        o.bottom += parseInt(style.getPropertyValue('padding-bottom'));
+
+        return(o);
+    },
+
+    getOffset:function(element)
+    {
+        var offset = new Object();
+        offset._x = 0;
+        offset._y = 0;
+        offset._parentX = -1;
+        offset._parentY = -1;
+        offset._width = 0;
+        offset._height = 0;
+
+        var e = element;
+
+        if (element.firstChild != null)
         {
-            var offset = new Object();
-            offset._x = 0;
-            offset._y = 0;
-            offset._parentX = -1;
-            offset._parentY = -1;
-            offset._width = 0;
-            offset._height = 0;
-
-            var e = element;
-
-            if (element.firstChild != null)
+            if (element.firstChild.nodeType == 1)
             {
-                if (element.firstChild.nodeType == 1)
-                {
-                    e = element.firstChild;
-                }
+                e = element.firstChild;
+            }
+        }
+
+        while (e != null)
+        {
+            offset._x += e.offsetLeft;
+            offset._y += e.offsetTop;
+
+            if (offset._parentX == -1)
+            {
+                offset._parentX = e.offsetLeft;
+                offset._parentY = e.offsetTop;
             }
 
-            while (e != null)
+            offset._x -= e.scrollLeft;
+            offset._y -= e.scrollTop;
+
+            e = e.offsetParent;
+        }
+
+        offset._width = element.offsetWidth;
+        offset._height = element.offsetHeight;
+
+        offset.right = function() {return(this._x + this._width);};
+        offset.bottom = function() {return(this._y + this._height);};
+
+        return(offset);
+    },
+
+    getCbState:function(label)
+    {
+        var element = (typeof(label) == "string") ? document.getElementById(label) : label;
+        var code = false;
+
+        if (element != null)
+        {
+            var cb = element.firstChild;
+
+            if (cb.disabled == false)
             {
-                offset._x += e.offsetLeft;
-                offset._y += e.offsetTop;
+                code = cb.checked;
+            }
+        }
 
-                if (offset._parentX == -1)
-                {
-                    offset._parentX = e.offsetLeft;
-                    offset._parentY = e.offsetTop;
-                }
+        return(code);
+    },
 
-                offset._x -= e.scrollLeft;
-                offset._y -= e.scrollTop;
+    setCbState:function(label,options)
+    {
+        var element = (typeof(label) == "string") ? document.getElementById(label) : label;
+        var code = false;
 
-                e = e.offsetParent;
+        if (element != null)
+        {
+            var cb = element.firstChild;
+
+            if (options.hasOwnProperty("checked"))
+            {
+                cb.checked = options.checked;
             }
 
-            offset._width = element.offsetWidth;
-            offset._height = element.offsetHeight;
-
-            offset.right = function() {return(this._x + this._width);};
-            offset.bottom = function() {return(this._y + this._height);};
-
-            return(offset);
-        },
-
-        getCbState:function(label)
-        {
-            var element = (typeof(label) == "string") ? document.getElementById(label) : label;
-            var code = false;
-
-            if (element != null)
+            if (options.hasOwnProperty("enabled"))
             {
-                var cb = element.firstChild;
-
-                if (cb.disabled == false)
+                if (options.enabled)
                 {
+                    element.style.opacity = 1.0;
+                    cb.disabled = false;
                     code = cb.checked;
-                }
-            }
-
-            return(code);
-        },
-
-        setCbState:function(label,options)
-        {
-            var element = (typeof(label) == "string") ? document.getElementById(label) : label;
-            var code = false;
-
-            if (element != null)
-            {
-                var cb = element.firstChild;
-
-                if (options.hasOwnProperty("checked"))
-                {
-                    cb.checked = options.checked;
-                }
-
-                if (options.hasOwnProperty("enabled"))
-                {
-                    if (options.enabled)
-                    {
-                        element.style.opacity = 1.0;
-                        cb.disabled = false;
-                        code = cb.checked;
-                    }
-                    else
-                    {
-                        element.style.opacity = .3;
-                        cb.disabled = true;
-                    }
-                }
-            }
-
-            return(code);
-        },
-
-        setLinkState:function(link,enabled)
-        {
-            var a = (typeof(link) == "string") ? document.getElementById(link) : link;
-
-            if (a != null)
-            {
-                if (a.hasOwnProperty("_enabled") == false)
-                {
-                    a._enabled = true;
-                    a._href = a.href;
-                }
-
-                if (enabled)
-                {
-                    a.href = a._href;
-                    a.style.opacity = 1.0;
-                    a.style.cursor = "pointer";
                 }
                 else
                 {
-                    a.href = "#";
-                    a.style.opacity = 0.3;
-                    a.style.cursor = "default";
+                    element.style.opacity = .3;
+                    cb.disabled = true;
                 }
             }
+        }
 
-            return(enabled);
-        },
+        return(code);
+    },
 
-        exception:function(message)
+    setLinkState:function(link,enabled)
+    {
+        var a = (typeof(link) == "string") ? document.getElementById(link) : link;
+
+        if (a != null)
         {
-            if (_isNode)
+            if (a.hasOwnProperty("_enabled") == false)
             {
-                throw new Error(message);
+                a._enabled = true;
+                a._href = a.href;
+            }
+
+            if (enabled)
+            {
+                a.href = a._href;
+                a.style.opacity = 1.0;
+                a.style.cursor = "pointer";
             }
             else
             {
-                throw(message);
+                a.href = "#";
+                a.style.opacity = 0.3;
+                a.style.cursor = "default";
             }
         }
-    };
 
-    String.prototype.splitNoSpaces =
-    function()
+        return(enabled);
+    },
+
+    exception:function(message)
     {
-        return(this.split(" ").filter(function(i){return i}));
-    };
-
-    String.prototype.pad =
-    function(length,c)
-    {
-        var s = "";
-
-        for (var i = 0; i < length - this.length; i++)
+        if (_isNode)
         {
-            s += c;
+            throw new Error(message);
         }
+        else
+        {
+            throw(message);
+        }
+    },
+};
 
-        s += this;
+String.prototype.splitNoSpaces =
+function()
+{
+    return(this.split(" ").filter(function(i){return i}));
+};
 
-        return(s);
-    };
+String.prototype.pad =
+function(length,c)
+{
+    var s = "";
 
-    return(__tools);
+    for (var i = 0; i < length - this.length; i++)
+    {
+        s += c;
+    }
+
+    s += this;
+
+    return(s);
+};
+
+Object.defineProperty(_api,"isNode", {
+    get(){
+        return(_isNode);
+    }
 });
+
+//module.exports = _api;
+export {_api as tools};

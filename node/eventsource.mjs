@@ -3,7 +3,8 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-var esp = require("@sassoftware/esp-connect");
+import {connect as esp} from "@sassoftware/esp-connect";
+
 var opts = esp.getArgs();
 
 if (opts.hasOpts(["server","config"]) == false)

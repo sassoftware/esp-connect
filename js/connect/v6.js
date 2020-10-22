@@ -3,38 +3,23 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-if (typeof(define) !== "function")
-{
-    var define = require("amdefine")(module);
-}
+import {Connection} from "./connection.js";
+import {Options} from "./options.js";
+import {Resources} from "./resources.js";
+import {Model} from "./model.js";
+import {Schema} from "./schema.js";
+import {tools} from "./tools.js";
+import {ajax} from "./ajax.js";
+import {xpath} from "./xpath.js";
+import {codec} from "./codec.js";
 
-var _isNode = false;
+const   resources = new Resources();
 
-try
+class Api extends Options
 {
-    _isNode = (require("detect-node") != null);
-}
-catch (e)
-{
-}
-
-define([
-   "./connection",
-    "./resources",
-    "./model",
-    "./schema",
-    "./xpath",
-    "./ajax",
-    "./tools",
-    "./codec",
-    "./eventsources",
-    "./options"
-], function(Connection,resources,Model,Schema,xpath,ajax,tools,codec,eventsources,Options)
-{
-    function
-    Api(connection,options)
+    constructor(connection,options)
     {
-        Options.call(this,options);
+        super(options);
 
         this._connection = connection;
         this._version - 6.2;
@@ -122,11 +107,7 @@ define([
         this.init();
     }
 
-    Api.prototype = Object.create(Options.prototype);
-    Api.prototype.constructor = Api;
-
-    Api.prototype.init =
-    function()
+    init()
     {
         this._datasources = {};
         this._publishers = {};
@@ -140,26 +121,22 @@ define([
         this._gets = {};
     }
 
-    Api.prototype.versionGreaterThan =
-    function(version)
+    versionGreaterThan(version)
     {
         return(this._version > version);
     }
 
-    Api.prototype.versionLessThan =
-    function(version)
+    versionLessThan(version)
     {
         return(this._version < version);
     }
 
-    Api.prototype.stop =
-    function()
+    stop()
     {
         this._connection.stop();
     }
 
-    Api.prototype.formUrl =
-    function(base,path,options)
+    formUrl(base,path,options)
     {
         var url = base;
         url += "/eventStreamProcessing/v1/";
@@ -197,22 +174,19 @@ define([
         return(url);
     }
 
-    Api.prototype.getUrl =
-    function(path,options)
+    getUrl(path,options)
     {
         var url = this.formUrl(this._connection.urlBase,path,options);
         return(url);
     }
 
-    Api.prototype.getHttpUrl =
-    function(path,options)
+    getHttpUrl(path,options)
     {
         var url = this.formUrl(this._connection.httpurlBase,path,options);
         return(url);
     }
 
-    Api.prototype.createRequest =
-    function(name,url,delegate)
+    createRequest(name,url,delegate)
     {
         var request = ajax.create(name,url,delegate);
         if (this._connection.hasAuthorization)
@@ -222,37 +196,31 @@ define([
         return(request);
     }
 
-    Api.prototype.closed =
-    function()
+    closed()
     {
     }
 
-    Api.prototype.close =
-    function()
+    close()
     {
         this._closed = true;
     }
 
-    Api.prototype.send =
-    function(s)
+    send(s)
     {
         this._connection.send(s);
     }
 
-    Api.prototype.sendObject =
-    function(o)
+    sendObject(o)
     {
         this._connection.sendObject(o);
     }
 
-    Api.prototype.sendBinary =
-    function(o)
+    sendBinary(o)
     {
         this._connection.sendBinary(o);
     }
 
-    Api.prototype.message =
-    function(data)
+    message(data)
     {
         if (data.length == 0)
         {
@@ -286,38 +254,32 @@ define([
         }
     }
 
-    Api.prototype.addProjectUpdateDelegate =
-    function(delegate)
+    addProjectUpdateDelegate(delegate)
     {
         tools.exception("addProjectUpdateDelegate is not supported");
     }
 
-    Api.prototype.removeProjectUpdateDelegate =
-    function(delegate)
+    removeProjectUpdateDelegate(delegate)
     {
         tools.exception("removeProjectUpdateDelegate is not supported");
     }
 
-    Api.prototype.data =
-    function(o)
+    data(o)
     {
         this.processJson(o);
     }
 
-    Api.prototype.addDelegate =
-    function(delegate)
+    addDelegate(delegate)
     {
         tools.addTo(this._delegates,delegate);
     }
 
-    Api.prototype.removeDelegate =
-    function(delegate)
+    removeDelegate(delegate)
     {
         tools.removeFrom(this._delegates,delegate);
     }
 
-    Api.prototype.getDatasource =
-    function(options)
+    getDatasource(options)
     {
         var opts = new Options(options);
         var mode = "stream";
@@ -337,8 +299,7 @@ define([
         }
     }
 
-    Api.prototype.getEventCollection =
-    function(options)
+    getEventCollection(options)
     {
         options["mode"] = "collection";
         var ec = new EventCollection(this,options);
@@ -347,8 +308,7 @@ define([
         return(ec);
     }
 
-    Api.prototype.getEventStream =
-    function(options)
+    getEventStream(options)
     {
         var es = new EventStream(this,options);
         this._datasources[es._id] = es;
@@ -356,8 +316,7 @@ define([
         return(es);
     }
 
-    Api.prototype.getPublisher =
-    function(options)
+    getPublisher(options)
     {
         if (options.hasOwnProperty("id"))
         {
@@ -375,8 +334,7 @@ define([
         return(publisher);
     }
 
-    Api.prototype.closePublisher =
-    function(id)
+    closePublisher(id)
     {
         if (this._publishers.hasOwnProperty(id))
         {
@@ -385,13 +343,11 @@ define([
         }
     }
 
-    Api.prototype.clearWindow =
-    function(path)
+    clearWindow(path)
     {
     }
 
-    Api.prototype.publishDataFrom =
-    function(path,url,delegate,options)
+    publishDataFrom(path,url,delegate,options)
     {
         var api = this;
         var o = {
@@ -405,8 +361,7 @@ define([
         ajax.create("load",url,o).get();
     }
 
-    Api.prototype.publishData =
-    function(path,data,delegate,options)
+    publishData(path,data,delegate,options)
     {
         var opts = new Options(options);
         opts.setOpt("format","csv");
@@ -438,8 +393,7 @@ define([
         connection.start();
     }
 
-    Api.prototype.publishUrl =
-    function(path,url,delegate,options)
+    publishUrl(path,url,delegate,options)
     {
         if (options == null)
         {
@@ -464,8 +418,7 @@ define([
         ajax.create("publish",publish,o).put();
     }
 
-    Api.prototype.getStats =
-    function(options)
+    getStats(options)
     {
         if (options != null)
         {
@@ -474,19 +427,16 @@ define([
         return(this._stats);
     }
 
-    Api.prototype.getLog =
-    function()
+    getLog()
     {
         return(this._log);
     }
 
-    Api.prototype.get =
-    function(url,delegate,opts)
+    get(url,delegate,opts)
     {
     }
 
-    Api.prototype.loadModel =
-    function(delegate,options)
+    loadModel(delegate,options)
     {
         if (tools.supports(delegate,"modelLoaded") == false)
         {
@@ -515,8 +465,7 @@ define([
         this.createRequest("load",url,o).get(this._connection._config);
     }
 
-    Api.prototype.loadUrl =
-    function(name,url,delegate)
+    loadUrl(name,url,delegate)
     {
         var o = {
             response:function(request,text,data) {
@@ -535,8 +484,7 @@ define([
         ajax.create("load",url,o).get();
     }
 
-    Api.prototype.loadProjectFrom =
-    function(name,url,delegate,options)
+    loadProjectFrom(name,url,delegate,options)
     {
         var api = this;
         var o = {
@@ -550,8 +498,7 @@ define([
         ajax.create("load",url,o).get();
     }
 
-    Api.prototype.loadRouterFrom =
-    function(name,url,delegate,options)
+    loadRouterFrom(name,url,delegate,options)
     {
         var api = this;
         var o = {
@@ -565,8 +512,7 @@ define([
         ajax.create("load",url,o).get();
     }
 
-    Api.prototype.loadProject =
-    function(name,data,delegate,options)
+    loadProject(name,data,delegate,options)
     {
         var connection = this;
 
@@ -592,8 +538,7 @@ define([
         request.put();
     }
 
-    Api.prototype.loadRouter =
-    function(name,data,delegate,options)
+    loadRouter(name,data,delegate,options)
     {
         var o = {
             response:function(request,text,data) {
@@ -618,8 +563,7 @@ define([
         request.put();
     }
 
-    Api.prototype.deleteProject =
-    function(name,delegate)
+    deleteProject(name,delegate)
     {
         var url = this.url;
         var request = {"project":{}};
@@ -629,22 +573,19 @@ define([
         this.sendObject(request);
     }
 
-    Api.prototype.getProjectXml =
-    function(name,delegate)
+    getProjectXml(name,delegate)
     {
         var opts = (name != null) ? {name:name} : {};
         var url = this.getHttpUrl("projectXml",opts);
         this.createRequest("load",url,delegate).get();
     }
 
-    Api.prototype.getXml =
-    function(name,delegate)
+    getXml(name,delegate)
     {
         this.getProjectXml(null,delegate);
     }
 
-    Api.prototype.getLoggers =
-    function(delegate)
+    getLoggers(delegate)
     {
         if (tools.supports(delegate,"response") == false)
         {
@@ -673,8 +614,7 @@ define([
         this.createRequest("loggers",url,o).get();
     }
 
-    Api.prototype.setLogger =
-    function(context,level,delegate)
+    setLogger(context,level,delegate)
     {
         var o = {
             response:function(request,text,data) {
@@ -695,14 +635,12 @@ define([
         this.createRequest("setLogger",url,o).put();
     }
 
-    Api.prototype.createModel =
-    function(data)
+    createModel(data)
     {
         return(new Model(data));
     }
 
-    Api.prototype.loadGuids =
-    function(delegate,num)
+    loadGuids(delegate,num)
     {
         if (tools.supports(delegate,"guidsLoaded") == false)
         {
@@ -723,36 +661,34 @@ define([
         this.sendObject(request);
     }
 
-    Api.prototype.guid =
-    function()
+    guid()
     {
         return(tools.guid());
     }
 
-    Api.prototype.getStatus =
-    function()
+    getStatus()
     {
         this.sendObject({request:"status"});
     }
 
-    Api.prototype.createEventSources =
-    function(delegate)
+    createEventSources(delegate)
     {
         return(eventsources.createEventSources(this,delegate));
     }
 
-    Api.prototype.toString =
-    function()
+    toString()
     {
         var s = "";
         s += this._connection.getUrl();
         return(s);
     }
+}
 
-    function
-    Datasource(api,options)
+class Datasource extends Options
+{
+    constructor(api,options)
     {
-        Options.call(this,options);
+        super(options);
         this._api = api;
         this._id = this.getOpt("id",tools.guid());
         this._path = this.getOpt("window");
@@ -817,11 +753,7 @@ define([
         this._paused = false;
     }
 
-    Datasource.prototype = Object.create(Options.prototype);
-    Datasource.prototype.constructor = Datasource;
-
-    Datasource.prototype.schemaLoaded =
-    function()
+    schemaLoaded()
     {
         this._delegates.forEach((d) =>
         {
@@ -832,14 +764,12 @@ define([
         });
     }
 
-    Datasource.prototype.isArray =
-    function()
+    isArray()
     {
         return(this._data != null && Array.isArray(this._data));
     }
 
-    Datasource.prototype.setIntervalProperty =
-    function()
+    setIntervalProperty()
     {
         var interval = null;
 
@@ -860,8 +790,7 @@ define([
         this.setOpt("interval",interval);
     }
 
-    Datasource.prototype.setFilter =
-    function(value)
+    setFilter(value)
     {
         this.setOpt("filter",value)
         this.set(true);
@@ -869,34 +798,29 @@ define([
         this.deliverFilterChange();
     }
 
-    Datasource.prototype.clearFilter =
-    function()
+    clearFilter()
     {
         this.clearOpt("filter");
         this.set(true);
         this.deliverFilterChange();
     }
 
-    Datasource.prototype.getFilter =
-    function()
+    getFilter()
     {
         return(this.getOpt("filter"));
     }
 
-    Datasource.prototype.play =
-    function()
+    play()
     {
         this._paused = false;
     }
 
-    Datasource.prototype.pause =
-    function()
+    pause()
     {
         this._paused = true;
     }
 
-    Datasource.prototype.togglePlay =
-    function()
+    togglePlay()
     {
         var code = false;
 
@@ -913,20 +837,17 @@ define([
         return(code);
     }
 
-    Datasource.prototype.setSchemaFromXml =
-    function(xml)
+    setSchemaFromXml(xml)
     {
         this._schema.fromXml(xml);
     }
 
-    Datasource.prototype.setSchemaFromJson =
-    function(json)
+    setSchemaFromJson(json)
     {
         this._schema.fromJson(json);
     }
 
-    Datasource.prototype.getKey =
-    function(o)
+    getKey(o)
     {
         var key = "";
         var name;
@@ -951,8 +872,7 @@ define([
         return(key);
     }
 
-    Datasource.prototype.toggleSelectedKeys =
-    function(keys,deselect)
+    toggleSelectedKeys(keys,deselect)
     {
         if (deselect)
         {
@@ -971,14 +891,12 @@ define([
         this.deliverSelectionChange(null,false);
     }
 
-    Datasource.prototype.isSelected =
-    function(item)
+    isSelected(item)
     {
         return(item != null && item.hasOwnProperty("@selected") && item["@selected"] == true);
     }
 
-    Datasource.prototype.toggleSelected =
-    function(item)
+    toggleSelected(item)
     {
         if (item.hasOwnProperty("@selected"))
         {
@@ -992,8 +910,7 @@ define([
         return(item["@selected"]);
     }
 
-    Datasource.prototype.deselectAll =
-    function()
+    deselectAll()
     {
         if (Array.isArray(this._data))
         {
@@ -1011,8 +928,7 @@ define([
         }
     }
 
-    Datasource.prototype.setSelectedIndices =
-    function(indices,deselect)
+    setSelectedIndices(indices,deselect)
     {
         if (deselect)
         {
@@ -1035,8 +951,7 @@ define([
         this.deliverSelectionChange(null,false);
     }
 
-    Datasource.prototype.toggleSelectedIndices =
-    function(indices,deselect)
+    toggleSelectedIndices(indices,deselect)
     {
         if (deselect)
         {
@@ -1057,8 +972,7 @@ define([
         this.deliverSelectionChange(null,false);
     }
 
-    Datasource.prototype.selectByKeys =
-    function(keys)
+    selectByKeys(keys)
     {
         this.deselectAll();
 
@@ -1068,8 +982,7 @@ define([
         });
     }
 
-    Datasource.prototype.getSelectedItems =
-    function()
+    getSelectedItems()
     {
         var items = [];
 
@@ -1084,8 +997,7 @@ define([
         return(items);
     }
 
-    Datasource.prototype.getSelectedIndices =
-    function()
+    getSelectedIndices()
     {
         var indices = [];
         var i = 0;
@@ -1103,8 +1015,7 @@ define([
         return(indices);
     }
 
-    Datasource.prototype.getSelectedKeys =
-    function()
+    getSelectedKeys()
     {
         var keys = [];
 
@@ -1119,29 +1030,25 @@ define([
         return(keys);
     }
 
-    Datasource.prototype.getSelectedItem =
-    function()
+    getSelectedItem()
     {
         var a = this.getSelectedItems();
         return(a.length > 0 ? a[0] : null);
     }
 
-    Datasource.prototype.getSelectedIndex =
-    function()
+    getSelectedIndex()
     {
         var a = this.getSelectedIndices();
         return(a.length > 0 ? a[0] : null);
     }
 
-    Datasource.prototype.getSelectedKey =
-    function()
+    getSelectedKey()
     {
         var a = this.getSelectedKeys();
         return(a.length > 0 ? a[0] : null);
     }
 
-    Datasource.prototype.getKeyValues =
-    function()
+    getKeyValues()
     {
         var values = [];
 
@@ -1163,8 +1070,7 @@ define([
         return(values);
     }
 
-    Datasource.prototype.getList =
-    function()
+    getList()
     {
         var a = null;
 
@@ -1191,8 +1097,7 @@ define([
         return(a);
     }
 
-    Datasource.prototype.getValues =
-    function(name)
+    getValues(name)
     {
         var f = this._schema.getField(name);
 
@@ -1265,8 +1170,7 @@ define([
         return(values);
     }
 
-    Datasource.prototype.getLimits =
-    function(name)
+    getLimits(name)
     {
         var limits = null;
         var a = this.getValues(name);
@@ -1281,8 +1185,7 @@ define([
         return(limits);
     }
 
-    Datasource.prototype.getValuesBy =
-    function(keys,names,keyfilter,delimiter = ".")
+    getValuesBy(keys,names,keyfilter,delimiter = ".")
     {
         if (this.schema.size == 0)
         {
@@ -1486,33 +1389,28 @@ define([
         return(v);
     }
 
-    Datasource.prototype.getKeyFieldNames =
-    function()
+    getKeyFieldNames()
     {
         return(this._schema != null ? this._schema.getKeyFieldNames() : null);
     }
 
-    Datasource.prototype.events =
-    function(xml)
+    events(xml)
     {
     }
 
-    Datasource.prototype.info =
-    function(xml)
+    info(xml)
     {
     }
 
-    Datasource.prototype.set =
-    function(value)
+    set(value)
     {
     }
 
-    Datasource.prototype.addDelegate =
-    function(delegate)
+    addDelegate(delegate)
     {
         if (tools.supports(delegate,"dataChanged") == false)
         {
-            if (_isNode)
+            if (tools.isNode)
             {
                 throw new Error("The datasource delegate must implement the dataChanged method");
             }
@@ -1525,18 +1423,16 @@ define([
         tools.addTo(this._delegates,delegate);
     }
 
-    Datasource.prototype.removeDelegate =
-    function(delegate)
+    removeDelegate(delegate)
     {
         tools.removeFrom(this._delegates,delegate);
     }
 
-    Datasource.prototype.addSchemaDelegate =
-    function(delegate)
+    addSchemaDelegate(delegate)
     {
         if (tools.supports(delegate,"schemaSet") == false)
         {
-            if (_isNode)
+            if (tools.isNode)
             {
                 throw new Error("The datasource schema delegate must implement the schemaSet method");
             }
@@ -1549,14 +1445,12 @@ define([
         tools.addTo(this._schemaDelegates,delegate);
     }
 
-    Datasource.prototype.removeSchemaDelegate =
-    function(delegate)
+    removeSchemaDelegate(delegate)
     {
         tools.removeFrom(this._schemaDelegates,delegate);
     }
 
-    Datasource.prototype.clear =
-    function()
+    clear()
     {
         if (this._data != null)
         {
@@ -1573,8 +1467,7 @@ define([
         this.deliverDataChange(null,true);
     }
 
-    Datasource.prototype.deliverDataChange =
-    function(data,clear)
+    deliverDataChange(data,clear)
     {
         this._delegates.forEach((d) =>
         {
@@ -1582,8 +1475,7 @@ define([
         });
     }
 
-    Datasource.prototype.deliverInfoChange =
-    function()
+    deliverInfoChange()
     {
         this._delegates.forEach((d) =>
         {
@@ -1594,8 +1486,7 @@ define([
         });
     }
 
-    Datasource.prototype.deliverSchemaSet =
-    function()
+    deliverSchemaSet()
     {
         if (this.getOpt("debug"))
         {
@@ -1611,8 +1502,7 @@ define([
         });
     }
 
-    Datasource.prototype.deliverInfo =
-    function(data)
+    deliverInfo(data)
     {
         this._delegates.forEach((d) =>
         {
@@ -1623,8 +1513,7 @@ define([
         });
     }
 
-    Datasource.prototype.deliverFilterChange =
-    function()
+    deliverFilterChange()
     {
         this._delegates.forEach((d) =>
         {
@@ -1635,8 +1524,7 @@ define([
         });
     }
 
-    Datasource.prototype.deliverSelectionChange =
-    function()
+    deliverSelectionChange()
     {
         this._delegates.forEach(d =>
         {
@@ -1647,8 +1535,7 @@ define([
         });
     }
 
-    Datasource.prototype.getDataByKey =
-    function(key)
+    getDataByKey(key)
     {
         var data = null;
 
@@ -1674,8 +1561,7 @@ define([
         return(data);
     }
 
-    Datasource.prototype.createDataFromCsv =
-    function(data)
+    createDataFromCsv(data)
     {
         var items = null;
 
@@ -1686,11 +1572,13 @@ define([
 
         return(items);
     }
+}
 
-    function
-    EventCollection(api,options)
+class EventCollection extends Datasource
+{
+    constructor(conn,options)
     {
-        Datasource.call(this,api,options);
+        super(conn,options);
         this._window = this.getOpt("window");
         this.setOpt("format","xml");
         this._data = {};
@@ -1701,11 +1589,7 @@ define([
         this._sortdir = 0;
     }
 
-    EventCollection.prototype = Object.create(Datasource.prototype);
-    EventCollection.prototype.constructor = EventCollection;
-
-    EventCollection.prototype.open =
-    function()
+    open()
     {
         var url = this._api.getUrl("subscribers/" + this._path);
         var opts = {mode:"updating",schema:true,format:"xml",snapshot:true};
@@ -1750,8 +1634,7 @@ define([
         */
     }
 
-    EventCollection.prototype.set =
-    function(load)
+    set(load)
     {
         var request = "";
 
@@ -1771,15 +1654,13 @@ define([
         }
     }
 
-    EventCollection.prototype.close =
-    function()
+    close()
     {
         this._connection.stop();
         this._connection = null;
     }
 
-    EventCollection.prototype.message =
-    function(data)
+    message(data)
     {
         var xml = xpath.createXml(data);
         var root = xml.documentElement;
@@ -1793,68 +1674,59 @@ define([
         }
     }
 
-    EventCollection.prototype.play =
-    function()
+    play()
     {
         var request = {"event-collection":{}};
         var o = request["event-collection"];
         o["id"] = this._id;
         o["action"] = "play";
         this._api.sendObject(request);
-        Datasource.prototype.play.call(this);
+        super.play();
     }
 
-    EventCollection.prototype.pause =
-    function()
+    pause()
     {
         var request = {"event-collection":{}};
         var o = request["event-collection"];
         o["id"] = this._id;
         o["action"] = "pause";
         this._api.sendObject(request);
-        Datasource.prototype.play.call(this);
+        super.pause();
     }
 
-    EventCollection.prototype.sort =
-    function(a,b)
+    sort(a,b)
     {
         var v1 = parseFloat(a[this._sort]);
         var v2 = parseFloat(b[this._sort]);
         return((this._sortdir == 0) ? (v2 - v1) : (v1 - v2));
     }
 
-    EventCollection.prototype.load =
-    function()
+    load()
     {
         this.loadPage(null);
     }
 
-    EventCollection.prototype.first =
-    function()
+    first()
     {
         this.loadPage("first");
     }
 
-    EventCollection.prototype.last =
-    function()
+    last()
     {
         this.loadPage("last");
     }
 
-    EventCollection.prototype.prev =
-    function()
+    prev()
     {
         this.loadPage("prev");
     }
 
-    EventCollection.prototype.next =
-    function()
+    next()
     {
         this.loadPage("next");
     }
 
-    EventCollection.prototype.loadPage =
-    function(page)
+    loadPage(page)
     {
         var request = "<load";
         if (page != null)
@@ -1865,22 +1737,19 @@ define([
         this._connection.send(request);
     }
 
-    EventCollection.prototype.setSchemaFromXml =
-    function(xml)
+    setSchemaFromXml(xml)
     {
-        Datasource.prototype.setSchemaFromXml.call(this,xml);
+        super.setSchemaFromXml(xml);
         this.deliverSchemaSet();
     }
 
-    EventCollection.prototype.setSchemaFromJson =
-    function(json)
+    setSchemaFromJson(json)
     {
-        Datasource.prototype.setSchemaFromJson.call(this,json);
+        super.setSchemaFromJson(json);
         this.deliverSchemaSet();
     }
 
-    EventCollection.prototype.events =
-    function(data)
+    events(data)
     {
         if (this.getOpt("debug"))
         {
@@ -1927,8 +1796,7 @@ define([
         }
     }
 
-    EventCollection.prototype.eventsXml =
-    function(xml)
+    eventsXml(xml)
     {
         if (this.getOpt("debug"))
         {
@@ -1990,8 +1858,7 @@ define([
         }
     }
 
-    EventCollection.prototype.info =
-    function(data)
+    info(data)
     {
         if (data.hasOwnProperty("page"))
         {
@@ -2001,8 +1868,7 @@ define([
         }
     }
 
-    EventCollection.prototype.process =
-    function(events,clear)
+    process(events,clear)
     {
         var selected = null;
 
@@ -2078,28 +1944,25 @@ define([
 
         this.deliverDataChange(events,clear)
     }
+}
 
-    function
-    EventStream(api,options)
+class EventStream extends Datasource
+{
+    constructor(conn,options)
     {
-        Datasource.call(this,api,options);
+        super(conn,options);
         this._window = this.getOpt("window");
         this.setOpt("format","xml");
         this._data = [];
         this._counter = 1;
     }
 
-    EventStream.prototype = Object.create(Datasource.prototype);
-    EventStream.prototype.constructor = EventStream;
-
-    EventStream.prototype.ready =
-    function()
+    ready()
     {
         this.set();
     }
 
-    EventStream.prototype.open =
-    function()
+    open()
     {
         this.setIntervalProperty();
 
@@ -2127,8 +1990,7 @@ define([
         */
     }
 
-    EventStream.prototype.message =
-    function(data)
+    message(data)
     {
         var xml = xpath.createXml(data);
         var root = xml.documentElement;
@@ -2142,8 +2004,7 @@ define([
         }
     }
 
-    EventStream.prototype.set =
-    function(load)
+    set(load)
     {
         var request = "";
 
@@ -2158,8 +2019,7 @@ define([
         this._connection.send(request);
     }
 
-    EventStream.prototype.close =
-    function()
+    close()
     {
         var request = {"event-stream":{}};
         var o = request["event-stream"];
@@ -2168,46 +2028,41 @@ define([
         this._api.sendObject(request);
     }
 
-    EventStream.prototype.play =
-    function()
+    play()
     {
         var request = {"event-stream":{}};
         var o = request["event-stream"];
         o["id"] = this._id;
         o["action"] = "play";
         this._api.sendObject(request);
-        Datasource.prototype.play.call(this);
+        super.play();
     }
 
-    EventStream.prototype.pause =
-    function()
+    pause()
     {
         var request = {"event-stream":{}};
         var o = request["event-stream"];
         o["id"] = this._id;
         o["action"] = "pause";
         this._api.sendObject(request);
-        Datasource.prototype.play.call(this);
+        super.play();
     }
 
-    EventStream.prototype.setSchemaFromXml =
-    function(xml)
+    setSchemaFromXml(xml)
     {
-        Datasource.prototype.setSchemaFromXml.call(this,xml);
+        super.setSchemaFromXml(xml);
         this.completeSchema();
         this.deliverSchemaSet();
     }
 
-    EventStream.prototype.setSchemaFromJson =
-    function(json)
+    setSchemaFromJson(json)
     {
-        Datasource.prototype.setSchemaFromJson.call(this,json);
+        super.setSchemaFromJson(json);
         this.completeSchema();
         this.deliverSchemaSet();
     }
 
-    EventStream.prototype.completeSchema =
-    function()
+    completeSchema()
     {
         for (var i = 0; i < this._schema._fields.length; i++)
         {
@@ -2234,8 +2089,7 @@ define([
         this._schema._keyFields = [f];
     }
 
-    EventStream.prototype.events =
-    function(data)
+    events(data)
     {
         if (this.getOpt("debug"))
         {
@@ -2280,8 +2134,7 @@ define([
         this.process(events);
     }
 
-    EventStream.prototype.eventsXml =
-    function(xml)
+    eventsXml(xml)
     {
         if (this.getOpt("debug"))
         {
@@ -2349,8 +2202,7 @@ define([
         this.process(data);
     }
 
-    EventStream.prototype.process =
-    function(events)
+    process(events)
     {
         var o;
 
@@ -2391,15 +2243,16 @@ define([
         this.deliverDataChange(events,false);
     }
 
-    EventStream.prototype.info =
-    function(xml)
+    info(xml)
     {
     }
+}
 
-    function
-    Stats(api,options)
+class Stats extends Options
+{
+    constructor(api,options)
     {
-        Options.call(this,options);
+        super(options);
 
         this._api = api;
         this._connection = null;
@@ -2449,11 +2302,7 @@ define([
         this._delegates = [];
     }
 
-    Stats.prototype = Object.create(Options.prototype);
-    Stats.prototype.constructor = Stats;
-
-    Stats.prototype.message =
-    function(data)
+    message(data)
     {
         var xml = xpath.createXml(data);
         this._windows = [];
@@ -2528,13 +2377,11 @@ define([
         }
     }
 
-    Stats.prototype.process =
-    function(o)
+    process(o)
     {
     }
 
-    Stats.prototype.start =
-    function()
+    start()
     {
         if (this._connection == null)
         {
@@ -2552,8 +2399,7 @@ define([
         }
     }
 
-    Stats.prototype.stop =
-    function()
+    stop()
     {
         if (this._connection != null)
         {
@@ -2562,14 +2408,12 @@ define([
         }
     }
 
-    Stats.prototype.sort =
-    function(a,b)
+    sort(a,b)
     {
         return(b - a);
     }
 
-    Stats.prototype.optionSet =
-    function(name,value)
+    optionSet(name,value)
     {
         if (this._delegates != null && this._delegates.length > 0)
         {
@@ -2577,13 +2421,11 @@ define([
         }
     }
 
-    Stats.prototype.set =
-    function()
+    set()
     {
     }
 
-    Stats.prototype.addDelegate =
-    function(delegate)
+    addDelegate(delegate)
     {
         if (tools.supports(delegate,"handleStats") == false)
         {
@@ -2599,8 +2441,7 @@ define([
         }
     }
 
-    Stats.prototype.removeDelegate =
-    function(delegate)
+    removeDelegate(delegate)
     {
         if (tools.removeFrom(this._delegates,delegate))
         {
@@ -2611,26 +2452,25 @@ define([
         }
     }
 
-    Stats.prototype.getWindows =
-    function()
+    getWindows()
     {
         return(this._windows);
     }
 
-    Stats.prototype.getMemoryData =
-    function()
+    getMemoryData()
     {
         return(this._memory);
     }
 
-    Stats.prototype.getConfig =
-    function()
+    getConfig()
     {
         return(this._config);
     }
+}
 
-    function
-    Log(api)
+class Log
+{
+    constructor(api)
     {
         this._api = api;
         this._delegates = [];
@@ -2652,8 +2492,7 @@ define([
         });
     }
 
-    Log.prototype.start =
-    function()
+    start()
     {
         if (this._connection == null)
         {
@@ -2664,8 +2503,7 @@ define([
         }
     }
 
-    Log.prototype.stop =
-    function()
+    stop()
     {
         if (this._connection != null)
         {
@@ -2674,8 +2512,7 @@ define([
         }
     }
 
-    Log.prototype.message =
-    function(text)
+    message(text)
     {
         var o = {};
         o["_timestamp"] = text.substr(0,19);
@@ -2724,8 +2561,7 @@ define([
         });
     }
 
-    Log.prototype.addDelegate =
-    function(delegate)
+    addDelegate(delegate)
     {
         if (tools.supports(delegate,"handleLog") == false)
         {
@@ -2743,8 +2579,7 @@ define([
         return(true);
     }
 
-    Log.prototype.removeDelegate =
-    function(delegate)
+    removeDelegate(delegate)
     {
         if (tools.removeFrom(this._delegates,delegate))
         {
@@ -2754,11 +2589,13 @@ define([
             }
         }
     }
+}
 
-    function
-    Publisher(api,options)
+class Publisher extends Options
+{
+    constructor(api,options)
     {
-        Options.call(this,options);
+        super(options);
         this._api = api;
         this._path = this.getOpt("window");
         this._id = this.getOpt("id",tools.guid());
@@ -2775,11 +2612,7 @@ define([
         this._schemaDelegates = [];
     }
 
-    Publisher.prototype = Object.create(Options.prototype);
-    Publisher.prototype.constructor = Publisher;
-
-    Publisher.prototype.open =
-    function()
+    open()
     {
         var o = {};
 
@@ -2798,21 +2631,18 @@ define([
         this._connection.start();
     }
 
-    Publisher.prototype.close =
-    function()
+    close()
     {
         this._connection.stop();
         this._connection = null;
     }
 
-    Publisher.prototype.ready =
-    function()
+    ready()
     {
         this.publish();
     }
 
-    Publisher.prototype.message =
-    function(data)
+    message(data)
     {
         var o = JSON.parse(data);
         if (o.hasOwnProperty("schema"))
@@ -2835,12 +2665,11 @@ define([
         }
     }
 
-    Publisher.prototype.addSchemaDelegate =
-    function(delegate)
+    addSchemaDelegate(delegate)
     {
         if (tools.supports(delegate,"schemaSet") == false)
         {
-            if (_isNode)
+            if (tools.isNode)
             {
                 throw new Error("The datasource schema delegate must implement the schemaSet method");
             }
@@ -2853,14 +2682,12 @@ define([
         tools.addTo(this._schemaDelegates,delegate);
     }
 
-    Publisher.prototype.removeSchemaDelegate =
-    function(delegate)
+    removeSchemaDelegate(delegate)
     {
         tools.removeFrom(this._schemaDelegates,delegate);
     }
 
-    Publisher.prototype.setSchemaFromXml =
-    function(xml)
+    setSchemaFromXml(xml)
     {
         this._schema.fromXml(xml);
         this.deliverSchemaSet();
@@ -2871,8 +2698,7 @@ define([
         }
     }
 
-    Publisher.prototype.setSchemaFromJson =
-    function(json)
+    setSchemaFromJson(json)
     {
         this._schema.fromJson(json);
         this.deliverSchemaSet();
@@ -2883,8 +2709,7 @@ define([
         }
     }
 
-    Publisher.prototype.deliverSchemaSet =
-    function()
+    deliverSchemaSet()
     {
         if (this.getOpt("debug"))
         {
@@ -2897,14 +2722,12 @@ define([
         });
     }
 
-    Publisher.prototype.begin =
-    function()
+    begin()
     {
         this._o = new Object();
     }
 
-    Publisher.prototype.set =
-    function(name,value)
+    set(name,value)
     {
         if (this._o != null)
         {
@@ -2912,8 +2735,7 @@ define([
         }
     }
 
-    Publisher.prototype.end =
-    function()
+    end()
     {
         if (this._o != null)
         {
@@ -2922,8 +2744,7 @@ define([
         }
     }
 
-    Publisher.prototype.add =
-    function(o)
+    add(o)
     {
         if (Array.isArray(o))
         {
@@ -2938,8 +2759,7 @@ define([
         }
     }
 
-    Publisher.prototype.publish =
-    function()
+    publish()
     {
         if (this._connection.isConnected() == false)
         {
@@ -2955,8 +2775,7 @@ define([
         }
     }
 
-    Publisher.prototype.send =
-    function(publisher)
+    send(publisher)
     {
         if (this._csv.index < this._csv.items.length)
         {
@@ -2975,8 +2794,7 @@ define([
         }
     }
 
-    Publisher.prototype.csv =
-    function()
+    csv()
     {
         if (this._schema.size == 0)
         {
@@ -3009,8 +2827,7 @@ define([
         }
     }
 
-    Publisher.prototype.publishCsvFrom =
-    function(url,options)
+    publishCsvFrom(url,options)
     {
         var publisher = this;
         var o = {
@@ -3024,8 +2841,7 @@ define([
         ajax.create("load",url,o).get();
     }
 
-    Publisher.prototype.publishCsv =
-    function(data,options)
+    publishCsv(data,options)
     {
         this._csv = {data:data,options:new Options(options),index:0};
 
@@ -3037,16 +2853,17 @@ define([
         this.csv();
     }
 
-    Publisher.prototype.isBinary =
-    function()
+    isBinary()
     {
         return(false);
     }
+}
 
     /* Delegates */
 
-    function
-    ModelDelegate(api,delegate,request)
+class ModelDelegate
+{
+    constructor(api,delegate,request)
     {
         this._api = api;
         this._delegate = delegate;
@@ -3054,8 +2871,7 @@ define([
         this._api.sendObject(request);
     }
 
-    ModelDelegate.prototype.deliver =
-    function(xml)
+    deliver(xml)
     {
         var model = new Model(xml);
 
@@ -3064,32 +2880,34 @@ define([
             this._delegate.modelLoaded(model,this._api);
         }
     }
+}
 
-    function
-    ResponseDelegate(api,delegate)
+class ResponseDelegate
+{
+    constructor(api,delegate)
     {
         this._api = api;
         this._delegate = delegate;
     }
 
-    ResponseDelegate.prototype.deliver =
-    function(data,xml)
+    deliver(data,xml)
     {
         if (tools.supports(this._delegate,"response"))
         {
             this._delegate.response(this._api,data,xml);
         }
     }
+}
 
-    function
-    GuidDelegate(api,delegate)
+class GuidDelegate
+{
+    constructor(api,delegate)
     {
         this._api = api;
         this._delegate = delegate;
     }
 
-    GuidDelegate.prototype.deliver =
-    function(data)
+    deliver(data)
     {
         if (tools.supports(this._delegate,"guidsLoaded"))
         {
@@ -3102,8 +2920,9 @@ define([
             this._delegate.guidsLoaded(guids,this._api);
         }
     }
+}
 
-    /* End Delegates */
+/* End Delegates */
 
-    return(Api);
-});
+//module.exports = Api;
+export {Api as v6};

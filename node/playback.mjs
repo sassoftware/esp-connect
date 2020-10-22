@@ -3,7 +3,8 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-const   esp = require("@sassoftware/esp-connect");
+import {connect as esp} from "@sassoftware/esp-connect";
+
 const   fs = require("fs");
 const   url = require("url");
 

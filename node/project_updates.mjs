@@ -3,7 +3,8 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-var esp = require("@sassoftware/esp-connect");
+import {connect as esp} from "@sassoftware/esp-connect";
+
 var opts = esp.getArgs();
 
 if (opts.getOpt("help",false))
@@ -40,36 +41,32 @@ esp.connect(server,{ready:ready},o);
 function
 ready(connection)
 {
-    var delegate = {modelLoaded:function(model,conn) {
-        console.log("" + esp.getXPath().xmlString(model.xml));
-        process.exit(0);
-    }};
-    connection.loadModel(delegate,opts.getOpts());
+    var delegate = {
+        projectLoaded:function(name)
+        {
+            console.log("project " + name + " loaded");
+        },
+
+        projectRemovedx:function(name)
+        {
+            console.log("project " + name + " removed");
+        }
+    };
+
+    connection.addProjectUpdateDelegate(delegate);
 }
 
 function
 showUsage()
 {
     esp.usage({
-        name:"model",
-        summary:"display one or more ESP models from an ESP server",
+        name:"logs",
+        summary:"view realtime ESP server logs",
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
-            {name:"name",arg:"project name",description:"name of the project for which to retrieve the model (defaults to all)"},
-            {name:"schema",arg:"true | false",description:"return schema information in data, defaults to true."},
             {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
         ],
-        description:"This command subscribes to an ESP window for streaming events.",
-        examples:[
-        {
-            title:"Retrieve all models",
-            command:"--server http://espsrv01:7777"
-        },
-        {
-            title:"Retrieve specific model",
-            command:"--server http://espsrv01:7777 --name mymodel"
-        }
-        ],
+        description:"This command listens for project load and delete events.",
         see_also:[
         {
             name:"ESP User Guide",
