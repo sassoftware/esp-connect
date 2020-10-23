@@ -7,7 +7,7 @@ import {ServerConnection} from "./serverconn.js";
 import {tools} from "./tools.js";
 import {ajax} from "./ajax.js";
 import {xpath} from "./xpath.js";
-import {Options} from "./Options.js";
+import {Options} from "./options.js";
 
 class K8S
 {

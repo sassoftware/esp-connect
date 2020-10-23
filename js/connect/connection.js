@@ -3,7 +3,7 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-import {Options} from "./Options.js";
+import {Options} from "./options.js";
 import {tools} from "./tools.js";
 import {codec} from "./codec.js";
 
@@ -521,6 +521,19 @@ class Connection extends Options
                 }
                 else
                 {
+                    function
+                    WebSocketClient(url,connection)
+                    {
+                        this._conn = connection;
+                        this.binaryType = "arraybuffer";
+                        var config = {};
+                        config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
+                        W3CWS.call(this,url,null,null,null,null,config);
+                    }
+
+                    WebSocketClient.prototype = Object.create(W3CWS.prototype);
+                    WebSocketClient.prototype.constructor = WebSocketClient;
+
                     var ws = new WebSocketClient(url,this);
                     ws.onopen = _nodeWebsockets.open;
                     ws.onclose = _nodeWebsockets.close;

@@ -62,11 +62,21 @@ class Visuals extends Options
             this._colors = new Colors();
         }
 
-        this._titleStyle = new Options({fontsize:"14pt",font_family:"AvenirNextforSAS"});
-        this._font = this.getOpt("font",{family:"AvenirNextforSAS",size:14});
-        this._titleFont = this.getOpt("title_font",{family:"AvenirNextforSAS",size:18});
-        //this._selectedFont = this.getOpt("selected_font","font-family:AvenirNextforSAS;font-size:12pt;font-weight:normal;font-style:italic;text-decoration:underline");
-        this._selectedFont = this.getOpt("selected_font","font-family:AvenirNextforSAS;font-size:12pt;font-weight:normal;font-style:italic");
+        var style = window.getComputedStyle(document.body);
+        var font = style.getPropertyValue("font-family");
+
+        this._fontFamily = (font != null) ? font : "Verdana";
+
+        Object.defineProperty(this,"fontFamily", {
+            get() {
+                return(this._fontFamily);
+            }
+        });
+
+        this._titleStyle = new Options({fontsize:"14pt",font_family:this.fontFamily});
+        this._font = this.getOpt("font",{family:this.fontFamily,size:14});
+        this._titleFont = this.getOpt("title_font",{family:this.fontFamily,size:18});
+        this._selectedFont = this.getOpt("selected_font","font-family:" + this.fontFamily + ";font-size:12pt;font-weight:normal;font-style:italic");
 
         this._span = null;
 
@@ -1102,7 +1112,7 @@ class TimeSeries extends LineChart
         var showMarkers = this.getOpt("show_markers",false);
         var showText = this.getOpt("show_text",false);
         var mode = "lines";
-        var textfont = {family:"AvenirNextforSAS",size:30};
+        var textfont = {family:this._visuals.fontFamily,size:30};
 
         if (showMarkers)
         {
@@ -1953,8 +1963,7 @@ class CompassEntry extends Options
 
             x = center["x"] + (length * Math.cos(radians))
             y = center["y"] + (length * Math.sin(radians))
-            //label = {text:headings[i],x:x,y:y,showarrow:false,font:{family:"AvenirNextforSAS",size:fontsize,color:textcolor},textangle:textangle};
-            label = {text:"<b>" + headings[i] + "</b>",x:x,y:y,showarrow:false,font:{family:"AvenirNextforSAS",size:fontsize,color:textcolor},textangle:textangle};
+            label = {text:"<b>" + headings[i] + "</b>",x:x,y:y,showarrow:false,font:{family:this._compass._visuals.fontFamily,size:fontsize,color:textcolor},textangle:textangle};
             this._labels.push(label);
             angle += (360 / headings.length);
             //textangle += (360 / headings.length);
@@ -2422,7 +2431,7 @@ class Table extends Chart
                     img._canvas = canvas;
                     img._context = canvas.getContext("2d");
                     img._opts = this;
-                    img._font = this.getOpt("imagefont","18px AvenirNextforSAS ");
+                    img._font = this.getOpt("imagefont","18px " + this._visuals.fontFamily);
                     img.onload = this.addImageText;
 
                     div.style.position = "relative";
@@ -2883,7 +2892,7 @@ class ImageViewer extends Chart
         this._image._context = this._context;
         this._image._div = this._viewerDiv;
         this._image._opts = this;
-        this._image._font = this.getOpt("imagefont","18px AvenirNextforSAS ");
+        this._image._font = this.getOpt("imagefont","18px " + this._visuals.fontFamily);
         this._image.style.position = "absolute";
         this._viewerDiv.appendChild(this._image);
         this._viewerDiv.appendChild(this._canvas);

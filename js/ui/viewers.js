@@ -935,7 +935,7 @@ class ModelViewer extends ViewerBase
 
         stats.windows.forEach((o) =>
         {
-            key = o["project"]
+            var key = o["project"]
             key += "/"
             key += o["contquery"]
             key += "/"
@@ -1227,8 +1227,8 @@ class LogViewer extends ViewerBase
 
             const   select = document.getElementById(this._showContextsId + "-loglevel");
             const   button = document.getElementById(this._showContextsId + "-loglevel");
-            select.style.font = "14pt AvenirNextforSAS";
-            button.style.font = "14pt AvenirNextforSAS";
+            select.style.font = "14pt " + this._visuals.fontFamily;
+            button.style.font = "14pt " + this._visuals.fontFamily;
 
             const   viewer = this;
 

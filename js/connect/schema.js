@@ -3,7 +3,7 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-import {Options} from "./Options.js";
+import {Options} from "./options.js";
 import {xpath} from "./xpath.js";
 import {tools} from "./tools.js";
 

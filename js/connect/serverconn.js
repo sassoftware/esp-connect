@@ -4,7 +4,7 @@
 */
 
 import {Connection} from "./connection.js";
-import {Options} from "./Options.js";
+import {Options} from "./options.js";
 import {v6} from "./v6.js";
 import {v7} from "./v7.js";
 import {tools} from "./tools.js";
