@@ -15,22 +15,20 @@
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
-<script type="module" src="../../js/ui/main.js"></script>
+<script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
 
 <script type="text/javascript">
 
+var _esp = esp_connect_ui.api;
 var _project = "paris";
 
 var _visuals = null;
 var _trip = null;
 var _conn = null;
-var _esp = null;
 
 function
-esp(api)
+init()
 {
-    _esp = api;
-
     var parms = _esp.getParms();
 
     if (parms.hasOwnProperty("project"))
@@ -199,7 +197,7 @@ function()
 
 </head>
 
-<body>
+<body onload="init()">
 
     <div id="banner">
         <table style="width:100%" cellspacing="0" cellpadding="0">

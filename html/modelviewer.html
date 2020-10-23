@@ -17,9 +17,11 @@
 
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
-<script type="module" src="../js/ui/main.js"></script>
+<script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
 
 <script type="text/javascript">
+
+var _esp = esp_connect_ui.api;
 
 var _windowXmlCode = null;
 var _schemaTable = null;
@@ -41,34 +43,13 @@ var _stats = null;
 var _parms = null;
 var _tabs = null;
 var _logs = null;
-var _init = false;
-var _esp = null;
 var _k8s = null;
 
 var _viewerSplit = "70%";
 
 function
-esp(api)
-{
-    _esp = api;
-    setup();
-}
-
-function
 init()
 {
-    _init = true;
-    setup();
-}
-
-function
-setup()
-{
-    if (_esp == null || _init == false)
-    {
-        return;
-    }
-
     _common = _esp.getStorage("esp-connect");
     _storage = _esp.getStorage("modelviewer");
 
