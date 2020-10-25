@@ -1700,5 +1700,4 @@ var _api =
     }
 };
 
-//module.exports = _api;
 export {_api as k8s};

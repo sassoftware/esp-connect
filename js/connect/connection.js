@@ -870,5 +870,4 @@ class DelegateConnection extends Connection
 	}
 }
 
-//module.exports = Connection;
 export {Connection};

@@ -2924,5 +2924,4 @@ class GuidDelegate
 
 /* End Delegates */
 
-//module.exports = Api;
 export {Api as v6};

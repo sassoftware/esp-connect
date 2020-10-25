@@ -3,8 +3,7 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-import {default as connect} from "../dist/esp-connect-api.js";
-var esp = connect.api;
+import {connect as esp} from "@sassoftware/esp-connect";
 
 var opts = esp.getArgs();
 var config = opts.getOpt("config");

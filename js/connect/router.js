@@ -454,5 +454,4 @@ class Route
     }
 }
 
-//module.exports = Router;
 export {Router};

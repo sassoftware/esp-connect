@@ -682,46 +682,105 @@ class Chart extends Options
 
     getUrl()
     {
-        var url = "/esp-connect/html/visual.html";
+        var url = "";
+        var serverRequest = false;
+
         if (this._datasource != null)
         {
-            url += "?server=" + this._datasource._api.httpurl;
-            url += "&datasource=" + this._datasource;
+            serverRequest = this._datasource.api.versionGreaterThan(7.6);
         }
         else if (this.hasOwnProperty("_connection") && this._connection != null)
         {
-            url += "?server=" + this._connection.url;
+            serverRequest = this._connection.versionGreaterThan(7.6);
         }
-        url += "&visual=" + this.type;
 
-        var opts = this.getOpts();
-        var o;
-
-        for (var name in opts)
+        if (serverRequest)
         {
-            o = opts[name];
-            url += "&";
-            url += this.addToUrl(o,name);
+            var base = "";
+            var parms = "";
+
+            if (this._datasource != null)
+            {
+                base += this._datasource._api.httpurlBase;
+                parms += "datasource=" + this._datasource;
+            }
+            else if (this.hasOwnProperty("_connection") && this._connection != null)
+            {
+                base += this._connection.httpurlBase;
+            }
+
+            base += "/eventStreamProcessing/v1/visual";
+
+            if (parms.length > 0)
+            {
+                parms += "&";
+            }
+
+            parms += "visual=" + this.type;
+
+            var opts = this.getOpts();
+            var o;
+
+            for (var name in opts)
+            {
+                o = opts[name];
+                parms += "&";
+                parms += this.addToUrl(o,name);
+            }
+            
+            if (this._visuals.hasOpt("theme"))
+            {
+                parms += "&theme=" + this._visuals.getOpt("theme");
+            }
+
+            url = base + "?" + parms;
         }
-        
-        if (this._visuals.hasOpt("theme"))
+        else
         {
-            url += "&theme=" + this._visuals.getOpt("theme");
+            url += "/esp-connect/html/visual.html";
+            if (this._datasource != null)
+            {
+                url += "?server=" + this._datasource._api.httpurl;
+                url += "&datasource=" + this._datasource;
+            }
+            else if (this.hasOwnProperty("_connection") && this._connection != null)
+            {
+                url += "?server=" + this._connection.url;
+            }
+            url += "&visual=" + this.type;
+
+            var opts = this.getOpts();
+            var o;
+
+            for (var name in opts)
+            {
+                o = opts[name];
+                url += "&";
+                url += this.addToUrl(o,name);
+            }
+            
+            if (this._visuals.hasOpt("theme"))
+            {
+                url += "&theme=" + this._visuals.getOpt("theme");
+            }
+
+            var a = document.createElement("a");
+            a.href = url;
+
+            url = a.toString();
         }
 
-        var a = document.createElement("a");
-        a.href = url;
-
-        return(a.toString());
+        return(url);
     }
 
-    addToUrl(o,name,json)
+    addToUrl(o,name,options)
     {
+        var opts = new Options(options);
         var s = "";
 
         if (name != null)
         {
-            if (json)
+            if (opts.getOpt("quotes",false))
             {
                 s += "\"" + name + "\"";
                 s += ":";
@@ -750,7 +809,7 @@ class Chart extends Options
                         s += ",";
                     }
 
-                    s += this.addToUrl(item);
+                    s += this.addToUrl(item,null,{quotes:true});
 
                     i++;
                 }
@@ -769,7 +828,7 @@ class Chart extends Options
                         s += ",";
                     }
 
-                    s += this.addToUrl(o[y],y,true);
+                    s += this.addToUrl(o[y],y,{quotes:true});
 
                     i++;
                 }
@@ -779,7 +838,7 @@ class Chart extends Options
             {
                 tmp = o.toString();
                 tmp = tmp.replace("#","%23");
-                if (json)
+                if (opts.getOpt("quotes",false))
                 {
                     s += "\"" + tmp + "\"";
                 }

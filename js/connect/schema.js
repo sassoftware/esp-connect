@@ -566,5 +566,4 @@ class Schema extends Options
     }
 }
 
-//module.exports = Schema;
 export {Schema};

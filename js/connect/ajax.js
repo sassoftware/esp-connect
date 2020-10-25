@@ -593,6 +593,4 @@ var _api =
     }
 };
 
-//module.exports = _api;
-
 export {_api as ajax};

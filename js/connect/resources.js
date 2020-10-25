@@ -253,5 +253,4 @@ class Resources
     }
 }
 
-//module.exports = Resources;
 export {Resources};

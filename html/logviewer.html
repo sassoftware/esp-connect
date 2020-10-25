@@ -13,13 +13,18 @@
 
 <title>ESP Log Viewer</title>
 
-<link rel="stylesheet" href="../style/connect.css" />
+<script type="text/javascript">
+var _esp = null;
+</script>
 
-<script type="text/javascript" src="../dist/esp-connect-ui.js"></script>
+<!-- Run from an esp-connect install -->
+<link rel="stylesheet" href="../style/connect.css" />
+<script type="module">
+import {api} from "../js/ui/main.js"
+_esp = api;
+</script>
 
 <script type="text/javascript">
-
-var _esp = esp_connect_ui.api;
 
 var _connection = null;
 var _maxentries = 100;

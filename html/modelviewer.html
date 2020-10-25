@@ -17,11 +17,17 @@
 
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
-<script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
+<script type="text/javascript">
+var _esp = null;
+</script>
+
+<link rel="stylesheet" href="../style/connect.css" />
+<script type="module">
+import {api} from "../js/ui/main.js"
+_esp = api;
+</script>
 
 <script type="text/javascript">
-
-var _esp = esp_connect_ui.api;
 
 var _windowXmlCode = null;
 var _schemaTable = null;

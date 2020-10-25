@@ -403,5 +403,4 @@ var _models =
 
 _models.init();
 
-//module.exports = Model;
 export {Model};

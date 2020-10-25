@@ -7,16 +7,30 @@
 
 <title>ESP Weather Demo</title>
 
-<link rel="stylesheet" href="../../style/connect.css" />
-
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
+<script type="text/javascript">
+var _esp = null;
+</script>
+
+<!-- Run from an esp-connect install -->
+<link rel="stylesheet" href="../../style/connect.css" />
+<script type="module">
+import {api} from "../../js/ui/main.js";
+_esp = api;
+</script>
+
+<!-- Run from an esp-connect webpack bundle (you can put the bundle anywhere) -->
+<!--
 <script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
+<script type="text/javascript">
+_esp = esp_connect_ui.api;
+</script>
+-->
 
 <script type="text/javascript">
 
-var _esp = esp_connect_ui.api;
 var _project = "weather";
 
 var _visuals = null;

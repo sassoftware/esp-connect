@@ -1,24 +1,28 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 
 <title>ESP Connect  Examples</title>
 
-<link rel="stylesheet" href="../style/connect.css" />
+<script type="text/javascript">
+var _esp = null;
+</script>
 
-<script type="module" src="../js/ui/main.js"></script>
+<link rel="stylesheet" href="../style/connect.css" />
+<script type="module">
+import {api} from "../js/ui/main.js";
+_esp = api;
+</script>
 
 <script type="text/javascript">
 
 var _namespace = null;
 var _server = null;
-var _esp = null;
 
 function
-esp(api)
+init()
 {
-    _esp = api;
-
     var parms = _esp.getParms();
 
     if (parms.hasOwnProperty("namespace"))
@@ -108,7 +112,7 @@ ul.examples a
 
 </head>
 
-<body>
+<body onload="init()">
 
     <div id="banner">
         <table style="width:100%" cellspacing="0" cellpadding="0">

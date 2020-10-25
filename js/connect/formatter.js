@@ -372,5 +372,4 @@ class Formatter extends Options
     }
 }
 
-//module.exports = Formatter;
 export {Formatter};

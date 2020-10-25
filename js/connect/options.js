@@ -220,5 +220,4 @@ class Options
     }
 }
 
-//module.exports = Options;
 export {Options};

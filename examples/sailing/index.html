@@ -9,23 +9,37 @@
 
 <title>ESP Sailing Example</title>
 
-<link rel="stylesheet" href="../../style/connect.css" />
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.6.0/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.6.0/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
+<script type="text/javascript">
+var _esp = null;
+</script>
+
+<!-- Run from an esp-connect install -->
+<link rel="stylesheet" href="../../style/connect.css" />
+<script type="module">
+import {api} from "../../js/ui/main.js";
+_esp = api;
+</script>
+
+<!-- Run from an esp-connect webpack bundle (you can put the bundle anywhere) -->
+<!--
 <script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
+<script type="text/javascript">
+_esp = esp_connect_ui.api;
+</script>
+-->
 
 <script type="text/javascript">
 
-var _esp = esp_connect_ui.api;
 var _project = "sailing";
 
-var _conn = null;
 var _visuals = null;
+var _conn = null;
 
 function
 init()

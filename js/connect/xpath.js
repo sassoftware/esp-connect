@@ -284,9 +284,7 @@ var _api =
 
         if (tools.isNode)
         {
-            //xml = new _dom.window.DOMParser().parseFromString(s,"application/xml");
             xml = _dom.parseFromString(s,"application/xml");
-console.log(xml);
         }
         else
         {
@@ -310,7 +308,5 @@ console.log(xml);
         return(_xpath);
     }
 }
-
-//module.exports = _api;
 
 export {_api as xpath};

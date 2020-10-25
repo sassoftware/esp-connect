@@ -76,9 +76,21 @@ class Api extends Options
             }
         });
 
+        Object.defineProperty(this,"urlBase", {
+            get() {
+                return(this._connection.urlBase);
+            }
+        });
+
         Object.defineProperty(this,"url", {
             get() {
                 return(this._connection.url);
+            }
+        });
+
+        Object.defineProperty(this,"httpurlBase", {
+            get() {
+                return(this._connection.httpurlBase);
             }
         });
 
@@ -3372,5 +3384,4 @@ class GuidDelegate
 
 /* End Delegates */
 
-//module.exports = Api;
 export {Api as v7};

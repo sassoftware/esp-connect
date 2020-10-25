@@ -360,5 +360,4 @@ class ServerConnection extends Connection
     }
 }
 
-//module.exports = ServerConnection;
 export {ServerConnection}
