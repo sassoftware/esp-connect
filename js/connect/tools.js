@@ -16,6 +16,9 @@ if (typeof process === "object")
     }
 }
 
+var WS = null;
+var W3CWS = null;
+
 import {Options} from "./options.js";
 
 class Range
@@ -401,48 +404,136 @@ var _api =
         {
             if (process.env.NODE_WEBSOCKETS == "ws")
             {
-                const   WS = require("ws");
+                if (WS == null)
+                {
+                    import("ws").
+                        then((module) => {
+                            WS = module.default;
+                            var ws = new WS(url);
+                            ws._connection = this;
 
-                ws = new WS(url);
+                            if (this.supports(delegate,"open"))
+                            {
+                                ws.on("open",delegate.open);
+                            }
+                            if (this.supports(delegate,"close"))
+                            {
+                                ws.on("close",delegate.close);
+                            }
+                            if (this.supports(delegate,"error"))
+                            {
+                                ws.on("error",delegate.error);
+                            }
+                            if (this.supports(delegate,"message"))
+                            {
+                                ws.on("message",delegate.message);
+                            }
+                        }).
+                        catch((e) => {
+                            console.log("import error on ws: " + e);
+                        });
+                }
+                else
+                {
+                    var ws = new WS(url);
+                    ws._connection = this;
 
-                if (this.supports(delegate,"open"))
-                {
-                    ws.on("open",delegate.open);
-                }
-                if (this.supports(delegate,"close"))
-                {
-                    ws.on("close",delegate.close);
-                }
-                if (this.supports(delegate,"error"))
-                {
-                    ws.on("error",delegate.error);
-                }
-                if (this.supports(delegate,"message"))
-                {
-                    ws.on("message",delegate.message);
+                    if (this.supports(delegate,"open"))
+                    {
+                        ws.on("open",delegate.open);
+                    }
+                    if (this.supports(delegate,"close"))
+                    {
+                        ws.on("close",delegate.close);
+                    }
+                    if (this.supports(delegate,"error"))
+                    {
+                        ws.on("error",delegate.error);
+                    }
+                    if (this.supports(delegate,"message"))
+                    {
+                        ws.on("message",delegate.message);
+                    }
                 }
             }
             else
             {
-                var W3CWS = require("websocket").w3cwebsocket;
+                if (W3CWS == null)
+                {
+                    import("websocket").
+                        then((module) => {
+                            W3CWS = module.default.w3cwebsocket;
 
-                ws = new W3CWS(url);
+                            function
+                            WebSocketClient(url,connection)
+                            {
+                                this._conn = connection;
+                                this.binaryType = "arraybuffer";
+                                var config = {};
+                                config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
+                                W3CWS.call(this,url,null,null,null,null,config);
+                            }
 
-                if (this.supports(delegate,"open"))
-                {
-                    ws.onopen = delegate.open;
+                            WebSocketClient.prototype = Object.create(W3CWS.prototype);
+                            WebSocketClient.prototype.constructor = WebSocketClient;
+
+                            var ws = new WebSocketClient(url,this);
+
+                            if (this.supports(delegate,"open"))
+                            {
+                                ws.onopen = delegate.open;
+                            }
+                            if (this.supports(delegate,"close"))
+                            {
+                                ws.onclose = delegate.close;
+                            }
+                            if (this.supports(delegate,"error"))
+                            {
+                                ws.onerror = delegate.error;
+                            }
+                            if (this.supports(delegate,"message"))
+                            {
+                                ws.onmessage = delegate.message;
+                            }
+
+                        }).
+                        catch((e) => {
+                            console.log("import error on ws: " + e);
+                        });
                 }
-                if (this.supports(delegate,"close"))
+                else
                 {
-                    ws.onclose = delegate.close;
-                }
-                if (this.supports(delegate,"error"))
-                {
-                    ws.onerror = delegate.error;
-                }
-                if (this.supports(delegate,"message"))
-                {
-                    ws.onmessage = delegate.message;
+                    function
+                    WebSocketClient(url,connection)
+                    {
+                        this._conn = connection;
+                        this.binaryType = "arraybuffer";
+                        var config = {};
+                        config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
+                        W3CWS.call(this,url,null,null,null,null,config);
+                    }
+
+                    WebSocketClient.prototype = Object.create(W3CWS.prototype);
+                    WebSocketClient.prototype.constructor = WebSocketClient;
+
+                    var ws = new WebSocketClient(url,this);
+
+                    if (this.supports(delegate,"open"))
+                    {
+                        ws.onopen = delegate.open;
+                    }
+                    if (this.supports(delegate,"close"))
+                    {
+                        ws.onclose = delegate.close;
+                    }
+                    if (this.supports(delegate,"error"))
+                    {
+                        ws.onerror = delegate.error;
+                    }
+                    if (this.supports(delegate,"message"))
+                    {
+                        ws.onmessage = delegate.message;
+                    }
                 }
             }
         }

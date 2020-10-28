@@ -782,7 +782,7 @@ class K8S
         url += pod.metadata.name;
         url += "/exec";
 
-        for (i = 0; i < command.length; i++)
+        for (var i = 0; i < command.length; i++)
         {
             url += ((i == 0) ? "?" : "&");
             url += "command=" + command[i];
@@ -850,22 +850,22 @@ class K8S
                 {
                     if (tools.supports(delegate,"out"))
                     {
-                        delegate.out(this,message.data);
+                        delegate.out(this,buf);
                     }
                     else
                     {
-                        console.log(new TextDecoder().decode(message.data));
+                        console.log(new TextDecoder().decode(buf));
                     }
                 }
                 else if (channel == 2)
                 {
                     if (tools.supports(delegate,"err"))
                     {
-                        delegate.err(this,message.data);
+                        delegate.err(this,buf);
                     }
                     else
                     {
-                        tools.exception(new TextDecoder().decode(message.data));
+                        tools.exception(new TextDecoder().decode(buf));
                     }
                 }
             }
