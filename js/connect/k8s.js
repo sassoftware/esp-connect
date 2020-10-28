@@ -1264,7 +1264,7 @@ class K8SProject extends K8S
         s += "    loadBalancePolicy: \"default\" \n";
         s += "    espProperties:\n";
         s += "      server.xml: \"" + model + "\"\n";
-        s += "      meta.meteringhost: \"sas-event-stream-processing-metering-app.roleve\"\n";
+        s += "      meta.meteringhost: \"sas-event-stream-processing-metering-app." + this._namespace + "\"\n";
         s += "      meta.meteringport: \"80\"\n";
         s += "    projectTemplate:\n";
         s += "      autoscale:\n";

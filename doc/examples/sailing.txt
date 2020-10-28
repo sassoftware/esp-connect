@@ -9,76 +9,92 @@
 
 <title>ESP Sailing Example</title>
 
-<link rel="stylesheet" href="/esp-connect/style/connect.css" />
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.6.0/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.6.0/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="/esp-connect/js/ui/main"></script>
+<script type="text/javascript">
+var _esp = null;
+</script>
+
+<!-- Run from an esp-connect install -->
+<link rel="stylesheet" href="../../style/connect.css" />
+<script type="module">
+import {api} from "../../js/ui/main.js";
+_esp = api;
+</script>
+
+<!-- Run from an esp-connect webpack bundle (you can put the bundle anywhere) -->
+<!--
+<script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
+<script type="text/javascript">
+_esp = esp_connect_ui.api;
+</script>
+-->
 
 <script type="text/javascript">
 
-var _esp = null;
-var _conn = null;
+var _project = "sailing";
+
 var _visuals = null;
+var _conn = null;
 
 function
-esp(api)
+init()
 {
-    _esp = api;
-
     var parms = _esp.getParms();
 
-    if (parms.hasOwnProperty("server") == false)
+    if (parms.hasOwnProperty("project"))
     {
-        alert("you must specify ESP server URL");
-        return;
+        _project = parms["project"];
     }
-
-    var server = parms["server"];
-    delete parms["server"];
-
-    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
 
     _visuals = _esp.createVisuals(parms);
     _visuals.dateformat = "%c";
 
-    _esp.handleLayout();
+    _visuals = _esp.createVisuals(parms);
 
-    _esp.connect(server,{ready:ready});
+    _visuals.createWrapper("legend",{header:"Ships",style:{width:"98%",height:"5%","padding-top":"10px"},show_header:false});
+
+    var server = _esp.getServerFromParms(parms,_project);
+
+    if (server == null)
+    {
+        _esp.showConnectDialog({connect:connect});
+        return;
+    }
+
+    connect(server);
 }
 
 function
-ready(connection)
+connect(server)
 {
-    _conn = connection;
-
-    if (_esp.getParm("load",true))
-    {
-        _esp.showStatus("Loading project...");
-        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true,parms:{config:new URL("config.xml",document.URL).toString()}});
-    }
-    else
-    {
-        loaded();
-    }
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+    _esp.showStatus("Loading project...");
+    var url = new URL("model.xml",document.URL).toString();
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url},overwrite:true,force:_esp.getParm("force",false),parms:{config:new URL("config.xml",document.URL).toString()}});
+    _esp.handleLayout();
 }
 
 var _eventsources = null;
 var _model = null;
 
 function
-loaded()
+ready(connection)
 {
     _esp.clearStatus();
-    _conn.publishDataFrom("p/cq/Areas_Of_Interest","geoArea.csv",null,{informat:"csv"});
-    _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
-    var coll = _conn.getEventCollection({window:"p/cq/Boat_Current",interval:500});
-    var speeding = _conn.getEventStream({window:"p/cq/Last_Speeding_Event",ignore_deletes:true});
-    var exclusion = _conn.getEventStream({window:"p/cq/Last_Exclusion_Violation",ignore_deletes:true});
+
+    _conn = connection;
+
+    _esp.clearStatus();
+    _conn.publishDataFrom(_project + "/cq/Areas_Of_Interest","geoArea.csv",null,{informat:"csv"});
+    _conn.getProjectXml(_project,{response:function(c,data){_model = data;}});
+    var coll = _conn.getEventCollection({window:_project + "/cq/Boat_Current",interval:500});
+    var speeding = _conn.getEventStream({window:_project + "/cq/Last_Speeding_Event",ignore_deletes:true});
+    var exclusion = _conn.getEventStream({window:_project + "/cq/Last_Exclusion_Violation",ignore_deletes:true});
 
     var color = "#3b99fc";
     var colors = _visuals.colors.createGradientColors({color:color,num:5,end:true});
@@ -86,8 +102,8 @@ loaded()
                       header:"Sailing",popup:["boat_id","heading","speed"],marker_border:0,
                       poly_border_width:1,poly_fill_color:"rgba(0,255,0,.5)",
                       circle_border_width:1,circle_fill_color:"rgba(0,255,0,.5)",
-                      zoom:14,center:[56.000241,-3.424250],
-                      polygons:{window:"p/cq/Areas_Of_Interest",mode:"collection",coords:"Poly_Data",radius:"Poly_Radius",text:"poly_desc",order:"lon_lat"},html:getSailboat};
+                      zoom:13,center:[56.000241,-3.424250],
+                      polygons:{window:_project + "/cq/Areas_Of_Interest",mode:"collection",coords:"Poly_Data",radius:"Poly_Radius",text:"poly_desc",order:"lon_lat"},html:getSailboat};
 
     _map = _visuals.createMap("map",coll,config);
 
@@ -96,8 +112,6 @@ loaded()
 
     _visuals.createCompass("heading",coll,{value:"heading",size:180,header:"Current Heading",use_theme:false});
     _visuals.createGauge("speed",coll,{value:"speed",mode:"number",delta:false,segments:5,width:w,height:h,header:"Current Speed",range:[0,10]});
-
-    _visuals.createWrapper("legend",{header:"Ships",style:{width:"98%",height:"5%","padding-top":"10px"},show_header:false});
 
     _visuals.createTable("speeding",speeding,{header:"Speeding Violations",values:["boat_id","Location_Name","Max_speed","dateTime"],tail:true});
     _visuals.createTable("exclusion",exclusion,{header:"Exclusion Violations",values:["boat_id","Location_Name","Minimum_Distance","First_dateTime","Last_dateTime"],tail:true});
@@ -111,14 +125,16 @@ loaded()
     for (var i = 1; i < 5; i++)
     {
         var url = new URL("boat" + i + ".csv",document.URL).toString();
-        _eventsources.createEventSource({name:"boat" + i,type:"csv",window:"p/cq/Boat",opcode:"insert",dateformat:"%Y-%m-%d %H:%M:%S",url:url,delay:delay});
+        _eventsources.createEventSource({name:"boat" + i,type:"csv",window:_project + "/cq/Boat",opcode:"insert",opcodes:true,flags:true,dateformat:"%Y-%m-%d %H:%M:%S",url:url,delay:delay});
     }
+
+    playpause();
 }
 
 function
-error()
+error(message)
 {
-    alert("error");
+    console.log(message);
 }
 
 function
@@ -215,7 +231,7 @@ table.legend a.icon
 
 </head>
 
-<body>
+<body onload="init()">
 
     <div id="banner">
         <table style="width:100%" cellspacing="0" cellpadding="0">
@@ -223,7 +239,7 @@ table.legend a.icon
                 <td id="bannerTitle"></td>
                 <td class="icon">
                     <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
-                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'p',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'sailing',type:true,memory:true,show_projects:false})" title="ESP Model">&#xf501;</a>
                     <a class="icon" href="javascript:_esp.showFrameDialog('ESP Sailing Example','help.html',{width:'80%',height:'80%'})">&#xf30b;</a>
                 </td>
             </tr>

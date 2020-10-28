@@ -1,14 +1,38 @@
-## Creating the Visuals Instance
+# ESP Connect Visualizations
+## Table of Contents
+* [Overview](#Overview)
+* [Creating Charts](#Creating-Charts)
+    * [Bar Charts](#Bar-Charts)
+    * [Line Charts](#Line-Charts)
+    * [Time Series](#Time-Series)
+    * [Pie Charts](#Pie-Charts)
+    * [Bubble Charts](#Bubble-Charts)
+    * [Gauges](#Gauges)
+    * [Compasses](#Compasses)
+    * [Maps](#Maps)
+
+## Overview
+The ESP Connect API allows you to create many types of visualizations to be used to display ESP information.
+
 The *Visuals* object is used to create all the charts, tables, and viewers in the Connect API. You can create instances of this object by 
 using the API handle delivered upon startup:
-```
+```javascript
+
+var _visuals = null;
+
 function
-esp(api)
+init
 {
-    _esp = api;
+    ...
     _visuals = _esp.createVisuals(_esp.getParms());
     ...
 }
+
+...
+
+<body onload-"init()">
+...
+
 ```
 You can specify initialization options when you create the Visuals instance. In the above example, the code passes the URL request parameters 
 directly into the call to create the instance.
@@ -16,8 +40,8 @@ directly into the call to create the instance.
 The option parameters you can specify when creating the Visuals instance are:
 * *theme* - the color theme (explained below).
 * *colors* - a list of colors in string format, i.e. ["#89cff0","#0080ff","#f0bd27","#ff684c","#e03531"].
-* *font* - the font to use for graphics, defaults to *{family:"AvenirNextforSAS",size:14}*.
-* *title_font* - the font to use for graphics headers, defaults to *{family:"AvenirNextforSAS",size:18}*.
+* *font* - the font to use for graphics, defaults to the font used in the page.
+* *title_font* - the font to use for graphics headers, defaults to the font used in the page.
     
 You can optionally specify a color theme for the instance upon creation. These colors are used to render any of the graphics 
 created by the instance.
@@ -84,7 +108,7 @@ The different chart types will have different options specified in the option pa
 ### Bar Charts
 A bar chart can plot numeric variables on an x and y axes. 
 
-![](doc/images/barchart.png)
+![](images/barchart.png)
 
 They are created like this:
 ```
@@ -103,7 +127,7 @@ The option parameters are:
 ### Line Charts
 A line chart can plot numeric variables on the y axes. 
 
-![](doc/images/linechart.png)
+![](images/linechart.png)
 
 They are created like this:
 ```
@@ -124,7 +148,7 @@ The option parameters are:
 ### Time Series
 A time series can plot numeric variables on the y axis with a date or time variable on the x axis.
 
-![](doc/images/timeseries.png)
+![](images/timeseries.png)
 
 They are created like this:
 ```
@@ -145,7 +169,7 @@ The option parameters are:
 ### Pie Charts
 A pie chart can represent a numeric value as a *slice* of pie.
 
-![](doc/images/piechart.png)
+![](images/piechart.png)
 
 They are created like this:
 ```
@@ -162,7 +186,7 @@ The option parameters are:
 ### Bubble Charts
 A bubble chart can represent multiple numeric values as y, size, and color visualizations.
 
-![](doc/images/bubblechart.png)
+![](images/bubblechart.png)
 
 They are created like this:
 ```
@@ -182,7 +206,7 @@ The option parameters are:
 ### Maps
 
 The map chart is uses [Leaflet](https://leafletjs.com/) to display a geographic map overlaid with markers representing event data.
-![](doc/images/map.png)
+![](images/map.png)
 You can specify data fields for size and color of the markers.
 
 The map chart also has the ability to display custom shapes on the map. These shapes can be either circles or polygons.
@@ -211,7 +235,7 @@ var paris = visuals.createMap("paris",tracker,{lat:"GPS_latitude",lon:"GPS_longi
 paris.addCircles(circles,{lat:"POI_y",lon:"POI_x",radius:"POI_radius",text:"POI_desc"})
 paris.addPolygons(polygons,{coords:"poly_data",text:"poly_desc",order:"lon_lat"})
 ```
-![](doc/images/paris.png)
+![](images/paris.png)
 
 They are created like this:
 ```
@@ -248,8 +272,8 @@ The option parameters are:
 
 ### Gauges
 A gauge displays a single numeric value in a graphic divided into segments.
-![](doc/images/gauge1.png)
-![](doc/images/gauge2.png)
+![](images/gauge1.png)
+![](images/gauge2.png)
 For each event, a gauge is displayed showing the specified numeric value of the event along with a pointer
 showing where that value lies in the specified range of the gauge. The key value of the event is displayed
 at the top of the gauge along with the current gauge value.
@@ -283,7 +307,7 @@ The option parameters are:
 ### Compasses
 A compass displays a numeric value which represents a navigational heading.
 
-![](doc/images/compass.png)
+![](images/compass.png)
 
 They are created like this:
 ```
@@ -305,11 +329,11 @@ The option parameters are:
 ### Tables
 A table can display any number of event fields. If you have an event field containing an image, the image will be displayed in the table. If the event
 has object detection information within it, the objects will be labelled inside the image.
-![](doc/images/table1.png)
+![](images/table1.png)
 
 You can also apply a gradient color to the table rows depending on the value of a certain field.
 
-![](doc/images/table2.png)
+![](images/table2.png)
 
 They are created like this:
 ```
@@ -336,7 +360,7 @@ to view the live ESP server log.
 ### Model Viewer
 The model viewer is a graphical representation of the ESP model in the form of a directed graph. 
 
-![](doc/images/modelviewer.png)
+![](images/modelviewer.png)
 
 You can optionally view many attributes of each window, some of which are dynamic and some of which are static. These properties include:
 * *type* - the ESP window type</li>
@@ -375,7 +399,7 @@ viewer.project = "primary";
 ### Log Viewer
 The log viewer allows you to watch the live ESP server log. 
 
-![](doc/images/logviewer.png)
+![](images/logviewer.png)
 
 You will see the messages at the same time they come out to the real ESP server console. 
 
@@ -434,291 +458,4 @@ The page has 3 components:
 * *content* - this is the content of the page containing the visualizations. This contains one or more containers.
 * *footer* - this is the bottom part of the page that can display messages, status ...
 
-![](doc/images/layout.png)
-
-## Using the API with Node.js
-In addition to using the Connect API in web pages, you can use it 
-with [Node.js](http://www.nodejs.org) to run Javascript programs from the command
-line. This enables you to communicate with ESP from any platform supporting Node.js (which is about all of them). 
-
-To use the API with Node.js, perform the following steps (this assumes you have Node.js and [npm](https://www.npmjs.com) installed).
-* change to your HOME directory.
-* Install the Connect API from the directory where you downloaded it (the module name is *@sassoftware/esp-connect*):
-```
-$ npm install @work@/esp/js/libs/esp
-```
-* change directory to *@work@/esp/node*
-* run a test using the following command (use your own ESP server):
-```
-$ node connect -server http://espsrv01:7777 -input model.json
-```
-
-Connect provides several utilities you can use to communicate with an ESP server. These utilities contain JSON objects which are sent to the ESP server in order to perform tasks such
-as loading projects, subscribing to events, and model viewing. The utilities are:
-* *collection.json* - Subscribe to an event collection.</li>
-* *stream.json* - Subscribe to an event stream.</li>
-* *model.json* - Retrieve the ESP model.</li>
-* *logs.json* - Set up a live view of ESP logs.</li>
-* *load_project.json* - Load an ESP project from a file.</li>
-* *load_router.json* - Load an ESP router from a file.</li>
-* *publish_data.json* - Publish ESP event data from a file.</li>
-* *publish_url.json* - Publish ESP event data from a URL (the server pulls from the URL).</li>
-* *stats.json* - Set up a live view of ESP usage and memory statistics.</li>
-* *xml.json* - Retrieve ESP project XML.
-To run these utilities you run the *node* command to execute *connect.js* and supply the target ESP server along with the utility file to run:
-```
-$ node connect -server http://espsr01:7777 -input collection.json
-```
-If the utility requires arguments you will get a usage statement. For example, if you run *collection.json* without arguments you will see:
-
-```
-$ node connect -server http://espsrv01:7777 -input collection.json
-
-usage: -window [-format] [-schema]
-options:
-	-window		ESP window in the form of project/contquery/window
-	-format		xml | json | ubjson (defaults to ubjson)
-	-schema		true | false (return schema on start, defaults to true)
-```
-
-To write your own Node.js programs you will need to follow a couple simple steps. Begin your javascript file with the following code to get a 
-handle to the Connect API:
-
-```
-var esp = require("@sassoftware/esp-connect");
-```
-
-Then you just use the API handle as you would in a web page. The following code is the *basic.js* program included in the package. You can 
-use this as a starting point for NodeJS programs.
-```
-var esp = require("@sassoftware/esp-connect");
-var opts = esp.getArgs();
-var server = opts.getOpt("server");
-
-if (server == null)
-{
-    showUsage();
-    process.exit(0);
-}
-
-esp.connect(server,{ready:ready});
-
-function
-ready(connection)
-{
-    connection.loadModel({modelLoaded:loaded});
-}
-
-function
-loaded(model)
-{
-    model.projects.forEach((p) => {
-        console.log(p.name);
-        p.contqueries.forEach((cq) => {
-            console.log("  " + cq.name);
-            cq.windows.forEach((w) => {
-                console.log("    " + w.name + " (" + w.type + ")");
-            });
-        });
-    });
-    process.exit(0);
-}
-
-function
-showUsage()
-{
-    console.log("");
-    console.log("usage: node basic -server");
-    console.log("");
-    console.log("options:");
-    console.log("\t-server\tESP Server from which to receive the model (in the form http://espserver:7777)");
-    console.log("");
-}
-```
-
-## The Javascript Router
-
-ESP provides a mechanism whereby events can be routed between ESP servers by creating a router configuration such as the following:
-
-```
-<router output-stats-interval="5">
-    <esp-engines>
-        <esp-engine name="from" host="espsrv01" port="3501"/>
-        <esp-engine name="to" host="espsrv01" port="3511"/>
-    </esp-engines>
-    <esp-destinations>
-        <publish-destination name="dest" opcode="insert">
-            <publish-target>
-                <engine-func>to</engine-func>
-                <project-func>secondary</project-func>
-                <contquery-func>cq</contquery-func>
-                <window-func>preparedTrades</window-func>
-            </publish-target>
-        </publish-destination>
-    </esp-destinations>
-    <esp-routes>
-        <esp-route name="route" to="dest">
-            <engine-expr>from</engine-expr>
-            <window-expr>transform</window-expr>
-        </esp-route>
-    </esp-routes>
-</router>
-```
-The Connect API provides a router which works in a similar manner. There are a couple of differences between the embedded server router and the 
-Javascript router configuration:
-* The port in the *esp-engine* definition is the ESP server HTTP port, not the pubsub port (since it is using the connect webspcket API).
-* The routing functions are written in Javascript instead of ESP functional notation.
-
-The ability to write the routing functions in Javascript is very powerful. For example, if you wanted to route trade data to different 
-servers based on the broker, the configuration might look like this:
-```
-<router>
-    <esp-engines>
-        <esp-engine name="from" host="espsrv01" port="3500"/>
-        <esp-engine name="to_1" host="espsrv01" port="3510"/>
-        <esp-engine name="to_2" host="espsrv01" port="3520"/>
-    </esp-engines>
-    <esp-destinations>
-        <publish-destination name="dest" opcode="insert">
-            <publish-target>
-                <engine-func>
-                    if (data.brokerName == "Joe" || data.brokerName == "Sally")
-                    {
-                        return("to_1");
-                    }
-                    else if (data.brokerName == "John")
-                    {
-                        return("to_2");
-                    }
-                    else
-                    {
-                        return(null);
-                    }
-                </engine-func>
-                <project-func>
-                    return("secondary")
-                </project-func>
-                <contquery-func>
-                    return("cq");
-                </contquery-func>
-                <window-func>
-                    return("preparedTrades");
-                </window-func>
-            </publish-target>
-        </publish-destination>
-    </esp-destinations>
-    <esp-routes>
-        <esp-route name="the-route" to="dest">
-            <engine-expr>from</engine-expr>
-            <window-expr>transform</window-expr>
-        </esp-route>
-    </esp-routes>
-</router>
-```
-This will route events for brokers *Joe* and *Sally* to server *to_1* and events for broker *John* to server *to_2*. Any event with a different broker name will be discarded.
-
-To create run a router from a configuration your code would look something like this (this is from *router.js* which is supplied with the package):
-```
-var esp = require("@sassoftware/esp-connect");
-var opts = esp.getArgs();
-var config = opts.getOpt("config");
-
-if (config == null)
-{
-    showUsage();
-    process.exit(0);
-}
-
-var fs = require("fs");
-var filedata = fs.readFileSync(config);
-var router = esp.createRouter();
-
-router.configure(filedata.toString());
-router.start();
-
-function
-showUsage()
-{
-    console.log("");
-    console.log("usage: node router -config");
-    console.log("");
-    console.log("options:");
-    console.log("\t-config\trouter configuration");
-    console.log("");
-}
-```
-
-You can also create a router from scratch by using API calls.
-
-```
-var router = esp.createRouter();
-router.addServer("esp","http://espsrv01:7777");
-
-var dest = router.addPublishDestination("to");
-
-dest.getEngine = function(data) {
-    return("esp");
-};
-
-dest.getProject = function(data) {
-    return("secondary");
-};
-
-dest.getContquery = function(data) {
-    return("cq");
-};
-
-dest.getWindow = function(data) {
-    return("preparedTrades");
-};
-
-var route = router.addRoute("from");
-route.engine = "esp";
-route.to = "to";
-route.project = "primary";
-route.win = "transform";
-
-router.start();
-```
-
-You can add any custom destinations you need very easily. The destination just needs to implement the *process(data)* function.
-
-```
-var logger = router.addDestination("logger");
-logger.process = function(data) {
-    console.log("got event: " + JSON.stringify(data));
-};
-
-route.to = "to,logger";
-```
-
-## Example Pages
-These example pages contain the features outlined in this document. You only need to start an empty ESP server since these
-pages load the projects they need to run. 
-* [basic](doc/examples/basic.txt) - basic Connect API usage
-* [geofence](doc/examples/paris.txt) - geofence example with trip through Paris
-* [weather](doc/examples/weather.txt) - weather data example using gauges and compasses
-* [symbols](doc/examples/symbols.txt) - charts with controls for paging and filtering
-* [trades](doc/examples/trades.txt) - streaming stock trades and broker violations
-* [images](doc/examples/images.txt) - examples with images and object detection in tables
-
-You can run these and other examples by
-
-1. Downloading the Connect API into your work area, @work@
-2. Make @work@ accessible to a web server
-3. Navigate to http://@work@/examples in your browser providing a *server=http://myserver:5555* parameter (use your own server)
-
-## Using the Model and Log Viewers
-
-You can use the model and log viewers by simply double clicking on the HTML files.
-
-1. Download the Connect API into your work area, @work@
-2. Navigate to @work@/html
-3. Double click on the modelviewer.html and/or logviewer.html files
-
-You can of course access these pages through a web server as well.
-
-## Additional Resources
-
-* [SAS ESP](https://www.sas.com/en_us/software/event-stream-processing.html)
-* [SAS ESP User Guide](https://go.documentation.sas.com/?cdcId=espcdc&cdcVersion=6.2&docsetId=espov&docsetTarget=home.htm&locale=en)
+![](images/layout.png)

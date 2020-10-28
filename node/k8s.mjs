@@ -33,7 +33,7 @@ if (opts.getOpt("projects",false))
 
             data.forEach((item) => {
 
-                if (item.metadata.name != "sas-event-stream-processing-client-config-server")
+                //if (item.metadata.name != "sas-event-stream-processing-client-config-server")
                 {
                     o = esp.createOptions();
                     o.setOpt("name",item.metadata.name);

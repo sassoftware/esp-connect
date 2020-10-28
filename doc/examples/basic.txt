@@ -9,45 +9,121 @@
 
 <title>ESP Basic Example</title>
 
-<link rel="stylesheet" href="../../style/connect.css" />
-
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/ui/main"></script>
+<script type="text/javascript">
+var _esp = null;
+</script>
+
+<!-- Run from an esp-connect install -->
+<link rel="stylesheet" href="../../style/connect.css" />
+<script type="module">
+import {api} from "../../js/ui/main.js";
+_esp = api;
+</script>
+
+<!-- Run from an esp-connect webpack bundle (you can put the bundle anywhere) -->
+<!--
+<script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
+<script type="text/javascript">
+_esp = esp_connect_ui.api;
+</script>
+-->
 
 <script type="text/javascript">
 
-var _esp = null;
+var _project = "basic";
+
 var _conn = null;
 var _visuals = null;
-var _viewer = null;
+
+var _xml = "<project threads='4' pubsub='auto'>\
+               <contqueries>\
+                 <contquery name='cq' trace='clicks'>\
+                   <windows>\
+                     <window-source name='clicks' insert-only='true' index='pi_EMPTY'>\
+                        <schema-string>id*:string,element:string,x:int32,y:int32</schema-string>\
+                     </window-source>\
+                     <window-copy name='copy'>\
+                        <retention type='bytime_sliding'>30 seconds</retention>\
+                     </window-copy>\
+                     <window-aggregate name='clicksAggr'>\
+                        <schema-string>element*:string,count:int32</schema-string>\
+                        <output>\
+                            <field-expr>ESP_aCount()</field-expr>\
+                        </output>\
+                     </window-aggregate>\
+                   </windows>\
+                   <edges>\
+                     <edge source='clicks' target='copy' />\
+                     <edge source='copy' target='clicksAggr' />\
+                   </edges>\
+                 </contquery>\
+               </contqueries>\
+            </project>";
 
 function
-esp(api)
+init()
 {
-    _esp = api;
-
     var parms = _esp.getParms();
 
-    if (parms.hasOwnProperty("server") == false)
+    if (parms.hasOwnProperty("project"))
     {
-        alert("you must specify ESP server URL");
+        _project = parms["project"];
+    }
+
+    _visuals = _esp.createVisuals(parms);
+
+    _visuals.createWrapper("colors",{header:"Click on the colored areas to generate events",style:{width:"98%",height:"150px"}});
+
+    var server = _esp.getServerFromParms(parms,_project);
+
+    if (server == null)
+    {
+        _esp.showConnectDialog({connect:connect});
         return;
     }
 
-    var server = parms["server"];
-    delete parms["server"];
+    connect(server);
+}
 
+function
+connect(server)
+{
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
- 
-    _visuals = _esp.createVisuals(parms);
+    _esp.showStatus("Loading project...");
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_xml},overwrite:true,force:_esp.getParm("force",false)});
+    _esp.handleLayout();
+}
 
-    _visuals.createWrapper("colors",{header:"Click on the colored areas to generate events",style:{width:"95%",height:"150px"}});
+function
+ready(conn)
+{
+    _esp.clearStatus();
 
-    _esp.handleLayout({layout:layout});
+    _conn = conn;
 
-    _esp.connect(server,{ready:ready});
+    _esp.clearStatus();
+
+    _visuals.createLogViewer("logs",_conn,{header:"Log Viewer"});
+
+    var clicks  = _conn.getEventCollection({window:_project + "/cq/clicksAggr"});
+
+    _visuals.createBarChart("barchart",clicks,{y:"count",header:"Clicks Chart",xrange:[0,100],orientation:"horizontal",get_color:barcolor});
+    _visuals.createGauge("gauges",clicks,{value:"count",segments:5,header:"Clicks Indicators",width:200,range:[0,100],bar_color:"rgba(255,255,255,.7)"});
+
+    _conn.getProjectXml(_project,{response:function(c,data){_model = data;}});
+
+    _publisher = _conn.getPublisher({window:_project + "/cq/clicks"});
+
+    _esp.size(100);
+}
+
+function
+error(message)
+{
+    console.log(message);
 }
 
 function
@@ -56,69 +132,12 @@ layout()
     _esp.refresh();
 }
 
-function
-ready(conn)
-{
-    _conn = conn;
-
-    if (_esp.getParm("load",true))
-    {
-        var  model = "<project threads='4' pubsub='auto'>\
-                       <contqueries>\
-                         <contquery name='cq' trace='clicks'>\
-                           <windows>\
-                             <window-source name='clicks' insert-only='true' index='pi_EMPTY'>\
-                                <schema-string>id*:string,element:string,x:int32,y:int32</schema-string>\
-                             </window-source>\
-                             <window-copy name='copy'>\
-                                <retention type='bytime_sliding'>30 seconds</retention>\
-                             </window-copy>\
-                             <window-aggregate name='clicksAggr'>\
-                                <schema-string>element*:string,count:int32</schema-string>\
-                                <output>\
-                                    <field-expr>ESP_aCount()</field-expr>\
-                                </output>\
-                             </window-aggregate>\
-                           </windows>\
-                           <edges>\
-                             <edge source='clicks' target='copy' />\
-                             <edge source='copy' target='clicksAggr' />\
-                           </edges>\
-                         </contquery>\
-                       </contqueries>\
-                    </project>";
-
-        _esp.showStatus("Loading project...");
-
-        _conn.loadProject("myproject",model,{loaded:loaded},{overwrite:true});
-    }
-    else
-    {
-        loaded();
-    }
-}
-
 var _publisher = null;
+var _model = null;
 
 function
 loaded()
 {
-    _esp.clearStatus();
-
-    _publisher = _conn.getPublisher({window:"myproject/cq/clicks"});
-
-    _visuals.createLogViewer("logs",_conn,{header:"Log Viewer"});
-    _viewer = _visuals.createModelViewer("model",_conn,{header:"Model Viewer",cpu:true,counts:true,schema:true,type:true,index:true,memory:true});
-    _viewer.addDelegate({modelLoaded:function(viewer){viewer.project = "myproject"}});
-
-    var clicks  = _conn.getEventCollection({window:"myproject/cq/clicksAggr"});
-
-    _visuals.createBarChart("barchart",clicks,{y:"count",header:"Clicks Chart",xrange:[0,100],orientation:"horizontal",get_color:barcolor});
-    _visuals.createGauge("gauges",clicks,{value:"count",segments:5,header:"Clicks Indicators",width:200,range:[0,100],bar_color:"rgba(255,255,255,.7)"});
-
-    _conn.getProjectXml("myproject",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
-
-    _esp.size(1000);
 }
 
 function
@@ -142,15 +161,16 @@ publish(evt)
 
 </script>
 
-<body>
+<body onload="init()">
 
     <div id="banner">
         <table style="width:100%" cellspacing="0" cellpadding="0">
             <tr>
                 <td id="bannerTitle"></td>
                 <td class="icon">
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf426;</a>
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a></td>
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'basic',type:true,memory:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('ESP Basic Example','help.html',{width:'50%',height:'50%'})" title="Help">&#xf30b;</a>
                 </td>
             </tr>
 
@@ -166,72 +186,13 @@ publish(evt)
                 <div id="yellow" style="width:18%;height:80%;background:yellow;border:1px solid black" onmousedown="javascript:publish(event)"></div>
                 <div id="beige" style="width:18%;height:80%;background:beige;border:1px solid black" onmousedown="javascript:publish(event)"></div>
             </div>
-            <div id="barchart" style="width:48%;height:300px"></div>
-            <div id="gauges" style="width:48%;height:300px"></div>
-            <div id="logs" style="width:48%;height:400px"></div>
-            <div id="model" style="width:48%;height:400px"></div>
+            <div id="barchart" style="width:48%;height:350px"></div>
+            <div id="logs" style="width:48%;height:350px"></div>
+            <div id="gauges" style="width:98%;height:250px"></div>
         </div>
     </div>
 
     <div id="footer">&nbsp;</div>
-
-    <div id="espModel" class="dialog" style="width:90%;height:90%">
-
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
-        </table>
-
-        <div class="dialogTop">
-
-            <div  class="dialogHeader">
-                <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td><div class="dialogTitle">ESP Model</div></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="dialogContent" style="width:95%;height:70%;margin:auto">
-            <pre id="espModelXml" class="model"></pre>
-        </div>
-    </div>
-
-    <div id="help" class="dialog" style="width:60%">
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
-        </table>
-
-        <div class="dialogTop">
-
-            <div  class="dialogHeader">
-                <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td><div class="dialogTitle">ESP Basic Example</div></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="dialogContent">
-            This example loads a simple ESP model to count clicks on the colored rectangles on the page. Just click on the rectangles and watch the events come into
-            the page. It also contains a log viewer and a model viewer. The model has a time based retention policy so the events will come and go as you click.
-        </div>
-
-        <div class="dialogButtons">
-            <table style="width:100%">
-                <tr>
-                    <td class="dialogButton">
-                        <span><button class="close" onclick="javascript:_esp.getDialogs().popModal('help')">Done</button></span>
-                    </td>
-                </tr>
-            </table>
-        </div>
-    </div>
 
 </body>
 

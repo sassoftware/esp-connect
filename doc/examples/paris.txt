@@ -7,85 +7,107 @@
 
 <title>ESP Geofence Demo</title>
 
-<link rel="stylesheet" href="../../style/connect.css" />
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.6.0/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.6.0/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/ui/main"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
 <script type="text/javascript">
+var _esp = null;
+</script>
+
+<!-- Run from an esp-connect install -->
+<link rel="stylesheet" href="../../style/connect.css" />
+<script type="module">
+import {api} from "../../js/ui/main.js";
+_esp = api;
+</script>
+
+<!-- Run from an esp-connect webpack bundle (you can put the bundle anywhere) -->
+<!--
+<script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
+<script type="text/javascript">
+_esp = esp_connect_ui.api;
+</script>
+-->
+
+<script type="text/javascript">
+
+var _project = "paris";
 
 var _visuals = null;
 var _trip = null;
 var _conn = null;
-var _esp = null;
 
 function
-esp(api)
+init()
 {
-    _esp = api;
-
     var parms = _esp.getParms();
 
-    if (parms.hasOwnProperty("server") == false)
+    if (parms.hasOwnProperty("project"))
     {
-        alert("you must specify ESP server URL");
+        _project = parms["project"];
+    }
+
+    _visuals = _esp.createVisuals(parms);
+
+    var server = _esp.getServerFromParms(parms,_project);
+
+    if (server == null)
+    {
+        _esp.showConnectDialog({connect:connect});
         return;
     }
 
-    var server = parms["server"];
-    delete parms["server"];
+    connect(server);
+}
 
+function
+connect(server)
+{
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-
-    _esp.connect(server,{ready:ready});
-    _visuals = _esp.createVisuals(_esp.getParms());
-
+    _esp.showStatus("Loading project...");
+    var url = new URL("model.xml",document.URL).toString();
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url},overwrite:true,force:_esp.getParm("force",false)});
     _esp.handleLayout();
 }
 
 function
 ready(connection)
 {
-    _conn = connection;
+    _esp.clearStatus();
 
-    _esp.showStatus("Loading project...");
-    _conn.loadUrl("model","model.xml",{loaded:sendModel});
+    _conn = connection;
     _conn.loadUrl("trip","paris_trip.csv",{loaded:function(name,text){_trip = text;}});
+
+    _conn.loadModel({modelLoaded:function(model) {_model = model}},{schema:true});
+
+    _conn.getPublisher({window:_project + "/cq/circles_in"}).publishCsvFrom("circles_in.csv",{close:true,opcodes:true,flags:true});
+    _conn.getPublisher({window:_project + "/cq/poly_in"}).publishCsvFrom("poly_in.csv",{close:true,opcodes:true,flags:true});
+    setTimeout(createVisuals,1000);
+    _conn.getProjectXml("myproject",{response:function(c,data){_modelXml = data;}});
+
     _esp.size();
 }
 
+function
+error(message)
+{
+    console.log(message);
+}
+
 var _model = null;
-
-function
-sendModel(name,text,data)
-{
-    _model = new _conn.createModel(data);
-    _conn.loadProject("p",text,{loaded:loaded},{overwrite:true});
-}
-
-function
-loaded(p,conn)
-{
-    _conn.getPublisher({window:"p/cq/circles_in"}).publishCsvFrom("circles_in.csv",{close:true});
-    _conn.getPublisher({window:"p/cq/poly_in"}).publishCsvFrom("poly_in.csv",{close:true});
-    setTimeout(createVisuals,1000);
-    _conn.getProjectXml("p",{response:function(c,data){document.getElementById("espModelXml").innerText = data;}});
-
-    _esp.clearStatus();
-}
+var _modelXml = null;
 
 function
 createVisuals()
 {
     var color = "#3b99fc";
     var barColor = "rgba(255,255,255,.7)";
-    var tracker = _conn.getEventCollection({window:"p/cq/tracker"});
-    var poiAlerts = _conn.getEventCollection({window:"p/cq/alerts_vehicles"});
-    var polygonAlerts = _conn.getEventStream({window:"p/cq/alerts_polygons_inserts",ignore_deletes:true});
+    var tracker = _conn.getEventCollection({window:_project + "/cq/tracker"});
+    var poiAlerts = _conn.getEventCollection({window:_project + "/cq/alerts_vehicles"});
+    var polygonAlerts = _conn.getEventStream({window:_project + "/cq/alerts_polygons_inserts",ignore_deletes:true});
     var colors = _visuals.colors.createGradientColors({color:color,num:5,end:true});
 
     var config = {lat:"GPS_latitude",lon:"GPS_longitude",size:10,color:"speed",colors:colors,color_range:[0,50],
@@ -93,8 +115,8 @@ createVisuals()
                       circle_border_width:1,circle_fill_color:"rgba(0,0,255,.5)",
                       poly_border_width:1,poly_fill_color:"rgba(0,255,0,.5)",
                       zoom:15,tracking:true,center:[48.875,2.287583],
-                      circles:{window:"p/cq/circles_in",mode:"collection",lat:"POI_y",lon:"POI_x",radius:"POI_radius",text:"POI_desc"},
-                      polygons:{window:"p/cq/poly_in",mode:"collection",coords:"poly_data",text:"poly_desc",order:"lon_lat"},html:getMarker
+                      circles:{window:_project + "/cq/circles_in",mode:"collection",lat:"POI_y",lon:"POI_x",radius:"POI_radius",text:"POI_desc"},
+                      polygons:{window:_project + "/cq/poly_in",mode:"collection",coords:"poly_data",text:"poly_desc",order:"lon_lat"},html:getMarker
                       };
 
     var paris = _visuals.createMap("paris",tracker,config);
@@ -110,6 +132,8 @@ createVisuals()
     _visuals.createGauge("speed",tracker,{value:"speed",width:250,colors:colors,segments:5,header:"Speed",range:[0,40],delta:true,decimals:false,bar_color:barColor});
 
     _esp.size();
+
+    _esp.getDialogs().pushModal('publish');
 }
 
 function
@@ -142,8 +166,8 @@ function
 Trip(name)
 {
     this._name = name;
-    this._data = _model.getWindow("p/cq/position_in").schema.createDataFromCsv(_trip);
-    this._publisher = _conn.getPublisher({window:"p/cq/position_in"});
+    this._data = _model.getWindow(_project + "/cq/position_in").schema.createDataFromCsv(_trip,{opcodes:true,flags:true});
+    this._publisher = _conn.getPublisher({window:_project + "/cq/position_in"});
     this._fields = ["vehicle","pt_id","GPS_longitude","GPS_latitude","speed","course"];
     this._index = 0;
     this._delay = 250;
@@ -187,7 +211,7 @@ function()
 
 </head>
 
-<body>
+<body onload="init()">
 
     <div id="banner">
         <table style="width:100%" cellspacing="0" cellpadding="0">
@@ -195,8 +219,9 @@ function()
                 <td id="bannerTitle"></td>
                 <td class="icon">
                     <a class="icon" href="javascript:_esp.getDialogs().pushModal('publish')">&#xf360;</a>
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('espModel')">&#xf426;</a>
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_modelXml)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'p',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('ESP Paris Geofence Example','help.html',{width:'50%',height:'50%'})">&#xf30b;</a>
                 </td>
             </tr>
         </table>
@@ -257,67 +282,6 @@ function()
             </table>
         </div>
     </div>
-
-    <div id="espModel" class="dialog" style="width:90%;height:90%">
-
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
-        </table>
-
-        <div class="dialogTop">
-
-            <div  class="dialogHeader">
-                <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td><div class="dialogTitle">ESP Model</div></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="dialogContent" style="width:95%;height:70%;margin:auto">
-            <pre id="espModelXml" class="model"></pre>
-        </div>
-    </div>
-
-    <div id="help" class="dialog" style="width:60%">
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
-            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
-        </table>
-
-        <div class="dialogTop">
-
-            <div  class="dialogHeader">
-                <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td><div class="dialogTitle">ESP Paris Geofence Example</div></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="dialogContent">
-            This example simulates vehicles traveling through Paris. The example adds several general polygons and some specific points of interest to the map. When the vehicles enter and/or
-            approach these items, you will see events come in. Also, the speed and direction of the vehicles are displayed in gauges and compasses, respectively. You can initiate any number
-            of vehicle trips by hitting the gear icon at the top right and entering a vehicle name.
-        </div>
-
-        <div class="dialogButtons">
-            <table style="width:100%">
-                <tr>
-                    <td class="dialogButton">
-                        <span><button class="close" onclick="javascript:_esp.getDialogs().popModal('help')">Done</button></span>
-                    </td>
-                </tr>
-            </table>
-        </div>
-    </div>
-
-
 
 </body>
 
