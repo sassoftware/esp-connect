@@ -410,21 +410,28 @@ class NodeAjax extends Options
         {
             var filename = this._url.substr(7);
             var request = this;
+            var ajax = this;
 
-            require("fs").readFile(filename,null,function(error,contents) {
-                this._responseText = contents;
+            import("fs").then((module) => {
+                const   fs = module.default;
+                fs.readFile(filename,null,function(error,contents) {
+                    ajax._responseText = contents;
 
-                if (error != null)
-                {
-                    if (tools.supports(request._delegate,"error"))
+                    if (error != null)
                     {
-                        request._delegate.error(request,error);
+                        if (tools.supports(request._delegate,"error"))
+                        {
+                            request._delegate.error(request,error);
+                        }
                     }
-                }
-                else if (tools.supports(request._delegate,"response"))
-                {
-                    request._delegate.response(request,contents,null);
-                }
+                    else if (tools.supports(request._delegate,"response"))
+                    {
+                        request._delegate.response(request,contents,null);
+                    }
+                });
+            }).
+            catch((e) => {
+                console.log("import error on fs: " + e);
             });
 
             return;

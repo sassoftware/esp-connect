@@ -114,24 +114,6 @@ if (tools.isNode)
     }
     else
     {
-        /*
-        W3CWS = require("websocket").w3cwebsocket;
-        import {w3cwebsocket} as W3CWS from "websocket"; 
-
-        function
-        WebSocketClient(url,connection)
-        {
-            this._conn = connection;
-            this.binaryType = "arraybuffer";
-            var config = {};
-            config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
-            W3CWS.call(this,url,null,null,null,null,config);
-        }
-
-        WebSocketClient.prototype = Object.create(W3CWS.prototype);
-        WebSocketClient.prototype.constructor = WebSocketClient;
-        */
-
         _nodeWebsockets = {
             open:function()
             {
