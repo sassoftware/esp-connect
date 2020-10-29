@@ -1,24 +1,50 @@
-## ESP Connect
+# ESP Connect
+
+## Table of Contents
+
+* [Overview](#overview)
+* [API Objects](#api-objects)
+    * [Server Connections](#the-serverconnection-object)
+    * [Event Collections](#the-eventcollection-object)
+    * [Event Streams](#the-eventstream-object)
+    * [Publishers](#the-publisher-object)
+    * [Stats](#the-stats-object)
+    * [Logs](#the-log-object)
+* [Using The API with Kubernetes](#Using-The-API-with-Kubernetes)
+
+## Overview
 The esp-connect package enables you to communicate with a SAS Event Stream Processing (ESP) server using Javascript objects.
 
-NOTE While esp-connect should work with an ESP 6.2 server, it was designed specifically to work with the ESP 7.1 websocket interface.
+The API works with ESP standalone servers (such as simple command line startup) as well as with the [ESP Kubernetes Cloud
+Ecosystem](https://github.com/sassoftware/esp-kubernetes/tree/develop).
+
+**NOTE** While esp-connect should work with an ESP 6.2 server, it was designed specifically to work with the ESP 7.x+ websocket interface.
 
 ## API Objects
 ### The ServerConnection Object
 In order to communicate with an ESP server, you need to create a ServerConnection object.
 This is a persistent connection to the ESP server. 
-If you are running under a browser, you do this through the API instance passed into the *esp* function:
+If you are running under a browser, you do this as shown below (make sure you call the *init()* function on page load):
 ```javascript
 ...
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../js/ui/main"></script>
+<script type="text/javascript">
+var _esp = null;
+</script>
+
+<!-- Run from an esp-connect install -->
+<link rel="stylesheet" href="../../style/connect.css" />
+<script type="module">
+import {connect} from "../../js/connect/connect.js";
+_esp = connect;
+</script>
 
 <script type="text/javascript">
 
 function
-esp(api)
+init()
 {
-    api.connect("http://espsrv01:7777",{ready:initialize});
+    _esp.connect("http://espsrv01:7777",{ready:initialize});
 }
 
 function
@@ -33,9 +59,9 @@ initialize(connection)
 
 It is slightly different if you are running under Nnde.js:
 ```javascript
-var esp = require("@sassoftware/esp-connect");
+import {connect as esp} from "@sassoftware/esp-connect";
 
-api.connect("http://espsrv01:7777",{ready:initialize});
+esp.connect("http://espsrv01:7777",{ready:initialize});
 
 function
 initialize(connection)
@@ -424,3 +450,42 @@ The parameters are:
             * Remove a delegate from the Log instance.
         * **Parameters**
             * *delegate* - The delegate to remove.
+
+## Using The API with Kubernetes
+It is very easy to use the esp-connect package in a Kubernetes (K8S) environment. For starters you must create the ESP K8S ecosystem described
+<a href="https://github.com/sassoftware/esp-kubernetes/tree/develop" target="_blank">here</a>.
+
+You will need to communicate with a K8S API server in order to perform operations such as project creation and deletion. The preferred way to do this is to use a 
+<a href="https://kubernetes.io/docs/tasks/extend-kubernetes/http-proxy-access-api" target="_blank">K8S proxy server</a>.
+
+The proxy enables web-based components to communicate with K8S without experiencing issues with CORS (Cross Origin Resource Sharing).
+
+**NOTE** You will need to download and install the <a href="https://kubernetes.io/docs/tasks/tools/install-kubectl" target="_blank">kubectl</a> command to 
+run the proxy as well as perform other K8s-related tasks.
+
+The kubectl command is used to start the proxy. The following starts a proxy which can be used to serve up the ESP connect web-based components including the examples, the model viewer, and the log viewer.
+```javascript
+$ kubectl proxy --disable-filter
+```
+The proxy reads your K8S configuration so it handles the authentication with the API server. You can communicate directly with the server (from command line not web page) but you will 
+need to provide any necessary authentication info.
+
+ESP server connections are initiated with URLs. For example, to retrieve the model for project trades from an ESP server running on espsrv01 at port 2222:
+```javascript
+_esp.connect("http://espsrv01:2222",{ready:initialize});
+```
+Since this points directly to an ESP server it will not suffice in a K8S environment.
+A couple new protocols can be used to communicate with ESP servers in a K8S cluster.
+* k8s: - protocol for going directly to a K8S API server.
+```javascript
+_esp.connect("k8s://10.104.16.129:6443/myns/trades",{ready:initialize});
+```
+* k8s-proxy: - protocol for going to a K8S proxy server.
+```javascript
+_esp.connect("k8s-proxy://localhost:8001/myns/trades",{ready:initialize});
+```
+The K8S url contains the host and port of the K8S server (or proxy) and the K8S namespace and ESP project name.
+The different protocols are necessary because communications with the proxy server do not use TLS whereas those with the API server do.
+
+Using these protocols tells the connect API that it is working with K8S which will allow it to send any necessary requests to the
+K8S server.

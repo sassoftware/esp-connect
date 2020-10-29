@@ -33,8 +33,6 @@ Ecosystem](https://github.com/sassoftware/esp-kubernetes/tree/develop).
 
 **NOTE** While esp-connect should work with an ESP 6.2 server, it was designed specifically to work with the ESP 7.x+ websocket interface.
 
-
-
 The Connect API leverages the new ESP websocket API which uses the following connection request
 ```
 ws://espsrv01:7777/eventStreamProcessing/v1/connect
