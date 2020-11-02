@@ -4,6 +4,7 @@
 */
 
 import {connect as esp} from "@sassoftware/esp-connect";
+import {default as fs} from "fs";
 
 var opts = esp.getArgs();
 var config = opts.getOpt("config");
@@ -14,7 +15,6 @@ if (config == null)
     process.exit(0);
 }
 
-var fs = require("fs");
 var filedata = fs.readFileSync(config);
 var router = esp.createRouter();
 

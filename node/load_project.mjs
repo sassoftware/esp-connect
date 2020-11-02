@@ -21,7 +21,7 @@ if (server == null || opts.hasOpts(["name","model"]) == false)
     process.exit(0);
 }
 
-var fs = require("fs");
+import {default as fs} from "fs";
 
 var config = {};
 var cert = opts.getOptAndClear("cert");

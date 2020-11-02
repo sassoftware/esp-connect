@@ -4,8 +4,8 @@
 */
 
 import {connect as esp} from "@sassoftware/esp-connect";
+import {default as fs} from "fs";
 
-const   fs = require("fs");
 const   url = require("url");
 
 var opts = esp.getArgs();

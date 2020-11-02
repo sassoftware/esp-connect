@@ -4,6 +4,7 @@
 */
 
 import {connect as esp} from "@sassoftware/esp-connect";
+import {default as fs} from "fs";
 
 var opts = esp.getArgs();
 
@@ -20,8 +21,6 @@ if (server == null || opts.hasOpts(["window","events"]) == false)
     showUsage();
     process.exit(0);
 }
-
-var fs = require("fs");
 
 var config = {};
 var cert = opts.getOptAndClear("cert");

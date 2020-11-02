@@ -4,6 +4,7 @@
 */
 
 import {connect as esp} from "@sassoftware/esp-connect";
+import {default as fs} from "fs";
 
 var opts = esp.getArgs();
 
@@ -21,7 +22,6 @@ var cert = opts.getOptAndClear("cert");
 
 if (cert != null)
 {
-    const   fs = require("fs");
     cfg.ca = fs.readFileSync(cert);
 }
 
@@ -36,7 +36,6 @@ esp.connect(server,{ready:ready},o);
 function
 ready(connection)
 {
-    var fs = require("fs");
     var filedata = fs.readFileSync(config);
     var configuration = new String(filedata);
     var delegate = {complete:function() {

@@ -21,6 +21,8 @@ if (server == null)
     process.exit(0);
 }
 
+import {default as fs} from "fs";
+
 var k8s = esp.createK8S(server);
 
 if (opts.getOpt("projects",false))
@@ -169,7 +171,6 @@ if (opts.hasOpt("get"))
                 const   index = name.lastIndexOf("/");
                 outfile = (index != -1) ? name.substr(index + 1) : name;
             }
-            const   fs = require("fs");
             const   data = fs.writeFileSync(outfile,new DataView(tar.content));
 
             console.log("\nfile transfer complete\n");

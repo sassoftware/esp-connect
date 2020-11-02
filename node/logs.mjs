@@ -4,6 +4,7 @@
 */
 
 import {connect as esp} from "@sassoftware/esp-connect";
+import {default as fs} from "fs";
 
 var opts = esp.getArgs();
 
@@ -26,7 +27,6 @@ var cert = opts.getOptAndClear("cert");
 
 if (cert != null)
 {
-    const   fs = require("fs");
     config.ca = fs.readFileSync(cert);
 }
 
