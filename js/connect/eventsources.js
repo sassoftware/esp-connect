@@ -334,6 +334,7 @@ class EventSources
             var eventsources = this;
             setTimeout(function(){eventsources.run()},interval);
         }
+        console.log("done sources run");
     }
 
     publish(name,options)
@@ -353,7 +354,7 @@ class EventSource extends Options
 {
     constructor(eventsources,options)
     {
-		super(options);
+        super(options);
 
         this._window = this.getOpt("window");
 
@@ -594,13 +595,41 @@ class EventSource extends Options
     {
         return(false);
     }
+
+    createXml(text)
+    {
+        return(xpath.createXml(text));
+    }
+
+    getNodes(xml,expr)
+    {
+        return(xpath.getNodes(expr,xml));
+    }
+
+    getNode(xml,expr)
+    {
+        return(xpath.getNode(expr,xml));
+    }
+
+    getNodeText(node,expr)
+    {
+        var text = "";
+        var n = (expr != null) ? this.getNode(node,expr) : node;
+
+        if (n != null)
+        {
+            text = xpath.nodeText(n);
+        }
+
+        return(text);
+    }
 }
 
 class UrlEventSource extends EventSource
 {
     constructor(eventsources,options)
     {
-		super(eventsources,options);
+        super(eventsources,options);
 
         this._transform = null;
 
@@ -663,9 +692,10 @@ class UrlEventSource extends EventSource
             }
 
             var eventsource = this;
+
             if (this._api.version > 7 && this.getOpt("use-connect",false))
             {
-                var o = {
+                this._api.get(url,{
                     response:function(text) {
                         var data = eventsource._transform(eventsource,text);
 
@@ -678,13 +708,11 @@ class UrlEventSource extends EventSource
                     error(request,message) {
                         console.log("error: " + message);
                     }
-                };
-
-                this._api.get(url,o);
+                });
             }
             else
             {
-                var o = {
+                ajax.create("request",url,{
                     response:function(request,text,xml) {
                         var data = eventsource._transform(eventsource,text);
 
@@ -697,9 +725,7 @@ class UrlEventSource extends EventSource
                     error(request,message) {
                         console.log("error: " + message);
                     }
-                };
-
-                ajax.create("request",url,o).get();
+                }).get();
             }
 
             code = true;
@@ -713,7 +739,7 @@ class CsvEventSource extends EventSource
 {
     constructor(eventsources,options)
     {
-		super(eventsources,options);
+        super(eventsources,options);
         this._data = null;
         this._filter = null;
         this._supplement = null;
@@ -744,7 +770,7 @@ class CsvEventSource extends EventSource
                 }
             };
 
-		    ajax.create("load",this.getOpt("url"),o).get();
+            ajax.create("load",this.getOpt("url"),o).get();
         }
 
         if (this.hasOpt("filter"))
@@ -760,6 +786,7 @@ class CsvEventSource extends EventSource
 
     run(options)
     {
+        console.log("csv run");
         var code = false;
 
         if (this._publisher.schema.size > 0)
@@ -793,7 +820,7 @@ class CodeEventSource extends EventSource
 {
     constructor(eventsources,options)
     {
-		super(eventsources,options);
+        super(eventsources,options);
         this._code = null;
     }
 

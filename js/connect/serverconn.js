@@ -342,7 +342,7 @@ class ServerConnection extends Connection
         {
             url += "/";
         }
-        url += "eventStreamProcessing/v2/connect";
+        url += "eventStreamProcessing/v1/connect";
 
         if (this.hasOpt("access_token"))
         {

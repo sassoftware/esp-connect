@@ -32,6 +32,8 @@ class K8S
         this._ns = null;
         this._project = null;
         this._pod = null;
+        this._saslogon = null;
+        this._secret = null;
 
         var a = (this._url.path != null) ? this._url.path.substr(1).split("/") : [];
 
@@ -499,6 +501,148 @@ class K8S
                 }).get();
             }
         });
+    }
+
+    getAuthToken(delegate)
+    {
+        if (this._saslogon == null)
+        {
+            var k8s = this;
+
+            this.getSecret({
+                handleSecret:function(secret) {
+                    var url = k8s.baseUrl;
+                    url += "apis/networking.k8s.io/v1beta1";
+
+                    if (k8s.namespace != null)
+                    {
+                        url += "/namespaces/" + k8s.namespace;
+                    }
+                    url += "/ingresses/sas-logon-app";
+
+                    var o = {
+                        response:function(request,text) {
+                            var data = JSON.parse(text);
+                            var saslogon = "https://";
+                            saslogon += data.spec.tls[0].hosts[0];
+                            saslogon += "/SASLogon/oauth/clients/consul";
+                            saslogon += "?callback=false&serviceId=app";
+
+                            var handler = {
+                                response:function(request,text) {
+                                    if (request.getStatus() >= 400)
+                                    {
+                                        console.log("token error: " + request.getStatus());
+                                    }
+                                    else
+                                    {
+                                        var o = JSON.parse(text);
+                                        var token = o.access_token;
+                                        delegate.handleToken(token);
+                                    }
+                                },
+                                error:function(request,error) {
+                                    console.log(error);
+                                }
+                            };
+                            var request = ajax.create("token",saslogon,handler);
+                            request.setRequestHeader("X-Consul-Token",secret);
+                            request.post();
+                        },
+                        error:function(request,error) {
+                            console.log(error);
+                        }
+                    }
+
+                    var request = ajax.create("load",url,o);
+                    request.get();
+                }
+            });
+        }
+    }
+
+    getSecret(delegate)
+    {
+        if (tools.supports(delegate,"handleSecret") == false)
+        {
+            tools.exception("the delegate must implement the handleSecret function");
+        }
+
+        if (this._secret == null)
+        {
+            var url = this.baseUrl;
+            url += "api/v1";
+
+            if (this.namespace != null)
+            {
+                url += "/namespaces/" + this.namespace;
+            }
+
+            url += "/secrets/sas-consul-client";
+
+            var k8s = this;
+            var o = {
+                response:function(request,text) {
+
+                    if (request.getStatus() == 404)
+                    {
+                        if (tools.supports(delegate,"notFound"))
+                        {
+                            delegate.notFound(request,"not found");
+                        }
+                        else
+                        {
+                            tools.exception("error: not found");
+                        }
+
+                        return;
+                    }
+
+                    var data = JSON.parse(text);
+
+                    if (data.code == 404)
+                    {
+                        var s = "";
+                        if (k8s._ns != null)
+                        {
+                            s += k8s._ns + "/";
+                        }
+                        s += k8s._project;
+
+                        if (tools.supports(delegate,"notFound"))
+                        {
+                            delegate.notFound(s);
+                        }
+                        else
+                        {
+                            tools.exception("project not found: " + s);
+                        }
+                    }
+                    else
+                    {
+                        this._secret = Buffer.from(data.data.CONSUL_HTTP_TOKEN,"base64").toString();
+                        delegate.handleSecret(this._secret);
+                    }
+                },
+                error:function(request,error) {
+                    if (tools.supports(delegate,"error"))
+                    {
+                        delegate.error(request,error);
+                    }
+                    else
+                    {
+                        tools.exception("error: " + error);
+                    }
+                }
+            };
+            var request = ajax.create("load",url,o);
+            request.setRequestHeader("accept","application/json");
+            request.get();
+        }
+        else
+        {
+            delegate.handleSecret(this._secret);
+        }
     }
 
     ls(path,delegate)
@@ -972,7 +1116,7 @@ class K8SProject extends K8S
                 {
                     if (opts.getOpt("create",true))
                     {
-                        var model = k8s.getDefaultModel(project);
+                        var model = k8s.getDefaultModel();
                         k8s.load(model,opts.getOpts(),{
                             loaded:function() {
                                 connect.connect(k8s.espUrl,delegate,options,start);
@@ -1264,7 +1408,7 @@ class K8SProject extends K8S
         s += "    loadBalancePolicy: \"default\" \n";
         s += "    espProperties:\n";
         s += "      server.xml: \"" + model + "\"\n";
-        s += "      meta.meteringhost: \"sas-event-stream-processing-metering-app." + this._namespace + "\"\n";
+        s += "      meta.meteringhost: \"sas-event-stream-processing-metering-app." + this._ns + "\"\n";
         s += "      meta.meteringport: \"80\"\n";
         s += "    projectTemplate:\n";
         s += "      autoscale:\n";
@@ -1315,7 +1459,7 @@ class K8SProject extends K8S
         return(s);
     }
 
-    getDefaultModel(name)
+    getDefaultModel()
     {
         var s = "";
 		s += "<project pubsub='auto' threads='4'>\n";

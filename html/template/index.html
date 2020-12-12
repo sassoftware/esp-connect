@@ -9,24 +9,50 @@
 
 <title>ESP Template</title>
 
-<link rel="stylesheet" href="/esp-connect/style/connect.css" />
-
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="/esp-connect/js/ui/main"></script>
+<!--
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.6.0/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.6.0/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+-->
 
 <script type="text/javascript">
+var _esp = null;
+</script>
+
+<!-- Run from an esp-connect install -->
+<link rel="stylesheet" href="../../style/connect.css" />
+<script type="module">
+import {api} from "../../js/ui/main.js";
+_esp = api;
+</script>
+
+<!-- Run from an esp-connect webpack bundle (you can put the bundle anywhere) -->
+<!--
+<script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
+<script type="text/javascript">
+_esp = esp_connect_ui.api;
+</script>
+-->
+
+<script type="text/javascript">
+
+var _project = "myproject";
 
 var _eventsources = null;
 var _visuals = null;
 var _conn = null;
-var _esp = null;
 
 function
-esp(api)
+init()
 {
-    _esp = api;
+    var parms = _esp.getParms();
+
+    if (parms.hasOwnProperty("project"))
+    {
+        _project = parms["project"];
+    }
 
     if (_esp.hasParm("theme") == false)
     {
@@ -35,16 +61,13 @@ esp(api)
 
     _visuals = _esp.createVisuals(_esp.getParms());
 
-    var parms = _esp.getParms();
+    var server = _esp.getServerFromParms(parms,_project);
 
-    if (parms.hasOwnProperty("server") == false)
+    if (server == null)
     {
         _esp.showConnectDialog({connect:connect});
         return;
     }
-
-    var server = parms["server"];
-    delete parms["server"];
 
     connect(server);
 }
@@ -53,44 +76,37 @@ function
 connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
-    _esp.connect(server,{ready:ready});
+    _esp.showStatus("Loading project...");
+    var url = new URL("model.xml",document.URL).toString();
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url},overwrite:true,force:_esp.getParm("force",false)});
     _esp.handleLayout();
-}
-
-function
-ready(connection)
-{
-    _conn = connection;
-
-    if (_esp.getParm("load",true))
-    {
-        _esp.showStatus("Loading project...");
-        _conn.loadProjectFrom("p","model.xml",{loaded:loaded},{overwrite:true});
-    }
-    else
-    {
-        loaded();
-    }
 }
 
 var _model = null;
 
 function
-loaded()
+ready(connection)
 {
     _esp.clearStatus();
+    _conn = connection;
 
-    _conn.getProjectXml("p",{response:function(c,data){_model = data;}});
+    _conn.getProjectXml(_project,{
+        response:function(c,data){
+            _model = data;
+        }
+    });
 
-    var coll = _conn.getEventCollection({window:"p/cq/s"});
+    var coll = _conn.getEventCollection({window:_project + "/cq/s"});
 
     _visuals.createTable("mytable",coll);
     _visuals.createBarChart("mychart",coll,{y:["number"],color:"number",gradient:"#3b99fc",gradient_end:true});
 
     _esp.size();
 
+    /*
     _eventsources = _conn.createEventSources();
     _eventsources.configureFromUrl(new URL("eventsource.xml",document.URL).toString(),{start:true});
+    */
 }
 
 function
@@ -102,7 +118,7 @@ error(message)
 </script>
 </head>
 
-<body>
+<body onload="init()">
 
     <div id="banner">
         <table style="width:100%" cellspacing="0" cellpadding="0">
@@ -110,8 +126,8 @@ error(message)
                 <td id="bannerTitle"></td>
                 <td class="icon">
                     <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
-                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'p',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
-                    <a class="icon" href="javascript:_esp.showFrameDialog('ESP Basic Example','help.html',{width:'80%',height:'80%'})" title="Help">&#xf30b;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:_project,type:true,memory:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('ESP Template','help.html',{width:'80%',height:'80%'})" title="Help">&#xf30b;</a>
                 </td>
             </tr>
         </table>

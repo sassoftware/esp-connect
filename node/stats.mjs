@@ -61,16 +61,24 @@ ready(connection)
 function
 showUsage()
 {
-    console.log("");
-    console.log("usage: node stats -server [-mincpu] [-interval] [-format] [-counts] [-config] [-memory]");
-    console.log("");
-    console.log("options:");
-    console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
-    console.log("\t-mincpu\t\tThe minimum CPU usage, in percentage, to report (defaults to 5)");
-    console.log("\t-interval\tThe interval, in seconds, at which to report information (defaults to 1)");
-    console.log("\t-format\t\txml | json | ubjson (defaults to ubjson)");
-    console.log("\t-counts\t\tboolean value determining whether or not to report window event counts (defaults to false)");
-    console.log("\t-config\t\tboolean value determining whether or not to report server configuration info (defaults to false)");
-    console.log("\t-memory\t\tboolean value determining whether or not to report server memory usage info (defaults to true)");
-    console.log("");
+    esp.usage({
+        name:"stats",
+        summary:"Display ESP server statistics",
+        options:[
+            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
+            {name:"mincpu",arg:"minimum CPU",description:"The minimum CPU usage, in percentage, to report (defaults to 5)",required:false},
+            {name:"interval",arg:"seconds",description:"The interval, in seconds, at which to report information (defaults to 1)",required:false},
+            {name:"format",arg:"format",description:"format",required:false},
+            {name:"counts",arg:"true | false",description:"boolean value determining whether or not to report window event counts (defaults to false)",required:false},
+            {name:"config",arg:"true | false",description:"boolean value determining whether or not to report server configuration info (defaults to false)",required:false},
+            {name:"memory",arg:"true | false",description:"boolean value determining whether or not to report server memory usage info (defaults to false)",required:false}
+        ],
+        description:"Display ESP server statistics",
+        see_also:[
+        {
+            name:"ESP User Guide",
+            link:"https://go.documentation.sas.com/?cdcId=espcdc&cdcVersion=6.2&docsetId=espov&docsetTarget=home.htm&locale=en"
+        }
+        ]
+    });
 }

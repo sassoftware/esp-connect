@@ -25,6 +25,7 @@
     "xmldom": "latest",
     "xpath": "latest",
     "xmlhttprequest": "latest",
-    "readline-sync": "latest"
+    "readline-sync": "latest",
+    "jsonpath": "latest"
   }
 }

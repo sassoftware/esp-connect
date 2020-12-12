@@ -13,20 +13,20 @@ In order to publish data into the model, you must put the <a href="../data/trade
 If you are running a standalone ESP server, just copy the file into the directory where the server is running.
 <br/><br/>
 If you are running under Kubernetes, perform the following commands using the esp-connect NodeJS k8s command (namespace is <i>myprojects</i> for this example):
-<
+
 <ol>
 <li>Change directories to the esp-connect/node directory</li>
 <li>Make a directory in the Kubernetes namespace
-<pre class="indent help">node k8s --server k8s-proxy://localhost:8001/myprojects/sas-event-stream-processing-client-config-server --exec -- mkdir -p /mnt/data/demo/trades</pre></li>
+<pre class="indent help">node k8s.mjs --server k8s-proxy://localhost:8001/myprojects/trades --exec -- mkdir -p /mnt/data/demo/trades</pre></li>
 <li>Copy the trades data file into Kubernetes
-<pre class="indent help">node k8s --server k8s-proxy://localhost:8001/myprojects/sas-event-stream-processing-client-config-server --put file://..//examples/data/trades1M.csv --path /mnt/data/demo/trades</pre></li>
+<pre class="indent help">node k8s.mjs --server k8s-proxy://localhost:8001/myprojects/trades --put file://..//examples/data/trades1M.csv --path /mnt/data/demo/trades</pre></li>
 </li>
 <li>Make sure the file is in the right place
-<pre class="indent help">node k8s --server k8s-proxy://localhost:8001/myprojects/sas-event-stream-processing-client-config-server --ls /mnt/data/demo/trades</pre></li>
+<pre class="indent help">node k8s.mjs --server k8s-proxy://localhost:8001/myprojects/trades --ls /mnt/data/demo/trades</pre></li>
 </ol>
 <b>NOTE:</b>
 <div class="indent">You only need to copy the file once. If you want to make sure it is where it needs to be in K8S,
-<pre class="indent help">node k8s --server k8s-proxy://localhost:8001/myprojects/sas-event-stream-processing-client-config-server --ls /mnt/data/demo/trades</pre></li>
+<pre class="indent help">node k8s.mjs --server k8s-proxy://localhost:8001/myprojects/trades --ls /mnt/data/demo/trades</pre></li>
 </div>
 
 After you have done this, do the following:

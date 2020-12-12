@@ -23,7 +23,7 @@ class Api extends Options
         super(options);
 
         this._connection = connection;
-        this._version - 7.1;
+        this._version = 7.1;
 
         Object.defineProperty(this,"connection", {
             get() {
@@ -3235,7 +3235,7 @@ class Publisher extends Options
         }
     }
 
-    send(publisher)
+    send()
     {
         if (this._csv.index < this._csv.items.length)
         {

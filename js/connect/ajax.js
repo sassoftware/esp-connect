@@ -402,7 +402,7 @@ class NodeAjax extends Options
 
         this._options.hostname = url.hostname;
         this._options.port = url.port;
-        this._options.path = url.pathname;
+        this._options.path = url.pathname + url.search;
 
         var protocol = url.protocol.toLowerCase();
 

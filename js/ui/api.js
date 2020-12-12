@@ -3,6 +3,7 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
+import {Connection} from "../connect/connection.js";
 import {connect} from "../connect/connect.js";
 import {uitools} from "./uitools.js";
 import {dialogs} from "./dialogs.js";
@@ -17,6 +18,7 @@ var	_api =
     _statusTimer:null,
     _layoutDelegate:null,
     _parms:null,
+    _prompted:{},
 
     connect:function(url,delegate,options)
     {
@@ -63,6 +65,37 @@ var	_api =
                 values:[{name:"user",label:"User"},{name:"password",label:"Password",type:"password"}]
             };
             dialogs.showDialog(o);
+        }
+    },
+
+    error:function(connection)
+    {
+        if (Connection.established(connection.getUrl()) == false)
+        {
+            if (connection.isSecure)
+            {
+                var o = new URL(connection.getUrl());
+
+                o.protocol = "https:";
+
+                var tmp = o.pathname;
+                var index = tmp.lastIndexOf("/");
+
+                if (index != -1)
+                {
+                    tmp = tmp.substr(0,index);
+                    tmp += "/server";
+                    o.pathname = tmp;
+                }
+
+                var url = o.toString();
+
+                if (this._prompted.hasOwnProperty(url) == false)
+                {
+                    this._prompted[url] = true;
+                    window.open(url,"espconnect","width=800,height=800");
+                }
+            }
         }
     },
 

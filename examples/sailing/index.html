@@ -54,8 +54,6 @@ init()
     _visuals = _esp.createVisuals(parms);
     _visuals.dateformat = "%c";
 
-    _visuals = _esp.createVisuals(parms);
-
     _visuals.createWrapper("legend",{header:"Ships",style:{width:"98%",height:"5%","padding-top":"10px"},show_header:false});
 
     var server = _esp.getServerFromParms(parms,_project);
@@ -92,7 +90,7 @@ ready(connection)
     _esp.clearStatus();
     _conn.publishDataFrom(_project + "/cq/Areas_Of_Interest","geoArea.csv",null,{informat:"csv"});
     _conn.getProjectXml(_project,{response:function(c,data){_model = data;}});
-    var coll = _conn.getEventCollection({window:_project + "/cq/Boat_Current",interval:500});
+    var coll = _conn.getEventCollection({window:_project + "/cq/Boat_Current",interval:250});
     var speeding = _conn.getEventStream({window:_project + "/cq/Last_Speeding_Event",ignore_deletes:true});
     var exclusion = _conn.getEventStream({window:_project + "/cq/Last_Exclusion_Violation",ignore_deletes:true});
 
@@ -102,13 +100,13 @@ ready(connection)
                       header:"Sailing",popup:["boat_id","heading","speed"],marker_border:0,
                       poly_border_width:1,poly_fill_color:"rgba(0,255,0,.5)",
                       circle_border_width:1,circle_fill_color:"rgba(0,255,0,.5)",
-                      zoom:13,center:[56.000241,-3.424250],
+                      zoom:12,center:[56.000241,-3.424250],
                       polygons:{window:_project + "/cq/Areas_Of_Interest",mode:"collection",coords:"Poly_Data",radius:"Poly_Radius",text:"poly_desc",order:"lon_lat"},html:getSailboat};
 
     _map = _visuals.createMap("map",coll,config);
 
     var w = 160;
-    var h = 80;
+    var h = 90;
 
     _visuals.createCompass("heading",coll,{value:"heading",size:180,header:"Current Heading",use_theme:false});
     _visuals.createGauge("speed",coll,{value:"speed",mode:"number",delta:false,segments:5,width:w,height:h,header:"Current Speed",range:[0,10]});
@@ -175,7 +173,7 @@ getSailboat(map,data,color)
     }
     else
     {
-        var style = "font-size:" + (zoom + 5) + "pt";
+        var style = "font-size:" + (zoom + 10) + "px";
         style += ";color:black";
 
         if (heading > 0 && heading < 180)

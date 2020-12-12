@@ -185,7 +185,7 @@ if (opts.hasOpt("put"))
 
     if (url == null || path == null)
     {
-        esp.getTools().exception("you must specify input URL and -path <remote path>");
+        esp.getTools().exception("you must specify input URL and --path <remote path>");
     }
 
     console.log("\ncopying data...");
@@ -211,6 +211,22 @@ if (opts.getOpt("exec",false))
         {
             console.log("error: " + message);
         }
+    });
+}
+
+if (opts.getOpt("auth",false))
+{
+    k8s.getAuthToken({handleToken:function(token) {
+        console.log(token);
+    }
+    });
+}
+
+if (opts.getOpt("secret",false))
+{
+    k8s.getSecret({handleSecret:function(data) {
+        console.log(data);
+    }
     });
 }
 
@@ -256,6 +272,7 @@ showUsage()
                     command:"--server k8s-proxy://localhost:8001/myns/myproject --projects"
                 }
             ]},
+            {name:"restart",description:"Restart a project in a pod. The URL must contain both a namespace and a project name."},
             {name:"pods",description:"Retrieve the pods from the K8S server."},
             {name:"get",description:"Retrieve a file from a pod.",
                 examples:[
@@ -268,7 +285,7 @@ showUsage()
                 examples:[
                 {
                     title:"Put <fg:blue>hello.txt</fg> into /tmp",
-                    command:"--server k8s-proxy://localhost:8001/myns/myproject --put file://hello.txt -path /tmp"
+                    command:"--server k8s-proxy://localhost:8001/myns/myproject --put file://hello.txt --path /tmp"
                 }]
             },
             {name:"log",description:"Retrieve the log from a K8S pod. The URL must contain both a namespace and a project name."},
