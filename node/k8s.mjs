@@ -21,9 +21,10 @@ if (server == null)
     process.exit(0);
 }
 
+import {default as prompts} from "prompts";
 import {default as fs} from "fs";
 
-var k8s = esp.createK8S(server);
+var k8s = esp.createK8S(server,opts.getOpts());
 
 if (opts.getOpt("projects",false))
 {
@@ -216,10 +217,39 @@ if (opts.getOpt("exec",false))
 
 if (opts.getOpt("auth",false))
 {
-    k8s.getAuthToken({handleToken:function(token) {
-        console.log(token);
+    var gotToken = false;
+
+    while (gotToken == false)
+    {
+        k8s.getAuthToken({
+            handleToken:function(token) {
+                console.log(token);
+                gotToken = true;
+            },
+            notfound:function() {
+            },
+            addCredentials(opts) {
+                console.log("add credentials");
+                const   p = [
+                    {
+                        type: "text",
+                        name: "user",
+                        message: "User: "
+                    },
+                    {
+                        type: "password",
+                        name: "pw",
+                        message: "Password: "
+                    }
+                ];
+                (async () => {
+                    const response = await prompts(p);
+                    opts.setOpt("user",response.user);
+                    opts.setOpt("pw",response.pw);
+                });
+            }
+        });
     }
-    });
 }
 
 if (opts.getOpt("secret",false))

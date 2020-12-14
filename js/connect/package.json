@@ -26,6 +26,7 @@
     "xpath": "latest",
     "xmlhttprequest": "latest",
     "readline-sync": "latest",
-    "jsonpath": "latest"
+    "jsonpath": "latest",
+    "prompts": "latest"
   }
 }

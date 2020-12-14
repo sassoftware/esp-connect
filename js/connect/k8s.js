@@ -9,10 +9,12 @@ import {ajax} from "./ajax.js";
 import {xpath} from "./xpath.js";
 import {Options} from "./options.js";
 
-class K8S
+class K8S extends Options
 {
-    constructor(url)
+    constructor(url,options)
     {
+		super(options);
+
         this._url = tools.createUrl(decodeURI(url));
         this._proxy = false;
 
@@ -32,8 +34,6 @@ class K8S
         this._ns = null;
         this._project = null;
         this._pod = null;
-        this._saslogon = null;
-        this._secret = null;
 
         var a = (this._url.path != null) ? this._url.path.substr(1).split("/") : [];
 
@@ -257,9 +257,9 @@ class K8S
 
                 if (request.getStatus() == 404)
                 {
-                    if (tools.supports(delegate,"notFound"))
+                    if (tools.supports(delegate,"notfound"))
                     {
-                        delegate.notFound(request,"not found");
+                        delegate.notfound(request,"not found");
                     }
                     else
                     {
@@ -280,9 +280,9 @@ class K8S
                     }
                     s += k8s._project;
 
-                    if (tools.supports(delegate,"notFound"))
+                    if (tools.supports(delegate,"notfound"))
                     {
-                        delegate.notFound(s);
+                        delegate.notfound(s);
                     }
                     else
                     {
@@ -339,11 +339,11 @@ class K8S
             {
                 delegate.handleProject(projects[0]);
             },
-            notFound:function()
+            notfound:function()
             {
-                if (tools.supports(delegate,"notFound"))
+                if (tools.supports(delegate,"notfound"))
                 {
-                    delegate.notFound();
+                    delegate.notfound();
                 }
                 else
                 {
@@ -429,9 +429,9 @@ class K8S
             handlePods:function(pods) {
                 if (pods.length == 0)
                 {
-                    if (tools.supports(delegate,"notFound"))
+                    if (tools.supports(delegate,"notfound"))
                     {
-                        delegate.notFound();
+                        delegate.notfound();
                     }
                 }
                 else
@@ -503,62 +503,181 @@ class K8S
         });
     }
 
+    getIngress(name,delegate)
+    {
+        if (tools.supports(delegate,"handleIngress") == false)
+        {
+            tools.exception("the delegate must implement the handleIngress function");
+        }
+
+        var url = this.baseUrl;
+        url += "apis/networking.k8s.io/v1beta1";
+
+        if (this.namespace != null)
+        {
+            url += "/namespaces/" + this.namespace;
+        }
+        url += "/ingresses/" + name;
+
+        var request = ajax.create("load",url,{
+            response:function(request,text) {
+
+                if (request.getStatus() == 404)
+                {
+                    if (tools.supports(delegate,"notfound"))
+                    {
+                        delegate.notfound(request,url);
+                    }
+                    else
+                    {
+                        tools.exception(url + " not found");
+                    }
+                }
+                else
+                {
+                    var data = JSON.parse(text);
+                    delegate.handleIngress(data);
+                }
+            },
+            error:function(request,error) {
+                if (tools.supports(delegate,"error"))
+                {
+                    delegate.error(request,error);
+                }
+                else
+                {
+                    tools.exception("error: " + error);
+                }
+            }
+        });
+        request.get();
+
+        var o = {
+        }
+    }
+
     getAuthToken(delegate)
     {
-        if (this._saslogon == null)
+for (var x in delegate) console.log("A: " + x);
+        if (tools.supports(delegate,"handleToken") == false)
         {
-            var k8s = this;
+            tools.exception("the delegate must implement the handleToken function");
+        }
 
-            this.getSecret({
-                handleSecret:function(secret) {
-                    var url = k8s.baseUrl;
-                    url += "apis/networking.k8s.io/v1beta1";
-
-                    if (k8s.namespace != null)
-                    {
-                        url += "/namespaces/" + k8s.namespace;
+        var k8s = this;
+        this.getIngress("sas-logon-app",{
+            handleIngress:function(data) {
+                k8s.saslogon(delegate,data)
+            },
+            notfound:function(request,url) {
+                k8s.getIngress("uaa",{
+                    handleIngress:function(data) {
+                        k8s.uaa(delegate,data)
+                    },
+                    notfound:function(request,url){
+                        console.log("not found: " + url);
                     }
-                    url += "/ingresses/sas-logon-app";
+                });
+            }
+        });
+    }
 
-                    var o = {
-                        response:function(request,text) {
-                            var data = JSON.parse(text);
-                            var saslogon = "https://";
-                            saslogon += data.spec.tls[0].hosts[0];
-                            saslogon += "/SASLogon/oauth/clients/consul";
-                            saslogon += "?callback=false&serviceId=app";
+    saslogon(delegate,data)
+    {
+        this.getSecret({
+            handleSecret:function(secret) {
+                var url = "https://";
+                url += data.spec.tls[0].hosts[0];
+                url += "/SASLogon/oauth/clients/consul";
+                url += "?callback=false&serviceId=app";
 
-                            var handler = {
-                                response:function(request,text) {
-                                    if (request.getStatus() >= 400)
-                                    {
-                                        console.log("token error: " + request.getStatus());
-                                    }
-                                    else
-                                    {
-                                        var o = JSON.parse(text);
-                                        var token = o.access_token;
-                                        delegate.handleToken(token);
-                                    }
-                                },
-                                error:function(request,error) {
-                                    console.log(error);
-                                }
-                            };
-                            var request = ajax.create("token",saslogon,handler);
-                            request.setRequestHeader("X-Consul-Token",secret);
-                            request.post();
-                        },
-                        error:function(request,error) {
-                            console.log(error);
+                var handler = {
+                    response:function(request,text) {
+                        if (request.getStatus() >= 400)
+                        {
+                            console.log("token error: " + request.getStatus());
+                        }
+                        else
+                        {
+                            var o = JSON.parse(text);
+                            var token = o.access_token;
+                            delegate.handleToken(token);
+                        }
+                    },
+                    error:function(request,error) {
+                        console.log(error);
+                    }
+                };
+                var request = ajax.create("token",url,handler);
+                request.setRequestHeader("X-Consul-Token",secret);
+                request.post();
+            },
+            error:function(request,error) {
+                console.log(error);
+            }
+        })
+    }
+
+    uaa(delegate,data)
+    {
+        var k8s = this;
+        var url = "https://";
+        url += data.spec.tls[0].hosts[0];
+        url += "/uaa/oauth/token";
+
+        var handler = {
+            response:function(request,text) {
+                console.log("here: " + request.getStatus());
+                if (request.getStatus() >= 400)
+                {
+                    if (request.getStatus() == 401)
+                    {
+                        if (tools.supports(delegate,"addCredentials"))
+                        {
+                            delegate.addCredentials(k8s);
+                        }
+                        else
+                        {
+                            console.log("token error: " + request.getStatus());
                         }
                     }
-
-                    var request = ajax.create("load",url,o);
-                    request.get();
+                    else
+                    {
+                        console.log("token error: " + request.getStatus());
+                    }
                 }
-            });
-        }
+                else
+                {
+                    var o = JSON.parse(text);
+                    var token = o.access_token;
+                    delegate.handleToken(token);
+                }
+            },
+            error:function(request,error) {
+                console.log(error);
+            }
+        };
+
+        var request = ajax.create("token",url,handler);
+        request.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+        request.setRequestHeader("Accept","application/json");
+
+        var user = this.getOpt("user");
+        var pw = this.getOpt("pw","");
+        var send ="";
+
+        send += "client_id=sv_client";
+        send += "&client_secret=secret";
+        send += "&grant_type=password";
+        send += "&username=" + user;
+        send += "&password=" + pw;
+
+        request.setData(send);
+
+        console.log(url);
+        console.log(send);
+
+        request.post(send);
     }
 
     getSecret(delegate)
@@ -568,81 +687,74 @@ class K8S
             tools.exception("the delegate must implement the handleSecret function");
         }
 
-        if (this._secret == null)
+        var url = this.baseUrl;
+        url += "api/v1";
+
+        if (this.namespace != null)
         {
-            var url = this.baseUrl;
-            url += "api/v1";
+            url += "/namespaces/" + this.namespace;
+        }
 
-            if (this.namespace != null)
-            {
-                url += "/namespaces/" + this.namespace;
-            }
+        url += "/secrets/sas-consul-client";
 
-            url += "/secrets/sas-consul-client";
+        var k8s = this;
+        var o = {
+            response:function(request,text) {
 
-            var k8s = this;
-            var o = {
-                response:function(request,text) {
-
-                    if (request.getStatus() == 404)
+                if (request.getStatus() == 404)
+                {
+                    if (tools.supports(delegate,"notfound"))
                     {
-                        if (tools.supports(delegate,"notFound"))
-                        {
-                            delegate.notFound(request,"not found");
-                        }
-                        else
-                        {
-                            tools.exception("error: not found");
-                        }
-
-                        return;
-                    }
-
-                    var data = JSON.parse(text);
-
-                    if (data.code == 404)
-                    {
-                        var s = "";
-                        if (k8s._ns != null)
-                        {
-                            s += k8s._ns + "/";
-                        }
-                        s += k8s._project;
-
-                        if (tools.supports(delegate,"notFound"))
-                        {
-                            delegate.notFound(s);
-                        }
-                        else
-                        {
-                            tools.exception("project not found: " + s);
-                        }
+                        delegate.notfound(request,"not found");
                     }
                     else
                     {
-                        this._secret = Buffer.from(data.data.CONSUL_HTTP_TOKEN,"base64").toString();
-                        delegate.handleSecret(this._secret);
+                        tools.exception("error: not found");
                     }
-                },
-                error:function(request,error) {
-                    if (tools.supports(delegate,"error"))
+
+                    return;
+                }
+
+                var data = JSON.parse(text);
+
+                if (data.code == 404)
+                {
+                    var s = "";
+                    if (k8s._ns != null)
                     {
-                        delegate.error(request,error);
+                        s += k8s._ns + "/";
+                    }
+                    s += k8s._project;
+
+                    if (tools.supports(delegate,"notfound"))
+                    {
+                        delegate.notfound(s);
                     }
                     else
                     {
-                        tools.exception("error: " + error);
+                        tools.exception("project not found: " + s);
                     }
                 }
-            };
-            var request = ajax.create("load",url,o);
-            request.setRequestHeader("accept","application/json");
-            request.get();
-        }
-        else
-        {
-            delegate.handleSecret(this._secret);
-        }
+                else
+                {
+                    var secret = Buffer.from(data.data.CONSUL_HTTP_TOKEN,"base64").toString();
+                    delegate.handleSecret(secret);
+                }
+            },
+            error:function(request,error) {
+                if (tools.supports(delegate,"error"))
+                {
+                    delegate.error(request,error);
+                }
+                else
+                {
+                    tools.exception("error: " + error);
+                }
+            }
+        };
+        var request = ajax.create("load",url,o);
+        request.setRequestHeader("accept","application/json");
+        request.get();
     }
 
     ls(path,delegate)
@@ -1021,9 +1133,9 @@ class K8S
 
 class K8SProject extends K8S 
 {
-    constructor(url)
+    constructor(url,options)
     {
-        super(url);
+        super(url,options);
 
         if (this._project == null)
         {
@@ -1110,7 +1222,7 @@ class K8SProject extends K8S
                 }
             },
 
-            notFound:function(project)
+            notfound:function(project)
             {
                 if (modelconfig == null)
                 {
@@ -1174,9 +1286,9 @@ class K8SProject extends K8S
 
                 if (data.code == 404)
                 {
-                    if (tools.supports(delegate,"notFound"))
+                    if (tools.supports(delegate,"notfound"))
                     {
-                        delegate.notFound(k8s.namespace + "/" + k8s.project);
+                        delegate.notfound(k8s.namespace + "/" + k8s.project);
                     }
                 }
                 else
@@ -1312,7 +1424,7 @@ class K8SProject extends K8S
 
                 k8s.del(delHandler);
             },
-            notFound:function()
+            notfound:function()
             {
                 tools.exception("project not found");
             }
@@ -1826,18 +1938,18 @@ class Tar extends Options
 
 var _api =
 {
-    create:function(url)
+    create:function(url,options)
     {
         var u = tools.createUrl(decodeURI(url));
         var o = null;
 
         if (u.path != null && u.path.split("/").length == 3)
         {
-            o = new K8SProject(url);
+            o = new K8SProject(url,options);
         }
         else
         {
-            o = new K8S(url);
+            o = new K8S(url,options);
         }
 
         return(o);

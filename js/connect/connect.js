@@ -32,13 +32,25 @@ var	_api =
 
         if (u.protocol.startsWith("k8s"))
         {
-            var project = k8s.create(url);
+            var project = k8s.create(url,options);
             if (options == null)
             {
                 options = {};
             }
             options["k8s"] = project;
-            project.connect(this,delegate,options,start);
+            var c = this;
+            project.getAuthToken({
+                handleToken(token) {
+                    options["access_token"] = token;
+                    project.connect(c,delegate,options,start);
+                },
+                notfound() {
+                    project.connect(c,delegate,options,start);
+                },
+                addCredentials(opts) {
+                    console.log("add credentials");
+                }
+            });
         }
         else
         {
@@ -157,9 +169,9 @@ var	_api =
         return(tools.createTimer());
     },
 
-    createK8S:function(url)
+    createK8S:function(url,options)
     {
-        return(k8s.create(url));
+        return(k8s.create(url,options));
     },
 
     formatDate:function(date,format)
