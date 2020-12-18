@@ -33,24 +33,31 @@ var	_api =
         if (u.protocol.startsWith("k8s"))
         {
             var project = k8s.create(url,options);
+            var self = this;
+
             if (options == null)
             {
                 options = {};
             }
             options["k8s"] = project;
-            var c = this;
-            project.getAuthToken({
-                handleToken(token) {
-                    options["access_token"] = token;
-                    project.connect(c,delegate,options,start);
-                },
-                notfound() {
-                    project.connect(c,delegate,options,start);
-                },
-                addCredentials(opts) {
-                    console.log("add credentials");
-                }
-            });
+
+            function auth() {
+                project.authenticate(delegate).then(
+                    function() {
+                        if (project.hasOpt("access_token"))
+                        {
+                            options["access_token"] = project.getOpt("access_token");
+                        }
+
+                        project.connect(self,delegate,options,start);
+                    },
+                    function() {
+                        auth();
+                    }
+                );
+            }
+
+            auth();
         }
         else
         {

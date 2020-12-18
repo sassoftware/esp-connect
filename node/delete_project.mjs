@@ -39,17 +39,16 @@ esp.connect(server,{ready:ready,error:error},opts.getOpts());
 function
 ready(connection)
 {
-    var o = {
-        deleted:function() {
-            console.log("project deleted");
+    connection.deleteProject(name).then(
+        function(result) {
+            console.log(result.text);
             process.exit(0);
         },
-        error:function(conn,name,message) {
-            console.log(message);
+        function(result) {
+            console.log(result.text);
             process.exit(1);
         }
-    };
-    connection.deleteProject(name,o);
+    );
 }
 
 function

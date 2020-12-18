@@ -225,162 +225,129 @@ class K8S extends Options
         });
     }
 
-    getMyProjects(delegate)
+    getMyProjects()
     {
-        return(this.getProjects(delegate,this.namespace,this.project));
+        return(this.getProjects(this.namespace,this.project));
     }
 
-    getProjects(delegate,namespace,name)
+    getProjects(namespace,name)
     {
-        if (tools.supports(delegate,"handleProjects") == false)
-        {
-            tools.exception("the delegate must implement the handleProjects function");
-        }
+        return(new Promise((resolve,reject) => {
 
-        var url = this.url;
+            var url = this.url;
 
-        if (namespace != null)
-        {
-            url += "/namespaces/" + namespace;
-        }
+            if (namespace != null)
+            {
+                url += "/namespaces/" + namespace;
+            }
 
-        url += "/espservers";
+            url += "/espservers";
 
-        if (name != null)
-        {
-            url += "/" + name;
-        }
+            if (name != null)
+            {
+                url += "/" + name;
+            }
 
-        var k8s = this;
-        var o = {
-            response:function(request,text) {
+            var k8s = this;
+            var request = ajax.create(url);
+            request.setRequestHeader("accept","application/json");
 
-                if (request.getStatus() == 404)
-                {
-                    if (tools.supports(delegate,"notfound"))
+            request.get().then(
+                function(result) {
+                    if (result.status == 404)
                     {
-                        delegate.notfound(request,"not found");
+                        reject({request:request,error:"not found"});
+                        return;
+                    }
+
+                    var o = JSON.parse(result.text);
+
+                    /*
+                    if (o.code == 404)
+                    {
+                        reject({request:request,error:"not found"});
                     }
                     else
+                    */
                     {
-                        tools.exception("error: not found");
-                    }
+                        var kind = o.kind;
+                        var a = null;
 
-                    return;
+                        if (kind == "ESPServer")
+                        {
+                            a = [o];
+                        }
+                        else if (kind == "ESPServerList")
+                        {
+                            a = o.items;
+                        }
+
+                        resolve(a);
+                    }
+                },
+                function(result) {
+                    reject(result);
                 }
-
-                var data = JSON.parse(text);
-
-                if (data.code == 404)
-                {
-                    var s = "";
-                    if (k8s._ns != null)
-                    {
-                        s += k8s._ns + "/";
-                    }
-                    s += k8s._project;
-
-                    if (tools.supports(delegate,"notfound"))
-                    {
-                        delegate.notfound(s);
-                    }
-                    else
-                    {
-                        tools.exception("project not found: " + s);
-                    }
-                }
-                else
-                {
-                    var kind = data.kind;
-                    var a = null;
-
-                    if (kind == "ESPServer")
-                    {
-                        a = [data];
-                    }
-                    else if (kind == "ESPServerList")
-                    {
-                        a = data.items;
-                    }
-
-                    delegate.handleProjects(a);
-                }
-            },
-            error:function(request,error) {
-                if (tools.supports(delegate,"error"))
-                {
-                    delegate.error(request,error);
-                }
-                else
-                {
-                    tools.exception("error: " + error);
-                }
-            }
-        };
-        var request = ajax.create("load",url,o);
-		request.setRequestHeader("accept","application/json");
-        request.get();
+            );
+        }));
     }
 
-    getProject(delegate,namespace,name)
+    getProject(namespace,name)
     {
-        if (tools.supports(delegate,"handleProject") == false)
-        {
-            tools.exception("the delegate must implement the handleProjects function");
-        }
-
-        if (namespace == null || name == null)
-        {
-            tools.exception("you must specify project namespace and name");
-        }
-
-        this.getProjects({
-            handleProjects:function(projects)
+        return(new Promise((resolve,reject) => {
+            if (namespace == null || name == null)
             {
-                delegate.handleProject(projects[0]);
-            },
-            notfound:function()
-            {
-                if (tools.supports(delegate,"notfound"))
-                {
-                    delegate.notfound();
-                }
-                else
-                {
-                    tools.exception("error: not found");
-                }
+                reject({text:"you must specify project namespace and name"});
             }
-        },namespace,name);
+            else
+            {
+                this.getProjects(namespace,name).then(
+                    function(data)
+                    {
+                        if (data.length == 1)
+                        {
+                            resolve(data[0]);
+                        }
+                        else
+                        {
+                            reject({text:"project " + namespace + "/" + name + " not found"});
+                        }
+                    },
+                    function(data)
+                    {
+                        reject(data);
+                    }
+                )
+            }
+        }));
     }
 
-    getPods(delegate)
+    getPods()
     {
-        if (tools.supports(delegate,"handlePods") == false)
-        {
-            tools.exception("the delegate must implement the handlePods function");
-        }
+        return(new Promise((resolve,reject) => {
+            var url = this.baseUrl;
+            url += "api/v1";
 
-        var url = this.baseUrl;
-        url += "api/v1";
+            if (this._ns != null)
+            {
+                url += "/namespaces/" + this._ns;
+            }
 
-        if (this._ns != null)
-        {
-            url += "/namespaces/" + this._ns;
-        }
+            url += "/pods";
 
-        url += "/pods";
+            var k8s = this;
+            var request = ajax.create(url);
+            request.setRequestHeader("accept","application/json");
 
-        var k8s = this;
-
-        var o = {
-            response:function(request,text) {
-                var data = JSON.parse(text);
+            request.get().then(
+                function(result) {
+                    var o = JSON.parse(result.text);
                     var a = [];
 
                     if (k8s.project != null)
                     {
                         var match = k8s.project + "-";
-                        for (var item of data.items)
+                        for (var item of o.items)
                         {
                             if (item.metadata.name.startsWith(match))
                             {
@@ -391,596 +358,600 @@ class K8S extends Options
                     }
                     else
                     {
-                        a = data.items;
+                        a = o.items;
                     }
 
-                    delegate.handlePods(a);
-            },
-            error:function(request,error) {
-                if (tools.supports(delegate,"error"))
-                {
-                    delegate.error(request,error);
+                    resolve({request:request,pods:a});
+                },
+                function(data) {
+                    reject(data);
                 }
-                else
-                {
-                    tools.exception("error: " + error);
-                }
-            }
-        };
-
-        var request = ajax.create("pods",url,o);
-		request.setRequestHeader("accept","application/json");
-        request.get();
+            );
+        }));
     }
 
-    getPod(delegate)
+    getPod()
     {
-        if (tools.supports(delegate,"handlePod") == false)
-        {
-            tools.exception("the delegate must implement the handlePod function");
-        }
+        return(new Promise((resolve,reject) => {
 
-        if (this.namespace == null || this.project == null)
-        {
-            tools.exception("the instance requires both namespace and project name to get the pod");
-        }
-
-        this.getPods({
-            handlePods:function(pods) {
-                if (pods.length == 0)
-                {
-                    if (tools.supports(delegate,"notfound"))
-                    {
-                        delegate.notfound();
-                    }
-                }
-                else
-                {
-//console.log(JSON.stringify(pods[0],null,2));
-                    delegate.handlePod(pods[0]);
-                }
-            }
-        });
-    }
-
-    getLog(delegate)
-    {
-        if (tools.supports(delegate,"handleLog") == false)
-        {
-            tools.exception("the delegate must implement the handleLog function");
-        }
-
-        if (this.namespace == null || this.project == null)
-        {
-            tools.exception("the instance requires both namespace and project name to get the pod");
-        }
-
-        var k8s = this;
-
-        this.getPod({
-            handlePod:function(pod)
+            if (this.namespace == null || this.project == null)
             {
-                var url = k8s.baseUrl;
-                url += "api/v1";
-                url += "/namespaces/" + k8s.namespace;
-                url += "/pods/" + pod.metadata.name;
-                url += "/log";
+                tools.exception("the instance requires both namespace and project name to get the pod");
+            }
 
-                ajax.create("log",url,{
-                    response:function(request,text) {
-                        var log = [];
-                        var o;
-                        text.split("\n").forEach((line) => {
-                            if (line.length > 0)
+            this.getPods().then(
+                function(result) {
+                    var pods = result.pods;
+                    if (pods.length == 0)
+                    {
+                        const   pod = namespace + "/" + project;
+                        reject({error:pod + " not found"});
+                    }
+                    else
+                    {
+                        resolve(pods[0]);
+                    }
+                },
+                function(result) {
+                    reject({error:pod + " not found"});
+                }
+            );
+        }));
+    }
+
+    getLog()
+    {
+        return(new Promise((resolve,reject) => {
+            if (this.namespace == null || this.project == null)
+            {
+                tools.exception("the instance requires both namespace and project name to get the pod");
+            }
+
+            var k8s = this;
+
+            this.getPod().then(
+                function(pod) {
+                    var url = k8s.baseUrl;
+                    url += "api/v1";
+                    url += "/namespaces/" + k8s.namespace;
+                    url += "/pods/" + pod.metadata.name;
+                    url += "/log";
+
+                    ajax.create(url).get().then(
+                        function(result) {
+                            var text = result.text;
+                            var log = [];
+                            var o;
+                            text.split("\n").forEach((line) => {
+                                if (line.length > 0)
+                                {
+                                    try
+                                    {
+                                        o = JSON.parse(line);
+                                    }
+                                    catch (exception)
+                                    {
+                                        o = {};
+                                        o.message = line;
+                                    }
+
+                                    log.push(o);
+                                }
+                            });;
+                            resolve(log);
+                        },
+                        function(result) {
+                            tools.exception("error: " + result);
+                        }
+                    );
+                }
+            );
+        }));
+    }
+
+    getIngress(name)
+    {
+        return(new Promise((resolve,reject) => {
+            var url = this.baseUrl;
+            url += "apis/networking.k8s.io/v1beta1";
+
+            if (this.namespace != null)
+            {
+                url += "/namespaces/" + this.namespace;
+            }
+            url += "/ingresses/" + name;
+
+            var request = ajax.create(url);
+            request.get().then(
+                function(result) {
+                    if (result.status == 404)
+                    {
+                        reject(result);
+                    }
+                    else
+                    {
+                       resolve(JSON.parse(result.text));
+                    }
+                },
+                function(result) {
+                    reject(result);
+                }
+            );
+        }));
+    }
+
+    authenticate(delegate)
+    {
+        return(new Promise((resolve,reject) => {
+
+            const   self = this;
+
+            this.getAuthToken().then(
+                function(response) {
+                    const   status = response.status;
+
+                    if (status == 401)
+                    {
+                        if (tools.supports(delegate,"getCredentials"))
+                        {
+                            const   credentials = delegate.getCredentials();
+
+                            if (credentials != null)
                             {
-                                try
-                                {
-                                    o = JSON.parse(line);
-                                }
-                                catch (exception)
-                                {
-                                    o = {};
-                                    o.message = line;
-                                }
-
-                                log.push(o);
+                                self.setOpts(credentials);
                             }
-                        });;
-                        delegate.handleLog(log);
-                    },
-                    error:function(request,error) {
-                        if (tools.supports(delegate,"error"))
-                        {
-                            delegate.error(request,error);
                         }
-                        else
-                        {
-                            tools.exception("error: " + error);
-                        }
-                    }
-                }).get();
-            }
-        });
-    }
 
-    getIngress(name,delegate)
-    {
-        if (tools.supports(delegate,"handleIngress") == false)
-        {
-            tools.exception("the delegate must implement the handleIngress function");
-        }
-
-        var url = this.baseUrl;
-        url += "apis/networking.k8s.io/v1beta1";
-
-        if (this.namespace != null)
-        {
-            url += "/namespaces/" + this.namespace;
-        }
-        url += "/ingresses/" + name;
-
-        var request = ajax.create("load",url,{
-            response:function(request,text) {
-
-                if (request.getStatus() == 404)
-                {
-                    if (tools.supports(delegate,"notfound"))
-                    {
-                        delegate.notfound(request,url);
+                        reject();
                     }
                     else
                     {
-                        tools.exception(url + " not found");
-                    }
-                }
-                else
-                {
-                    var data = JSON.parse(text);
-                    delegate.handleIngress(data);
-                }
-            },
-            error:function(request,error) {
-                if (tools.supports(delegate,"error"))
-                {
-                    delegate.error(request,error);
-                }
-                else
-                {
-                    tools.exception("error: " + error);
-                }
-            }
-        });
-        request.get();
+                        const   token = response.token;
 
-        var o = {
-        }
-    }
-
-    getAuthToken(delegate)
-    {
-for (var x in delegate) console.log("A: " + x);
-        if (tools.supports(delegate,"handleToken") == false)
-        {
-            tools.exception("the delegate must implement the handleToken function");
-        }
-
-        var k8s = this;
-        this.getIngress("sas-logon-app",{
-            handleIngress:function(data) {
-                k8s.saslogon(delegate,data)
-            },
-            notfound:function(request,url) {
-                k8s.getIngress("uaa",{
-                    handleIngress:function(data) {
-                        k8s.uaa(delegate,data)
-                    },
-                    notfound:function(request,url){
-                        console.log("not found: " + url);
-                    }
-                });
-            }
-        });
-    }
-
-    saslogon(delegate,data)
-    {
-        this.getSecret({
-            handleSecret:function(secret) {
-                var url = "https://";
-                url += data.spec.tls[0].hosts[0];
-                url += "/SASLogon/oauth/clients/consul";
-                url += "?callback=false&serviceId=app";
-
-                var handler = {
-                    response:function(request,text) {
-                        if (request.getStatus() >= 400)
+                        if (token != null)
                         {
-                            console.log("token error: " + request.getStatus());
+                            self.setOpt("access_token",token);
                         }
-                        else
-                        {
-                            var o = JSON.parse(text);
-                            var token = o.access_token;
-                            delegate.handleToken(token);
-                        }
-                    },
-                    error:function(request,error) {
-                        console.log(error);
+
+                        resolve();
                     }
-                };
-                var request = ajax.create("token",url,handler);
-                request.setRequestHeader("X-Consul-Token",secret);
-                request.post();
-            },
-            error:function(request,error) {
-                console.log(error);
-            }
-        })
+                },
+                function() {
+                    reject();
+                }
+            );
+        }));
     }
 
-    uaa(delegate,data)
+    getAuthToken()
     {
-        var k8s = this;
-        var url = "https://";
-        url += data.spec.tls[0].hosts[0];
-        url += "/uaa/oauth/token";
+        return(new Promise((resolve,reject) => {
+            var ingress = null;
+            var self = this;
+            this.getIngress("sas-logon-app").then(
+                function(result) {
+                    ingress = result["ingress"];
+                    self.saslogon(result).then(
+                        function(result) {
+                            resolve(result["token"]);
+                        }
+                    );
+                },
+                function(result) {
+                    //console.log("no viya");
+                    self.getIngress("uaa").then(
+                        function(result) {
+                            self.uaa(result).then(
+                                function(result) {
+                                    resolve(result);
+                                }
+                            );
+                        },
+                        function(result) {
+                            //console.log("no uaa");
+                            resolve({status:0,token:null});
+                        }
+                    )
+                }
+            );
+        }));
+    }
 
-        var handler = {
-            response:function(request,text) {
-                console.log("here: " + request.getStatus());
-                if (request.getStatus() >= 400)
-                {
-                    if (request.getStatus() == 401)
+    saslogon(data)
+    {
+        return(new Promise((resolve,reject) => {
+            this.getSecret().then(
+                function(data) {
+                    var secret = data["secret"];
+                    var url = "https://";
+                    url += data.spec.tls[0].hosts[0];
+                    url += "/SASLogon/oauth/clients/consul";
+                    url += "?callback=false&serviceId=app";
+
+                    var request = ajax.create(url);
+                    request.setRequestHeader("X-Consul-Token",secret);
+                    request.post().then(
+                        function(data) {
+                            if (request.getStatus() >= 400)
+                            {
+                                console.log("token error: " + request.getStatus());
+                            }
+                            else
+                            {
+                                var o = JSON.parse(text);
+                                var token = o.access_token;
+                                delegate.handleToken(token);
+                            }
+                        },
+                        function(result) {
+                            console.log("error : " + result);
+                        }
+                    );
+                },
+                function(data) {
+                    reject(data);
+                }
+            )
+        }));
+    }
+
+    uaa(data)
+    {
+        return(new Promise((resolve,reject) => {
+            var k8s = this;
+            var url = "https://";
+            url += data.spec.tls[0].hosts[0];
+            url += "/uaa/oauth/token";
+
+            var request = ajax.create(url);
+            request.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+            request.setRequestHeader("Accept","application/json");
+
+            var user = this.getOpt("user");
+            var pw = this.getOpt("pw","");
+            var send ="";
+
+            send += "client_id=sv_client";
+            send += "&client_secret=secret";
+            send += "&grant_type=password";
+            send += "&username=" + user;
+            send += "&password=" + pw;
+
+            request.setData(send);
+
+            /*
+            console.log(url);
+            console.log(send);
+            */
+
+            request.post().then(
+                function(result) {
+                    if (result.status >= 400)
                     {
-                        if (tools.supports(delegate,"addCredentials"))
-                        {
-                            delegate.addCredentials(k8s);
-                        }
-                        else
-                        {
-                            console.log("token error: " + request.getStatus());
-                        }
+                        resolve({status:result.status,token:null});
                     }
                     else
                     {
-                        console.log("token error: " + request.getStatus());
+                        var o = JSON.parse(result.text);
+                        resolve({status:result.status,token:o.access_token});
                     }
+                },
+                function(result) {
+                    reject(result);
                 }
-                else
-                {
-                    var o = JSON.parse(text);
-                    var token = o.access_token;
-                    delegate.handleToken(token);
-                }
-            },
-            error:function(request,error) {
-                console.log(error);
-            }
-        };
-
-        var request = ajax.create("token",url,handler);
-        request.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-        request.setRequestHeader("Accept","application/json");
-
-        var user = this.getOpt("user");
-        var pw = this.getOpt("pw","");
-        var send ="";
-
-        send += "client_id=sv_client";
-        send += "&client_secret=secret";
-        send += "&grant_type=password";
-        send += "&username=" + user;
-        send += "&password=" + pw;
-
-        request.setData(send);
-
-        console.log(url);
-        console.log(send);
-
-        request.post(send);
+            );
+        }));
     }
 
-    getSecret(delegate)
+    getSecret()
     {
-        if (tools.supports(delegate,"handleSecret") == false)
-        {
-            tools.exception("the delegate must implement the handleSecret function");
-        }
+        return(new Promise((resolve,reject) => {
+            var url = this.baseUrl;
+            url += "api/v1";
 
-        var url = this.baseUrl;
-        url += "api/v1";
+            if (this.namespace != null)
+            {
+                url += "/namespaces/" + this.namespace;
+            }
 
-        if (this.namespace != null)
-        {
-            url += "/namespaces/" + this.namespace;
-        }
+            url += "/secrets/sas-consul-client";
 
-        url += "/secrets/sas-consul-client";
+            var k8s = this;
+            var request = ajax.create(url);
+            request.setRequestHeader("accept","application/json");
+            request.get().then(
+                function(result) {
 
-        var k8s = this;
-        var o = {
-            response:function(request,text) {
-
-                if (request.getStatus() == 404)
-                {
-                    if (tools.supports(delegate,"notfound"))
+                    if (result.status == 404)
                     {
-                        delegate.notfound(request,"not found");
+                        reject(result);
+                    }
+
+                    var o = JSON.parse(result.text);
+
+                    if (o.code == 404)
+                    {
+                        reject(result);
                     }
                     else
                     {
-                        tools.exception("error: not found");
+                        var secret = Buffer.from(o.data.CONSUL_HTTP_TOKEN,"base64").toString();
+                        resolve({secret:secret});
                     }
-
-                    return;
+                },
+                function(result) {
+                    reject(result);
                 }
-
-                var data = JSON.parse(text);
-
-                if (data.code == 404)
-                {
-                    var s = "";
-                    if (k8s._ns != null)
-                    {
-                        s += k8s._ns + "/";
-                    }
-                    s += k8s._project;
-
-                    if (tools.supports(delegate,"notfound"))
-                    {
-                        delegate.notfound(s);
-                    }
-                    else
-                    {
-                        tools.exception("project not found: " + s);
-                    }
-                }
-                else
-                {
-                    var secret = Buffer.from(data.data.CONSUL_HTTP_TOKEN,"base64").toString();
-                    delegate.handleSecret(secret);
-                }
-            },
-            error:function(request,error) {
-                if (tools.supports(delegate,"error"))
-                {
-                    delegate.error(request,error);
-                }
-                else
-                {
-                    tools.exception("error: " + error);
-                }
-            }
-        };
-        var request = ajax.create("load",url,o);
-        request.setRequestHeader("accept","application/json");
-        request.get();
+            )
+        }));
     }
 
-    ls(path,delegate)
+    ls(path)
     {
-        if (tools.supports(delegate,"handleFiles") == false)
-        {
-            tools.exception("the delegate must implement the handleFiles function");
-        }
-
-        var handler = {
-            out:function(ws,data) {
-                var decoder = new TextDecoder();
-                var s = decoder.decode(data);
-                var lines = s.split("\n");
-                var files = [];
-                for (var line of lines)
-                {
-                    if (line.length == 0)
+        return(new Promise((resolve,reject) => {
+            var handler = {
+                out:function(ws,data) {
+                    var decoder = new TextDecoder();
+                    var s = decoder.decode(data);
+                    var lines = s.split("\n");
+                    var files = [];
+                    for (var line of lines)
                     {
-                        continue;
+                        if (line.length == 0)
+                        {
+                            continue;
+                        }
+
+                        var type = line[0]; 
+
+                        if (type != '-' && type != 'd')
+                        {
+                            continue;
+                        }
+
+                        line = line.substr(1);
+
+                        var a = line.splitNoSpaces();
+                        var file = new Options();
+                        file.setOpt("name",a[8]);
+                        file.setOpt("perms",a[0]);
+                        file.setOpt("owner",a[2]);
+                        file.setOpt("group",a[3]);
+                        file.setOpt("size",a[4]);
+                        file.setOpt("modified",a[5] + " " + a[6] + " " + a[7]);
+                        file.setOpt("directory",((type == 'd') ? true : false));
+
+                        files.push(file);
                     }
 
-                    var type = line[0]; 
-
-                    if (type != '-' && type != 'd')
-                    {
-                        continue;
-                    }
-
-                    line = line.substr(1);
-
-                    var a = line.splitNoSpaces();
-                    var file = new Options();
-                    file.setOpt("name",a[8]);
-                    file.setOpt("perms",a[0]);
-                    file.setOpt("owner",a[2]);
-                    file.setOpt("group",a[3]);
-                    file.setOpt("size",a[4]);
-                    file.setOpt("modified",a[5] + " " + a[6] + " " + a[7]);
-                    file.setOpt("directory",((type == 'd') ? true : false));
-
-                    files.push(file);
-                }
-
-                delegate.handleFiles(files);
-            }
-        }
-
-        this.run(["ls","-l",path],handler);
-    }
-
-    cat(path,delegate)
-    {
-        if (tools.supports(delegate,"output") == false)
-        {
-            tools.exception("the delegate must implement the output function");
-        }
-
-        var handler = {
-            out:function(ws,data) {
-                var decoder = new TextDecoder();
-                var s = decoder.decode(data);
-                delegate.output(s);
-            }
-        }
-
-        this.run(["cat",path],handler);
-    }
-
-    get(path,delegate)
-    {
-        if (tools.supports(delegate,"handleFile") == false)
-        {
-            tools.exception("the delegate must implement the handleFile function");
-        }
-
-        var buffers = [];
-
-        var handler = {
-            out:function(ws,data) {
-                buffers.push(data.slice(1));
-            },
-
-            closed:function() {
-                var size = 0;
-                buffers.forEach((buf) => {
-                    size += buf.byteLength;
-                });
-
-                var dv = new DataView(new ArrayBuffer(size));
-                var index = 0;
-
-                buffers.forEach((b) => {
-                    var source = new DataView(b);
-                    for (var i = 0; i < b.byteLength; i++)
-                    {
-                        dv.setUint8(index,source.getUint8(i));
-                        index++;
-                    }
-                });
-
-                var tar = new Tar();
-                tar.parse(dv.buffer);
-                delegate.handleFile(tar);
-            },
-            err:function(ws,message) {
-                var text = new TextDecoder().decode(message);
-
-                if (text.indexOf("Removing leading") < 0)
-                {
-                    tools.exception(text);
+                    resolve({files:files});
                 }
             }
-        }
 
-        this.run(["tar","cf","-",path],handler);
+            this.run(["ls","-l",path],handler);
+        }));
+    }
+
+    cat(path)
+    {
+        return(new Promise((resolve,reject) => {
+
+            var content = "";
+
+            var handler = {
+                out:function(ws,data) {
+                    var decoder = new TextDecoder();
+                    var s = decoder.decode(data);
+                    content += s;
+                },
+
+                closed:function(ws) {
+                    resolve(content);
+                }
+            }
+
+            this.run(["cat",path],handler);
+        }));
+    }
+
+    get(path)
+    {
+        return(new Promise((resolve,reject) => {
+            var buffers = [];
+
+            var handler = {
+                out:function(ws,data) {
+                    buffers.push(data.slice(1));
+                },
+
+                closed:function() {
+                    var size = 0;
+                    buffers.forEach((buf) => {
+                        size += buf.byteLength;
+                    });
+
+                    var dv = new DataView(new ArrayBuffer(size));
+                    var index = 0;
+
+                    buffers.forEach((b) => {
+                        var source = new DataView(b);
+                        for (var i = 0; i < b.byteLength; i++)
+                        {
+                            dv.setUint8(index,source.getUint8(i));
+                            index++;
+                        }
+                    });
+
+                    var tar = new Tar();
+                    tar.parse(dv.buffer);
+                    resolve(tar);
+                },
+                err:function(ws,message) {
+                    var text = new TextDecoder().decode(message);
+
+                    if (text.indexOf("Removing leading") < 0)
+                    {
+                        tools.exception(text);
+                    }
+                }
+            }
+
+            this.run(["tar","cf","-",path],handler);
+        }));
     }
 
     put(data,path,options,delegate)
     {
-        if (tools.isNode)
-        {
-            if (data instanceof Buffer)
+        return(new Promise((resolve,reject) => {
+            if (tools.isNode)
             {
-                data = tools.bufferToArrayBuffer(data);
-            }
-        }
-
-        var handler = {
-           ready:function(ws) {
-                var tar = new Tar();
-                tar.create(data,options);
-
-                const   bufsize = 513;
-
-                var buf = new ArrayBuffer(tar.buffer.byteLength + 1);
-                var dv = new DataView(new ArrayBuffer(bufsize));
-
-                dv.setUint8(0,0);
-
-                var index = 1;
-
-                for (var i = 0; i < tar.dv.byteLength; i++)
+                if (data instanceof Buffer)
                 {
-                    dv.setUint8(index,tar.dv.getUint8(i));
+                    data = tools.bufferToArrayBuffer(data);
+                }
+            }
 
-                    index++;
+            var handler = {
+               ready:function(ws) {
+                    var tar = new Tar();
+                    tar.create(data,options);
 
-                    if (index == bufsize)
+                    const   bufsize = 513;
+
+                    var buf = new ArrayBuffer(tar.buffer.byteLength + 1);
+                    var dv = new DataView(new ArrayBuffer(bufsize));
+
+                    dv.setUint8(0,0);
+
+                    var index = 1;
+
+                    for (var i = 0; i < tar.dv.byteLength; i++)
                     {
-                        ws.send(dv.buffer);
-                        dv.setUint8(0,0);
-                        index = 1;
+                        dv.setUint8(index,tar.dv.getUint8(i));
+
+                        index++;
+
+                        if (index == bufsize)
+                        {
+                            ws.send(dv.buffer);
+                            dv.setUint8(0,0);
+                            index = 1;
+                        }
                     }
+
+                    var end = new DataView(new ArrayBuffer(2));
+                    end.setUint8(0,0);
+                    end.setUint8(0,4);
+                    ws.send(end.buffer);
+
+                    ws.close();
+                },
+
+                closed:function(ws) {
+                    resolve();
+                },
+
+                out:function(ws,message) {
+                    console.log(new TextDecoder().decode(message));
                 }
-
-                var end = new DataView(new ArrayBuffer(2));
-                end.setUint8(0,0);
-                end.setUint8(0,4);
-                ws.send(end.buffer);
-
-                ws.close();
-            },
-
-            closed:function(ws) {
-                if (tools.supports(delegate,"done"))
-                {
-                    delegate.done();
-                }
-            },
-
-            out:function(ws,message) {
-                console.log(new TextDecoder().decode(message));
             }
-        }
 
-        this.run(["tar","-xmf","-","-C",path],handler);
+            this.run(["tar","-xmf","-","-C",path],handler);
+        }));
     }
 
     puturl(url,path,options,delegate)
     {
-        var opts = new Options(options);
-        var k8s = this;
+        return(new Promise((resolve,reject) => {
 
-        var o = {
-            response:function(request,text) {
-                k8s.put(text,path,opts.getOpts(),delegate);
-            },
-            error:function(request,error) {
-                tools.exception("error: " + error);
-            }
-        };
+            var opts = new Options(options);
 
-        if (opts.hasOpt("name") == false)
-        {
-            const   index = url.lastIndexOf("/");
-            if (index != -1)
+            if (opts.hasOpt("name") == false)
             {
-                opts.setOpt("name",url.substr(index));
+                const   index = url.lastIndexOf("/");
+                if (index != -1)
+                {
+                    opts.setOpt("name",url.substr(index));
+                }
             }
-        }
 
-        ajax.create("load",url,o).get();
+            var self = this;
+
+            ajax.create(url).get().then(
+                function(result) {
+                    return(self.put(result.text,path,opts.getOpts(),delegate));
+                }
+            ).then(
+                function() {
+                    resolve();
+                },
+            ).catch(
+                function() {
+                    reject();
+                }
+            );
+        }));
+    }
+    puturlx(url,path,options,delegate)
+    {
+        return(new Promise((resolve,reject) => {
+
+            var opts = new Options(options);
+
+            if (opts.hasOpt("name") == false)
+            {
+                const   index = url.lastIndexOf("/");
+                if (index != -1)
+                {
+                    opts.setOpt("name",url.substr(index));
+                }
+            }
+
+            var self = this;
+
+            ajax.create(url).get().then(
+                function(result) {
+                    self.put(result.text,path,opts.getOpts(),delegate).then(
+                        function() {
+                            resolve();
+                        },
+                        function() {
+                            reject();
+                        }
+                    );
+                },
+                function(result) {
+                    tools.exception("error: " + result);
+                }
+            ).
+            catch(
+                function(result) {
+                    console.log("caught error: " + result);
+                }
+            );                    
+        }));
     }
 
     rm(path,delegate)
     {
-        var handler = {
-            message:function(ws,message) {
-                var decoder = new TextDecoder();
-                var s = decoder.decode(message.data);
-            },
+        return(new Promise((resolve,reject) => {
+            var handler = {
+                message:function(ws,message) {
+                    var decoder = new TextDecoder();
+                    var s = decoder.decode(message.data);
+                },
 
-            closed:function(ws) {
-                if (tools.supports(delegate,"done"))
-                {
-                    delegate.done();
+                closed:function(ws) {
+                    resolve();
+                },
+
+                error:function(ws,message) {
+                    tools.exception(message);
                 }
-            },
-
-            error:function(ws,message) {
-                tools.exception(message);
             }
-        }
 
-        this.run(["rm",path],handler);
+            this.run(["rm",path],handler);
+        }));
     }
 
     mkdir(path,delegate)
@@ -1017,11 +988,16 @@ for (var x in delegate) console.log("A: " + x);
 
         if (this._pod == null)
         {
-            var k8s = this;
-            this.getPod({handlePod:function(pod) {
-                k8s._pod = pod;
-                k8s.exec(a,k8s._pod,delegate);
-            }});
+            var self = this;
+            this.getPod().then(
+                function(result) {
+                    self._pod = result;
+                    self.exec(a,self._pod,delegate);
+                },
+                function(data) {
+                    console.log("run error");
+                }
+            );
         }
         else
         {
@@ -1046,8 +1022,6 @@ for (var x in delegate) console.log("A: " + x);
 
         url += "&container=" + pod.spec.containers[0].name;
         url += "&stdin=true";
-        /*
-        */
         url += "&stdout=true";
         url += "&stderr=true";
         
@@ -1129,6 +1103,11 @@ for (var x in delegate) console.log("A: " + x);
 
         tools.createWebSocket(url,o);
     }
+
+    supports(func)
+    {
+        return(tools.supports(this,func));
+    }
 }
 
 class K8SProject extends K8S 
@@ -1187,167 +1166,127 @@ class K8SProject extends K8S
     {
         var opts = new Options(options);
         var modelconfig = opts.getOpt("model");
-        var k8s = this;
+        var self = this;
 
-        var handler =
-        {
-            loaded:function()
+        this.loadConfig().then(
+            function()
             {
                 if (modelconfig == null)
                 {
-                    k8s.getPod({
-                        handlePod:function(pod)
+                    self.getPod().then(
+                        function(pod)
                         {
-                            k8s._pod = pod;
+                            self._pod = pod;
                             /*
-                            k8s.readiness(delegate);
+                            self.readiness(delegate);
                             */
-                            connect.connect(k8s.espUrl,delegate,options,start);
+                            connect.connect(self.espUrl,delegate,options,start);
                         }
-                    });
+                    );
                 }
                 else
                 {
-                    var o = {
-                        modelHandler:function(model) {
-                            k8s.load(model,opts.getOpts(),{
-                                loaded:function() {
-                                    connect.connect(k8s.espUrl,delegate,options,start);
-                                }
-                            });
+                    self.getModel(modelconfig).then(
+                        function(result) {
+                            return(self.preload(result,opts.getOpts()));
                         }
-                    };
-
-                    k8s.getModel(modelconfig,o);
+                    ).then(
+                        function(result) {
+                            if (result.load)
+                            {
+                                return(self.load(result.xml,opts.getOpts()));
+                            }
+                            else
+                            {
+                                connect.connect(self.espUrl,delegate,options,start);
+                            }
+                        }
+                    ).then(
+                        function() {
+                            connect.connect(self.espUrl,delegate,options,start);
+                        }
+                    );
                 }
             },
-
-            notfound:function(project)
+            function(error)
             {
                 if (modelconfig == null)
                 {
                     if (opts.getOpt("create",true))
                     {
-                        var model = k8s.getDefaultModel();
-                        k8s.load(model,opts.getOpts(),{
-                            loaded:function() {
-                                connect.connect(k8s.espUrl,delegate,options,start);
+                        var model = self.getDefaultModel();
+                        var xml = xpath.createXml(model);
+                        xml.documentElement.setAttribute("name",self._project);
+                        self.load(xml,opts.getOpts()).then(
+                            function() {
+                                connect.connect(self.espUrl,delegate,options,start);
                             }
-                        });
-                    }
-                    else if (tools.supports(delegate,"error"))
-                    {
-                        delegate.error("project not found: " + project);
+                        );
                     }
                 }
                 else
                 {
-                    var o = {
-                        modelHandler:function(model) {
-                            k8s.load(model,opts.getOpts(),{
-                                loaded:function() {
-                                    connect.connect(k8s.espUrl,delegate,options,start);
-                                }
-                            });
+                    self.getModel(modelconfig).then(
+                        function(result) {
+                            return(self.preload(result,opts.getOpts()));
                         }
-                    };
-
-                    k8s.getModel(modelconfig,o);
+                    ).then(
+                        function(result) {
+                            return(self.load(result.xml,opts.getOpts()));
+                        }
+                    ).then(
+                        function() {
+                            connect.connect(self.espUrl,delegate,options,start);
+                        }
+                    );
                 }
-            },
-
-            error:function(request,error)
-            {
-                tools.exception("error: " + opts);
             }
-        };
-
-        this.loadConfig(handler);
+        );
     }
 
     loadConfig(delegate)
     {
-        this._config = null;
+        return(new Promise((resolve,reject) => {
+            this._config = null;
 
-        var url = this.url;
+            var url = this.url;
 
-        if (this._ns != null)
-        {
-            url += "/namespaces/" + this._ns;
-        }
-
-        url += "/espservers";
-        url += "/" + this._project;
-
-        var k8s = this;
-        var o = {
-            response:function(request,text) {
-                var data = JSON.parse(text);
-
-                if (data.code == 404)
-                {
-                    if (tools.supports(delegate,"notfound"))
-                    {
-                        delegate.notfound(k8s.namespace + "/" + k8s.project);
-                    }
-                }
-                else
-                {
-                    k8s._config = data;
-                    if (tools.supports(delegate,"loaded"))
-                    {
-                        delegate.loaded();
-                    }
-                }
-            },
-            error:function(request,error) {
-                tools.exception("error: " + error);
+            if (this._ns != null)
+            {
+                url += "/namespaces/" + this._ns;
             }
-        };
-        var request = ajax.create("load",url,o);
-		request.setRequestHeader("accept","application/json");
-        request.get();
+
+            url += "/espservers";
+            url += "/" + this._project;
+
+            var self = this;
+            var request = ajax.create(url);
+            request.setRequestHeader("accept","application/json");
+            request.get().then(
+                function(result) {
+                    if (result.status == 404)
+                    {
+                        reject(result);
+                    }
+                    else
+                    {
+                        var o = JSON.parse(result.text);
+                        self._config = o;
+                        resolve({config:o});
+                    }
+                },
+                function(result) {
+                    tools.exception(result);
+                }
+            );
+        }));
     }
 
-    load(model,options,delegate)
+    load(model,options)
     {
-        var opts = new Options(options);
-        var xml = xpath.createXml(model);
-        xml.documentElement.setAttribute("name",this._project);
+        return(new Promise((resolve,reject) => {
+            var opts = new Options(options);
 
-        var newmodel = "b64" + tools.b64Encode(xpath.xmlString(xml));
-
-        if (newmodel == this.modelXml)
-        {
-            if (opts.getOpt("force",false) == false)
-            {
-                if (tools.supports(delegate,"loaded"))
-                {
-                    delegate.loaded();
-                }
-
-                return;
-            }
-        }
-
-        var k8s = this;
-
-        if (this._config != null)
-        {
-            var o = {
-                deleted:function() {
-                    k8s._config = null;
-                    setTimeout(function(){k8s.load(model,opts.getOpts(),delegate)},1000);
-                },
-                error:function(message) {
-                    tools.exception(message);
-                }
-            };
-
-            this.del(o);
-        }
-        else
-        {
             var url = this.url;
 
             if (this._ns != null)
@@ -1357,151 +1296,161 @@ class K8SProject extends K8S
 
             url += "/espservers";
 
-            var o = {
-                response:function(request,text) {
+            const   modelData = "b64" + tools.b64Encode(xpath.xmlString(model));
 
-                    const   code = request.getStatus();
-
-                    if (code != 200 && code != 201)
-                    {
-                        tools.exception(text);
-                    }
-
-                    k8s.loadConfig();
-
-                    k8s.isReady({
-                        ready:function() {
-                            if (tools.supports(delegate,"loaded"))
-                            {
-                                delegate.loaded();
-                            }
-                        }
-                    });
-                },
-                error:function(request,error) {
-                    if (tools.supports(delegate,"error"))
-                    {
-                        delegate.error(request,error);
-                    }
-                    else
-                    {
-                        tools.exception("error: " + error);
-                    }
-                }
-            };
-
-            var content = this.getYaml(newmodel);
-            var request = ajax.create("create",url,o);
+            var self = this;
+            var content = this.getYaml(modelData);
+            var request = ajax.create(url);
             request.setRequestHeader("content-type","application/yaml");
             request.setRequestHeader("accept","application/json");
             request.setData(content);
-            request.post();
-        }
-    }
+            request.post().then(
+                function(result) {
 
-    restart(delegate)
-    {
-        const   k8s = this;
-        const   handler = {
-            handleProject:function(p) 
-            {
-                const   s = p.spec.espProperties["server.xml"];
-                const   xml = tools.b64Decode(s.substr(3)).toString();
-                const   delHandler = {
-                    deleted:function() {
-                        k8s.load(xml,{force:true},
-                        {
-                            loaded:function() 
-                            {
-                                if (tools.supports(delegate,"loaded"))
-                                {
-                                    delegate.loaded();
-                                }
-                            }
-                        });
+                    const   code = result.status;
+
+                    if (code != 200 && code != 201)
+                    {
+                        tools.exception(result.text);
                     }
-                };
 
-                k8s.del(delHandler);
-            },
-            notfound:function()
-            {
-                tools.exception("project not found");
-            }
-        }
+                    self.loadConfig();
 
-        this.getProject(handler,this.namespace,this.project);
-    }
-
-    del(delegate)
-    {
-        var url = this.url;
-
-        if (this._ns != null)
-        {
-            url += "/namespaces/" + this._ns;
-        }
-
-        url += "/espservers/";
-        url += this._project;
-
-        var o = {
-            response:function(request,text) {
-                if (tools.supports(delegate,"deleted"))
-                {
-                    delegate.deleted();
-                }
-            },
-            error:function(request,error) {
-                if (tools.supports(delegate,"error"))
-                {
-                    delegate.error(error);
-                }
-                else
-                {
-                    tools.exception("error: " + error);
-                }
-            }
-        }; 
-
-        var request = ajax.create("create",url,o);
-		request.setRequestHeader("accept","application/json");
-        request.del();
-    }
-
-    getModel(model,delegate)
-    {
-        if (tools.supports(delegate,"modelHandler") == false)
-        {
-            tools.exception("the delegate must implement the modelHandler function");
-        }
-
-        var modelOpts = new Options(model);
-        var data = modelOpts.getOpt("data");
-        var url = modelOpts.getOpt("url");
-
-        if (data == null && url == null)
-        {
-            tools.exception("the model must contain either a data or url field");
-        }
-
-        if (data != null)
-        {
-            delegate.modelHandler(data);
-        }
-        else
-        {
-            var k8s = this;
-            var o = {
-                response:function(request,text,data) {
-                    delegate.modelHandler(text);
+                    self.isReady({
+                        ready:function() {
+                            resolve();
+                        }
+                    });
                 },
-                error:function(request,error) {
+                function(result) {
+                    tools.exception("error: " + result);
                 }
-            };
+            );
+        }));
+    }
 
-            ajax.create("load",url,o).get();
-        }
+    restart()
+    {
+        return(new Promise((resolve,reject) => {
+
+            const   k8s = this;
+
+            this.getProject(this.namespace,this.project).then(
+                function(p) 
+                {
+                    const   s = p.spec.espProperties["server.xml"];
+                    const   xml = tools.b64Decode(s.substr(3)).toString();
+                    k8s.del().then(
+                        function() {
+                            k8s.load(xml,{force:true}).then(
+                                function() {
+                                    resolve();
+                                }
+                            );
+                        }
+                    );
+                },
+                function(error)
+                {
+                    tools.exception("project not found");
+                }
+            )
+        }));
+    }
+
+    del()
+    {
+        return(new Promise((resolve,reject) => {
+
+            var url = this.url;
+
+            if (this._ns != null)
+            {
+                url += "/namespaces/" + this._ns;
+            }
+
+            url += "/espservers/";
+            url += this._project;
+
+            var self = this;
+
+            var request = ajax.create(url);
+            request.setRequestHeader("accept","application/json");
+            request.del().then(
+                function() {
+                    self._config = null;
+                    resolve();
+                },
+                function(result) {
+                    reject(result);
+                }
+            ); 
+        }));
+    }
+
+    getModel(model)
+    {
+        return(new Promise((resolve,reject) => {
+            var modelOpts = new Options(model);
+            var data = modelOpts.getOpt("data");
+            var url = modelOpts.getOpt("url");
+
+            if (data == null && url == null)
+            {
+                tools.exception("the model must contain either a data or url field");
+            }
+
+            if (data != null)
+            {
+                resolve(data);
+            }
+            else
+            {
+                ajax.create(url).get().then(
+                    function(result) {
+                        resolve(result.text);
+                    },
+                    function(error) {
+                        tools.exception(error.text);
+                    }
+                );
+            }
+        }));
+    }
+
+    preload(model,options)
+    {
+        return(new Promise((resolve,reject) => {
+            var opts = new Options(options);
+            var result = {};
+            result.load = true;
+
+            result.xml = xpath.createXml(model);
+            result.xml.documentElement.setAttribute("name",this._project);
+            var newmodel = "b64" + tools.b64Encode(xpath.xmlString(result.xml));
+
+            if (newmodel == this.modelXml)
+            {
+                if (opts.getOpt("force",false) == false)
+                {
+                    result.load = false;
+                    resolve(result);
+                    return;
+                }
+            }
+
+            if (this._config == null)
+            {
+                resolve(result);
+                return;
+            }
+
+            this.del().then(
+                function() {
+                    resolve(result);
+                }
+            );
+        }));
     }
 
     getYaml(model)
@@ -1607,20 +1556,19 @@ class K8SProject extends K8S
             state = this._config.access.state;
         }
 
-        const   k8s = this;
+        const   self = this;
 
         if (state == "Succeeded")
         {
-            k8s.getPod({
-                handlePod:function(pod)
-                {
+            self.getPod().then(
+                function(result) {
                     var ready = false;
 
-                    if (pod.status.phase == "Running")
+                    if (result.status.phase == "Running")
                     {
-                        for (var i = 0; i < pod.status.conditions.length; i++)
+                        for (var i = 0; i < result.status.conditions.length; i++)
                         {
-                            var condition = pod.status.conditions[i];
+                            var condition = result.status.conditions[i];
 
                             if (condition.status != "True")
                             {
@@ -1628,58 +1576,63 @@ class K8SProject extends K8S
                             }
                         }
 
-                        ready = (i == pod.status.conditions.length);
+                        ready = (i == result.status.conditions.length);
                     }
 
                     if (ready)
                     {
-                        k8s._pod = pod;
-                        setTimeout(function(){delegate.ready(k8s)},1000);
+                        self._pod = result;
+                        setTimeout(function(){delegate.ready(self)},1000);
                         /*
-                        delegate.ready(k8s);
+                        delegate.ready(self);
                         */
                     }
                     else
                     {
-                        setTimeout(function(){k8s.isReady(delegate)},1000);
+                        setTimeout(function(){self.isReady(delegate)},1000);
                     }
                 }
-            });
+            );
         }
         else
         {
             this.loadConfig();
-            setTimeout(function(){k8s.isReady(delegate)},500);
+            setTimeout(function(){self.isReady(delegate)},500);
         }
     }
 
     readiness(delegate)
     {
-        var url = this.espUrl;
-        url += "/internal/ready";
-        const   req = ajax.create("ready",url,{
-            response(request,text) {
-                console.log("ready status: " + request.getStatus());
-                if (request.getStatus() == 200)
-                {
-                    delegate.ready(this);
+        /*
+        return(new Promise((resolve,reject) => {
+            var url = this.espUrl;
+            url += "/internal/ready";
+            const   req = ajax.create(url).get(
+                function(result) {
+                    console.log("ready status: " + result.status);
+                    if (result.status == 200)
+                    {
+                        resolve
+                        delegate.ready(this);
+                    }
+                    else
+                    {
+                        setTimeout(function(){k8s.readiness(delegate)},500);
+                    }
+                },
+                error(request,text) {
+                    tools.exception(text);
                 }
-                else
-                {
-                    setTimeout(function(){k8s.readiness(delegate)},500);
-                }
-            },
-            error(request,text) {
-                tools.exception(text);
-            }
-        });
+            });
+        }));
+        */
 
         /*
         var certConfirm  = this.espUrl;
         certConfirm  += "/eventStreamProcessing/v1/server";
         req.setOpt("cert-confirm-url",certConfirm);
-        */
         setTimeout(function() {req.head()},1000);
+        */
     }
 
     /*
@@ -1687,7 +1640,7 @@ class K8SProject extends K8S
     {
         var url = this.espUrl;
         url += "/internal/ready";
-        const   req = ajax.create("ready",url,{
+        const   req = ajax.create(url,{
             response(request,text) {
                 console.log("ready status: " + request.getStatus());
                 if (request.getStatus() == 200)

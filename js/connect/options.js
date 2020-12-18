@@ -36,7 +36,13 @@ class Options
 
             if (typeof(options) == "string")
             {
-                o = JSON.parse(options);
+                try
+                {
+                    o = JSON.parse(options);
+                }
+                catch (e)
+                {
+                }
             }
 
             for (var name in o)

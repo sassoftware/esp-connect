@@ -124,16 +124,20 @@ class Api extends Options
     {
         this._datasources = {};
         this._publishers = {};
+        this._handlers = {};
         this._stats = new Stats(this);
         this._log = new Log(this);
-        this._modelDelegates = {};
-        this._publisherDelegates = {};
-        this._guidDelegates = {};
-        this._loadDelegates = {};
-        this._deleteDelegates = {};
-        this._responseDelegates = {};
         this._projectUpdateDelegates = [];
-        this._gets = {};
+    }
+
+    addHandler(id,handler)
+    {
+        if (tools.supports(handler,"process") == false)
+        {
+            tools.exception("The handler must implement the process method");
+        }
+
+        this._handlers[id] = handler;
     }
 
     versionGreaterThan(version)
@@ -281,49 +285,10 @@ class Api extends Options
             var o = json.hasOwnProperty("load-project") ? json["load-project"] : json["load-router"] ;
             var id = o["@id"];
 
-            if (this._loadDelegates.hasOwnProperty(id))
+            if (this._handlers.hasOwnProperty(id))
             {
-                var d = this._loadDelegates[id];
-                var code = o["@code"];
-
-                if (code == 0)
-                {
-                    if (tools.supports(d.delegate,"loaded"))
-                    {
-                        var name = json.hasOwnProperty("load-project") ? d.request.project.name : d.request.router.name;
-                        d.delegate.loaded(this,name);
-                    }
-                }
-                else
-                {
-                    var message = "";
-
-                    if (o.hasOwnProperty("text"))
-                    {
-                        message += o["text"];
-                    }
-
-                    if (o.hasOwnProperty("details"))
-                    {
-                        var details = o["details"];
-                        for (var detail of details)
-                        {
-                            message += "\n";
-                            message += detail["detail"];
-                        }
-                    }
-
-                    if (tools.supports(d.delegate,"error"))
-                    {
-                        d.delegate.error(this,d.request.name,message);
-                    }
-                    else
-                    {
-                        console.log(message);
-                    }
-                }
-
-                delete this._loadDelegates[id];
+                this._handlers[id].process(o);
+                delete this._handlers[id];
             }
         }
         else if (json.hasOwnProperty("delete-project"))
@@ -331,24 +296,10 @@ class Api extends Options
             var o = json["delete-project"];
             var id = o["@id"];
 
-            if (this._deleteDelegates.hasOwnProperty(id))
+            if (this._handlers.hasOwnProperty(id))
             {
-                var d = this._deleteDelegates[id];
-                var code = o["@code"];
-
-                if (code == 0)
-                {
-                    if (tools.supports(d.delegate,"deleted"))
-                    {
-                        d.delegate.deleted(this,d.request.project.name);
-                    }
-                }
-                else
-                {
-                    this.handleError(d.request.project.name,d.delegate);
-                }
-
-                delete this._deleteDelegates[id];
+                this._handlers[id].process(o);
+                delete this._handlers[id];
             }
         }
         else if (json.hasOwnProperty("stats"))
@@ -360,29 +311,11 @@ class Api extends Options
         {
             var o = json["response"];
             var id = o["@id"];
-            var get = this._gets[id];
 
-            if (get != null)
+            if (this._handlers.hasOwnProperty(id))
             {
-                delete this._gets[id];
-
-                if (o.hasOwnProperty("data"))
-                {
-                    var delegate = get["delegate"];
-                    var options = get["options"];
-
-                    if (tools.supports(delegate,"response"))
-                    {
-                        var data = o["data"];
-
-                        if (options.getOpt("decode",true))
-                        {
-                            data = tools.b64Decode(data);
-                        }
-
-                        delegate.response(data);
-                    }
-                }
+                this._handlers[id].process(o);
+                delete this._handlers[id];
             }
         }
         else if (json.hasOwnProperty("url-publisher") || json.hasOwnProperty("data-publisher"))
@@ -390,11 +323,10 @@ class Api extends Options
             var o = (json.hasOwnProperty("url-publisher")) ? json["url-publisher"] : json["data-publisher"];
             var id = o["@id"];
 
-            if (this._publisherDelegates.hasOwnProperty(id))
+            if (this._handlers.hasOwnProperty(id))
             {
-                var o = this._publisherDelegates[id];
-                o.delegate.publishComplete(o.request.url);
-                delete this._publisherDelegates[id];
+                this._handlers[id].process(o);
+                delete this._handlers[id];
             }
         }
         else if (json.hasOwnProperty("loggers"))
@@ -402,11 +334,10 @@ class Api extends Options
             var o = json["loggers"];
             var id = o["@id"];
 
-            if (this._responseDelegates.hasOwnProperty(id))
+            if (this._handlers.hasOwnProperty(id))
             {
-                var contexts = o["contexts"];
-                this._responseDelegates[id].deliver(contexts);
-                delete this._responseDelegates[id];
+                this._handlers[id].process(o["contexts"]);
+                delete this._handlers[id];
             }
         }
         else if (json.hasOwnProperty("project-loaded") || json.hasOwnProperty("project-removed"))
@@ -434,20 +365,24 @@ class Api extends Options
         }
     }
 
-    processXml(xml,data)
+    processXml(xml)
     {
-        var    root = xml.documentElement;
-        var    tag = root.nodeName;
+        const   root = xml.documentElement;
+        const   tag = root.nodeName;
+        const   id = (root.hasAttribute("id")) ? root.getAttribute("id") : "";
 
         if (this.getOpt("debug",false))
         {
             console.log(xpath.format(xml.documentElement));
         }
 
-        if (tag == "events" || tag == "info")
+        if (this._handlers.hasOwnProperty(id))
         {
-            var id = root.getAttribute("id");
-
+            this._handlers[id].process(xml);
+            delete this._handlers[id];
+        }
+        else if (tag == "events" || tag == "info")
+        {
             if (this._datasources.hasOwnProperty(id))
             {
                 var datasource = this._datasources[id];
@@ -464,10 +399,8 @@ class Api extends Options
         }
         else if (tag == "schema")
         {
-            if (root.hasAttribute("id"))
+            if (id.length > 0)
             {
-                var id = root.getAttribute("id");
-
                 if (this._datasources.hasOwnProperty(id))
                 {
                     this._datasources[id].setSchemaFromXml(root);
@@ -475,7 +408,7 @@ class Api extends Options
             }
             else if (root.hasAttribute("publisher"))
             {
-                var id = root.getAttribute("publisher");
+                id = root.getAttribute("publisher");
 
                 if (this._publishers.hasOwnProperty(id))
                 {
@@ -491,43 +424,8 @@ class Api extends Options
         {
             this._log.process(xml);
         }
-        else if (tag == "model")
-        {
-            var id = root.getAttribute("id");
-
-            if (this._modelDelegates.hasOwnProperty(id))
-            {
-                var delegate = this._modelDelegates[id];
-                delegate.deliver(xml);
-                delete this._modelDelegates[id];
-            }
-        }
-        else if (tag == "url-publisher")
-        {
-            var id = root.getAttribute("id");
-
-            if (this._publisherDelegates.hasOwnProperty(id))
-            {
-                var o = this._publisherDelegates[id];
-                o.delegate.publishComplete(o.request.url);
-                delete this._publisherDelegates[id];
-            }
-        }
-        else if (tag == "guids")
-        {
-            var id = root.getAttribute("id");
-
-            if (this._guidDelegates.hasOwnProperty(id))
-            {
-                var delegate = this._guidDelegates[id];
-                delegate.deliver(root);
-                delete this._guidDelegates[id];
-            }
-        }
         else if (tag == "publisher")
         {
-            var id = root.getAttribute("id");
-
             if (this._publishers.hasOwnProperty(id))
             {
                 var publisher = this._publishers[id];
@@ -536,49 +434,6 @@ class Api extends Options
                 {
                     publisher._complete = true;
                 }
-            }
-        }
-        else if (tag == "load-project" || tag == "load-router")
-        {
-            var id = root.getAttribute("id");
-
-            if (this._loadDelegates.hasOwnProperty(id))
-            {
-                var d = this._loadDelegates[id];
-                var code = parseInt(root.getAttribute("code"));
-
-                if (code == 0)
-                {
-                    if (tools.supports(d.delegate,"loaded"))
-                    {
-                        d.delegate.loaded(this,d.request.name);
-                    }
-                }
-                else if (tools.supports(d.delegate,"error"))
-                {
-                    var message = xpath.getString("text",root);
-                    d.delegate.error(this,d.request.name,message);
-                }
-
-                delete this._loadDelegates[id];
-            }
-        }
-        else if (tag == "xml")
-        {
-            var id = root.getAttribute("id");
-
-            if (this._responseDelegates.hasOwnProperty(id))
-            {
-                var code = parseInt(root.getAttribute("code"));
-                var node = xml;
-                var s = data;
-                if (code == 0)
-                {
-                    node = xpath.getNode(".//project",xml);
-                    s = xpath.format(node);
-                }
-                this._responseDelegates[id].deliver(s,node);
-                delete this._responseDelegates[id];
             }
         }
         else if (tag == "connection")
@@ -700,94 +555,91 @@ class Api extends Options
         this.sendObject(request);
     }
 
-    publishDataFrom(path,url,delegate,options)
+    publishDataFrom(path,url,options)
     {
-        var conn = this;
-        var o = {
-            response:function(request,text,data) {
-                conn.publishData(path,text,delegate,options);
-            },
-            error:function(request,error) {
-                console.log("error: " + error);
-            }
-        };
-        ajax.create("load",url,o).get();
+        return(new Promise((resolve,reject) => {
+            var self = this;
+            ajax.create(url).get().then(
+                function(result) {
+                    self.publishData(path,result.text,options);
+                },
+                function(result) {
+                    console.log(result);
+                }
+            );
+        }));
     }
 
-    publishData(path,data,delegate,options)
+    publishData(path,data,options)
     {
-        var opts = new Options(options);
-        var blocksize = opts.getOpt("blocksize",1);
-        var times = opts.getOpt("times",1);
-        var pause = opts.getOpt("pause",0);
-        var id = opts.getOpt("id",tools.guid());
-        var o = {};
+        return(new Promise((resolve,reject) => {
+            var opts = new Options(options);
+            var blocksize = opts.getOpt("blocksize",1);
+            var times = opts.getOpt("times",1);
+            var pause = opts.getOpt("pause",0);
+            var id = opts.getOpt("id",tools.guid());
+            var o = {};
 
-        var request = {"data-publisher":{}};
-        var o = request["data-publisher"];
-        o["id"] = id;
-        o["window"] = path;
-        o["data"] = tools.b64Encode(data);
-        o["blocksize"] = blocksize;
-        o["times"] = times;
-        o["pause"] = pause;
-        o["informat"] = opts.getOpt("informat","csv");
+            var request = {"data-publisher":{}};
+            var o = request["data-publisher"];
+            o["id"] = id;
+            o["window"] = path;
+            o["data"] = tools.b64Encode(data);
+            o["blocksize"] = blocksize;
+            o["times"] = times;
+            o["pause"] = pause;
+            o["informat"] = opts.getOpt("informat","csv");
 
-        if (opts.hasOpt("dateformat"))
-        {
-            o["dateformat"] = opts.getOpt("dateformat");
-        }
-
-        if (delegate != null)
-        {
-            if (tools.supports(delegate,"publishComplete") == false)
+            if (opts.hasOpt("dateformat"))
             {
-                throw "The publisher delegate must implement the publishComplete method";
+                o["dateformat"] = opts.getOpt("dateformat");
             }
 
-            this._publisherDelegates[id] = {request:o,delegate:delegate};
-        }
+            this.addHandler(id,{
+                process:function() {
+                    resolve();
+                }
+            });
 
-        this.sendObject(request);
+            this.sendObject(request);
+        }));
     }
 
     publishUrl(path,url,delegate,options)
     {
-        var opts = new Options(options);
-        var blocksize = opts.getOpt("blocksize",1);
-        var times = opts.getOpt("times",1);
-        var o = {};
-        var id = tools.guid();
+        return(new Promise((resolve,reject) => {
+            var opts = new Options(options);
+            var blocksize = opts.getOpt("blocksize",1);
+            var times = opts.getOpt("times",1);
+            var o = {};
+            var id = tools.guid();
 
-        var request = {"url-publisher":{}};
-        var o = request["url-publisher"];
-        o["id"] = id;
-        o["window"] = path;
-        o["url"] = url;
-        o["blocksize"] = blocksize;
-        o["times"] = times;
+            var request = {"url-publisher":{}};
+            var o = request["url-publisher"];
+            o["id"] = id;
+            o["window"] = path;
+            o["url"] = url;
+            o["blocksize"] = blocksize;
+            o["times"] = times;
 
-        if (opts.hasOpt("informat"))
-        {
-            o["informat"] = opts.getOpt("informat");
-        }
-
-        if (opts.hasOpt("dateformat"))
-        {
-            o["dateformat"] = opts.getOpt("dateformat");
-        }
-
-        if (delegate != null)
-        {
-            if (tools.supports(delegate,"publishComplete") == false)
+            if (opts.hasOpt("informat"))
             {
-                throw "The url publisher delegate must implement the publishComplete method";
+                o["informat"] = opts.getOpt("informat");
             }
 
-            this._publisherDelegates[id] = {request:o,delegate:delegate};
-        }
+            if (opts.hasOpt("dateformat"))
+            {
+                o["dateformat"] = opts.getOpt("dateformat");
+            }
 
-        this.sendObject(request);
+            this.addHandler(id,{
+                process:function() {
+                    resolve();
+                }
+            });
+
+            this.sendObject(request);
+        }));
     }
 
     getStats(options)
@@ -804,104 +656,209 @@ class Api extends Options
         return(this._log);
     }
 
-    get(url,delegate,opts)
+    get(url,options)
     {
-        var request = {"get":{}};
-        var o = request["get"];
-        var id = tools.guid();
-        o["id"] = id;
-        o["url"] = url;
-        o["format"] = "ubjson";
-
-        var get = {};
-        get["delegate"] = delegate;
-        get["options"] = new Options(opts);
-        this._gets[id] = get;
-
-        this.sendObject(request);
-    }
-
-    loadModel(delegate,options)
-    {
-        if (tools.supports(delegate,"modelLoaded") == false)
-        {
-            throw "The delegate must implement the modelLoaded method";
-        }
-
-        var id = tools.guid();
-        var opts = new Options(options);
-        var request = {"model":{}};
-        var o = request["model"];
-        o["id"] = id;
-        o["schema"] = opts.getOpt("schema",false);
-        o["index"] = opts.getOpt("index",true);
-        o["xml"] = opts.getOpt("xml",false);
-        if (opts.hasOpt("name"))
-        {
-            o["name"] = opts.getOpt("name");
-        }
-        this._modelDelegates[id] = new ModelDelegate(this,delegate,request);
-    }
-
-    loadUrl(name,url,delegate)
-    {
-        var conn = this;
-        var o = {
-            response:function(request,text,data) {
-                if (tools.supports(delegate,"loaded"))
-                {
-                    delegate.loaded(name,text,data);
-                }
-            },
-            error:function(request,error) {
-                if (tools.supports(delegate,"error"))
-                {
-                    delegate.error(name,text);
-                }
-            }
-        };
-        ajax.create("load",url,o).get();
-    }
-
-    loadProjectFrom(name,url,delegate,options)
-    {
-        var conn = this;
-        var o = {
-            response:function(request,text,data) {
-                conn.loadProject(name,text,delegate,options);
-            },
-            error:function(request,error) {
-                console.log("error: " + error);
-            }
-        };
-        ajax.create("load",url,o).get();
-    }
-
-    loadRouterFrom(name,url,delegate,options)
-    {
-        var conn = this;
-        var o = {
-            response:function(request,text,data) {
-                conn.loadRouter(name,text,delegate,options);
-            },
-            error:function(request,error) {
-                console.log("error: " + error);
-            }
-        };
-        ajax.create("load",url,o).get();
-    }
-
-    loadProject(name,data,delegate,options)
-    {
-        if (this.k8s != null)
-        {
-            this.k8s.load(data,delegate);
-        }
-        else
-        {
+        return(new Promise((resolve,reject) => {
+            var request = {"get":{}};
+            var o = request["get"];
             var id = tools.guid();
-            var request = {"project":{}};
-            var o = request["project"];
+            o["id"] = id;
+            o["url"] = url;
+            o["format"] = "ubjson";
+
+            this.addHandler(id,{
+                process:function(result) {
+                    if (result.hasOwnProperty("data"))
+                    {
+                        const   opts = new Options(options);
+                        var     data = result["data"];
+
+                        if (opts.getOpt("decode",true))
+                        {
+                            data = tools.b64Decode(data);
+                        }
+
+                        resolve(data);
+                    }
+                    else
+                    {
+                        reject();
+                    }
+                }
+            });
+
+            this.sendObject(request);
+        }));
+    }
+
+    getModel(options)
+    {
+        return(new Promise((resolve,reject) => {
+            var id = tools.guid();
+            var opts = new Options(options);
+            var request = {"model":{}};
+            var o = request["model"];
+            o["id"] = id;
+            o["schema"] = opts.getOpt("schema",false);
+            o["index"] = opts.getOpt("index",true);
+            o["xml"] = opts.getOpt("xml",false);
+            if (opts.hasOpt("name"))
+            {
+                o["name"] = opts.getOpt("name");
+            }
+
+            this.addHandler(id,{
+                process:function(xml) {
+                    resolve(new Model(xml));
+                }
+            });
+
+            this.sendObject(request);
+        }));
+    }
+
+    loadUrl(name,url)
+    {
+        return(new Promise((resolve,reject) => {
+            ajax.create(url).get().then(
+                function(response) {
+                    resolve(response);
+                },
+                function(error) {
+                    reject(error);
+                }
+            );
+        }));
+    }
+
+    loadProjectFrom(name,url,options)
+    {
+        var self = this;
+
+        return(new Promise((resolve,reject) => {
+            ajax.create(url).get().then(
+                function(response) {
+                    self.loadProject(name,response.text,options).then(
+                        function() {
+                            resolve();
+                        },
+                        function() {
+                            reject();
+                        }
+                    );
+                },
+                function(result) {
+                    reject(result);
+                }
+            );
+        }));
+
+        ajax.create(url).get().then(
+            function(response) {
+            },
+            function(error) {
+                console.log("error: " + error);
+            }
+        );
+    }
+
+    loadRouterFrom(name,url,options)
+    {
+        var self = this;
+
+        return(new Promise((resolve,reject) => {
+            ajax.create(url).get().then(
+                function(response) {
+                    self.loadRouter(name,response.text,options).then(
+                        function() {
+                            resolve();
+                        },
+                        function() {
+                            reject();
+                        }
+                    );
+                },
+                function(result) {
+                    reject(result);
+                }
+            );
+        }));
+    }
+
+    loadProject(name,data,options)
+    {
+        return(new Promise((resolve,reject) => {
+            if (this.k8s != null)
+            {
+                this.k8s.load(data,options).then(
+                    function() {
+                        resolve();
+                    },
+                    function() {
+                        reject();
+                    }
+                );
+            }
+            else
+            {
+                var id = tools.guid();
+                var request = {"project":{}};
+                var o = request["project"];
+                o["name"] = name;
+                o["id"] = id;
+                o["action"] = "load";
+                if (options != null)
+                {
+                    for (var x in options)
+                    {
+                        o[x] = options[x];
+                    }
+                }
+                o["data"] = tools.b64Encode(data);
+
+                this.addHandler(id,{
+                    process:function(result) {
+                        var code = result["@code"];
+
+                        if (code == 0)
+                        {
+                            resolve();
+                        }
+                        else
+                        {
+                            var message = "";
+
+                            if (result.hasOwnProperty("text"))
+                            {
+                                message += result["text"];
+                            }
+
+                            if (result.hasOwnProperty("details"))
+                            {
+                                var details = result["details"];
+                                for (var detail of details)
+                                {
+                                    message += "\n";
+                                    message += detail["detail"];
+                                }
+                            }
+
+                            reject(message);
+                        }
+                    }
+                });
+
+                this.sendObject(request);
+            }
+        }));
+    }
+
+    loadRouter(name,data,options)
+    {
+        return(new Promise((resolve,reject) => {
+            var id = tools.guid();
+            var request = {"router":{}};
+            var o = request["router"];
             o["name"] = name;
             o["id"] = id;
             o["action"] = "load";
@@ -914,81 +871,131 @@ class Api extends Options
             }
             o["data"] = tools.b64Encode(data);
 
-            this._loadDelegates[id] = {connection:this,request:request,delegate:delegate};
+            this.addHandler(id,{
+                process:function(result) {
+                    var code = result["@code"];
+
+                    if (code == 0)
+                    {
+                        resolve();
+                    }
+                    else
+                    {
+                        var message = "";
+
+                        if (result.hasOwnProperty("text"))
+                        {
+                            message += result["text"];
+                        }
+
+                        if (result.hasOwnProperty("details"))
+                        {
+                            var details = result["details"];
+                            for (var detail of details)
+                            {
+                                message += "\n";
+                                message += detail["detail"];
+                            }
+                        }
+
+                        reject(message);
+                    }
+                }
+            });
 
             this.sendObject(request);
-        }
+        }));
     }
 
-    loadRouter(name,data,delegate,options)
+    deleteProject(name)
     {
-        var id = tools.guid();
-        var request = {"router":{}};
-        var o = request["router"];
-        o["name"] = name;
-        o["id"] = id;
-        o["action"] = "load";
-        if (options != null)
-        {
-            for (var x in options)
+        return(new Promise((resolve,reject) => {
+            if (this.k8s != null)
             {
-                o[x] = options[x];
+                this.k8s.del().then(
+                    function(result) {
+                        resolve(result);
+                    },
+                    function(result) {
+                        reject(result);
+                    }
+                );
             }
-        }
-        o["data"] = tools.b64Encode(data);
+            else
+            {
+                var id = tools.guid();
+                var url = this.url;
+                var request = {"project":{}};
+                var o = request["project"];
+                o["name"] = name;
+                o["id"] = id;
+                o["action"] = "delete";
 
-        this._loadDelegates[id] = {connection:this,request:request,delegate:delegate};
+                this.addHandler(id,{
+                    process:function(result) {
+                        var code = result["@code"];
 
-        this.sendObject(request);
+                        if (code == 0)
+                        {
+                            resolve(result);
+                        }
+                        else
+                        {
+                            reject(result);
+                        }
+                    }
+                });
+
+                this.sendObject(request);
+            }
+        }));
     }
 
-    deleteProject(name,delegate)
+    getProjectXml(name,options)
     {
-        if (this.k8s != null)
-        {
-            this.k8s.del(delegate);
-        }
-        else
-        {
+        return(new Promise((resolve,reject) => {
             var id = tools.guid();
-            var url = this.url;
-            var request = {"project":{}};
-            var o = request["project"];
-            o["name"] = name;
-            o["id"] = id;
-            o["action"] = "delete";
 
-            if (delegate != null)
+            var request = {"xml":{}};
+            var o = request["xml"];
+            o["id"] = id;
+            if (name != null)
             {
-                this._deleteDelegates[id] = {connection:this,request:request,delegate:delegate};
+                o["name"] = name;
             }
+
+            if (options != null)
+            {
+                for (var n in options)
+                {
+                    o[n] = options[n];
+                }
+            }
+
+            this.addHandler(id,{
+                process:function(xml) {
+                    var root = xml.documentElement;
+                    var node = xml;
+                    var code = -1;
+
+                    if (root.hasAttribute("code"))
+                    {
+                        code = parseInt(root.getAttribute("code"));
+                    }
+
+                    if (code == 0)
+                    {
+                        node = xpath.getNode(".//project",xml);
+                    }
+
+                    //var s = xpath.format(node);
+
+                    resolve(node);
+                }
+            });
 
             this.sendObject(request);
-        }
-    }
-
-    getProjectXml(name,delegate,options)
-    {
-        var id = tools.guid();
-        this._responseDelegates[id] = new ResponseDelegate(this,delegate);
-
-        var request = {"xml":{}};
-        var o = request["xml"];
-        o["id"] = id;
-        if (name != null)
-        {
-            o["name"] = name;
-        }
-
-        if (options != null)
-        {
-            for (var n in options)
-            {
-                o[n] = options[n];
-            }
-        }
-
-        this.sendObject(request);
+        }));
     }
 
     getXml(name,delegate)
@@ -996,37 +1003,43 @@ class Api extends Options
         this.getProjectXml(null,delegate);
     }
 
-    getLoggers(delegate)
+    getLoggers()
     {
-        if (tools.supports(delegate,"response") == false)
-        {
-            throw "The delegate must implement the response method";
-        }
+        return(new Promise((resolve,reject) => {
+            var id = tools.guid();
 
-        var id = tools.guid();
-        this._responseDelegates[id] = new ResponseDelegate(this,delegate);
+            var request = {"loggers":{}};
+            var o = request["loggers"];
+            o["id"] = id;
 
-        var request = {"loggers":{}};
-        var o = request["loggers"];
-        o["id"] = id;
-        this.sendObject(request);
+            this.addHandler(id,{
+                process:function(result) {
+                    resolve(result)
+                }
+            });
+
+            this.sendObject(request);
+        }));
     }
 
-    setLogger(context,level,delegate)
+    setLogger(context,level)
     {
-        var id = tools.guid();
+        return(new Promise((resolve,reject) => {
+            var id = tools.guid();
+            var request = {"loggers":{}};
+            var o = request["loggers"];
+            o["id"] = id;
+            o["context"] = context;
+            o["level"] = level;
 
-        if (delegate != null)
-        {
-            this._responseDelegates[id] = new ResponseDelegate(this,delegate);
-        }
+            this.addHandler(id,{
+                process:function(result) {
+                    resolve(result)
+                }
+            });
 
-        var request = {"loggers":{}};
-        var o = request["loggers"];
-        o["id"] = id;
-        o["context"] = context;
-        o["level"] = level;
-        this.sendObject(request);
+            this.sendObject(request);
+        }));
     }
 
     createModel(data)
@@ -1034,25 +1047,33 @@ class Api extends Options
         return(new Model(data));
     }
 
-    loadGuids(delegate,num)
+    getGuids(num)
     {
-        if (tools.supports(delegate,"guidsLoaded") == false)
-        {
-            throw "The stats delegate must implement the guidsLoaded method";
-        }
+        return(new Promise((resolve,reject) => {
+            var id = tools.guid();
 
-        var id = tools.guid();
-        this._guidDelegates[id] = new GuidDelegate(this,delegate);
+            var request = {"guids":{}};
+            var o = request["guids"];
+            o["id"] = id;
+            if (num != null)
+            {
+                o["num"] = num;
+            }
 
-        var request = {"guids":{}};
-        var o = request["guids"];
-        o["id"] = id;
-        if (num != null)
-        {
-            o["num"] = num;
-        }
+            this.addHandler(id,{
+                process:function(xml) {
+                    var guids = [];
+                    var nodes = xpath.getNodes("./guid",xml.documentElement);
+                    for (var i = 0; i < nodes.length; i++)
+                    {
+                        guids.push(xpath.nodeText(nodes[i]));
+                    }
+                    resolve(guids);
+                }
+            });
 
-        this.sendObject(request);
+            this.sendObject(request);
+        }));
     }
 
     guid()
@@ -3290,15 +3311,15 @@ class Publisher extends Options
     publishCsvFrom(url,options)
     {
         var publisher = this;
-        var o = {
-            response:function(request,text,data) {
-                publisher.publishCsv(text,options);
+
+        ajax.create(url).get().then(
+            function(response) {
+                publisher.publishCsv(response.text,options);
             },
-            error:function(request,error) {
+            function(error) {
                 console.log("error: " + error);
             }
-        };
-        ajax.create("load",url,o).get();
+        );
     }
 
     publishCsv(data,options)
@@ -3318,70 +3339,5 @@ class Publisher extends Options
         return(this.getOpt("binary",true));
     }
 }
-
-/* Delegates */
-
-class ModelDelegate
-{
-    constructor(api,delegate,request)
-    {
-        this._api = api;
-        this._delegate = delegate;
-        this._request = null;
-        this._api.sendObject(request);
-    }
-
-    deliver(xml)
-    {
-        var model = new Model(xml);
-
-        if (tools.supports(this._delegate,"modelLoaded"))
-        {
-            this._delegate.modelLoaded(model,this._api);
-        }
-    }
-}
-
-class ResponseDelegate
-{
-    constructor(api,delegate)
-    {
-        this._api = api;
-        this._delegate = delegate;
-    }
-
-    deliver(data,xml)
-    {
-        if (tools.supports(this._delegate,"response"))
-        {
-            this._delegate.response(this._api,data,xml);
-        }
-    }
-}
-
-class GuidDelegate
-{
-    constructor(api,delegate)
-    {
-        this._api = api;
-        this._delegate = delegate;
-    }
-
-    deliver(data)
-    {
-        if (tools.supports(this._delegate,"guidsLoaded"))
-        {
-            var guids = [];
-            var nodes = xpath.getNodes("./guid",data);
-            for (var i = 0; i < nodes.length; i++)
-            {
-                guids.push(xpath.nodeText(nodes[i]));
-            }
-            this._delegate.guidsLoaded(guids,this._api);
-        }
-    }
-}
-
-/* End Delegates */
 
 export {Api as v7};

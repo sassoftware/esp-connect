@@ -12,259 +12,237 @@ var _http = null;
 
 class Ajax extends Options
 {
-	constructor(name,url,delegate,context)
+	constructor(url)
 	{
         super();
-		this._name = name;
 		this._url = url;
-		this._delegate = delegate;
-		this._context = context;
 		this._requestHeaders = new Object();
 		this._responseHeaders = null;
+        this._response = this;
+		this._method = "GET";
+		this._request = null;
 		this._data = null;
-		this._method = null;
-		this._xml = null;
+
+        Object.defineProperty(this,"url", {
+            get() {
+		        return(this._url);
+            }
+        });
+
+        Object.defineProperty(this,"status", {
+            get() {
+		        return((this._request != null) ? this._request.status : 0);
+            }
+        });
+
+        Object.defineProperty(this,"text", {
+            get() {
+		        return((this._request != null) ? this._request.responseText : "");
+            }
+        });
+
+        Object.defineProperty(this,"xml", {
+            get() {
+                var xml = null;
+
+                if (this._request != null)
+                {
+console.log("get xml: " + this._request.responseXMl);
+                    if ((xml = this._request.responseXML) == null)
+                    {
+console.log("=================");
+                        var	type = this.getResponseHeader("content-type");
+console.log("type: " + type);
+                        if (type.indexOf("text/xml") != -1 || type.indexOf("application/xml") != -1)
+                        {
+                            xml = xpath.createXml(this._request.responseText);
+                        }
+                    }
+console.log("=================");
+                }
+
+                return(xml);
+            }
+        });
+	}
+
+	send(method)
+    {
+        return(new Promise((resolve,reject) => {
+            if (method != null)
+            {
+                this._method = method;
+            }
+
+            var url = new URL(this._url,document.URL);
+            var protocol = url.protocol.toLowerCase();
+
+            if (protocol == "file:")
+            {
+                tools.exception("file protocol is not supported");
+            }
+
+            this._request = new XMLHttpRequest();
+
+            var	received = false;
+
+            /*
+            request._url = this._url;
+            */
+
+            var self = this;
+
+            this._request.onreadystatechange = 
+            function()
+            {
+                if (this.readyState == 3)
+                {
+                    received = true;
+                }
+                else if (this.readyState == 4)
+                {
+                    if (this.status == 401)
+                    {
+                        var	auth = this.getResponseHeader("www-authenticate");
+                        var	scheme = null;
+
+                        if (auth != null && auth.length > 0)
+                        {
+                            var	a = auth.split(" ");
+
+                            if (a.length > 0)
+                            {
+                                scheme = a[0].toLowerCase();
+                            }
+                        }
+
+                        if (scheme == null)
+                        {
+                            if (this.responseXML != null)
+                            {
+                                scheme = this.responseXML.firstChild.getAttribute("scheme");
+                            }
+                        }
+
+                        return;
+                    }
+
+                    if (self._method == "HEAD")
+                    {
+                        if (received == false)
+                        {
+                            reject(self);
+                        }
+                        else
+                        {
+                            resolve(self);
+                        }
+                    }
+                    else if (received == false)
+                    {
+                        if (protocol == "https:")
+                        {
+                            if (self.hasOpt("cert-confirm-url"))
+                            {
+                                var url = self.getOpt("cert-confirm-url");
+                                window.open(url,url,"");
+                            }
+                        }
+                        else
+                        {
+                            reject(self);
+                        }
+                    }
+                    else
+                    {
+                        var	contentType = this.getResponseHeader("content-type");
+
+                        if (this.status == 0)
+                        {
+                            if ((this.responseText != null && this.responseText.length > 0) || this.responseXML != null)
+                            {
+                                resolve(self);
+                            }
+                            else
+                            {
+                                reject(self);
+                            }
+                        }
+                        else
+                        {
+                            resolve(self);
+                        }
+                    }
+                }
+            };
+
+            this._request.open(this._method,this._url,true);
+
+            //this._request.setRequestHeader("accept","text/xml");
+
+            /*
+            var	authorization = null;
+
+            if (tools.supports(this._delegate,"authorization"))
+            {
+                authorization = this._delegate.authorization();
+            }
+
+            if (authorization != null && authorization.length > 0)
+            {
+                request.setRequestHeader("authorization",authorization);
+            }
+            */
+
+            if (this._requestHeaders != null)
+            {
+                for (var name in this._requestHeaders)
+                {
+                    this._request.setRequestHeader(name,this._requestHeaders[name]);
+                }
+            }
+
+            try
+            {
+                this._request.send(this._data);
+            }
+            catch (e)
+            {
+                console.log("error: " + this._url + " : " + e);
+
+                /*
+                if (tools.supports(request._ajax._delegate,"error"))
+                {
+                    request._ajax._delegate.error(this,null,null);
+                }
+                */
+            }
+        }));
 	}
 
 	get()
 	{
-		this.send("GET");
+        return(this.send("GET"));
 	}
 
 	post()
 	{
-		this.send("POST");
+        return(this.send("POST"));
 	}
 
 	put()
 	{
-		this.send("PUT");
+        return(this.send("PUT"));
 	}
 
 	del()
 	{
-		this.send("DELETE");
+        return(this.send("DELETE"));
 	}
 
 	head()
 	{
-		this.send("HEAD");
-	}
-
-	send(method)
-	{
-		if (method != null)
-		{
-			this._method = method;
-		}
-
-        var url = new URL(this._url,document.URL);
-		var protocol = url.protocol.toLowerCase();
-
-        if (protocol == "file:")
-        {
-            tools.exception("file protocol is not supported");
-        }
-
-        var request = new XMLHttpRequest();
-		var	received = false;
-
-		request._url = this._url;
-		request._protocol = protocol;
-		request._ajax = this;
-
-		this._request = request;
-		this._xml = null;
-
-		request.onreadystatechange = 
-		function()
-		{
-			if (this.readyState == 1)
-			{
-				//request.withCredentials = true;
-			}
-			else if (this.readyState == 2)
-			{
-			}
-			else if (this.readyState == 3)
-			{
-				received = true;
-			}
-			else if (this.readyState == 4)
-			{
-				if (this.status == 401)
-				{
-					var	auth = this.getResponseHeader("www-authenticate");
-					var	scheme = null;
-
-					if (auth != null && auth.length > 0)
-					{
-						var	a = auth.split(" ");
-
-						if (a.length > 0)
-						{
-							scheme = a[0].toLowerCase();
-						}
-					}
-
-					if (scheme == null)
-					{
-						if (this.responseXML != null)
-						{
-							scheme = this.responseXML.firstChild.getAttribute("scheme");
-						}
-					}
-
-					if (scheme != null)
-					{
-						if (tools.supports(this._ajax._delegate,"authenticate"))
-						{
-							this._ajax._delegate.authenticate(scheme,this._ajax);
-						}
-					}
-
-					return;
-				}
-
-				if (this._ajax._method == "HEAD")
-				{
-				    if (received == false)
-                    {
-                        if (this._protocol == "https:")
-                        {
-                            if (this._ajax.hasOpt("cert-confirm-url"))
-                            {
-                                var url = this._ajax.getOpt("cert-confirm-url");
-                                window.open(url,url,"");
-                            }
-                        }
-                        else if (tools.supports(this._ajax._delegate,"error"))
-                        {
-                            this._ajax._delegate.error(this._ajax,null,null);
-                        }
-                    }
-                    else if (tools.supports(this._ajax._delegate,"response"))
-					{
-						this._ajax._delegate.response(this._ajax,null,null);
-					}
-				}
-				else if (received == false)
-				{
-					if (this._protocol == "https:")
-					{
-                        if (this._ajax.hasOpt("cert-confirm-url"))
-                        {
-                            var url = this._ajax.getOpt("cert-confirm-url");
-                            window.open(url,url,"");
-                        }
-					}
-					else if (tools.supports(this._ajax._delegate,"error"))
-					{
-						this._ajax._delegate.error(this._ajax,null,null);
-					}
-				}
-				else
-				{
-					var	contentType = this.getResponseHeader("content-type");
-
-					if (this.responseXML != null)
-					{
-						this._ajax._xml = this.responseXML;
-					}
-                    else if (contentType.indexOf("text/xml") != -1 || contentType.indexOf("application/xml") != -1)
-					{
-                        this._ajax._xml = xpath.createXml(this.responseText);
-					}
-
-					if (this.status == 0)
-					{
-						if ((this.responseText != null && this.responseText.length > 0) || this.responseXML != null)
-						{
-							if (tools.supports(this._ajax._delegate,"response"))
-							{
-								if (this.responseXML != null)
-								{
-									this._ajax._xml = this.responseXML;
-								}
-
-								this._ajax._delegate.response(this._ajax,this.responseText,this._ajax._xml);
-							}
-						}
-						else if (tools.supports(this._ajax._delegate,"error"))
-						{
-							this._ajax._delegate.error(this._ajax,null,null);
-						}
-					}
-                    /*
-					else if (this.status >= 400)
-					{
-						if (tools.supports(this._ajax._delegate,"error"))
-						{
-							var	text = this.responseText;
-
-							if (this._ajax._xml != null)
-							{
-								var	node = xpath.getNode("//message/text()",this._ajax._xml);
-								if (node != null)
-								{
-									text = xpath.nodeText(node);
-								}
-							}
-
-							this._ajax._delegate.error(this._ajax,text,this._ajax._xml);
-						}
-					}
-                    */
-					else if (tools.supports(this._ajax._delegate,"response"))
-					{
-						this._ajax._delegate.response(this._ajax,this.responseText,this._ajax._xml);
-					}
-				}
-			}
-		};
-
-		request.open(this._method,this._url,true);
-
-		request.setRequestHeader("accept","text/xml");
-
-		var	authorization = null;
-
-		if (tools.supports(this._delegate,"authorization"))
-		{
-			authorization = this._delegate.authorization();
-		}
-
-		if (authorization != null && authorization.length > 0)
-		{
-			request.setRequestHeader("authorization",authorization);
-		}
-
-		if (this._requestHeaders != null)
-		{
-			for (var name in this._requestHeaders)
-			{
-				request.setRequestHeader(name,this._requestHeaders[name]);
-			}
-		}
-
-		try
-		{
-			request.send(this._data);
-		}
-		catch (e)
-		{
-			console.log("error: " + this._url + " : " + e);
-
-			if (tools.supports(request._ajax._delegate,"error"))
-			{
-				request._ajax._delegate.error(this,null,null);
-			}
-		}
-	}
-
-	setAccept(value)
-	{
-		this.setRequestHeader("accept",value);
+        return(this.send("HEAD"));
 	}
 
 	setRequestHeaders(o)
@@ -296,88 +274,218 @@ class Ajax extends Options
 		}
 	}
 
-	getContext(value)
-	{
-		return(this._context);
-	}
-
-	getName()
-	{
-		return(this._name);
-	}
-
-	getUrl()
-	{
-		return(this._url);
-	}
-
-	getResponseText()
-	{
-		return((this._request != null) ? this._request.responseText : "");
-	}
-
-	getResponseXml()
-	{
-		return((this._request != null) ? this._request._xml : null);
-	}
-
-	getStatus(token)
-	{
-		var	status = 0;
-
-		if (this._request != null)
-		{
-			status = this._request.status;
-		}
-
-		return(status);
-	}
+    toString()
+    {
+        var s = "";
+        s += this._url;
+        s += ", ";
+        s += "status=" + this.status;
+        return(s);
+    }
 }
 
 class NodeAjax extends Options
 {
-    constructor(name,url,delegate,context)
+    constructor(url)
     {
         super();
-        this._name = name;
         this._url = url;
-        this._delegate = delegate;
-        this._context = context;
 		this._requestHeaders = new Object();
         this._options = {};
         this._response = null;
-        this._responseText = "";
+        this._text = "";
         this._data = null;
         this._xml = null;
+
+        Object.defineProperty(this,"url", {
+            get() {
+		        return(this._url);
+            }
+        });
+
+        Object.defineProperty(this,"status", {
+            get() {
+                return((this._response != null) ? this._response.statusCode : 0);
+            }
+        });
+
+        Object.defineProperty(this,"text", {
+            get() {
+		        return(this._text);
+            }
+        });
+
+        Object.defineProperty(this,"xml", {
+            get() {
+                var xml = null;
+
+                if (this._text != null)
+                {
+                    xml = xpath.createXml(this._text);
+                }
+
+                return(xml);
+            }
+        });
+    }
+
+    send(method)
+    {
+        return(new Promise((resolve,reject) => {
+            if (method != null)
+            {
+                this._options.method = method;
+            }
+
+            var url = new URL(this._url);
+
+            this._options.hostname = url.hostname;
+            this._options.port = url.port;
+            this._options.path = url.pathname + url.search;
+
+            var protocol = url.protocol.toLowerCase();
+            var self = this;
+
+            if (protocol == "file:")
+            {
+                var filename = this._url.substr(7);
+                var request = this;
+
+                import("fs").then(
+                    function(module){
+                        const   fs = module.default;
+                        fs.readFile(filename,null,
+                            function(error,contents) {
+                                self._text = contents.toString();
+
+                                if (error != null)
+                                {
+                                    reject(self);
+                                }
+                                else
+                                {
+                                    resolve(self);
+                                }
+                            }
+                        );
+                    }
+                );
+
+                return;
+            }
+ 
+            var complete = function(request)
+            {
+                for (var name in self._requestHeaders)
+                {
+                    request.setHeader(name,self._requestHeaders[name]);
+                }
+
+                request.on("response", function (response) {
+
+                    self._response = response;
+
+                    var contentType = response.headers["content-type"];
+                    var content = "";
+
+                    response.on("data", function(data) {
+                        content += data.toString();
+                    });
+
+                    response.on("end", function(data) {
+
+                        self._text = content;
+
+                        if (contentType != null)
+                        {
+                            if (contentType.indexOf("text/xml") != -1 || contentType.indexOf("application/xml") != -1)
+                            {
+                                self._xml = xpath.createXml(content);
+                            }
+                        }
+
+                        resolve(self);
+                    });
+                });
+
+                request.on("error", function(e) {
+                    reject(self);
+                });
+
+                if (self._data != null)
+                {
+                    request.write(self._data);
+                }
+
+                request.end();
+            }
+
+            if (protocol == "https:")
+            {
+                if (_https == null)
+                {
+                    import("https").
+                        then((module) => {
+                            _https = module.default;
+                            complete(_https.request(this._options));
+                        }).
+                        catch((e) => {
+                            console.log("import error on https: " + e);
+                        });
+                }
+                else
+                {
+                    complete(_https.request(this._options));
+                }
+            }
+            else
+            {
+                if (_http == null)
+                {
+                    import("http").
+                        then((module) => {
+                            _http = module.default;
+                            complete(_http.request(this._options));
+                        }).
+                        catch((e) => {
+                            console.log("import error on http: " + e);
+                        });
+                }
+                else
+                {
+                    complete(_http.request(this._options));
+                }
+            }
+        }));
     }
 
     get(options)
     {
         this.setOptions(options);
-        this.send("GET");
+        return(this.send("GET"));
     }
 
     post(options)
     {
         this.setOptions(options);
-        this.send("POST");
+        return(this.send("POST"));
     }
 
     put(options)
     {
         this.setOptions(options);
-        this.send("PUT");
+        return(this.send("PUT"));
     }
 
     del(options)
     {
         this.setOptions(options);
-        this.send("DELETE");
+        return(this.send("DELETE"));
     }
 
     head()
     {
-        this.send("HEAD");
+        return(this.send("HEAD"));
     }
 
     setOptions(options)
@@ -389,141 +497,6 @@ class NodeAjax extends Options
                 this._options[name] = options[name];
             }
         }
-    }
-
-    send(method)
-    {
-        if (method != null)
-        {
-            this._options.method = method;
-        }
-
-        var url = new URL(this._url);
-
-        this._options.hostname = url.hostname;
-        this._options.port = url.port;
-        this._options.path = url.pathname + url.search;
-
-        var protocol = url.protocol.toLowerCase();
-
-        if (protocol == "file:")
-        {
-            var filename = this._url.substr(7);
-            var request = this;
-            var ajax = this;
-
-            import("fs").then((module) => {
-                const   fs = module.default;
-                fs.readFile(filename,null,function(error,contents) {
-                    ajax._responseText = contents;
-
-                    if (error != null)
-                    {
-                        if (tools.supports(request._delegate,"error"))
-                        {
-                            request._delegate.error(request,error);
-                        }
-                    }
-                    else if (tools.supports(request._delegate,"response"))
-                    {
-                        request._delegate.response(request,contents,null);
-                    }
-                });
-            }).
-            catch((e) => {
-                console.log("import error on fs: " + e);
-            });
-
-            return;
-        }
-
-        if (protocol == "https:")
-        {
-            if (_https == null)
-            {
-                import("https").
-                    then((module) => {
-                        _https = module.default;
-                        this.complete(_https.request(this._options));
-                    }).
-                    catch((e) => {
-                        console.log("import error on https: " + e);
-                    });
-            }
-            else
-            {
-                this.complete(_https.request(this._options));
-            }
-        }
-        else
-        {
-            if (_http == null)
-            {
-                import("http").
-                    then((module) => {
-                        _http = module.default;
-                        this.complete(_http.request(this._options));
-                    }).
-                    catch((e) => {
-                        console.log("import error on http: " + e);
-                    });
-            }
-            else
-            {
-                this.complete(_http.request(this._options));
-            }
-        }
-    }
-
-    complete(request)
-    {
-        var ajax = this;
-
-        for (var name in this._requestHeaders)
-        {
-            request.setHeader(name,this._requestHeaders[name]);
-        }
-
-        request.on("response", function (response) {
-
-            ajax._response = response;
-
-            var contentType = response.headers["content-type"];
-            var content = "";
-
-            response.on("data", function(data) {
-                content += data.toString();
-            });
-
-            response.on("end", function(data) {
-
-                ajax._responseText = content;
-
-                if (contentType != null)
-                {
-                    if (contentType.indexOf("text/xml") != -1 || contentType.indexOf("application/xml") != -1)
-                    {
-                        ajax._xml = xpath.createXml(content);
-                    }
-                }
-
-                if (tools.supports(ajax._delegate,"response"))
-                {
-                    ajax._delegate.response(ajax,content,ajax._xml);
-                }
-            });
-        });
-
-        request.on("error", function(e) {
-            console.log("got error: " + e.toString());
-        });
-
-        if (this._data != null)
-        {
-            request.write(this._data);
-        }
-
-        request.end();
     }
 
     setAccept(value)
@@ -554,48 +527,27 @@ class NodeAjax extends Options
         }
     }
 
-    getContext(value)
+    toString()
     {
-        return(this._context);
-    }
-
-    getName()
-    {
-        return(this._name);
-    }
-
-    getUrl()
-    {
-        return(this._url);
-    }
-
-    getResponseText()
-    {
-        return(this._responseText);
-    }
-
-    getResponseXml()
-    {
-        return(this._xml);
-    }
-
-    getStatus(token)
-    {
-        return((this._response != null) ? this._response.statusCode : 0);
+        var s = "";
+        s += this._url;
+        s += ", ";
+        s += "status=" + this.status;
+        return(s);
     }
 }
 
 var _api =
 {
-    create:function(name,url,delegate,context)
+    create:function(url)
     {
         if (tools.isNode)
         {
-            return(new NodeAjax(name,url,delegate,context));
+            return(new NodeAjax(url));
         }
         else
         {
-            return(new Ajax(name,url,delegate,context));
+            return(new Ajax(url));
         }
     }
 };

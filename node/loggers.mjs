@@ -42,21 +42,24 @@ function
 ready(connection)
 {
     var context = opts.getOpt("context");
-    var delegate = {
-        response:function(connection,data)
-        {
-            console.log(esp.getTools().stringify(data));
-            process.exit(0);
-        }
-    };
 
     if (context != null)
     {
-        connection.setLogger(context,opts.getOpt("level","debug"),delegate);
+        connection.setLogger(context,opts.getOpt("level","debug")).then(
+            function(result) {
+                console.log(JSON.stringify(result,null,"\t"));
+                process.exit(0);
+            }
+        );
     }
     else
     {
-        connection.getLoggers(delegate);
+        connection.getLoggers().then(
+            function(result) {
+                console.log(JSON.stringify(result,null,"\t"));
+                process.exit(0);
+            }
+        );
     }
 }
 

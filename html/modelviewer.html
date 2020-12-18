@@ -1103,7 +1103,7 @@ publishData()
         var times = document.getElementById("publishUrlTimes").value;
         var blocksize = document.getElementById("blocksize").value;
         _storage.setOpt("publishUrl",url);
-        _connection.publishUrl(path,new URL(url,document.URL).toString(),null,{format:"bin",times:times,blocksize:blocksize});
+        _connection.publishUrl(path,new URL(url,document.URL).toString(),{format:"bin",times:times,blocksize:blocksize});
     }
     else if (_tabs.getSelectedIndex() == 1)
     {

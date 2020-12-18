@@ -81,7 +81,11 @@ ready(connection)
 
     _conn = connection;
 
-    _conn.getProjectXml(_project,{response:function(c,data){_modelXml = data;}});
+    _conn.getProjectXml(_project).then(
+        function(result) {
+            _modelXml = _esp.getXPath().format(result);
+        }
+    );
 
     createVisuals();
 
@@ -93,14 +97,6 @@ ready(connection)
 }
 
 var _modelXml = "";
-
-function
-showModel()
-{
-    var s = _modelXml;
-    document.getElementById("espModelXml").innerText = s;
-    _esp.getDialogs().pushModal("espModel");
-}
 
 function
 error()
@@ -144,11 +140,11 @@ publish()
 {
     if (_conn.k8s != null)
     {
-        _conn.publishUrl(_project + "/cq/trades","file:///mnt/data/demo/trades/trades1M.csv",null,{format:"csv",times:10,blocksize:10000});
+        _conn.publishUrl(_project + "/cq/trades","file:///mnt/data/demo/trades/trades1M.csv",{format:"csv",times:10,blocksize:10000});
     }
     else
     {
-        _conn.publishUrl(_project + "/cq/trades","file:///mnt/data/share/tradesData/trades1M.csv",null,{format:"csv",times:1,blocksize:10000});
+        _conn.publishUrl(_project + "/cq/trades","file:///mnt/data/share/tradesData/trades1M.csv",{format:"csv",times:1,blocksize:10000});
     }
 }
 

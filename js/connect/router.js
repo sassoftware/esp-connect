@@ -151,7 +151,14 @@ class Router
     ready(connection)
     {
         this._connections[connection.getOpt("name")] = connection;
-        connection.loadModel(this);
+
+        const   self = this;
+
+        connection.getModel().then(
+            function(result) {
+                self.modelLoaded(result,connection);
+            }
+        );
     }
 
     error(connection)

@@ -88,7 +88,11 @@ ready(connection)
 
     _esp.clearStatus();
 
-    _conn.getProjectXml(_project,{response:function(c,data){_model = data;}});
+    _conn.getProjectXml(_project).then(
+        function(result) {
+            _model = _esp.getXPath().format(result);
+        }
+    );
 
     _readings = _conn.getEventCollection({name:"readings",window:_project + "/cq/Readings_stats",interval:1000,pagesize:0});
     _readings.addDelegate({dataChanged:handleStats});

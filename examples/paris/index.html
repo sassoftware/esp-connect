@@ -79,14 +79,28 @@ ready(connection)
     _esp.clearStatus();
 
     _conn = connection;
-    _conn.loadUrl("trip","paris_trip.csv",{loaded:function(name,text){_trip = text;}});
+    _conn.loadUrl("trip","paris_trip.csv").then(
+        function(response){
+            _trip = response.text;
+        }
+    );
 
-    _conn.loadModel({modelLoaded:function(model) {_model = model}},{schema:true});
+    _conn.getModel({schema:true}).then(
+        function(result) {
+            _model = result;
+        }
+    );
 
     _conn.getPublisher({window:_project + "/cq/circles_in"}).publishCsvFrom("circles_in.csv",{close:true,opcodes:true,flags:true});
     _conn.getPublisher({window:_project + "/cq/poly_in"}).publishCsvFrom("poly_in.csv",{close:true,opcodes:true,flags:true});
+
     setTimeout(createVisuals,1000);
-    _conn.getProjectXml(_project,{response:function(c,data){_modelXml = data;}});
+
+    _conn.getProjectXml(_project).then(
+        function(result) {
+            _modelXml = _esp.getXPath().format(result);
+        }
+    );
 
     _esp.size();
 }
@@ -220,7 +234,7 @@ function()
                 <td class="icon">
                     <a class="icon" href="javascript:_esp.getDialogs().pushModal('publish')">&#xf360;</a>
                     <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_modelXml)" title="Model XML">&#xf7c1;</a>
-                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'p',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'paris',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
                     <a class="icon" href="javascript:_esp.showFrameDialog('ESP Paris Geofence Example','help.html',{width:'50%',height:'50%'})">&#xf30b;</a>
                 </td>
             </tr>

@@ -135,26 +135,25 @@ class EventSources
         var eventsources = this;
         var opts = new Options(parms);
         var start = opts.getOptAndClear("start",false);
-        var o = {response:function(request,text,xml) {
+        ajax.create(url).get().then(
+            function(response) {
+                eventsources.configure(response.text,opts.getOpts());
 
-            eventsources.configure(text,opts.getOpts());
+                if (start)
+                {
+                    eventsources.start();
+                }
 
-            if (start)
-            {
-                eventsources.start();
+                if (delegate != null && tools.supports(delegate,"ready"))
+                {
+                    delegate.ready(eventsources);
+                }
+            },
+
+            function(error) {
+                console.log("error: " + error);
             }
-
-            if (delegate != null && tools.supports(delegate,"ready"))
-            {
-                delegate.ready(eventsources);
-            }
-        },
-
-        error(request,message) {
-            console.log("error: " + message);
-        }
-        };
-        ajax.create("request",url,o).get();
+        );
     }
 
     createEventSource(options)
@@ -695,26 +694,25 @@ class UrlEventSource extends EventSource
 
             if (this._api.version > 7 && this.getOpt("use-connect",false))
             {
-                this._api.get(url,{
-                    response:function(text) {
-                        var data = eventsource._transform(eventsource,text);
+                this._api.get(url).then(
+                    function(result) {
+                        var data = eventsource._transform(eventsource,result);
 
                         if (data != null)
                         {
                             eventsource.send(data);
                         }
                     },
-
-                    error(request,message) {
-                        console.log("error: " + message);
+                    function(result) {
+                        console.log("error: " + result);
                     }
-                });
+                );
             }
             else
             {
-                ajax.create("request",url,{
-                    response:function(request,text,xml) {
-                        var data = eventsource._transform(eventsource,text);
+                ajax.create(url).get().then(
+                    function(response) {
+                        var data = eventsource._transform(eventsource,response.text);
 
                         if (data != null)
                         {
@@ -722,10 +720,10 @@ class UrlEventSource extends EventSource
                         }
                     },
 
-                    error(request,message) {
-                        console.log("error: " + message);
+                    function(error) {
+                        console.log("error: " + error);
                     }
-                }).get();
+                );
             }
 
             code = true;
@@ -761,16 +759,14 @@ class CsvEventSource extends EventSource
         else
         {
             var es = this;
-            var o = {
-                response:function(request,text) {
-                    es._data = text;
+            ajax.create(this.getOpt("url")).get().then(
+                function(response) {
+                    es._data = response.text;
                 },
-                error:function(request,message) {
-                    console.log("error: " + es.getOpt("url") + " " + message);
+                function(error) {
+                    console.log("error: " + es.getOpt("url") + " " + error);
                 }
-            };
-
-            ajax.create("load",this.getOpt("url"),o).get();
+            );
         }
 
         if (this.hasOpt("filter"))

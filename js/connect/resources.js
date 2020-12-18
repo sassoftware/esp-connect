@@ -67,9 +67,7 @@ class Resources
     load(config,delegate)
     {
         this._delegate = delegate;
-
-        var request = ajax.create("resources",config,this);
-        request.get();
+        ajax.create(config).get().then(this.response);
     }
 
     response(request,text,xml)

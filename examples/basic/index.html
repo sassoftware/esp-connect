@@ -113,7 +113,11 @@ ready(conn)
     _visuals.createBarChart("barchart",clicks,{y:"count",header:"Clicks Chart",xrange:[0,100],orientation:"horizontal",get_color:barcolor});
     _visuals.createGauge("gauges",clicks,{value:"count",segments:5,header:"Clicks Indicators",width:200,range:[0,100],bar_color:"rgba(255,255,255,.7)"});
 
-    _conn.getProjectXml(_project,{response:function(c,data){_model = data;}});
+    _conn.getProjectXml(_project).then(
+        function(result) {
+            _model = _esp.getXPath().format(result);
+        }
+    );
 
     _publisher = _conn.getPublisher({window:_project + "/cq/clicks"});
 

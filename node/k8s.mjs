@@ -28,13 +28,12 @@ var k8s = esp.createK8S(server,opts.getOpts());
 
 if (opts.getOpt("projects",false))
 {
-    k8s.getMyProjects({
-        handleProjects:function(data)
-        {
+    k8s.getMyProjects().then(
+        function(items) {
             var a = [];
             var o = {};
 
-            data.forEach((item) => {
+            items.forEach((item) => {
 
                 //if (item.metadata.name != "sas-event-stream-processing-client-config-server")
                 {
@@ -64,13 +63,16 @@ if (opts.getOpt("projects",false))
             listing.headers = true;
 
             console.log(esp.getFormatter().listing(listing));
+        },
+        function(data) {
+            console.log("error: " + data);
         }
-    });
+    );
 }
 
 if (opts.getOpt("restart",false))
 {
-    if (esp.getTools().supports(k8s,"restart") == false)
+    if (k8s.supports("restart") == false)
     {
         console.log("you must specify a project to restart");
         process.exit(1);
@@ -78,23 +80,27 @@ if (opts.getOpt("restart",false))
 
     console.log("restarting...");
 
-    k8s.restart({
-        loaded:function()
+    k8s.restart().then(
+        function()
         {
             console.log("project restarted");
+        },
+        function(error)
+        {
+            console.log(error);
         }
-    });
+    );
 }
 
 if (opts.getOpt("pods",false))
 {
-    k8s.getPods({
-        handlePods:function(data)
+    k8s.getPods().then(
+        function(data)
         {
             var a = [];
             var o = {};
 
-            data.forEach((item) => {
+            data.pods.forEach((item) => {
                 o = esp.createOptions();
                 o.setOpt("name",item.metadata.name);
                 o.setOpt("namespace",item.metadata.namespace);
@@ -115,28 +121,32 @@ if (opts.getOpt("pods",false))
             listing.headers = true;
 
             console.log(esp.getFormatter().listing(listing));
+        },
+        function(data) {
+            console.log("Error");
         }
-    });
+    );
 }
 
 if (opts.getOpt("log",false))
 {
-    k8s.getLog({
-        handleLog:function(log)
+    k8s.getLog().then(
+        function(log)
         {
             log.forEach((entry) => {
                 console.log(JSON.stringify(entry,null,2));
             });
         }
-    });
+    );
 }
 
 if (opts.hasOpt("ls"))
 {
     var path = opts.getOpt("ls","/");
-    k8s.ls(path, {
-        handleFiles:function(files)
+    k8s.ls(path).then(
+        function(data)
         {
+            var files = data["files"];
             var listing = {};
             listing.fields = ["perms","owner","group","size","modified","name"];
             listing.values = files;
@@ -145,7 +155,18 @@ if (opts.hasOpt("ls"))
             console.log("\nListing for " + path + "\n");
             console.log(esp.getFormatter().listing(listing));
         }
-    });
+    );
+}
+
+if (opts.hasOpt("rm"))
+{
+    var path = opts.getOpt("rm");
+    k8s.rm(path).then(
+        function()
+        {
+            console.log("\n" + path + " removed\n");
+        }
+    );
 }
 
 if (opts.hasOpt("get"))
@@ -163,8 +184,8 @@ if (opts.hasOpt("get"))
         }
     }
 
-    k8s.get(path,{
-        handleFile:function(tar)
+    k8s.get(path).then(
+        function(tar)
         {
             if (outfile == null)
             {
@@ -176,7 +197,7 @@ if (opts.hasOpt("get"))
 
             console.log("\nfile transfer complete\n");
         }
-    });
+    );
 }
 
 if (opts.hasOpt("put"))
@@ -191,12 +212,22 @@ if (opts.hasOpt("put"))
 
     console.log("\ncopying data...");
 
-    k8s.puturl(url,path,opts.getOpts(),{
-        done:function()
-        {
+    k8s.puturl(url,path,opts.getOpts()).then(
+        function() {
             console.log("copy complete\n");
         }
-    });
+    );
+}
+
+if (opts.hasOpt("cat"))
+{
+    var path = opts.getOpt("cat");
+    k8s.cat(path).then(
+        function(contents)
+        {
+            console.log(contents);
+        }
+    );
 }
 
 if (opts.getOpt("exec",false))

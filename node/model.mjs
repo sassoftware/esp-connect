@@ -36,16 +36,34 @@ var names = ["access_token","token","credentials","user","pw"];
 var o = opts.clone(names);
 opts.clearOpts(names);
 
-esp.connect(server,{ready:ready},o);
+esp.connect(server,{ready:ready,getCredentials:getCredentials},o);
 
 function
 ready(connection)
 {
-    var delegate = {modelLoaded:function(model,conn) {
-        console.log("" + esp.getXPath().xmlString(model.xml));
-        process.exit(0);
-    }};
-    connection.loadModel(delegate,opts.getOpts());
+    connection.getModel(opts.getOpts()).then(
+        function(result){
+            console.log("" + esp.getXPath().xmlString(result.xml));
+            process.exit(0);
+        },
+        function(result) {
+            console.log(result);
+            process.exit(0);
+        }
+    );
+}
+
+import {default as prompts} from "prompt-sync";
+
+function
+getCredentials(options)
+{
+    console.log("");
+    var p = prompts();
+    var user = p("User: ");
+    var pw = p("Password: ");
+    console.log("");
+    return({user:user,pw:pw});
 }
 
 function

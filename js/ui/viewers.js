@@ -113,7 +113,14 @@ class ModelViewer extends ViewerBase
                 {
                     this._stats = this._connection.getStats();
                     this.setStats();
-                    this._connection.loadModel(this,{schema:true,index:true,xml:true});
+
+                    const   self = this;
+
+                    this._connection.getModel({schema:true,index:true,xml:true}).then(
+                        function(result) {
+                            self.modelLoaded(result,self._connection);
+                        }
+                    );
                 }
             }
         });
@@ -193,7 +200,13 @@ class ModelViewer extends ViewerBase
     {
         if (this._connection != null)
         {
-            this._connection.loadModel(this,{schema:true,index:true,xml:true});
+            const   self = this;
+
+            this._connection.getModel({schema:true,index:true,xml:true}).then(
+                function(result) {
+                    self.modelLoaded(result,self._connection);
+                }
+            );
         }
     }
 
@@ -603,11 +616,10 @@ class ModelViewer extends ViewerBase
 
             var mv = this;
 
-            var handler =
-            {
-                handleProjects:function(data)
+            connection.k8s.getProjects().then(
+                function(result)
                 {
-                    data.forEach((p) => {
+                    result.forEach((p) => {
                         var url = "";
                         url += connection.k8s.k8sUrl;
                         url += "/" + p.metadata.namespace;
@@ -622,14 +634,11 @@ class ModelViewer extends ViewerBase
                         mv._projectSelect.add(option);
                     });
                 },
-
-                error:function(request,error)
+                function(result)
                 {
                     tools.exception("error: " + opts);
                 }
-            };
-
-            connection.k8s.getProjects(handler);
+            );
         }
         else
         {

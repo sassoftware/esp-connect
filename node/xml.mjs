@@ -41,18 +41,12 @@ esp.connect(server,{ready:ready,error:error,debug:true},o);
 function
 ready(connection)
 {
-    var delegate = {
-        response:function(connection,data,xml) {
-            //console.log("" + esp.getXPath().xmlString(xml));
-            console.log(data);
-            process.exit(0);
-        },
-        error:function(message) {
-            console.log(message);
+    connection.getProjectXml(opts.getOpt("name"),opts.getOpts()).then(
+        function(result) {
+            console.log("" + esp.getXPath().xmlString(result));
             process.exit(0);
         }
-    };
-    connection.getProjectXml(opts.getOpt("name"),delegate,opts.getOpts());
+    );
 }
 
 function

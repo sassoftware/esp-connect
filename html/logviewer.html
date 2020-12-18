@@ -207,25 +207,27 @@ loadK8sProjects()
             select.remove(0);
         }
 
-        _k8s.getProjects({handleProjects:function(projects) {
+        _k8s.getProjects().then(
 
-            projects.forEach((p) => {
-                var url = _k8s.k8sUrl;
-                url += "/" + p.metadata.namespace;
-                url += "/" + p.metadata.name;
-                var option = document.createElement("option");
-                option.value = url;
-                option.appendChild(document.createTextNode(p.metadata.namespace + "/" + p.metadata.name));
-                if (_connection != null && _connection.k8s)
-                {
-                    if (option.value == _connection.k8s.projectUrl)
+            function(result) {
+                result.forEach((p) => {
+                    var url = _k8s.k8sUrl;
+                    url += "/" + p.metadata.namespace;
+                    url += "/" + p.metadata.name;
+                    var option = document.createElement("option");
+                    option.value = url;
+                    option.appendChild(document.createTextNode(p.metadata.namespace + "/" + p.metadata.name));
+                    if (_connection != null && _connection.k8s)
                     {
-                        option.selected = true;
+                        if (option.value == _connection.k8s.projectUrl)
+                        {
+                            option.selected = true;
+                        }
                     }
-                }
-                select.add(option);
-            });
-        }});
+                    select.add(option);
+                });
+            }
+        );
     }
 }
 

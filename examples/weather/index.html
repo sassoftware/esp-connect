@@ -56,9 +56,9 @@ init()
 
     _visuals = _esp.createVisuals(parms);
 
-    _esp.getAjax().create("model","model.xml", {
-        response:function(request,text) {
-            _model = text;
+    _esp.getAjax().create("model.xml").get().then(
+        function(response) {
+            _model = response.text;
 
             var server = _esp.getServerFromParms(parms,_project);
 
@@ -70,7 +70,7 @@ init()
 
             connect(server);
         }
-    }).get();
+    );
 }
 
 function
@@ -120,11 +120,11 @@ ready(connection)
 
     _esp.size();
 
-    _conn.getProjectXml(_project,{
-        response:function(c,data){
-            _model = data;
+    _conn.getProjectXml(_project).then(
+        function(result) {
+            _model = _esp.getXPath().format(result);
         }
-    });
+    );
 }
 
 function
@@ -175,7 +175,7 @@ done()
                 <td id="bannerTitle"></td>
                 <td class="icon">
                     <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
-                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'p',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'weather',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
                     <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
                 </td>
             </tr>

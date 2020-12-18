@@ -64,6 +64,7 @@ class ServerConnection extends Connection
             if (this._impl.k8s == null && this.hasOpt("model"))
             {
                 var model = this.getOpt("model");
+
                 var opts = new Options(model);
                 var name = opts.getOpt("name");
                 var data = opts.getOpt("data");
@@ -79,12 +80,14 @@ class ServerConnection extends Connection
                     tools.exception("the model must contain either a data or url field");
                 }
 
-                const   conn = this;
+                const   self = this;
 
                 if (url != null)
                 {
-                    var o = {
-                        response:function(request,text,data) {
+                    ajax.create(url).get().then(
+                        function(result) {
+
+                            var data = result.xml;
 
                             if (model.hasOwnProperty("_xml") == false)
                             {
@@ -92,36 +95,34 @@ class ServerConnection extends Connection
                                 model.data = xpath.xmlString(data);
                             }
 
-                            conn.load(model,{
-                                loaded:function(connection,name) {
-                                    conn._delegates.forEach((d) => {
+                            self.load(model).then(
+                                function() {
+                                    self._delegates.forEach((d) => {
                                         if (tools.supports(d,"ready"))
                                         {
-                                            d.ready(conn._impl);
+                                            d.ready(self._impl);
                                         }
                                     });
                                 },
-                                error:function(connection,name,message) {
-                                    conn._delegates.forEach((d) => {
+                                function(result) {
+                                    self._delegates.forEach((d) => {
                                         if (tools.supports(d,"error"))
                                         {
-                                            d.error(message);
+                                            d.error(self._impl,result);
                                         }
                                     });
                                 }
-                            });
+                            );
                         },
-                        error:function(request,error) {
-                            conn._delegates.forEach((d) => {
+                        function(result) {
+                            self._delegates.forEach((d) => {
                                 if (tools.supports(d,"error"))
                                 {
-                                    d.error(conn._impl,error);
+                                    d.error(self._impl,result);
                                 }
                             });
                         }
-                    };
-
-                    ajax.create("load",url,o).get();
+                    );
                 }
                 else
                 {
@@ -132,24 +133,24 @@ class ServerConnection extends Connection
                         model.data = xpath.xmlString(model._xml);
                     }
 
-                    this.load(model,{
-                        loaded:function(connection,name) {
-                            conn._delegates.forEach((d) => {
+                    this.load(model).then(
+                        function(result) {
+                            self._delegates.forEach((d) => {
                                 if (tools.supports(d,"ready"))
                                 {
-                                    d.ready(conn._impl);
+                                    d.ready(self._impl);
                                 }
                             });
                         },
-                        error:function(connection,name,message) {
-                            conn._delegates.forEach((d) => {
+                        function(result) {
+                            self._delegates.forEach((d) => {
                                 if (tools.supports(d,"error"))
                                 {
-                                    d.error(message);
+                                    d.error(self._impl,result);
                                 }
                             });
                         }
-                    });
+                    );
                 }
             }
             else
@@ -164,50 +165,74 @@ class ServerConnection extends Connection
         }
     }
 
-    load(model,delegate)
+    load(model)
     {
-        if (this.getOpt("force",false))
-        {
-            this._impl.loadProject(model.name,model.data,delegate,this.getOpts());
-        }
-        else
-        {
-            const   conn = this;
-
-            this._impl.getProjectXml(model.name,{
-                response:function(request,text,xml) {
-                    var node = null;
-                    if (xml.nodeType == 1)
-                    {
-                        node = xml;
+console.log("================= load");
+        return(new Promise((resolve,reject) => {
+            if (this.getOpt("force",false))
+            {
+                this._impl.loadProject(model.name,model.data,this.getOpts()).then(
+                    function() {
+                        resolve();
+                    },
+                    function(result) {
+                        reject(result);
                     }
-                    else if (xml.nodeType == 9)
-                    {
-                        node = xml.documentElement;
-                    }
+                );
+            }
+            else
+            {
+                const   self = this;
 
-                    if (node == null)
-                    {
-                        conn._impl.loadProject(model.name,model.data,delegate,conn.getOpts());
-                    }
-                    else
-                    {
-                        node.removeAttribute("name",name);
-
-                        const   s = xpath.xmlString(node);
-
-                        if (model.data != s)
+                this._impl.getProjectXml(model.name).then(
+                    function(xml) {
+                        var node = null;
+                        if (xml.nodeType == 1)
                         {
-                            conn._impl.loadProject(model.name,model.data,delegate,conn.getOpts());
+                            node = xml;
+                        }
+                        else if (xml.nodeType == 9)
+                        {
+                            node = xml.documentElement;
+                        }
+
+                        if (node == null)
+                        {
+                            self._impl.loadProject(model.name,model.data,self.getOpts()).then(
+                                function() {
+                                    resolve();
+                                },
+                                function(result) {
+                                    reject(result);
+                                }
+                            );
                         }
                         else
                         {
-                            delegate.loaded(this,model.name);
+                            node.removeAttribute("name");
+
+                            const   s = xpath.xmlString(node);
+
+                            if (model.data != s)
+                            {
+                                self._impl.loadProject(model.name,model.data,self.getOpts()).then(
+                                    function() {
+                                        resolve();
+                                    },
+                                    function(result) {
+                                        reject(result);
+                                    }
+                                );
+                            }
+                            else
+                            {
+                                resolve();
+                            }
                         }
                     }
-                }
-            });
-        }
+                );
+            }
+        }));
     }
 
     closed(conn)
