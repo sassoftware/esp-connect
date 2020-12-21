@@ -12,6 +12,7 @@ import {tools} from "./tools.js";
 import {ajax} from "./ajax.js";
 import {xpath} from "./xpath.js";
 import {codec} from "./codec.js";
+import {eventsources} from "./eventsources.js";
 
 const   resources = new Resources();
 
@@ -110,6 +111,7 @@ class Api extends Options
     init()
     {
         this._datasources = {};
+        this._handlers = {};
         this._publishers = {};
         this._stats = new Stats(this);
         this._log = new Log(this);
@@ -119,6 +121,16 @@ class Api extends Options
         this._loadDelegates = {};
         this._responseDelegates = {};
         this._gets = {};
+    }
+
+    addHandler(id,handler)
+    {
+        if (tools.supports(handler,"process") == false)
+        {
+            tools.exception("The handler must implement the process method");
+        }
+
+        this._handlers[id] = handler;
     }
 
     versionGreaterThan(version)
@@ -347,18 +359,17 @@ class Api extends Options
     {
     }
 
-    publishDataFrom(path,url,delegate,options)
+    publishDataFrom(path,url,options)
     {
         var api = this;
-        var o = {
-            response:function(request,text,data) {
-                api.publishData(path,text,delegate,options);
+        ajax.create(url).get().then(
+            function(result) {
+                api.publishData(path,result.text,null,options);
             },
-            error:function(request,error) {
-                console.log("error: " + error);
+            function(result) {
+                console.log(result);
             }
-        };
-        ajax.create("load",url,o).get();
+        );
     }
 
     publishData(path,data,delegate,options)
@@ -393,29 +404,26 @@ class Api extends Options
         connection.start();
     }
 
-    publishUrl(path,url,delegate,options)
+    publishUrl(path,url,options)
     {
-        if (options == null)
-        {
-            options = {};
-        }
-
-        options["value"] = "injected";
-        options["eventUrl"] = url;
-        var publish = this.getHttpUrl("windows/" + path + "/state",options);
-        var api = this;
-        var o = {
-            response:function(request,text,data) {
-                if (delegate != null && tools.supports(delegate,"publishComplete"))
-                {
-                    delegate.publishComplete();
-                }
-            },
-            error:function(request,error) {
-                console.log("error: " + error);
+        return(new Promise((resolve,reject) => {
+            if (options == null)
+            {
+                options = {};
             }
-        };
-        ajax.create("publish",publish,o).put();
+
+            options["value"] = "injected";
+            options["eventUrl"] = url;
+            var publish = this.getHttpUrl("windows/" + path + "/state",options);
+            ajax.create(publish).put().then(
+                function(result) {
+                    resolve(result);
+                },
+                function(result) {
+                    reject(result);
+                }
+            );
+        }));
     }
 
     getStats(options)
@@ -436,203 +444,206 @@ class Api extends Options
     {
     }
 
-    loadModel(delegate,options)
+    getModel(options)
     {
-        if (tools.supports(delegate,"modelLoaded") == false)
-        {
-            throw "The delegate must implement the modelLoaded method";
-        }
-
-        var url = this.getHttpUrl("projects",options);
-        var api = this;
-
-        var o = {
-            response:function(request,text,data) {
-                if (tools.supports(delegate,"modelLoaded"))
-                {
-                    var model = new Model(data);
-                    delegate.modelLoaded(model,api);
+        return(new Promise((resolve,reject) => {
+            var url = this.getHttpUrl("projects",options);
+            this.createRequest(url).get().then(
+                function(result) {
+                    resolve(new Model(result.xml));
+                },
+                function(result) {
+                    reject(result);
                 }
-            },
-            error:function(request,error) {
-                if (tools.supports(delegate,"error"))
-                {
-                    delegate.error(request.getName(),error);
-                }
-            }
-        };
-
-        this.createRequest("load",url,o).get(this._connection._config);
+            );
+        }));
     }
 
-    loadUrl(name,url,delegate)
+    loadUrl(name,url)
     {
-        var o = {
-            response:function(request,text,data) {
-                if (tools.supports(delegate,"loaded"))
-                {
-                    delegate.loaded(name,text,data);
+        return(new Promise((resolve,reject) => {
+            ajax.create(url).get().then(
+                function(result) {
+                    resolve(result);
+                },
+                function(result) {
+                    reject(result);
                 }
-            },
-            error:function(request,error) {
-                if (tools.supports(delegate,"error"))
-                {
-                    delegate.error(name,text);
+            );
+        }));
+    }
+
+    loadProjectFrom(name,url,options)
+    {
+        return(new Promise((resolve,reject) => {
+
+            var self = this;
+
+            ajax.create(url).get().then(
+                function(response) {
+                    self.loadProject(name,response.text,options).then(
+                        function() {
+                            resolve();
+                        },
+                        function() {
+                            reject();
+                        }
+                    );
+                },
+                function(result) {
+                    reject(result);
                 }
-            }
-        };
-        ajax.create("load",url,o).get();
+            );
+        }));
     }
 
-    loadProjectFrom(name,url,delegate,options)
+    loadRouterFrom(name,url,options)
     {
-        var api = this;
-        var o = {
-            response:function(request,text,data) {
-                api.loadProject(name,text,delegate,options);
-            },
-            error:function(request,error) {
-                console.log("error: " + error);
-            }
-        };
-        ajax.create("load",url,o).get();
-    }
+        return(new Promise((resolve,reject) => {
 
-    loadRouterFrom(name,url,delegate,options)
-    {
-        var api = this;
-        var o = {
-            response:function(request,text,data) {
-                api.loadRouter(name,text,delegate,options);
-            },
-            error:function(request,error) {
-                console.log("error: " + error);
-            }
-        };
-        ajax.create("load",url,o).get();
-    }
+            var self = this;
 
-    loadProject(name,data,delegate,options)
-    {
-        var connection = this;
-
-        var o = {
-            response:function(request,text,data) {
-                if (tools.supports(delegate,"loaded"))
-                {
-                    delegate.loaded(connection,name);
+            ajax.create(url).get().then(
+                function(response) {
+                    self.loadRouter(name,response.text,options).then(
+                        function() {
+                            resolve();
+                        },
+                        function() {
+                            reject();
+                        }
+                    );
+                },
+                function(result) {
+                    reject(result);
                 }
-            },
-            error:function(request,error,data) {
-                if (tools.supports(delegate,"error"))
-                {
-                    var message = xpath.getString("//message",data);
-                    delegate.error(connection,request.getName(),message);
+            );
+        }));
+    }
+
+    loadProject(name,data,options)
+    {
+        return(new Promise((resolve,reject) => {
+            var opts = new Options(options);
+            var tmp = {};
+            opts.addOpts(tmp,["overwrite"]);
+            var url = this.getHttpUrl("projects/" + name,tmp);
+            var request = this.createRequest(url);
+            request.setData(data);
+            request.put().then(
+                function(result) {
+                    if (result.status >= 400)
+                    {
+                        var message = xpath.getString("//message",result.xml);
+                        reject({text:message});
+                    }
+                    else
+                    {
+                        resolve(result);
+                    }
+                },
+                function(result) {
+                    reject(result);
                 }
-            }
-        };
-
-        var url = this.getHttpUrl("projects/" + name,options);
-        var request = this.createRequest("loadProject",url,o);
-        request.setData(data);
-        request.put();
+            );
+        }));
     }
 
-    loadRouter(name,data,delegate,options)
+    loadRouter(name,data,options)
     {
-        var o = {
-            response:function(request,text,data) {
-                if (tools.supports(delegate,"loaded"))
-                {
-                    var message = xpath.getString("//message",data);
-                    delegate.loaded(this,message);
+        return(new Promise((resolve,reject) => {
+            var url = this.getHttpUrl("routers/" + name,options);
+            var request = this.createRequest(url);
+            request.setData(data);
+            request.put().then(
+                function(result) {
+                    if (result.status >= 400)
+                    {
+                        var message = xpath.getString("//message",result.xml);
+                        reject(message);
+                    }
+                    else
+                    {
+                        resolve(result);
+                    }
+
+                },
+                function(result) {
+                    reject(result);
                 }
-            },
-            error:function(request,error,data) {
-                if (tools.supports(delegate,"error"))
-                {
-                    var message = xpath.getString("//message",data);
-                    delegate.error(this,request.getName(),message);
+            );
+        }));
+    }
+
+    deleteProject(name)
+    {
+        return(new Promise((resolve,reject) => {
+            var url = this.getHttpUrl("projects/" + name);
+            this.createRequest(url).del().then(
+                function(result) {
+                    resolve(result);
+                },
+                function(result) {
+                    reject(result);
                 }
-            }
-        };
-
-        var url = this.getHttpUrl("routers/" + name,options);
-        var request = this.createRequest("loadRouter",url,o);
-        request.setData(data);
-        request.put();
+            );
+        }));
     }
 
-    deleteProject(name,delegate)
+    getProjectXml(name)
     {
-        var url = this.url;
-        var request = {"project":{}};
-        var o = request["project"];
-        o["name"] = name;
-        o["action"] = "delete";
-        this.sendObject(request);
+        return(new Promise((resolve,reject) => {
+            var opts = (name != null) ? {name:name} : {};
+            var url = this.getHttpUrl("projectXml",opts);
+            this.createRequest(url).get().then(
+                function(result) {
+                    resolve(result.xml);
+                },
+                function(result) {
+                    reject(result);
+                }
+            );
+        }));
     }
 
-    getProjectXml(name,delegate)
+    getXml()
     {
-        var opts = (name != null) ? {name:name} : {};
-        var url = this.getHttpUrl("projectXml",opts);
-        this.createRequest("load",url,delegate).get();
-    }
-
-    getXml(name,delegate)
-    {
-        this.getProjectXml(null,delegate);
+        return(this.getProjectXml(null));
     }
 
     getLoggers(delegate)
     {
-        if (tools.supports(delegate,"response") == false)
-        {
-            throw "The delegate must implement the response method";
-        }
-
-        var o = {
-            response:function(request,text,data) {
-                var loggers = [];
-                xpath.getNodes("//loggers/logger",data).forEach((n) =>
-                {
-                    loggers.push({"@level":n.getAttribute("level"),"@name":n.getAttribute("name")});
-                });
-                delegate.response(this,loggers);
-            },
-            error:function(request,error) {
-                if (tools.supports(delegate,"error"))
-                {
-                    console.log("error: " + error);
-                    delegate.error(request.getName(),error);
+        return(new Promise((resolve,reject) => {
+            var url = this.getHttpUrl("loggers");
+            this.createRequest(url).get().then(
+                function(result) {
+                    var loggers = [];
+                    xpath.getNodes("//loggers/logger",result.xml).forEach((n) => {
+                        loggers.push({"@level":n.getAttribute("level"),"@name":n.getAttribute("name")});
+                    });
+                    resolve(loggers);
+                },
+                function(result) {
+                    reject(result);
                 }
-            }
-        };
-
-        var url = this.getHttpUrl("loggers");
-        this.createRequest("loggers",url,o).get();
+            );
+        }));
     }
 
     setLogger(context,level,delegate)
     {
-        var o = {
-            response:function(request,text,data) {
-                var message = xpath.getString("//message",data);
-                delegate.response(this,message);
-            },
-            error:function(request,error) {
-                if (tools.supports(delegate,"error"))
-                {
-                    console.log("error: " + error);
-                    delegate.error(request.getName(),error);
+        return(new Promise((resolve,reject) => {
+            var url = this.getHttpUrl("loggers/" + context + "/level",{value:level});
+            this.createRequest(url).put().then(
+                function(result) {
+                    var message = xpath.getString("//message",result.xml);
+                    resolve(message);
+                },
+                function(result) {
+                    reject(result);
                 }
-            }
-        };
-
-        var url = this.getHttpUrl("loggers/" + context + "/level",{value:level});
-
-        this.createRequest("setLogger",url,o).put();
+            );
+        }));
     }
 
     createModel(data)
@@ -640,25 +651,29 @@ class Api extends Options
         return(new Model(data));
     }
 
-    loadGuids(delegate,num)
+    getGuids(num)
     {
-        if (tools.supports(delegate,"guidsLoaded") == false)
-        {
-            throw "The stats delegate must implement the guidsLoaded method";
-        }
-
-        var id = tools.guid();
-        this._guidDelegates[id] = new GuidDelegate(this,delegate);
-
-        var request = {"guids":{}};
-        var o = request["guids"];
-        o["id"] = id;
-        if (num != null)
-        {
-            o["num"] = num;
-        }
-
-        this.sendObject(request);
+        return(new Promise((resolve,reject) => {
+            var url = this.getHttpUrl("guids");
+            if (num != null)
+            {
+                url += "?num=" + num;
+            }
+            this.createRequest(url).get().then(
+                function(result) {
+                    var guids = [];
+                    var nodes = xpath.getNodes(".//guid",result.xml);
+                    for (var i = 0; i < nodes.length; i++)
+                    {
+                        guids.push(xpath.nodeText(nodes[i]));
+                    }
+                    resolve(guids);
+                },
+                function(result) {
+                    reject(result);
+                }
+            );
+        }));
     }
 
     guid()
@@ -1819,7 +1834,7 @@ class EventCollection extends Datasource
                 opcode = "insert";
             }
 
-            o = {};
+            var o = {};
             o["@opcode"] = opcode;
 
             s = n.getAttribute("timestamp");
@@ -2173,7 +2188,7 @@ class EventStream extends Datasource
             o = {};
             o["@opcode"] = opcode;
 
-            s = e.getAttribute("timestamp");
+            var s = e.getAttribute("timestamp");
 
             if (s != null && s.length > 0)
             {
@@ -2829,16 +2844,16 @@ class Publisher extends Options
 
     publishCsvFrom(url,options)
     {
-        var publisher = this;
-        var o = {
-            response:function(request,text,data) {
-                publisher.publishCsv(text,options);
+        var self = this;
+
+        ajax.create(url).get().then(
+            function(response) {
+                self.publishCsv(response.text,options);
             },
-            error:function(request,error) {
+            function(error) {
                 console.log("error: " + error);
             }
-        };
-        ajax.create("load",url,o).get();
+        );
     }
 
     publishCsv(data,options)

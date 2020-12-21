@@ -487,14 +487,16 @@ class K8S extends Options
             const   self = this;
 
             this.getAuthToken().then(
-                function(response) {
-                    const   status = response.status;
+                function(result) {
+                    const   status = result.status;
 
                     if (status == 401)
                     {
-                        if (tools.supports(delegate,"getCredentials"))
+                        const   d = tools.anySupports(delegate,"getCredentials");
+
+                        if (d != null)
                         {
-                            const   credentials = delegate.getCredentials();
+                            const   credentials = d.getCredentials();
 
                             if (credentials != null)
                             {
@@ -506,7 +508,7 @@ class K8S extends Options
                     }
                     else
                     {
-                        const   token = response.token;
+                        const   token = result.token;
 
                         if (token != null)
                         {
@@ -533,7 +535,12 @@ class K8S extends Options
                     ingress = result["ingress"];
                     self.saslogon(result).then(
                         function(result) {
-                            resolve(result["token"]);
+                            self.setOpt("access_token",result);
+                            resolve(result);
+                        },
+                        function(result) {
+                            self.setOpt("saslogon-error",true);
+                            reject();
                         }
                     );
                 },
@@ -543,7 +550,12 @@ class K8S extends Options
                         function(result) {
                             self.uaa(result).then(
                                 function(result) {
+                                    self.setOpt("access_token",result);
                                     resolve(result);
+                                },
+                                function(result) {
+                                    self.setOpt("uaa-error",true);
+                                    reject();
                                 }
                             );
                         },
@@ -561,35 +573,38 @@ class K8S extends Options
     {
         return(new Promise((resolve,reject) => {
             this.getSecret().then(
-                function(data) {
-                    var secret = data["secret"];
+                function(result) {
+                    var secret = result["secret"];
                     var url = "https://";
                     url += data.spec.tls[0].hosts[0];
                     url += "/SASLogon/oauth/clients/consul";
                     url += "?callback=false&serviceId=app";
 
+                    //console.log("curl -k -s '" + url + "' -H 'X-Consul-Token: " + secret + "' -X POST");
+
                     var request = ajax.create(url);
                     request.setRequestHeader("X-Consul-Token",secret);
+
                     request.post().then(
-                        function(data) {
-                            if (request.getStatus() >= 400)
+                        function(result) {
+                            if (result.status >= 400)
                             {
-                                console.log("token error: " + request.getStatus());
+                                reject(result);
                             }
                             else
                             {
-                                var o = JSON.parse(text);
+                                var o = JSON.parse(result.text);
                                 var token = o.access_token;
-                                delegate.handleToken(token);
+                                resolve(token);
                             }
                         },
                         function(result) {
-                            console.log("error : " + result);
+                            reject(result);
                         }
                     );
                 },
-                function(data) {
-                    reject(data);
+                function(result) {
+                    reject(result);
                 }
             )
         }));
@@ -656,7 +671,6 @@ class K8S extends Options
 
             url += "/secrets/sas-consul-client";
 
-            var k8s = this;
             var request = ajax.create(url);
             request.setRequestHeader("accept","application/json");
             request.get().then(
@@ -669,13 +683,23 @@ class K8S extends Options
 
                     var o = JSON.parse(result.text);
 
-                    if (o.code == 404)
+                    if (o.hasOwnProperty("code") && o.code == 404)
                     {
                         reject(result);
                     }
                     else
                     {
-                        var secret = Buffer.from(o.data.CONSUL_HTTP_TOKEN,"base64").toString();
+                        var secret = null;
+
+                        if (tools.isNode)
+                        {
+                            secret = Buffer.from(o.data.CONSUL_HTTP_TOKEN,"base64").toString();
+                        }
+                        else
+                        {
+                            secret = atob(o.data.CONSUL_HTTP_TOKEN);
+                        }
+
                         resolve({secret:secret});
                     }
                 },
@@ -1488,10 +1512,12 @@ class K8SProject extends K8S
         s += "            matchLabels:\n";
         s += "          template:\n";
         s += "            spec:\n";
+        /*
         s += "               volumes:\n";
         s += "               - name: data\n";
         s += "                 persistentVolumeClaim:\n";
         s += "                   claimName: esp-pv\n";
+        */
         s += "               containers:\n";
         s += "               - name: ((PROJECT_SERVICE_NAME))\n";
         s += "                 resources:\n";
@@ -1501,9 +1527,11 @@ class K8SProject extends K8S
         s += "                   limits:\n";
         s += "                     memory: \"2Gi\"\n";
         s += "                     cpu: \"2\"\n";
+        /*
         s += "                 volumeMounts:\n";
         s += "                 - mountPath: /mnt/data\n";
         s += "                   name: data\n";
+        */
         s += "    loadBalancerTemplate:\n";
         s += "      deployment:\n";
         s += "        spec:\n";

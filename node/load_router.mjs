@@ -45,20 +45,18 @@ ready(connection)
     var data = fs.readFileSync(opts.getOpt("model"));
     var name = opts.getOpt("name");
 
-    var delegate = {
-        loaded:function(connection,name) {
+    opts.clearOpts(["name","model"]);
+
+    connection.loadRouter(name,data,opts.getOpts()).then(
+        function(result) {
             console.log("router loaded: " + name);
             process.exit(0);
         },
-        error:function(connection,name,message) {
-            console.log("error: " + message);
+        function(result) {
+            console.log("error: " + result);
             process.exit(0);
         }
-    };
-
-    opts.clearOpts(["name","model"]);
-
-    connection.loadRouter(name,data,delegate,opts.getOpts());
+    );
 }
 
 function

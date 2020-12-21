@@ -21,7 +21,6 @@ if (server == null)
     process.exit(0);
 }
 
-import {default as prompts} from "prompts";
 import {default as fs} from "fs";
 
 var k8s = esp.createK8S(server,opts.getOpts());
@@ -246,49 +245,64 @@ if (opts.getOpt("exec",false))
     });
 }
 
+import {default as prompts} from "prompt-sync";
+
 if (opts.getOpt("auth",false))
 {
-    var gotToken = false;
-
-    while (gotToken == false)
-    {
-        k8s.getAuthToken({
-            handleToken:function(token) {
-                console.log(token);
-                gotToken = true;
+    const   delegate = {
+        getCredentials:function(options)
+        {
+            console.log("");
+            var p = prompts();
+            var user = p("User: ");
+            var pw = p("Password: ");
+            console.log("");
+            return({user:user,pw:pw});
+        }
+    };
+    function auth() {
+        k8s.authenticate(delegate).then(
+            function() {
+                if (k8s.hasOpt("access_token"))
+                {
+                    console.log(k8s.getOpt("access_token"));
+                }
             },
-            notfound:function() {
-            },
-            addCredentials(opts) {
-                console.log("add credentials");
-                const   p = [
-                    {
-                        type: "text",
-                        name: "user",
-                        message: "User: "
-                    },
-                    {
-                        type: "password",
-                        name: "pw",
-                        message: "Password: "
-                    }
-                ];
-                (async () => {
-                    const response = await prompts(p);
-                    opts.setOpt("user",response.user);
-                    opts.setOpt("pw",response.pw);
-                });
+            function() {
+                if (k8s.getOpt("saslogon-error",false))
+                {
+                }
+                else
+                {
+                    auth();
+                }
             }
-        });
+        );
     }
+
+    auth();
 }
 
 if (opts.getOpt("secret",false))
 {
-    k8s.getSecret({handleSecret:function(data) {
-        console.log(data);
-    }
-    });
+    k8s.getSecret().then(
+        function(result) {
+            console.log(result.secret);
+        },
+        function(result) {
+        }
+    );
+}
+
+if (opts.getOpt("token",false))
+{
+    k8s.getAuthToken().then(
+        function(result) {
+            console.log(result);
+        },
+        function(result) {
+        }
+    );
 }
 
 if (opts.getOpt("espurl",false))

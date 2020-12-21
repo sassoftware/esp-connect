@@ -108,7 +108,7 @@ class ServerConnection extends Connection
                                     self._delegates.forEach((d) => {
                                         if (tools.supports(d,"error"))
                                         {
-                                            d.error(self._impl,result);
+                                            d.error(self._impl,result.text);
                                         }
                                     });
                                 }
@@ -118,7 +118,7 @@ class ServerConnection extends Connection
                             self._delegates.forEach((d) => {
                                 if (tools.supports(d,"error"))
                                 {
-                                    d.error(self._impl,result);
+                                    d.error(self._impl,result.text);
                                 }
                             });
                         }
@@ -167,7 +167,6 @@ class ServerConnection extends Connection
 
     load(model)
     {
-console.log("================= load");
         return(new Promise((resolve,reject) => {
             if (this.getOpt("force",false))
             {

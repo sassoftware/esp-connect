@@ -123,8 +123,8 @@ class Api extends Options
     init()
     {
         this._datasources = {};
-        this._publishers = {};
         this._handlers = {};
+        this._publishers = {};
         this._stats = new Stats(this);
         this._log = new Log(this);
         this._projectUpdateDelegates = [];
@@ -721,11 +721,11 @@ class Api extends Options
     {
         return(new Promise((resolve,reject) => {
             ajax.create(url).get().then(
-                function(response) {
-                    resolve(response);
+                function(result) {
+                    resolve(result);
                 },
-                function(error) {
-                    reject(error);
+                function(result) {
+                    reject(result);
                 }
             );
         }));
@@ -733,9 +733,10 @@ class Api extends Options
 
     loadProjectFrom(name,url,options)
     {
-        var self = this;
-
         return(new Promise((resolve,reject) => {
+
+            var self = this;
+
             ajax.create(url).get().then(
                 function(response) {
                     self.loadProject(name,response.text,options).then(
@@ -752,21 +753,14 @@ class Api extends Options
                 }
             );
         }));
-
-        ajax.create(url).get().then(
-            function(response) {
-            },
-            function(error) {
-                console.log("error: " + error);
-            }
-        );
     }
 
     loadRouterFrom(name,url,options)
     {
-        var self = this;
-
         return(new Promise((resolve,reject) => {
+
+            var self = this;
+
             ajax.create(url).get().then(
                 function(response) {
                     self.loadRouter(name,response.text,options).then(
@@ -3145,14 +3139,7 @@ class Publisher extends Options
     {
         if (tools.supports(delegate,"schemaSet") == false)
         {
-            if (tools.isNode)
-            {
-                throw new Error("The datasource schema delegate must implement the schemaSet method");
-            }
-            else
-            {
-                throw "The datasource schema delegate must implement the schemaSet method";
-            }
+            tools.exception("The datasource schema delegate must implement the schemaSet method");
         }
 
         tools.addTo(this._schemaDelegates,delegate);
@@ -3310,11 +3297,11 @@ class Publisher extends Options
 
     publishCsvFrom(url,options)
     {
-        var publisher = this;
+        var self = this;
 
         ajax.create(url).get().then(
             function(response) {
-                publisher.publishCsv(response.text,options);
+                self.publishCsv(response.text,options);
             },
             function(error) {
                 console.log("error: " + error);

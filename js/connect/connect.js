@@ -52,7 +52,51 @@ var	_api =
                         project.connect(self,delegate,options,start);
                     },
                     function() {
-                        auth();
+                        if (project.getOpt("saslogon-error",false))
+                        {
+                            if (project.hasOpt("access_token"))
+                            {
+                                options["access_token"] = project.getOpt("access_token");
+                                project.connect(self,delegate,options,start);
+                            }
+                            else
+                            {
+                                const   d = tools.anySupports(delegate,"getToken");
+                                if (d != null)
+                                {
+                                    d.getToken().then(
+                                        function(result) {
+                                            options["access_token"] = result;
+                                            project.connect(self,delegate,options,start);
+                                        },
+                                        function(result) {
+                                        }
+                                    );
+                                }
+
+                            }
+                        }
+                        else if (project.getOpt("uaa-error",false))
+                        {
+                            const   d = tools.anySupports(delegate,"getCredentials");
+                            if (d != null)
+                            {
+                                d.getCredentials().then(
+                                    function(result) {
+                                        project.setOpt("user",result.user);
+                                        project.setOpt("pw",result.password);
+                                        auth();
+                                    },
+                                    function(result) {
+                                    }
+                                );
+                            }
+
+                        }
+                        else
+                        {
+                            auth();
+                        }
                     }
                 );
             }

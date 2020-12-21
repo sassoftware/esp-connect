@@ -47,18 +47,14 @@ class Ajax extends Options
 
                 if (this._request != null)
                 {
-console.log("get xml: " + this._request.responseXMl);
                     if ((xml = this._request.responseXML) == null)
                     {
-console.log("=================");
                         var	type = this.getResponseHeader("content-type");
-console.log("type: " + type);
                         if (type.indexOf("text/xml") != -1 || type.indexOf("application/xml") != -1)
                         {
                             xml = xpath.createXml(this._request.responseText);
                         }
                     }
-console.log("=================");
                 }
 
                 return(xml);
@@ -103,27 +99,7 @@ console.log("=================");
                 {
                     if (this.status == 401)
                     {
-                        var	auth = this.getResponseHeader("www-authenticate");
-                        var	scheme = null;
-
-                        if (auth != null && auth.length > 0)
-                        {
-                            var	a = auth.split(" ");
-
-                            if (a.length > 0)
-                            {
-                                scheme = a[0].toLowerCase();
-                            }
-                        }
-
-                        if (scheme == null)
-                        {
-                            if (this.responseXML != null)
-                            {
-                                scheme = this.responseXML.firstChild.getAttribute("scheme");
-                            }
-                        }
-
+                        reject(self);
                         return;
                     }
 
@@ -142,11 +118,8 @@ console.log("=================");
                     {
                         if (protocol == "https:")
                         {
-                            if (self.hasOpt("cert-confirm-url"))
-                            {
-                                var url = self.getOpt("cert-confirm-url");
-                                window.open(url,url,"");
-                            }
+                            var url = self.hasOpt("cert-confirm-url") ? self.getOpt("cert-confirm-url") : self._url;
+                            window.open(url,url,"");
                         }
                         else
                         {
@@ -175,6 +148,12 @@ console.log("=================");
                     }
                 }
             };
+
+            this._request.onerror = 
+            function(e)
+            {
+                reject(self);
+            }
 
             this._request.open(this._method,this._url,true);
 
@@ -381,7 +360,7 @@ class NodeAjax extends Options
                     request.setHeader(name,self._requestHeaders[name]);
                 }
 
-                request.on("response", function (response) {
+                request.on("response", function(response) {
 
                     self._response = response;
 
@@ -412,12 +391,7 @@ class NodeAjax extends Options
                     reject(self);
                 });
 
-                if (self._data != null)
-                {
-                    request.write(self._data);
-                }
-
-                request.end();
+                request.end(self._data);
             }
 
             if (protocol == "https:")

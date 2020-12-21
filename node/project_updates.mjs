@@ -47,7 +47,7 @@ ready(connection)
             console.log("project " + name + " loaded");
         },
 
-        projectRemovedx:function(name)
+        projectRemoved:function(name)
         {
             console.log("project " + name + " removed");
         }

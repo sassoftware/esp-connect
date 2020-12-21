@@ -123,21 +123,15 @@ ready(connection)
 }
 
 function
-error(message)
-{
-    console.log(message);
-}
-
-function
 closed(connection)
 {
     _timer.stop();
 }
 
 function
-error()
+error(connection,message)
 {
-    alert("error");
+    console.log(message);
 }
 
 var _turbines = {};

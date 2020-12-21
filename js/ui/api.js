@@ -31,6 +31,54 @@ var	_api =
         connect.connect(url,delegates,options,true);
     },
 
+    getToken:function()
+    {
+        return(new Promise((resolve,reject) => {
+            var o =
+            {
+                ok:function(data)
+                {
+                    resolve(data.token);
+                    dialogs.hideDialog();
+                },
+                cancel:function()
+                {
+                    reject(data.token);
+                    dialogs.hideDialog();
+                },
+                header:"Enter Token",
+                values:[{name:"token",label:"OAuth Token",type:"textarea"}]
+            };
+            dialogs.showDialog(o);
+        }));
+    },
+
+    getCredentials:function()
+    {
+        return(new Promise((resolve,reject) => {
+            var o =
+            {
+                ok:function(data)
+                {
+                    resolve({user:data.user,password:data.password});
+                    dialogs.hideDialog();
+                },
+                cancel:function()
+                {
+                    dialogs.hideDialog();
+                    reject(data.token);
+                },
+                cancel:dialogs.hideDialog,
+                header:"Enter User and Password",
+                //values:[{name:"user",label:"User"},{name:"password",label:"Password",type:"password"}]
+                values:[{name:"user",label:"User",value:"esp"},{name:"password",label:"Password",type:"password",value:"esppw"}]
+            };
+
+            dialogs.showDialog(o);
+        }));
+    },
+
+    /*
     authenticate:function(connection,scheme)
     {
         if (scheme == "bearer")
@@ -67,6 +115,7 @@ var	_api =
             dialogs.showDialog(o);
         }
     },
+    */
 
     error:function(connection)
     {

@@ -205,6 +205,32 @@ var _api =
         return(o != null && (f in o) && typeof(o[f]) == "function");
     },
 
+    anySupports:function(o,f)
+    {
+        var result = null;
+
+        if (o != null)
+        {
+            if (Array.isArray(o))
+            {
+                for (var entry of o)
+                {
+                    if (this.supports(entry,f))
+                    {
+                        result = entry;
+                        break;
+                    }
+                }
+            }
+            else if (this.supports(o,f))
+            {
+                result = o;
+            }
+        }
+
+        return(result);
+    },
+
     contains:function(list,o)
     {
         if (list != null)
