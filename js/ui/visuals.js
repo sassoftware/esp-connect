@@ -2711,6 +2711,31 @@ class Gauge extends Chart
             }
         }
 
+        if (this.hasOpt("gradient"))
+        {
+            var entries = [];
+            var values = [];
+
+            for (var key in this._entries)
+            {
+                entry = this._entries[key];
+                entries.push(entry);
+                values.push(entry.value);
+            }
+
+            var options = {};
+
+            options["gradient"] = this.getOpt("gradient");
+            options["gradient_end"] = this.getOpt("gradient_end",false);
+
+            const   colors = this._visuals._colors.createColors(values,options);
+
+            for (var i = 0; i < entries.length; i++)
+            {
+                entries[i].setOpt("bg",colors[i]);
+            }
+        }
+
         for (var key in this._entries)
         {
             entry = this._entries[key];
@@ -2732,7 +2757,7 @@ class GaugeEntry extends Options
         this._div.style.padding = "10px";
 
         this._container = document.createElement("div");
-        this._container.style.padding = "10px";
+        this._container.style.padding = this._gauge.getOpt("padding","10px");
         this._container.style.border = this._gauge.getOpt("border","1px solid #d8d8d8");
         this._div.appendChild(this._container);
 
@@ -2833,6 +2858,26 @@ class GaugeEntry extends Options
 
         this._data.gauge.bar = {color:this._gauge.getOpt("bar_color","rgba(0,0,0,.5)")};
 
+        if (this._gauge.hasOpt("plotly"))
+        {
+            const    options = this._gauge.getOpt("plotly");
+
+            for (var x in options)
+            {
+                this._data[x] = options[x];
+            }
+        }
+
+        if (this._gauge.hasOpt("gauge"))
+        {
+            const   options = this._gauge.getOpt("gauge");
+
+            for (var x in options)
+            {
+                this._data.gauge[x] = options[x];
+            }
+        }
+
         this._initialized = true;
 
         Plotly.newPlot(this._container,[this._data],this._layout,this._gauge._defaults);
@@ -2865,6 +2910,27 @@ class GaugeEntry extends Options
         }
 
         this._data.value = this._value;
+
+        if (this.hasOpt("bg"))
+        {
+            const   color = this.getOpt("bg");
+            const   luma = this._gauge._visuals._colors.getLuma(color);
+
+            this._layout.paper_bgcolor = color;
+
+            tools.build(this._data,["number","font"]);
+
+            if (luma < 170)
+            {
+                this._data.title.font.color = "white";
+                this._data.number.font.color = "white";
+            }
+            else
+            {
+                this._data.title.font.color = "black";
+                this._data.number.font.color = "black";
+            }
+        }
 
         Plotly.react(this._container,[this._data],this._layout);
     }

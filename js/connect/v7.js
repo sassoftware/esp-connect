@@ -225,7 +225,7 @@ class Api extends Options
 
     processJson(json)
     {
-        if (this.getOpt("debug",false))
+        if (this.getOpt("debug_receive",false))
         {
             console.log(tools.stringify(json));
         }
@@ -264,8 +264,8 @@ class Api extends Options
                     }
                 }
             }
-
         }
+        /*
         else if (json.hasOwnProperty("schema"))
         {
             var o = json["schema"];
@@ -278,6 +278,18 @@ class Api extends Options
             else if (this._publishers.hasOwnProperty(id))
             {
                 this._publishers[id].setSchemaFromJson(o);
+            }
+        }
+        */
+        else if (json.hasOwnProperty("schema"))
+        {
+            var o = json["schema"];
+            var id = o["@id"];
+
+            if (this._handlers.hasOwnProperty(id))
+            {
+                this._handlers[id].process(o);
+                delete this._handlers[id];
             }
         }
         else if (json.hasOwnProperty("load-project") || json.hasOwnProperty("load-router"))
@@ -361,6 +373,33 @@ class Api extends Options
                 {
                     d.projectRemoved(name);
                 });
+            }
+        }
+        else if (json.hasOwnProperty("error"))
+        {
+            var o = json["error"];
+
+            if (o.hasOwnProperty("@id"))
+            {
+                var id = o["@id"];
+
+                if (this._handlers.hasOwnProperty(id))
+                {
+                    if (tools.supports(this._handlers[id]),"error")
+                    {
+                        this._handlers[id].error(o);
+                    }
+                    else
+                    {
+                        console.log(tools.stringify(o));
+                    }
+
+                    delete this._handlers[id];
+                }
+                else
+                {
+                    console.log(tools.stringify(o));
+                }
             }
         }
     }
@@ -504,36 +543,60 @@ class Api extends Options
 
     getEventCollection(options)
     {
-        options["mode"] = "collection";
-        var ec = new EventCollection(this,options);
-        this._datasources[ec._id] = ec;
-        ec.open();
-        return(ec);
+        return(new Promise((resolve,reject) => {
+            options["mode"] = "collection";
+            var ec = new EventCollection(this,options);
+            this._datasources[ec._id] = ec;
+            ec.open().then(
+                function(result) {
+                    resolve(result);
+                },
+                function(result) {
+                    reject(result);
+                }
+            );
+        }));
     }
 
     getEventStream(options)
     {
-        var es = new EventStream(this,options);
-        this._datasources[es._id] = es;
-        es.open();
-        return(es);
+        return(new Promise((resolve,reject) => {
+            var es = new EventStream(this,options);
+            this._datasources[es._id] = es;
+            es.open().then(
+                function(result) {
+                    resolve(result);
+                },
+                function(result) {
+                    reject(result);
+                }
+            );
+        }));
     }
 
     getPublisher(options)
     {
-        if (options.hasOwnProperty("id"))
-        {
-            var id = options["id"];
-
-            if (this._publishers.hasOwnProperty(id))
+        return(new Promise((resolve,reject) => {
+            if (options.hasOwnProperty("id"))
             {
-                return(this._publishers[id]);
+                var id = options["id"];
+
+                if (this._publishers.hasOwnProperty(id))
+                {
+                    return(this._publishers[id]);
+                }
             }
-        }
-        var publisher = new Publisher(this,options);
-        this._publishers[publisher._id] = publisher;
-        publisher.open();
-        return(publisher);
+            var publisher = new Publisher(this,options);
+            this._publishers[publisher._id] = publisher;
+            publisher.open().then(
+                function(result) {
+                    resolve(publisher);
+                },
+                function(result) {
+                    reject(publisher);
+                }
+            );
+        }));
     }
 
     closePublisher(id)
@@ -1131,7 +1194,6 @@ class Datasource extends Options
         this._id = this.getOpt("id",tools.guid());
         this._path = this.getOpt("window");
         this._schema = new Schema();
-        this._schema.addDelegate(this);
 
         Object.defineProperty(this,"id", {
             get() {
@@ -1186,20 +1248,8 @@ class Datasource extends Options
         this._data = null;
         this._list = null;
         this._delegates = [];
-        this._schemaDelegates = [];
 
         this._paused = false;
-    }
-
-    schemaLoaded()
-    {
-        this._delegates.forEach((d) =>
-        {
-            if (tools.supports(d,"schemaReady"))
-            {
-                d.schemaReady(this._api,this);
-            }
-        });
     }
 
     isArray()
@@ -1843,28 +1893,6 @@ class Datasource extends Options
         tools.removeFrom(this._delegates,delegate);
     }
 
-    addSchemaDelegate(delegate)
-    {
-        if (tools.supports(delegate,"schemaSet") == false)
-        {
-            if (tools.isNode)
-            {
-                throw new Error("The datasource schema delegate must implement the schemaSet method");
-            }
-            else
-            {
-                throw "The datasource schema delegate must implement the schemaSet method";
-            }
-        }
-
-        tools.addTo(this._schemaDelegates,delegate);
-    }
-
-    removeSchemaDelegate(delegate)
-    {
-        tools.removeFrom(this._schemaDelegates,delegate);
-    }
-
     clear()
     {
         if (this._data != null)
@@ -1897,22 +1925,6 @@ class Datasource extends Options
             if (tools.supports(d,"infoChanged"))
             {
                 d.infoChanged(this);
-            }
-        });
-    }
-
-    deliverSchemaSet()
-    {
-        if (this.getOpt("debug"))
-        {
-            console.log("schema set for " + this + "\n" + this._schema.toString());
-        }
-
-        this._schemaDelegates.forEach((d) =>
-        {
-            if (tools.supports(d,"schemaSet"))
-            {
-                d.schemaSet(this,this._schema);
             }
         });
     }
@@ -2005,30 +2017,44 @@ class EventCollection extends Datasource
 
     open()
     {
-        var request = {"event-collection":{}};
-        var o = request["event-collection"];
-        o["id"] = this._id;
-        o["action"] = "set";
-        o["window"] = this._path;
-        o["schema"] = true;
-        o["load"] = true;
-        o["info"] = 5;
-        o["format"] = "xml";
+        return(new Promise((resolve,reject) => {
+            var request = {"event-collection":{}};
+            var o = request["event-collection"];
+            o["id"] = this._id;
+            o["action"] = "set";
+            o["window"] = this._path;
+            o["schema"] = true;
+            o["load"] = true;
+            o["info"] = 5;
+            o["format"] = "xml";
 
-        this.setIntervalProperty();
+            this.setIntervalProperty();
 
-        var options = this.getOpts();
-        for (var x in options)
-        {
-            o[x] = options[x];
-        }
+            var options = this.getOpts();
+            for (var x in options)
+            {
+                o[x] = options[x];
+            }
 
-        if (this.hasOpt("filter") == false)
-        {
-            o["filter"] = "";
-        }
+            if (this.hasOpt("filter") == false)
+            {
+                o["filter"] = "";
+            }
 
-        this._api.sendObject(request);
+            const   self = this;
+
+            this._api.addHandler(this._id,{
+                process:function(result) {
+                    self._schema.fromJson(result);
+                    resolve(self);
+                },
+                error:function(result) {
+                    reject(self);
+                }
+            });
+
+            this._api.sendObject(request);
+        }));
     }
 
     set(load)
@@ -2354,29 +2380,68 @@ class EventStream extends Datasource
 
     open()
     {
-        var request = {"event-stream":{}};
-        var o = request["event-stream"];
-        o["id"] = this._id;
-        o["action"] = "set";
-        o["window"] = this._path;
-        o["schema"] = true;
-        o["load"]= true;
-        o["format"] = "xml";
+        return(new Promise((resolve,reject) => {
+            var request = {"event-stream":{}};
+            var o = request["event-stream"];
+            o["id"] = this._id;
+            o["action"] = "set";
+            o["window"] = this._path;
+            o["schema"] = true;
+            o["load"]= true;
+            o["format"] = "xml";
 
-        this.setIntervalProperty();
+            this.setIntervalProperty();
 
-        var options = this.getOpts();
-        for (var x in options)
-        {
-            o[x] = options[x];
-        }
+            var options = this.getOpts();
+            for (var x in options)
+            {
+                o[x] = options[x];
+            }
 
-        if (this.hasOpt("filter") == false)
-        {
-            o["filter"] = "";
-        }
+            if (this.hasOpt("filter") == false)
+            {
+                o["filter"] = "";
+            }
 
-        this._api.sendObject(request);
+            const   self = this;
+
+            this._api.addHandler(this._id,{
+                process:function(result) {
+                    self._schema.fromJson(result);
+
+                    for (var i = 0; i < self._schema._fields.length; i++)
+                    {
+                        self._schema._fields[i].setOpt("isKey",false);
+                    }
+
+                    var f;
+
+                    f = new Options({"name":"@opcode","espType":"utf8str","type":"string","isKey":false,"isNumber":false,"isDate":false,"isTime":false});
+                    self._schema._fields.unshift(f);
+                    self._schema._columns.unshift(f.getOpt("name"));
+                    self._schema._fieldMap[f.getOpt("name")] = f;
+
+                    f = new Options({"name":"@timestamp","espType":"timestamp","type":"date","isKey":false,"isNumber":true,"isDate":false,"isTime":true});
+                    self._schema._fields.unshift(f);
+                    self._schema._columns.unshift(f.getOpt("name"));
+                    self._schema._fieldMap[f.getOpt("name")] = f;
+
+                    f = new Options({"name":"@counter","espType":"int32","type":"int","isKey":true,"isNumber":true,"isDate":false,"isTime":false});
+                    self._schema._fields.unshift(f);
+                    self._schema._columns.unshift(f.getOpt("name"));
+                    self._schema._fieldMap[f.getOpt("name")] = f;
+
+                    self._schema._keyFields = [f];
+
+                    resolve(self);
+                },
+                error:function(result) {
+                    reject(self);
+                }
+            });
+
+            this._api.sendObject(request);
+        }));
     }
 
     set(load)
@@ -2443,33 +2508,6 @@ class EventStream extends Datasource
     {
         super.setSchemaFromJson(json);
         this.deliverSchemaSet();
-    }
-
-    completeSchema(schema)
-    {
-        for (var i = 0; i < schema._fields.length; i++)
-        {
-            schema._fields[i].setOpt("isKey",false);
-        }
-
-        var f;
-
-        f = new Options({"name":"@opcode","espType":"utf8str","type":"string","isKey":false,"isNumber":false,"isDate":false,"isTime":false});
-        schema._fields.unshift(f);
-        schema._columns.unshift(f.getOpt("name"));
-        schema._fieldMap[f.getOpt("name")] = f;
-
-        f = new Options({"name":"@timestamp","espType":"timestamp","type":"date","isKey":false,"isNumber":true,"isDate":false,"isTime":true});
-        schema._fields.unshift(f);
-        schema._columns.unshift(f.getOpt("name"));
-        schema._fieldMap[f.getOpt("name")] = f;
-
-        f = new Options({"name":"@counter","espType":"int32","type":"int","isKey":true,"isNumber":true,"isDate":false,"isTime":false});
-        schema._fields.unshift(f);
-        schema._columns.unshift(f.getOpt("name"));
-        schema._fieldMap[f.getOpt("name")] = f;
-
-        schema._keyFields = [f];
     }
 
     events(data)
@@ -3083,6 +3121,7 @@ class Publisher extends Options
         this._id = this.getOpt("id",tools.guid());
         this._data = new Array();
         this._schema = new Schema();
+        this._total = 0;
         this._csv = null;
 
         Object.defineProperty(this,"schema", {
@@ -3091,33 +3130,58 @@ class Publisher extends Options
             }
         });
 
-        this._schemaDelegates = [];
+        Object.defineProperty(this,"size", {
+            get() {
+                return(this._data.length);
+            }
+        });
+
+        Object.defineProperty(this,"total", {
+            get() {
+                return(this._total);
+            }
+        });
     }
 
     open()
     {
-        var o = {};
+        return(new Promise((resolve,reject) => {
+            var o = {};
 
-        this.addOpts(o);
+            this.addOpts(o);
 
-        var request = {"publisher":{}};
-        var o = request["publisher"];
-        o["id"] = this._id;
-        o["action"] = "set";
-        o["window"] = this._path;
-        o["schema"] = true;
+            var request = {"publisher":{}};
+            var o = request["publisher"];
+            o["id"] = this._id;
+            o["action"] = "set";
+            o["window"] = this._path;
+            o["schema"] = true;
 
-        if (this.hasOpt("dateformat"))
-        {
-            o["dateformat"] = this.getOpt("dateformat");
-        }
+            if (this.hasOpt("dateformat"))
+            {
+                o["dateformat"] = this.getOpt("dateformat");
+            }
 
-        if (this._api._publishers.hasOwnProperty(this._id) == false)
-        {
-            this._api._publishers[this._id] = this;
-        }
+            if (this._api._publishers.hasOwnProperty(this._id) == false)
+            {
+                this._api._publishers[this._id] = this;
+            }
 
-        this._api.sendObject(request);
+            const   self = this;
+
+            this._api.addHandler(this._id,{
+                process:function(result) {
+                    self._schema.fromJson(result);
+                    resolve();
+                },
+                error:function(result) {
+                    console.log("error");
+                    reject();
+                }
+            });
+
+            this._api.sendObject(request);
+        }));
     }
 
     close()
@@ -3133,56 +3197,6 @@ class Publisher extends Options
         }
 
         this._api.sendObject(request);
-    }
-
-    addSchemaDelegate(delegate)
-    {
-        if (tools.supports(delegate,"schemaSet") == false)
-        {
-            tools.exception("The datasource schema delegate must implement the schemaSet method");
-        }
-
-        tools.addTo(this._schemaDelegates,delegate);
-    }
-
-    removeSchemaDelegate(delegate)
-    {
-        tools.removeFrom(this._schemaDelegates,delegate);
-    }
-
-    setSchemaFromXml(xml)
-    {
-        this._schema.fromXml(xml);
-        this.deliverSchemaSet();
-
-        if (this._csv != null)
-        {
-            this.csv();
-        }
-    }
-
-    setSchemaFromJson(json)
-    {
-        this._schema.fromJson(json,this);
-        this.deliverSchemaSet();
-
-        if (this._csv != null)
-        {
-            this.csv();
-        }
-    }
-
-    deliverSchemaSet()
-    {
-        if (this.getOpt("debug"))
-        {
-            console.log("schema set for " + this + "\n" + this._schema.toString());
-        }
-
-        this._schemaDelegates.forEach((d) =>
-        {
-            d.schemaSet(this,this._schema);
-        });
     }
 
     begin()
@@ -3231,7 +3245,7 @@ class Publisher extends Options
             o["id"] = this._id;
             o["action"] = "publish";
             o["data"] = this._data;
-            if (this.getOpt("binary",true))
+            if (this.getOpt("binary",false))
             {
                 this._api.sendBinary(request);
             }
@@ -3239,6 +3253,8 @@ class Publisher extends Options
             {
                 this._api.sendObject(request);
             }
+            this._total += this._data.length;
+console.log("sent: " + this._total);
             this._data = new Array();
         }
     }
@@ -3247,37 +3263,44 @@ class Publisher extends Options
     {
         if (this._csv.index < this._csv.items.length)
         {
-            this.add(this._csv.items[this._csv.index]);
-            this.publish();
+            const   blocksize = this.getOpt("blocksize",1);
+console.log("blocksize: " + blocksize);
 
-            this._csv.index++;
+            while (this._csv.index < this._csv.items.length)
+            {
+                this.add(this._csv.items[this._csv.index]);
+                this._csv.index++;
+
+                if (this.size >= blocksize)
+                {
+                    break;
+                }
+            }
+
+            this.publish();
 
             var pause = this._csv.options.getOpt("pause",0);
 
             if (pause > 0)
             {
-                var publisher = this;
-                setTimeout(function(){publisher.send();},pause);
+                var self = this;
+                setTimeout(function(){self.send();},pause);
             }
         }
     }
 
     csv()
     {
-        if (this._schema.size == 0)
-        {
-            return;
-        }
-
         this._csv.items = this._schema.createDataFromCsv(this._csv.data,this._csv.options.getOpts());
 
-        var pause = this._csv.options.getOpt("pause",0);
-        var opcode = this._csv.options.getOpt("opcode","insert");
+        const   blocksize = this._csv.options.getOpt("blocksize",1);
+        const   pause = this._csv.options.getOpt("pause",0);
+        const   opcode = this._csv.options.getOpt("opcode","insert");
 
         if (pause > 0)
         {
-            var publisher = this;
-            setTimeout(function(){publisher.send();},pause);
+            var self = this;
+            setTimeout(function(){self.send();},pause);
         }
         else
         {
@@ -3285,8 +3308,13 @@ class Publisher extends Options
             {
                 o["opcode"] = (o.hasOwnProperty("@opcode")) ? o["@opcode"] : opcode;
                 this.add(o);
-                this.publish();
+                if (this.size >= blocksize)
+                {
+                    this.publish();
+                }
             }
+
+            this.publish();
 
             if (this._csv.options.getOpt("close",false))
             {

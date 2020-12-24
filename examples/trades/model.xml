@@ -123,18 +123,15 @@
           </output>
         </window-join>
         <window-functional name='transform'>
-          <description><![CDATA[This window adds some time related fields to the event.
-
-          During daylight savings time, use this function for "tradeSeconds":
-          <function name="timeAfterOpen">diff($tradeSeconds,$openSeconds)</function>
-
-          During standard time, use this function for "tradeSeconds":
-          <function name="tradeSeconds">timeSecondOfDay(diff($time,3600))</function>]]></description>
+          <description>This window adds some time related fields to the event.</description>
           <schema-string>id*:int64,broker:int32,brokerAddress:string,brokerEmail:string,brokerMms:string,brokerName:string,brokerPhone:string,brokerSms:string,brokerage:string,buyer:int32,buysellflg:int32,closeSeconds:int64,closeTimeGMT:string,currency:int32,msecs:int32,openSeconds:int64,openTimeGMT:string,price:double,quant:int32,seller:int32,symbol:string,time:int64,venue:int32,city:string,lat:double,lon:double,restricted:int32,date:string,tradeSeconds:int32,timeAfterOpen:int32,timeTillClose:int32</schema-string>
           <function-context>
             <functions>
               <function name='date'>timeString($time,"@dateformat@")</function>
-              <function name='tradeSeconds'>timeSecondOfDay($time)</function>
+              <function name="tradeSeconds">if(timeIsDst(),
+                                                diff($tradeSeconds,$openSeconds),
+                                                timeSecondOfDay(diff($time,3600)))
+              </function>
               <function name='timeAfterOpen'>diff($tradeSeconds,$openSeconds)</function>
               <function name='timeTillClose'>diff($closeSeconds,$tradeSeconds)</function>
             </functions>
@@ -201,7 +198,7 @@
             <field-expr>ESP_aSum(total)</field-expr>
           </output>
         </window-aggregate>
-        <window-counter name='counter' count-interval='200 milliseconds' clear-interval='5 seconds'></window-counter>
+        <window-counter name='counter' count-interval='200 milliseconds' clear-interval='5 seconds' index='pi_HASH'></window-counter>
         <window-aggregate name='venueAlertsAggr' index='pi_HASH'>
           <schema-string>city*:string,lat:double,lon:double,count:int32</schema-string>
           <output>
@@ -321,6 +318,7 @@
           <schema>
             <fields>
               <field name='symbol' type='string' key='true'></field>
+              <field name='numTrades' type='int32'></field>
               <field name='minQuant' type='double'></field>
               <field name='maxQuant' type='double'></field>
               <field name='avgQuant' type='double'></field>
@@ -330,6 +328,7 @@
             </fields>
           </schema>
           <output>
+            <field-expr>ESP_aCount()</field-expr>
             <field-expr>ESP_aMin(quant)</field-expr>
             <field-expr>ESP_aMax(quant)</field-expr>
             <field-expr>ESP_aAve(quant)</field-expr>
@@ -348,6 +347,7 @@
         <edge source='venuesSource' target='venueData'></edge>
         <edge source='addRestrictedData' target='transform'></edge>
         <edge source='transform' target='restrictedTrades openMarking closeMarking frontRunning'></edge>
+        <edge source='transform' target='symbols'></edge>
         <edge source='frontRunning' target='frontRunningBuy' slot='1'></edge>
         <edge source='frontRunning' target='frontRunningSell' slot='2'></edge>
         <edge source='restrictedTrades openMarking closeMarking frontRunningBuy frontRunningSell' target='brokerAlerts violations'></edge>

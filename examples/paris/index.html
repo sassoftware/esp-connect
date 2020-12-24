@@ -91,8 +91,17 @@ ready(connection)
         }
     );
 
-    _conn.getPublisher({window:_project + "/cq/circles_in"}).publishCsvFrom("circles_in.csv",{close:true,opcodes:true,flags:true});
-    _conn.getPublisher({window:_project + "/cq/poly_in"}).publishCsvFrom("poly_in.csv",{close:true,opcodes:true,flags:true});
+    _conn.getPublisher({window:_project + "/cq/circles_in"}).then(
+        function(result) {
+            result.publishCsvFrom("circles_in.csv",{close:true,opcodes:true,flags:true});
+        }
+    );
+
+    _conn.getPublisher({window:_project + "/cq/poly_in"}).then(
+        function(result) {
+            result.publishCsvFrom("poly_in.csv",{close:true,opcodes:true,flags:true});
+        }
+    );
 
     setTimeout(createVisuals,1000);
 
@@ -119,33 +128,44 @@ createVisuals()
 {
     var color = "#3b99fc";
     var barColor = "rgba(255,255,255,.7)";
-    var tracker = _conn.getEventCollection({window:_project + "/cq/tracker"});
-    var poiAlerts = _conn.getEventCollection({window:_project + "/cq/alerts_vehicles"});
-    var polygonAlerts = _conn.getEventStream({window:_project + "/cq/alerts_polygons_inserts",ignore_deletes:true});
     var colors = _visuals.colors.createGradientColors({color:color,num:5,end:true});
 
-    var config = {lat:"GPS_latitude",lon:"GPS_longitude",size:10,color:"speed",colors:colors,color_range:[0,50],
-                      header:"Paris",popup:["vehicle","speed"],marker_border:0,
-                      circle_border_width:1,circle_fill_color:"rgba(0,0,255,.5)",
-                      poly_border_width:1,poly_fill_color:"rgba(0,255,0,.5)",
-                      zoom:15,tracking:true,center:[48.875,2.287583],
-                      circles:{window:_project + "/cq/circles_in",mode:"collection",lat:"POI_y",lon:"POI_x",radius:"POI_radius",text:"POI_desc"},
-                      polygons:{window:_project + "/cq/poly_in",mode:"collection",coords:"poly_data",text:"poly_desc",order:"lon_lat"},html:getMarker
-                      };
+    _conn.getEventCollection({window:_project + "/cq/tracker"}).then(
+        function(result) {
 
-    var paris = _visuals.createMap("paris",tracker,config);
+            var config = {lat:"GPS_latitude",lon:"GPS_longitude",size:10,color:"speed",colors:colors,color_range:[0,50],
+                              header:"Paris",popup:["vehicle","speed"],marker_border:0,
+                              circle_border_width:1,circle_fill_color:"rgba(0,0,255,.5)",
+                              poly_border_width:1,poly_fill_color:"rgba(0,255,0,.5)",
+                              zoom:15,tracking:true,center:[48.875,2.287583],
+                              circles:{window:_project + "/cq/circles_in",mode:"collection",lat:"POI_y",lon:"POI_x",radius:"POI_radius",text:"POI_desc"},
+                              polygons:{window:_project + "/cq/poly_in",mode:"collection",coords:"poly_data",text:"poly_desc",order:"lon_lat"},html:getMarker
+                              };
 
-    _visuals.createGauge("poiAlerts",poiAlerts,{value:"POI_dist",width:250,segments:5,colors:colors,header:"Point of Interest",range:[0,100],delta:true,decimals:false,bar_color:barColor});
-    /*
-    _visuals.createBarChart("poiAlerts",poiAlerts,{y:"POI_dist",width:250,header:"Point of Interest",xrange:[0,100],orientation:"horizontal",color:"POI_dist",gradient:color,gradient_end:true});
-    */
-    _visuals.createTable("polygonAlerts",polygonAlerts,{values:["_timestamp","alert"],header:"Polygon Alerts",tail:true});
+            _visuals.createMap("paris",result,config);
 
-    _visuals.createCompass("heading",tracker,{value:"course",size:225,columns:4,header:"Heading",color:color});
+            _visuals.createCompass("heading",result,{value:"course",size:225,columns:4,header:"Heading",color:color});
+            _visuals.createGauge("speed",result,{value:"speed",width:250,colors:colors,segments:5,header:"Speed",range:[0,40],delta:true,decimals:false,bar_color:barColor});
+            _esp.size();
+        }
+    );
 
-    _visuals.createGauge("speed",tracker,{value:"speed",width:250,colors:colors,segments:5,header:"Speed",range:[0,40],delta:true,decimals:false,bar_color:barColor});
+    _conn.getEventCollection({window:_project + "/cq/alerts_vehicles"}).then(
+        function(result) {
+            _visuals.createGauge("poiAlerts",result,{value:"POI_dist",width:250,segments:5,colors:colors,header:"Point of Interest",range:[0,100],delta:true,decimals:false,bar_color:barColor});
+            /*
+            _visuals.createBarChart("poiAlerts",result,{y:"POI_dist",width:250,header:"Point of Interest",xrange:[0,100],orientation:"horizontal",color:"POI_dist",gradient:color,gradient_end:true});
+            */
+            _esp.size();
+        }
+    );
 
-    _esp.size();
+    _conn.getEventStream({window:_project + "/cq/alerts_polygons_inserts",ignore_deletes:true}).then(
+        function(result) {
+            _visuals.createTable("polygonAlerts",result,{values:["_timestamp","alert"],header:"Polygon Alerts",tail:true});
+            _esp.size();
+        }
+    );
 
     _esp.getDialogs().pushModal('publish');
 }
@@ -181,7 +201,12 @@ Trip(name)
 {
     this._name = name;
     this._data = _model.getWindow(_project + "/cq/position_in").schema.createDataFromCsv(_trip,{opcodes:true,flags:true});
-    this._publisher = _conn.getPublisher({window:_project + "/cq/position_in"});
+    const   self = this;
+    _conn.getPublisher({window:_project + "/cq/position_in"}).then(
+        function(result) {
+            self._publisher = result;
+        }
+    );
     this._fields = ["vehicle","pt_id","GPS_longitude","GPS_latitude","speed","course"];
     this._index = 0;
     this._delay = 250;

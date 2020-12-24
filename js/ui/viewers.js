@@ -481,16 +481,16 @@ class ModelViewer extends ViewerBase
 
         this._network = new vis.Network(this._modelDiv,{nodes:this._nodes,edges:this._edges},options);
 
-        var viewer = this;
+        var self = this;
 
         this._network.on("click",function(properties) {
             var nodes = properties.nodes;
             if (nodes.length == 1)
             {
-                var w = viewer._model.getWindow(nodes[0]);
+                var w = self._model.getWindow(nodes[0]);
                 if (w != null)
                 {
-                    viewer._delegates.forEach((d) => 
+                    self._delegates.forEach((d) => 
                     {
 	                    if (tools.supports(d,"nodeSelected"))
                         {
@@ -501,7 +501,7 @@ class ModelViewer extends ViewerBase
             }
             else
             {
-                viewer._delegates.forEach((d) => 
+                self._delegates.forEach((d) => 
                 {
                     if (tools.supports(d,"deselected"))
                     {
@@ -510,6 +510,14 @@ class ModelViewer extends ViewerBase
                 });
             }
             //console.log("click: " + JSON.stringify(nodes));
+        });
+
+        this._network.on("beforeDrawing",function(context) {
+            self.before(context);
+        });
+
+        this._network.on("afterDrawing",function(context) {
+            self.after(context);
         });
 
         if (this.hasOpt("project"))
@@ -533,6 +541,14 @@ class ModelViewer extends ViewerBase
             this._modelDiv.style.width = (width - borders.hsize) + "px";
             this._modelDiv.style.height = (height - borders.vsize - this._footerDiv.offsetHeight) + "px";
         }
+    }
+
+    before(context)
+    {
+    }
+
+    after(context)
+    {
     }
 
     draw()
@@ -980,32 +996,32 @@ class ModelViewer extends ViewerBase
     toolbarMouseDown(opts)
     {
         var action = opts.getOpt("name","");
-        var viewer = this;
+        var self = this;
         var msecs = 50;
 
         if (action == "zoomIn")
         {
-            this._interval = setInterval(function(){viewer.zoomIn()},msecs);
+            this._interval = setInterval(function(){self.zoomIn()},msecs);
         }
         else if (action == "zoomOut")
         {
-            this._interval = setInterval(function(){viewer.zoomOut()},msecs);
+            this._interval = setInterval(function(){self.zoomOut()},msecs);
         }
         else if (action == "moveLeft")
         {
-            this._interval = setInterval(function(){viewer.moveLeft()},msecs);
+            this._interval = setInterval(function(){self.moveLeft()},msecs);
         }
         else if (action == "moveRight")
         {
-            this._interval = setInterval(function(){viewer.moveRight()},msecs);
+            this._interval = setInterval(function(){self.moveRight()},msecs);
         }
         else if (action == "moveUp")
         {
-            this._interval = setInterval(function(){viewer.moveUp()},msecs);
+            this._interval = setInterval(function(){self.moveUp()},msecs);
         }
         else if (action == "moveDown")
         {
-            this._interval = setInterval(function(){viewer.moveDown()},msecs);
+            this._interval = setInterval(function(){self.moveDown()},msecs);
         }
     }
 
@@ -1086,8 +1102,8 @@ class ModelViewer extends ViewerBase
     {
         if (after != null)
         {
-            var viewer = this;
-            setTimeout(function(){viewer.fit()},after);
+            var self = this;
+            setTimeout(function(){self.fit()},after);
         }
         else
         {
@@ -1239,16 +1255,16 @@ class LogViewer extends ViewerBase
             select.style.font = "14pt " + this._visuals.fontFamily;
             button.style.font = "14pt " + this._visuals.fontFamily;
 
-            const   viewer = this;
+            const   self = this;
 
             const    delegate = {
                 itemClicked:function(item) {
 
-                    viewer._loggerTable.deselectAll();
+                    self._loggerTable.deselectAll();
                     item.selected = true;
 
-                    document.getElementById(viewer._showContextsId + "-loglevel").value = item["@level"].toLowerCase();
-                    document.getElementById(viewer._showContextsId + "-setLevel").disabled = false;
+                    document.getElementById(self._showContextsId + "-loglevel").value = item["@level"].toLowerCase();
+                    document.getElementById(self._showContextsId + "-setLevel").disabled = false;
                 }
             };
 
@@ -1257,11 +1273,11 @@ class LogViewer extends ViewerBase
             this._loggerTable.draw();
 
             const   click = function() {
-                var item = viewer._loggerTable.getSelectedItem();
+                var item = self._loggerTable.getSelectedItem();
                 if (item != null)
                 {
-                    const   value = document.getElementById(viewer._showContextsId + "-loglevel").value;
-                    viewer._connection.setLogger(item["@name"],value,{response:function(connection,data){
+                    const   value = document.getElementById(self._showContextsId + "-loglevel").value;
+                    self._connection.setLogger(item["@name"],value,{response:function(connection,data){
                         if (Array.isArray(data))
                         {
                             table.setData(data);
@@ -1271,7 +1287,7 @@ class LogViewer extends ViewerBase
                 }
             };
 
-            document.getElementById(viewer._showContextsId + "-setLevel").addEventListener("click",click);
+            document.getElementById(self._showContextsId + "-setLevel").addEventListener("click",click);
         }
 
         dialogs.pushModal(this._showContextsId);

@@ -1125,6 +1125,19 @@ var _api =
         return(enabled);
     },
 
+    build(o,fields)
+    {
+        var current = o;
+
+        fields.forEach((f) => {
+            if (current.hasOwnProperty(f) == false)
+            {
+                current[f] = {};
+                current = current[f];
+            }
+        });
+    },
+
     exception:function(message)
     {
         if (_isNode)

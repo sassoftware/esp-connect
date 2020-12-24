@@ -94,11 +94,19 @@ ready(connection)
         }
     );
 
-    _readings = _conn.getEventCollection({name:"readings",window:_project + "/cq/Readings_stats",interval:1000,pagesize:0});
-    _readings.addDelegate({dataChanged:handleStats});
+    _conn.getEventCollection({name:"readings",window:_project + "/cq/Readings_stats",interval:1000,pagesize:0}).then(
+        function(result) {
+            _readings = result;
+            _readings.addDelegate({dataChanged:handleStats});
+        }
+    );
 
-    _alerts = _conn.getEventCollection({window:_project + "/cq/Union_1",pagesize:0});
-    _alerts.addDelegate({dataChanged:handleAlerts});
+    _conn.getEventCollection({window:_project + "/cq/Union_1",pagesize:0}).then(
+        function(result) {
+            _alerts = result;
+            _alerts.addDelegate({dataChanged:handleAlerts});
+        }
+    );
 
     var toolbar = [];
 

@@ -304,16 +304,19 @@ loadEventCollection()
             _splitter.setRowHeight(0,_viewerSplit);
         }
 
-        var ds = _connection.getEventCollection({window:_selected.key,pagesize:50});
-        var div = document.createElement("div");
-        div.className = "component";
-        div.id = ds.id;
-        var table = _visuals.createTable(div,ds,{enable_close:true,enable_filter:true,ds:ds});
-        table.close = closeEvents;
-        _splitter.addCell(ds.id,div,{events:true});
-        table.size();
-        _splitter.size();
-        _esp.size();
+        _connection.getEventCollection({window:_selected.key,pagesize:50}).then(
+            function(result) {
+                var div = document.createElement("div");
+                div.className = "component";
+                div.id = result.id;
+                var table = _visuals.createTable(div,result,{enable_close:true,enable_filter:true,ds:result});
+                table.close = closeEvents;
+                _splitter.addCell(result.id,div,{events:true});
+                table.size();
+                _splitter.size();
+                _esp.size();
+            }
+        );
     }
 }
 
@@ -328,16 +331,19 @@ loadEventStream()
             _splitter.setRowHeight(0,_viewerSplit);
         }
 
-        var ds = _connection.getEventStream({window:_selected.key,pagesize:50});
-        var div = document.createElement("div");
-        div.className = "component";
-        div.id = ds.id;
-        var table = _visuals.createTable(div,ds,{enable_close:true,enable_filter:true,ds:ds});
-        table.close = closeEvents;
-        _splitter.addCell(ds.id,div,{events:true});
-        table.size();
-        _splitter.size();
-        _esp.size();
+        _connection.getEventStream({window:_selected.key,pagesize:50}).then(
+            function(result) {
+                var div = document.createElement("div");
+                div.className = "component";
+                div.id = result.id;
+                var table = _visuals.createTable(div,result,{enable_close:true,enable_filter:true,ds:result});
+                table.close = closeEvents;
+                _splitter.addCell(result.id,div,{events:true});
+                table.size();
+                _splitter.size();
+                _esp.size();
+            }
+        );
     }
 }
 
@@ -1109,7 +1115,11 @@ publishData()
     {
         var data = document.getElementById("eventCsv").value;
         _storage.setOpt("eventCsv",data);
-        _connection.getPublisher({window:path}).publishCsv(data,{close:true});
+        _connection.getPublisher({window:path}).then(
+            function(result) {
+                result.publishCsv(data,{close:true});
+            }
+        );
     }
     else if (_tabs.getSelectedIndex() == 2)
     {
@@ -1117,34 +1127,37 @@ publishData()
 
         if (w != null)
         {
-            var publisher = _connection.getPublisher({id:path,window:path});
-            var fields = w.schema.getFields();
-            var opcode = _opcodes.value;
-            var table = document.getElementById("publishFieldTable");
-            var input;
-            var tr;
-            var f;
-            var o = {};
+            _connection.getPublisher({id:path,window:path}).then(
+                function(result) {
+                    var fields = w.schema.getFields();
+                    var opcode = _opcodes.value;
+                    var table = document.getElementById("publishFieldTable");
+                    var input;
+                    var tr;
+                    var f;
+                    var o = {};
 
-            o["opcode"] = opcode;
+                    o["opcode"] = opcode;
 
-            for (var i = 1; i < (table.rows.length - 1); i++)
-            {
-                f = fields[i - 1];
-                tr = table.rows[i];
-                input = tr.cells[1].firstChild;
-                if (f.getOpt("iskey",false))
-                {
-                    o[f.getOpt("name")] = (_genGuid.checked) ? _esp.guid() : input.value;
+                    for (var i = 1; i < (table.rows.length - 1); i++)
+                    {
+                        f = fields[i - 1];
+                        tr = table.rows[i];
+                        input = tr.cells[1].firstChild;
+                        if (f.getOpt("iskey",false))
+                        {
+                            o[f.getOpt("name")] = (_genGuid.checked) ? _esp.guid() : input.value;
+                        }
+                        else
+                        {
+                            o[f.getOpt("name")] = input.value;
+                        }
+                    }
+
+                    result.add(o);
+                    result.publish();
                 }
-                else
-                {
-                    o[f.getOpt("name")] = input.value;
-                }
-            }
-
-            publisher.add(o);
-            publisher.publish();
+            );
         }
     }
 }

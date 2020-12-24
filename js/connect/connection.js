@@ -739,7 +739,7 @@ class Connection extends Options
 
 	sendObject(o)
 	{
-        if (this.getOpt("debug",false))
+        if (this.getOpt("debug_send",false))
         {
             console.log(JSON.stringify(o,null,"\t"));
         }

@@ -91,37 +91,46 @@ ready(connection)
 
     _conn.publishDataFrom(_project + "/cq/Areas_Of_Interest","geoArea.csv",{informat:"csv"});
 
-    var coll = _conn.getEventCollection({window:_project + "/cq/Boat_Current",interval:250});
-    var speeding = _conn.getEventStream({window:_project + "/cq/Last_Speeding_Event",ignore_deletes:true});
-    var exclusion = _conn.getEventStream({window:_project + "/cq/Last_Exclusion_Violation",ignore_deletes:true});
+    _conn.getEventCollection({window:_project + "/cq/Boat_Current",interval:250}).then(
+        function(result) {
+
+        var color = "#3b99fc";
+        var colors = _visuals.colors.createGradientColors({color:color,num:5,end:true});
+        var w = 160;
+        var h = 90;
+        var config = {lat:"lat",lon:"long",size:10,color:"speed",colors:colors,color_range:[0,50],
+                          header:"Sailing",popup:["boat_id","heading","speed"],marker_border:0,
+                          poly_border_width:1,poly_fill_color:"rgba(0,255,0,.5)",
+                          circle_border_width:1,circle_fill_color:"rgba(0,255,0,.5)",
+                          zoom:12,center:[56.000241,-3.424250],
+                          polygons:{window:_project + "/cq/Areas_Of_Interest",mode:"collection",coords:"Poly_Data",radius:"Poly_Radius",text:"poly_desc",order:"lon_lat"},html:getSailboat};
+
+            _visuals.createCompass("heading",result,{value:"heading",size:180,header:"Current Heading",use_theme:false});
+            _visuals.createGauge("speed",result,{value:"speed",mode:"number",delta:false,segments:5,width:w,height:h,header:"Current Speed",range:[0,10]});
+            _map = _visuals.createMap("map",result,config);
+            _esp.size();
+        }
+    );
+
+    _conn.getEventStream({window:_project + "/cq/Last_Speeding_Event",ignore_deletes:true}).then(
+        function(result) {
+            _visuals.createTable("speeding",result,{header:"Speeding Violations",values:["boat_id","Location_Name","Max_speed","dateTime"],tail:true});
+            _esp.size();
+        }
+    );
+
+    _conn.getEventStream({window:_project + "/cq/Last_Exclusion_Violation",ignore_deletes:true}).then(
+        function(result) {
+            _visuals.createTable("exclusion",result,{header:"Exclusion Violations",values:["boat_id","Location_Name","Minimum_Distance","First_dateTime","Last_dateTime"],tail:true});
+            _esp.size();
+        }
+    );
 
     _conn.getProjectXml(_project).then(
         function(result) {
             _model = _esp.getXPath().format(result);
         }
     );
-
-    var color = "#3b99fc";
-    var colors = _visuals.colors.createGradientColors({color:color,num:5,end:true});
-    var config = {lat:"lat",lon:"long",size:10,color:"speed",colors:colors,color_range:[0,50],
-                      header:"Sailing",popup:["boat_id","heading","speed"],marker_border:0,
-                      poly_border_width:1,poly_fill_color:"rgba(0,255,0,.5)",
-                      circle_border_width:1,circle_fill_color:"rgba(0,255,0,.5)",
-                      zoom:12,center:[56.000241,-3.424250],
-                      polygons:{window:_project + "/cq/Areas_Of_Interest",mode:"collection",coords:"Poly_Data",radius:"Poly_Radius",text:"poly_desc",order:"lon_lat"},html:getSailboat};
-
-    _map = _visuals.createMap("map",coll,config);
-
-    var w = 160;
-    var h = 90;
-
-    _visuals.createCompass("heading",coll,{value:"heading",size:180,header:"Current Heading",use_theme:false});
-    _visuals.createGauge("speed",coll,{value:"speed",mode:"number",delta:false,segments:5,width:w,height:h,header:"Current Speed",range:[0,10]});
-
-    _visuals.createTable("speeding",speeding,{header:"Speeding Violations",values:["boat_id","Location_Name","Max_speed","dateTime"],tail:true});
-    _visuals.createTable("exclusion",exclusion,{header:"Exclusion Violations",values:["boat_id","Location_Name","Minimum_Distance","First_dateTime","Last_dateTime"],tail:true});
-
-    _esp.size();
 
     _eventsources = _conn.createEventSources({complete:complete});
 

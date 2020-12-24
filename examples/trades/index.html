@@ -70,7 +70,7 @@ connect(server)
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.showStatus("Loading project...");
     var url = new URL("model.xml",document.URL).toString();
-    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url},overwrite:true,force:_esp.getParm("force",false)});
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url},overwrite:true,force:_esp.getParm("force",true)});
     _esp.handleLayout();
 }
 
@@ -93,6 +93,18 @@ ready(connection)
     _conn.publishDataFrom(_project + "/cq/venuesSource","venues.csv",null,{informat:"csv"});
     _conn.publishDataFrom(_project + "/cq/restrictedSource","restricted.csv",null,{informat:"csv"});
 
+    if (_esp.getParm("publish",true))
+    {
+        _conn.getPublisher({window:_project + "/cq/trades",blocksize:100}).then(
+            function(result) {
+                result.publishCsvFrom("trades.txt",{pause:2,opcodes:true,flags:true});
+            },
+            function(result) {
+                console.log("get publisher error");
+            }
+        );
+    }
+
     _esp.size();
 }
 
@@ -101,7 +113,7 @@ var _modelXml = "";
 function
 error(connection,message)
 {
-    alert(message);
+    console.log(message);
 }
 
 function
@@ -109,44 +121,56 @@ createVisuals()
 {
     _esp.clearStatus();
 
-    var alerts = _conn.getEventCollection({window:_project + "/cq/brokerAlertsAggr"});
-    var venues = _conn.getEventCollection({window:_project + "/cq/venueAlertsAggr"});
-    var rates = _conn.getEventCollection({window:_project + "/cq/counter"});
-    var rateStream = _conn.getEventStream({window:_project + "/cq/counter",ignore_deletes:true});
-
     var gradient = "#3b99fc";
     var colors = _visuals.colors.createGradientColors({color:gradient,num:5,end:true});
 
-    _visuals.createTimeSeries("rates",rateStream,{y:["totalRate","intervalRate"],time:"@timestamp",header:"Event Rates",line_width:5,curved:true,colors:[colors[0],colors[4]]});
+    const   bar = {color:"rgb(0,0,0)",thickness:.1};
 
-    _visuals.createTable("venueTable",venues,{values:["city","count"],header:"Venue Alerts",color:"count",gradient:gradient,gradient_end:true});
-    _visuals.createMap("venueMap",venues,{lat:"lat",lon:"lon",size:"count",color:"count",header:"Venue Alerts",gradient:gradient,gradient_end:true,marker_border:1,center:[39,-98],zoom:3,popup:["city","count"],sizes:[5,50]})
+    _conn.getEventCollection({window:_project + "/cq/brokerAlertsAggr"}).then(
+        function(result) {
+            _visuals.createGauge("brokers",result,{value:"total",range:[0,300],segments:5,width:150,height:100,border:"1px solid #d8d8d8",padding:0,gradient:gradient,header:"Total Broker Violations",plotly:{mode:"number"}});
+            _esp.size();
+        }
+    );
 
-    /*
-    _visuals.createModelViewer("model",_conn,{header:"Model Viewer",counts:true,cpu:true,cpu_color:"#D6EAF8"});
-    _visuals.createTable("alertTable",alerts,{values:["brokerName","total"],header:"Broker Alerts",color:"total",gradient:gradient,gradient_end:true});
-    */
+    _conn.getEventCollection({window:_project + "/cq/venueAlertsAggr"}).then(
+        function(result) {
+            _visuals.createTable("venueTable",result,{values:["city","count"],header:"Venue Alerts",color:"count",gradient:gradient,gradient_end:true});
+            _visuals.createMap("venueMap",result,{lat:"lat",lon:"lon",size:"count",color:"count",header:"Venue Alerts",gradient:gradient,gradient_end:true,marker_border:1,center:[39,-98],zoom:3,popup:["city","count"],sizes:[5,50]})
+            _esp.size();
+        }
+    );
 
-    var barColor = "rgba(255,255,255,.5)";
+    _conn.getEventCollection({window:_project + "/cq/counter"}).then(
+        function(result) {
+            _visuals.createGauge("totalCount",result,{value:"totalCount",range:[0,1000000],segments:5,border:0,colors:colors,show_title:false,header:"Events Processed",width:300,height:60,shape:"bullet",gauge:{bar:bar}});
+            var plotly = {};
+            plotly.mode = "gauge+number+delta";
+            _visuals.createGauge("intervalRate",result,{value:"intervalRate",range:[0,12000],segments:5,shape:"bullet",width:300,height:60,colors:colors,border:0,show_title:false,header:"Interval Rate",gauge:{bar:bar},plotly:plotly});
+            _esp.size();
+        }
+    );
 
-    _visuals.createGauge("brokers",alerts,{value:"total",range:[0,300],segments:5,width:250,colors:colors,header:"Total Broker Violations",bar_color:barColor});
-    _visuals.createGauge("totalCount",rates,{value:"totalCount",range:[0,10000000],segments:5,border:0,colors:colors,show_title:false,header:"Events Processed",width:300,height:300,bar_color:barColor});
-    _visuals.createGauge("totalRate",rates,{value:"totalRate",range:[0,300000],segments:5,width:300,height:300,colors:colors,delta:false,border:0,show_title:false,header:"Total Rate",bar_color:barColor});
+    _conn.getEventCollection({window:_project + "/cq/symbols",pagesize:10,sort:"numTrades",filter:"gt($numTrades,100)"}).then(
+        function(result) {
+            _visuals.createTable("symbolTable",result,{values:["symbol","numTrades","minPrice","maxPrice","avgPrice"],header:"High Volume Symbols",color:"numTrades",gradient:gradient,gradient_end:true});
+            _esp.size();
+        }
+    );
 
-    _esp.size();
-}
+    _conn.getEventCollection({window:_project + "/cq/violationCounts"}).then(
+        function(result) {
+            _visuals.createGauge("violations",result,{value:"count",width:150,height:100,border:"1px solid #d8d8d8",padding:0,gradient:gradient,header:"Violations By Type",plotly:{mode:"number"}});
+            _esp.size();
+        }
+    );
 
-function
-publish()
-{
-    if (_conn.k8s != null)
-    {
-        _conn.publishUrl(_project + "/cq/trades","file:///mnt/data/demo/trades/trades1M.csv",{format:"csv",times:10,blocksize:10000});
-    }
-    else
-    {
-        _conn.publishUrl(_project + "/cq/trades","file:///mnt/data/share/tradesData/trades1M.csv",{format:"csv",times:1,blocksize:10000});
-    }
+    _conn.getEventStream({window:_project + "/cq/counter",ignore_deletes:true}).then(
+        function(result) {
+            _visuals.createTimeSeries("rates",result,{y:["totalRate","intervalRate"],time:"@timestamp",header:"Event Rates",line_width:5,curved:true,y_range:[0,12000],colors:[colors[0],colors[4]]});
+            _esp.size();
+        }
+    );
 }
 
 </script>
@@ -170,18 +194,19 @@ publish()
 
     <div id="content">
         <div class="layout">
-            <div id="brokers" style="width:98%;height:300px"></div>
+            <div id="brokers" style="width:98%;height:190px"></div>
             <div class="container" style="width:100%;height:300px">
-                <!--
-                <div id="alerts" style="width:30%;height:100%"></div>
-                -->
-                <div id="rates" style="width:35%;height:100%"></div>
-                <div id="totalCount" style="width:30%;height:100%"></div>
-                <div id="totalRate" style="width:30%;height:100%"></div>
+                <div id="venueMap" style="width:30%;height:100%"></div>
+                <div id="venueTable" style="width:20%;height:100%"></div>
+                <div id="symbolTable" style="width:40%;height:100%"></div>
             </div>
-            <div class="container" style="width:100%;height:400px">
-                <div id="venueMap" style="width:35%;height:100%"></div>
-                <div id="venueTable" style="width:30%;height:100%"></div>
+            <div class="container" style="width:100%;height:300px">
+                <div id="rates" style="width:40%;height:100%"></div>
+                <div class="container" style="width:25%;height:100%">
+                    <div id="totalCount" style="width:100%;height:48%"></div>
+                    <div id="intervalRate" style="width:100%;height:48%"></div>
+                </div>
+                <div id="violations" style="width:30%;height:100%"></div>
             </div>
         </div>
     </div>

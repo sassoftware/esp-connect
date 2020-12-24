@@ -728,43 +728,49 @@ class LeafletMap extends Map
 
         opts.setOpt("pagesize",0);
 
-        var datasource = null;
+        const   self = this;
+
+        function add(datasource) {
+            var o = {};
+            o["lat"] = opts.getOpt("lat");
+            o["lon"] = opts.getOpt("lon");
+            o["datasource"] = datasource;
+            o["layers"] = new L.layerGroup();
+            if (opts.hasOpt("radius"))
+            {
+                var value = opts.getOpt("radius");
+
+                try
+                {
+                    num = int(value)
+                    o["radius"] = num
+                }
+                catch (e)
+                {
+                    o["radius_field"] = value
+                }
+            }
+            if (opts.hasOpt("text"))
+            {
+                o["text"] = opts.getOpt("text");
+            }
+            self._circles.push(o);
+            self.loadCircles(o);
+            datasource.addDelegate(self);
+        }
 
         if (opts.hasOpt("datasource"))
         {
-            datasource = opts.getOpt("datasource");
+            add(opts.getOpt("datasource"));
         }
         else
         {
-            datasource = this._datasource._api.getDatasource(opts.getOpts());
+            this._datasource._api.getDatasource(opts.getOpts()).then(
+                function(result) {
+                    add(result);
+                }
+            );
         }
-
-        var o = {};
-        o["lat"] = opts.getOpt("lat");
-        o["lon"] = opts.getOpt("lon");
-        o["datasource"] = datasource;
-        o["layers"] = new L.layerGroup();
-        if (opts.hasOpt("radius"))
-        {
-            var value = opts.getOpt("radius");
-
-            try
-            {
-                num = int(value)
-                o["radius"] = num
-            }
-            catch (e)
-            {
-                o["radius_field"] = value
-            }
-        }
-        if (opts.hasOpt("text"))
-        {
-            o["text"] = opts.getOpt("text");
-        }
-        this._circles.push(o);
-        this.loadCircles(o);
-        datasource.addDelegate(this);
     }
 
     loadCircles(o)
@@ -852,35 +858,42 @@ class LeafletMap extends Map
     addPolygons(options)
     {
         var opts = new Options(options);
-        var datasource = null;
-
-        if (opts.hasOpt("datasource"))
-        {
-            datasource = opts.getOpt("datasource");
-        }
-        else
-        {
-            datasource = this._datasource._api.getDatasource(opts.getOpts());
-        }
 
         if (opts.hasOpt("coords") == false)
         {
             throw "You must specify coords value";
         }
 
-        var o = {};
-        o["coords"] = opts.getOpt("coords");
-        o["radius"] = opts.getOpt("radius");
-        o["datasource"] = datasource;
-        o["layers"] = new L.layerGroup();
-        if (opts.hasOpt("text"))
-        {
-            o["text"] = opts.getOpt("text");
+        const   self = this;
+
+        function add(datasource) {
+            var o = {};
+            o["coords"] = opts.getOpt("coords");
+            o["radius"] = opts.getOpt("radius");
+            o["datasource"] = datasource;
+            o["layers"] = new L.layerGroup();
+            if (opts.hasOpt("text"))
+            {
+                o["text"] = opts.getOpt("text");
+            }
+            o["order"] = opts.getOpt("order","lat_lon");
+            self._polygons.push(o);
+            self.loadPolygons(o);
+            datasource.addDelegate(self);
         }
-        o["order"] = opts.getOpt("order","lat_lon");
-        this._polygons.push(o);
-        this.loadPolygons(o);
-        datasource.addDelegate(this);
+
+        if (opts.hasOpt("datasource"))
+        {
+            add(opts.getOpt("datasource"));
+        }
+        else
+        {
+            this._datasource._api.getDatasource(opts.getOpts()).then(
+                function(result) {
+                    add(result);
+                }
+            );
+        }
     }
 
     loadPolygons(o)
@@ -1043,7 +1056,7 @@ class LeafletMap extends Map
             }
             if (o != null)
             {
-                this.loadPolygons(o)
+                this.loadPolygons(o);
             }
         }
     }

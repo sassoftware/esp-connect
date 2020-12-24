@@ -313,37 +313,60 @@ class Api extends Options
 
     getEventCollection(options)
     {
-        options["mode"] = "collection";
-        var ec = new EventCollection(this,options);
-        this._datasources[ec._id] = ec;
-        ec.open();
-        return(ec);
+        return(new Promise((resolve,reject) => {
+            options["mode"] = "collection";
+            var ec = new EventCollection(this,options);
+            this._datasources[ec._id] = ec;
+            ec.open().then(
+                function(result) {
+                    resolve(result);
+                },
+                function(result) {
+                    reject(result);
+                }
+            );
+        }));
     }
 
     getEventStream(options)
     {
-        var es = new EventStream(this,options);
-        this._datasources[es._id] = es;
-        es.open();
-        return(es);
+        return(new Promise((resolve,reject) => {
+            var es = new EventStream(this,options);
+            this._datasources[es._id] = es;
+            es.open().then(
+                function(result) {
+                    resolve(result);
+                },
+                function(result) {
+                    reject(result);
+                }
+            );
+        }));
     }
 
     getPublisher(options)
     {
-        if (options.hasOwnProperty("id"))
-        {
-            var id = options["id"];
-
-            if (this._publishers.hasOwnProperty(id))
+        return(new Promise((resolve,reject) => {
+            if (options.hasOwnProperty("id"))
             {
-                return(this._publishers[id]);
-            }
-        }
+                var id = options["id"];
 
-        var publisher = new Publisher(this,options);
-        this._publishers[publisher._id] = publisher;
-        publisher.open();
-        return(publisher);
+                if (this._publishers.hasOwnProperty(id))
+                {
+                    return(this._publishers[id]);
+                }
+            }
+            var publisher = new Publisher(this,options);
+            this._publishers[publisher._id] = publisher;
+            publisher.open().then(
+                function(result) {
+                    resolve(publisher);
+                },
+                function(result) {
+                    reject(publisher);
+                }
+            );
+        }));
     }
 
     closePublisher(id)
@@ -708,7 +731,6 @@ class Datasource extends Options
         this._id = this.getOpt("id",tools.guid());
         this._path = this.getOpt("window");
         this._schema = new Schema();
-        this._schema.addDelegate(this);
 
         Object.defineProperty(this,"id", {
             get() {
@@ -1606,47 +1628,47 @@ class EventCollection extends Datasource
 
     open()
     {
-        var url = this._api.getUrl("subscribers/" + this._path);
-        var opts = {mode:"updating",schema:true,format:"xml",snapshot:true};
-        var interval = this.getInt("interval",0);
+        return(new Promise((resolve,reject) => {
+            var url = this._api.getUrl("subscribers/" + this._path);
+            var opts = {mode:"updating",schema:true,format:"xml",snapshot:true};
+            var interval = this.getInt("interval",0);
 
-        if (this.hasOpt("pagesize"))
-        {
-            opts.pagesize = this.getOpt("pagesize");
-        }
-        if (this.hasOpt("filter"))
-        {
-            opts.filter = this.getOpt("filter");
-        }
-
-        if (this.hasOpt("sort"))
-        {
-            opts.sort = this.getOpt("sort");
-
-            if (interval == 0)
+            if (this.hasOpt("pagesize"))
             {
-                interval = 1000;
+                opts.pagesize = this.getOpt("pagesize");
+            }
+            if (this.hasOpt("filter"))
+            {
+                opts.filter = this.getOpt("filter");
             }
 
-            opts.interval = interval;
-        }
-        else if (interval > 0)
-        {
-            opts.interval = interval;
-        }
-        this._connection = Connection.createDelegateConnection(this,url,opts,this._api.connection._connect.config);
-        this._connection.authorization = this._api._connection.authorization;
-        this._connection.start();
-        this.setIntervalProperty();
+            if (this.hasOpt("sort"))
+            {
+                opts.sort = this.getOpt("sort");
 
-        /*
-        var options = this.getOpts();
-        if (this.hasOpt("filter") == false)
-        {
-            o["filter"] = "";
-        }
-        this._api.sendObject(request);
-        */
+                if (interval == 0)
+                {
+                    interval = 1000;
+                }
+
+                opts.interval = interval;
+            }
+            else if (interval > 0)
+            {
+                opts.interval = interval;
+            }
+
+            this._handleSchema = function(xml) {
+                this.setSchemaFromXml(xml);
+                this._handleSchema = null;
+                resolve(this);
+            };
+
+            this._connection = Connection.createDelegateConnection(this,url,opts,this._api.connection._connect.config);
+            this._connection.authorization = this._api._connection.authorization;
+            this._connection.start();
+            this.setIntervalProperty();
+        }));
     }
 
     set(load)
@@ -1681,7 +1703,14 @@ class EventCollection extends Datasource
         var root = xml.documentElement;
         if (root.tagName == "schema")
         {
-            this.setSchemaFromXml(xml);
+            if (this._handleSchema != null)
+            {
+                this._handleSchema(xml);
+            }
+            else
+            {
+                this.setSchemaFromXml(xml);
+            }
         }
         else if (root.tagName == "events")
         {
@@ -1979,30 +2008,30 @@ class EventStream extends Datasource
 
     open()
     {
-        this.setIntervalProperty();
+        return(new Promise((resolve,reject) => {
+            this.setIntervalProperty();
 
-        var url = this._api.getUrl("subscribers/" + this._path);
-        var opts = {mode:"streaming",schema:true,format:"xml"};
-        if (this.hasOpt("filter"))
-        {
-            opts.filter = this.getOpt("filter");
-        }
-        if (this.hasOpt("maxevents"))
-        {
-            opts.maxevents = this.getOpt("maxevents");
-        }
-        this._connection = Connection.createDelegateConnection(this,url,opts,this._api.connection._connect.config);
-        this._connection.authorization = this._api._connection.authorization;
-        this._connection.start();
+            var url = this._api.getUrl("subscribers/" + this._path);
+            var opts = {mode:"streaming",schema:true,format:"xml"};
+            if (this.hasOpt("filter"))
+            {
+                opts.filter = this.getOpt("filter");
+            }
+            if (this.hasOpt("maxevents"))
+            {
+                opts.maxevents = this.getOpt("maxevents");
+            }
 
-        /*
-        if (this.hasOpt("filter") == false)
-        {
-            o["filter"] = "";
-        }
+            this._handleSchema = function(xml) {
+                this.setSchemaFromXml(xml);
+                this._handleSchema = null;
+                resolve(this);
+            };
 
-        this._api.sendObject(request);
-        */
+            this._connection = Connection.createDelegateConnection(this,url,opts,this._api.connection._connect.config);
+            this._connection.authorization = this._api._connection.authorization;
+            this._connection.start();
+        }));
     }
 
     message(data)
@@ -2011,7 +2040,14 @@ class EventStream extends Datasource
         var root = xml.documentElement;
         if (root.tagName == "schema")
         {
-            this.setSchemaFromXml(xml);
+            if (this._handleSchema != null)
+            {
+                this._handleSchema(xml);
+            }
+            else
+            {
+                this.setSchemaFromXml(xml);
+            }
         }
         else if (root.tagName == "events")
         {
@@ -2629,21 +2665,25 @@ class Publisher extends Options
 
     open()
     {
-        var o = {};
+        return(new Promise((resolve,reject) => {
+            var o = {};
 
-        this.addOpts(o);
+            this.addOpts(o);
 
-        var opts = {schema:true,format:"json"};
+            var opts = {schema:true,format:"json"};
 
-        if (this.hasOpt("dateformat"))
-        {
-            opts["dateformat"] = this.getOpt("dateformat");
-        }
+            if (this.hasOpt("dateformat"))
+            {
+                opts["dateformat"] = this.getOpt("dateformat");
+            }
 
-        var url = this._api.getUrl("publishers/" + this._path,opts);
-        this._connection = Connection.createDelegateConnection(this,encodeURI(url),opts,this._api.connection._connect.config);
-        this._connection.authorization = this._api._connection.authorization;
-        this._connection.start();
+            var url = this._api.getUrl("publishers/" + this._path,opts);
+            this._connection = Connection.createDelegateConnection(this,encodeURI(url),opts,this._api.connection._connect.config);
+            this._connection.authorization = this._api._connection.authorization;
+            this._connection.start();
+
+            resolve();
+        }));
     }
 
     close()

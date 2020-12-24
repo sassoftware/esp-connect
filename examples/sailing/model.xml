@@ -41,7 +41,7 @@
           <position x-fieldname="long" y-fieldname="lat" lookupdistance="0"/>
           <output geoid-fieldname="GeoID" geodesc-fieldname="GeoDesc" geodistance-fieldname="GeoDist" geotype-fieldname="GeoType" include-geo-fields="Poly_Data,Poly_Radius"/>
         </window-geofence>
-        <window-source name="Areas_Of_Interest">
+        <window-source name="Areas_Of_Interest" index="pi_HASH">
           <description>Loads the areas of interest</description>
           <schema>
             <fields>

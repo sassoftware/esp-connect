@@ -17,7 +17,6 @@ class Schema extends Options
         this._fieldMap = {};
         this._keyFields = [];
         this._columns = [];
-        this._delegates = [];
 
         Object.defineProperty(this,"size", {
             get() {
@@ -30,19 +29,6 @@ class Schema extends Options
                 return(this._keyFields.length);
             }
         });
-    }
-
-    addDelegate(delegate)
-    {
-        tools.addTo(this._delegates,delegate);
-
-        if (this.size > 0)
-        {
-            if (tools.supports(d,"schemaLoaded"))
-            {
-                d.schemaLoaded(this);
-            }
-        }
     }
 
     setFields(fields)
@@ -211,17 +197,9 @@ class Schema extends Options
         }
 
         //console.log(JSON.stringify(this._fields));
-
-        for (var d of this._delegates)
-        {
-            if (tools.supports(d,"schemaLoaded"))
-            {
-                d.schemaLoaded(this);
-            }
-        }
     }
 
-    fromJson(json,delegate)
+    fromJson(json)
     {
         this._fields = [];
         this._fieldMap = {};
@@ -299,19 +277,6 @@ class Schema extends Options
                 this._keyFields.push(o);
             }
         });
-
-        if (tools.supports(delegate,"completeSchema"))
-        {
-            delegate.completeSchema(this);
-        }
-
-        for (var d of this._delegates)
-        {
-            if (tools.supports(d,"schemaLoaded"))
-            {
-                d.schemaLoaded(this);
-            }
-        }
     }
 
     getField(name)

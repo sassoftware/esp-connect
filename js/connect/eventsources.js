@@ -503,8 +503,16 @@ class EventSource extends Options
         {
             opts.format = "json";
         }
-        this._publisher = this._api.getPublisher(opts);
-        this._publisher.addSchemaDelegate(this);
+
+        const   self = this;
+
+        this._api.getPublisher(opts).then(
+            function(result) {
+                self._publisher = result;
+            }
+        );
+
+        this._ready = true;
     }
 
     reset()
@@ -513,11 +521,6 @@ class EventSource extends Options
         this._timestamp = 0;
         this._senders = [];
         this._publisher = null;
-    }
-
-    schemaSet(publisher,schema)
-    {
-        this._ready = true;
     }
 
     send(data)
@@ -758,10 +761,10 @@ class CsvEventSource extends EventSource
         }
         else
         {
-            var es = this;
+            var self = this;
             ajax.create(this.getOpt("url")).get().then(
                 function(response) {
-                    es._data = response.text;
+                    self._data = response.text;
                 },
                 function(error) {
                     console.log("error: " + es.getOpt("url") + " " + error);
@@ -782,7 +785,6 @@ class CsvEventSource extends EventSource
 
     run(options)
     {
-        console.log("csv run");
         var code = false;
 
         if (this._publisher.schema.size > 0)

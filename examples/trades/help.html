@@ -8,39 +8,21 @@
 <body class="help">
 This example pushes stock trade data through an ESP model looking for trade violations.
 <br/><br/>
-In order to publish data into the model, you must put the <a href="../data/trades1M.csv">trades data file</a> where the server can access it.
+The violation data displayed includes the following:
+<dl class="indent">
+<li>Gauges displaying the total amount of violations committed by each broker.</li>
+<li>A map and table showing the amount of violations occurring at each trading venue.</li>
+<li>A table showing min, max, and average trade prices for high volume symbols (over 100 trades).</li>
+<li>A time series chart showing the event processing rates for both total and interval.</li>
+<li>Gauges showing total events processed and current interval rate.</li>
+<li>Gauges displaying the amount of violations by type.</li>
+</dl>
+When you load the page, it will load the project into the ESP server. Upon a successful load,
+a publisher will read the 1 million trades from <a href="trades.txt" target="_blank">trades.txt</a>
+and send them to the server.
 <br/><br/>
-If you are running a standalone ESP server, just copy the file into the directory where the server is running.
-<br/><br/>
-If you are running under Kubernetes, perform the following commands using the esp-connect NodeJS k8s command (namespace is <i>myprojects</i> for this example):
-
-<ol>
-<li>Change directories to the esp-connect/node directory</li>
-<li>Make a directory in the Kubernetes namespace
-<pre class="indent help">node k8s.mjs --server k8s-proxy://localhost:8001/myprojects/trades --exec -- mkdir -p /mnt/data/demo/trades</pre></li>
-<li>Copy the trades data file into Kubernetes
-<pre class="indent help">node k8s.mjs --server k8s-proxy://localhost:8001/myprojects/trades --put file://..//examples/data/trades1M.csv --path /mnt/data/demo/trades</pre></li>
-</li>
-<li>Make sure the file is in the right place
-<pre class="indent help">node k8s.mjs --server k8s-proxy://localhost:8001/myprojects/trades --ls /mnt/data/demo/trades</pre></li>
-</ol>
-<b>NOTE:</b>
-<div class="indent">You only need to copy the file once. If you want to make sure it is where it needs to be in K8S,
-<pre class="indent help">node k8s.mjs --server k8s-proxy://localhost:8001/myprojects/trades --ls /mnt/data/demo/trades</pre></li>
-</div>
-
-After you have done this, do the following:
-<ol>
-<li>Bring up the <a href="../../html/modelviewer.html" target="_blank">ESP Model Viewer</a>.</li>
-<li>Navigate to the <i>trades</i> project (either in K8S or standalone).</li>
-<li>Make sure the Publish window is selected.</li>
-<li>Select the <i>trades</i> window.</li>
-<li>In the <i>Publish URL</i> field, enter either <i>file:///mnt/data/demo/trades/trades1M.csv</i> for K8S, or <i>file://trades1M.csv</i> for standalone.</li>
-<li>Enter the desired blocksize (try 1000 or so).</li>
-<li>Enter the amount of repetitions (1 million trades per).</li>
-<li>Hit Publish.</li>
-<li>Go back to trades demo to watch the stream.</li>
-</ol>
+Since the page is both sending 1 million events and processing the results it is very busy. The
+event rates will fluctuate with the heavy processing over the million events.
 </body>
 
 </html>

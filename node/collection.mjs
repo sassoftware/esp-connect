@@ -41,21 +41,23 @@ esp.connect(server,{ready:ready},o);
 function
 ready(connection)
 {
-    var collection = connection.getEventCollection(opts.getOpts());
-    collection.addDelegate({
-        dataChanged:function(conn,data,clear) {
+    connection.getEventCollection(opts.getOpts()).then(
+        function(result) {
 
-        if (data != null && data.length > 0)
-        {
-            console.log(esp.getTools().stringify(data));
-        }
-    },
-        schemaReady:function(conn,datasource) {
             console.log("schema");
-            console.log(datasource.schema.toString());
+            console.log(result.schema.toString());
             console.log("end schema");
+
+            result.addDelegate({
+                dataChanged:function(conn,data,clear) {
+
+                if (data != null && data.length > 0)
+                {
+                    console.log(esp.getTools().stringify(data));
+                }
+            }});
         }
-    });
+    );
 }
 
 function

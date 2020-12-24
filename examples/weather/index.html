@@ -104,21 +104,31 @@ ready(connection)
 
     _visuals.clear();
 
-    var weather = _conn.getEventCollection({window:_project + "/cq/weather",pagesize:3});
-    var aggr = _conn.getEventCollection({window:_project + "/cq/aggr"});
-    var barColor = "rgba(255,255,255,.5)";
-    var width = 400;
-    var height = 60;
-    var lw = 2;
+    _conn.getEventCollection({window:_project + "/cq/weather",pagesize:3}).then(
+        function(result) {
+            var barColor = "rgba(255,255,255,.5)";
+            var width = 400;
+            var height = 60;
+            var lw = 2;
 
-    _visuals.createGauge("temperature",weather,{segments:5,value:"temp",header:"Temperature",width:width,height:height,bar_color:barColor,
-                            range:[0,120],fill:"#e8e8e8",line_width:lw,colors:null,show_controls:false,shape:"bullet",borderx:0,delta:true})
-    _visuals.createGauge("speed",weather,{segments:5,value:"windSpeed",width:width,height:height,range:[0,20],fill:"#e8e8e8",delta:true,shape:"bullet",bar_color:barColor,
-                            line_width:lw,header:"Wind Speed",colors:null,show_controls:false,borderx:0,marginx:{l:30,r:30,b:30,t:30}})
-    _visuals.createCompass("direction",weather,{value:"windDirection",size:225,header:"Wind Direction",show_controls:false})
-    _visuals.createBarChart("highsAndLows",aggr,{y:["high","low"],header:"High and Low Temperatures",line_width:2,fillx:true});
+            _visuals.createGauge("temperature",result,{segments:5,value:"temp",header:"Temperature",width:width,height:height,bar_color:barColor,
+                                    range:[0,120],fill:"#e8e8e8",line_width:lw,colors:null,show_controls:false,shape:"bullet",borderx:0,delta:true})
+            _visuals.createGauge("speed",result,{segments:5,value:"windSpeed",width:width,height:height,range:[0,20],fill:"#e8e8e8",delta:true,shape:"bullet",bar_color:barColor,
+                                    line_width:lw,header:"Wind Speed",colors:null,show_controls:false,borderx:0,marginx:{l:30,r:30,b:30,t:30}})
+            _visuals.createCompass("direction",result,{value:"windDirection",size:225,header:"Wind Direction",show_controls:false})
 
-    _esp.size();
+            _esp.size();
+        }
+    );
+
+
+    _conn.getEventCollection({window:_project + "/cq/aggr"}).then(
+        function(result) {
+            _visuals.createBarChart("highsAndLows",result,{y:["high","low"],header:"High and Low Temperatures",line_width:2,fillx:true});
+
+            _esp.size();
+        }
+    );
 
     _conn.getProjectXml(_project).then(
         function(result) {

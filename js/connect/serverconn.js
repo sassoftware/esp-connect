@@ -108,7 +108,8 @@ class ServerConnection extends Connection
                                     self._delegates.forEach((d) => {
                                         if (tools.supports(d,"error"))
                                         {
-                                            d.error(self._impl,result.text);
+                                            //d.error(self._impl,result.text);
+                                            d.error(self,result);
                                         }
                                     });
                                 }
@@ -118,7 +119,8 @@ class ServerConnection extends Connection
                             self._delegates.forEach((d) => {
                                 if (tools.supports(d,"error"))
                                 {
-                                    d.error(self._impl,result.text);
+                                    //d.error(self._impl,result.text);
+                                    d.error(self,result);
                                 }
                             });
                         }
