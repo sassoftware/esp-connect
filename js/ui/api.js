@@ -436,9 +436,7 @@ var	_api =
 
         if (s.indexOf("[") == 0 && s.lastIndexOf("]") == (s.length - 1))
         {
-            s = s.substr(1,s.length - 2);
-            s = s.split(",");
-            value = s;
+            value = JSON.parse(s);
         }
         else if (s.indexOf("{") == 0 && s.lastIndexOf("}") == (s.length - 1))
         {

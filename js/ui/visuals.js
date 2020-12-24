@@ -808,8 +808,7 @@ class BarChart extends Chart
 
                     if (this.hasOpt("gradient"))
                     {
-                        options["gradient"] = this.getOpt("gradient","lightest");
-                        options["gradient_end"] = this.getOpt("gradient_end",false);
+                        options["gradient"] = this.getOpt("gradient");
                     }
 
                     colors = this._visuals._colors.createColors(v,options);
@@ -1668,7 +1667,7 @@ class BubbleChart extends Chart
 
                         if (this.hasOpt("gradient"))
                         {
-                            options["gradient"] = this.getOpt("gradient","lightest");
+                            options["gradient"] = this.getOpt("gradient");
                         }
 
                         var colors = this._visuals._colors.createColors(v,options);
@@ -2161,6 +2160,11 @@ class Table extends Chart
             }
         }
 
+        if (fields.length == 0)
+        {
+            fields = this._datasource.schema.getFields();
+        }
+
         this._table.appendChild(tr = document.createElement("tr"));
 
         for (var i = 0; i < fields.length; i++)
@@ -2206,8 +2210,7 @@ class Table extends Chart
 
                 if (this.hasOpt("gradient"))
                 {
-                    options["gradient"] = this.getOpt("gradient","lightest");
-                    options["gradient_end"] = this.getOpt("gradient_end",false);
+                    options["gradient"] = this.getOpt("gradient");
                 }
 
                 colors = this._visuals._colors.createColors(values,options);
@@ -2612,8 +2615,9 @@ class Gauge extends Chart
             }
             else if (this.hasOpt("gradient"))
             {
-                var color = this._visuals._colors.getColor(this.getOpt("gradient"));
-                var delta = this.getOpt("gradient_delta",20);
+                var gopts = new Options(this.getOpt("gradient"));
+                var color = this._visuals._colors.getColor(gopts.getOpt("color","lightest"));
+                var delta = gopts.getOpt("delta",20);
 
                 for (var i = 0; i < this._segments; i++)
                 {
@@ -2713,6 +2717,7 @@ class Gauge extends Chart
 
         if (this.hasOpt("gradient"))
         {
+            var gopts = new Options(this.getOpt("gradient"));
             var entries = [];
             var values = [];
 
@@ -2723,12 +2728,9 @@ class Gauge extends Chart
                 values.push(entry.value);
             }
 
-            var options = {};
+            var opts = {gradient:this.getOpt("gradient")};
 
-            options["gradient"] = this.getOpt("gradient");
-            options["gradient_end"] = this.getOpt("gradient_end",false);
-
-            const   colors = this._visuals._colors.createColors(values,options);
+            const   colors = this._visuals._colors.createColors(values,opts);
 
             for (var i = 0; i < entries.length; i++)
             {

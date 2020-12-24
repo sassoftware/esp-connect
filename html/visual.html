@@ -13,8 +13,6 @@
 
 <title>ESP Viewer</title>
 
-<link rel="stylesheet" href="../style/connect.css" />
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
 
@@ -22,11 +20,26 @@
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
 
+<script type="text/javascript">
+var _esp = null;
+</script>
+
+<!-- Run from an esp-connect install -->
+<link rel="stylesheet" href="../style/connect.css" />
+<script type="module">
+import {api} from "../js/ui/main.js";
+_esp = api;
+</script>
+
+<!-- Run from an esp-connect webpack bundle (you can put the bundle anywhere) -->
+<!--
 <script type="text/javascript" src="../dist/esp-connect-ui.js"></script>
+<script type="text/javascript">
+_esp = esp_connect_ui.api;
+</script>
+-->
 
 <script type="text/javascript">
-
-var _esp = esp_connect_ui.api;
 
 var _visuals = null;
 var _visual = null;
@@ -89,55 +102,58 @@ ready(connection)
     }
     else
     {
-        var datasource = connection.getDatasource(_ds);
+        connection.getDatasource(_ds).then(
 
-        if (_type == "pie")
-        {
-            _visual = _visuals.createPieChart("theChart",datasource,_parms);
-        }
-        else if (_type == "line")
-        {
-            _visual = _visuals.createLineChart("theChart",datasource,_parms);
-        }
-        else if (_type == "timeseries")
-        {
-            _visual = _visuals.createTimeSeries("theChart",datasource,_parms);
-        }
-        else if (_type == "bubble")
-        {
-            _visual = _visuals.createBubbleChart("theChart",datasource,_parms);
-        }
-        else if (_type == "table")
-        {
-            _visual = _visuals.createTable("theChart",datasource,_parms);
-        }
-        else if (_type == "images")
-        {
-            _visual = _visuals.createImages("theChart",datasource,_parms);
-        }
-        else if (_type == "map")
-        {
-            _visual = _visuals.createMap("theChart",datasource,_parms);
-        }
-        else if (_type == "gauge")
-        {
-            _visual = _visuals.createGauge("theChart",datasource,_parms);
-        }
-        else if (_type == "compass")
-        {
-            _visual = _visuals.createCompass("theChart",datasource,_parms);
-        }
-        else if (_type == "imageviewer")
-        {
-            _visual = _visuals.createImageViewer("theChart",datasource,_parms);
-        }
-        else
-        {
-            _visual = _visuals.createBarChart("theChart",datasource,_parms);
-        }
+            function(datasource) {
+                if (_type == "pie")
+                {
+                    _visual = _visuals.createPieChart("theChart",datasource,_parms);
+                }
+                else if (_type == "line")
+                {
+                    _visual = _visuals.createLineChart("theChart",datasource,_parms);
+                }
+                else if (_type == "timeseries")
+                {
+                    _visual = _visuals.createTimeSeries("theChart",datasource,_parms);
+                }
+                else if (_type == "bubble")
+                {
+                    _visual = _visuals.createBubbleChart("theChart",datasource,_parms);
+                }
+                else if (_type == "table")
+                {
+console.log("calling create table: " + _type);
+                    _visual = _visuals.createTable("theChart",datasource,_parms);
+                }
+                else if (_type == "images")
+                {
+                    _visual = _visuals.createImages("theChart",datasource,_parms);
+                }
+                else if (_type == "map")
+                {
+                    _visual = _visuals.createMap("theChart",datasource,_parms);
+                }
+                else if (_type == "gauge")
+                {
+                    _visual = _visuals.createGauge("theChart",datasource,_parms);
+                }
+                else if (_type == "compass")
+                {
+                    _visual = _visuals.createCompass("theChart",datasource,_parms);
+                }
+                else if (_type == "imageviewer")
+                {
+                    _visual = _visuals.createImageViewer("theChart",datasource,_parms);
+                }
+                else
+                {
+                    _visual = _visuals.createBarChart("theChart",datasource,_parms);
+                }
+                _esp.size();
+            }
+        );
     }
-
-    _esp.size();
 }
 
 function

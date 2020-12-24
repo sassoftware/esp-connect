@@ -307,11 +307,11 @@ class Colors extends Options
 
         if (opts.hasOpt("gradient"))
         {
-            var gradientEnd = opts.getOpt("gradient_end",false);
-            var color = this.getColor(opts.getOpt("gradient","lightest"));
+            var gopts = new Options(opts.getOpt("gradient"));
+            var color = this.getColor(gopts.getOpt("color","lightest"));
             var levels = opts.getOpt("levels",5);
             var factor = opts.getOpt("factor",15);
-            var c = gradientEnd ? this.lighten(color,levels * factor) : color;
+            var c = gopts.getOpt("end",false) ? this.lighten(color,levels * factor) : color;
             var delta = 1 / (levels - 1);
             var value = 0;
             var i = 0;
@@ -323,7 +323,7 @@ class Colors extends Options
                 i++;
             }
 
-            colorscale.push([1,gradientEnd ? color : this.darken(c,i * factor)]);
+            colorscale.push([1,gopts.getOpt("end",false) ? color : this.darken(c,i * factor)]);
         }
         else
         {
@@ -468,14 +468,14 @@ class Colors extends Options
 
         if (opts.hasOpt("gradient"))
         {
-            var c = this.getColor(opts.getOpt("gradient","lightest"));
+            var gopts = new Options(opts.getOpt("gradient"));
+            var c = this.getColor(gopts.getOpt("color","lightest"));
             var levels = opts.getOpt("levels",100);
             var gradient = this.createGradient({color:c,levels:levels,min:range[0],max:range[1]});
-            var gradientEnd = opts.getOpt("gradient_end",false);
 
             values.forEach(value =>
             {
-                if (gradientEnd)
+                if (gopts.getOpt("end",false))
                 {
                     value = max - (value - min);
                     colors.push(gradient.lighten(value));

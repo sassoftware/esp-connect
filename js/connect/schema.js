@@ -285,7 +285,7 @@ class Schema extends Options
         return(f);
     }
 
-    getFields(name)
+    getFields()
     {
         return(this._fields)
     }

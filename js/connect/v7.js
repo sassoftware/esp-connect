@@ -3254,7 +3254,6 @@ class Publisher extends Options
                 this._api.sendObject(request);
             }
             this._total += this._data.length;
-console.log("sent: " + this._total);
             this._data = new Array();
         }
     }
@@ -3264,7 +3263,6 @@ console.log("sent: " + this._total);
         if (this._csv.index < this._csv.items.length)
         {
             const   blocksize = this.getOpt("blocksize",1);
-console.log("blocksize: " + blocksize);
 
             while (this._csv.index < this._csv.items.length)
             {

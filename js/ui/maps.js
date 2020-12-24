@@ -189,8 +189,7 @@ class Map extends Chart
                     }
                     else if (this.hasOpt("gradient"))
                     {
-                        options["gradient"] = this.getOpt("gradient","lightest");
-                        options["gradient_end"] = this.getOpt("gradient_end",false);
+                        options["gradient"] = this.getOpt("gradient");
                     }
 
                     if (this.hasOpt("color_range"))

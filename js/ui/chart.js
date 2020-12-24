@@ -682,7 +682,6 @@ class Chart extends Options
 
     getUrl()
     {
-        var url = "";
         var serverRequest = false;
 
         if (this._datasource != null)
@@ -694,15 +693,14 @@ class Chart extends Options
             serverRequest = this._connection.versionGreaterThan(7.6);
         }
 
+        var base = "";
+        var parms = "";
+
         if (serverRequest)
         {
-            var base = "";
-            var parms = "";
-
             if (this._datasource != null)
             {
                 base += this._datasource._api.httpurlBase;
-                parms += "datasource=" + this._datasource;
             }
             else if (this.hasOwnProperty("_connection") && this._connection != null)
             {
@@ -710,65 +708,35 @@ class Chart extends Options
             }
 
             base += "/eventStreamProcessing/v1/visual";
-
-            if (parms.length > 0)
-            {
-                parms += "&";
-            }
-
-            parms += "visual=" + this.type;
-
-            var opts = this.getOpts();
-            var o;
-
-            for (var name in opts)
-            {
-                o = opts[name];
-                parms += "&";
-                parms += this.addToUrl(o,name);
-            }
-            
-            if (this._visuals.hasOpt("theme"))
-            {
-                parms += "&theme=" + this._visuals.getOpt("theme");
-            }
-
-            url = base + "?" + parms;
         }
         else
         {
-            url += "/esp-connect/html/visual.html";
-            if (this._datasource != null)
-            {
-                url += "?server=" + this._datasource._api.httpurl;
-                url += "&datasource=" + this._datasource;
-            }
-            else if (this.hasOwnProperty("_connection") && this._connection != null)
-            {
-                url += "?server=" + this._connection.url;
-            }
-            url += "&visual=" + this.type;
-
-            var opts = this.getOpts();
-            var o;
-
-            for (var name in opts)
-            {
-                o = opts[name];
-                url += "&";
-                url += this.addToUrl(o,name);
-            }
-            
-            if (this._visuals.hasOpt("theme"))
-            {
-                url += "&theme=" + this._visuals.getOpt("theme");
-            }
-
-            var a = document.createElement("a");
-            a.href = url;
-
-            url = a.toString();
+            base += "/esp-connect/html/visual.html";
+            parms += "server=" + this._datasource._api.httpurlBase;
         }
+
+        if (this._datasource != null)
+        {
+            parms += "&datasource=" + this._datasource;
+        }
+
+        parms += "&visual=" + this.type;
+
+        var opts = this.getOpts();
+        var o;
+
+        for (var name in opts)
+        {
+            o = opts[name];
+            parms += "&" + this.addToUrl(o,name);
+        }
+            
+        if (this._visuals.hasOpt("theme"))
+        {
+            parms += "&theme=" + this._visuals.getOpt("theme");
+        }
+
+        const   url = base + "?" + parms;
 
         return(url);
     }
@@ -782,7 +750,17 @@ class Chart extends Options
         {
             if (opts.getOpt("quotes",false))
             {
-                s += "\"" + name + "\"";
+                if (name.length > 0)
+                {
+                    if (name[0] != '"')
+                    {
+                        s += "\"" + name + "\"";
+                    }
+                    else
+                    {
+                        s += name;
+                    }
+                }
                 s += ":";
             }
             else
@@ -840,7 +818,17 @@ class Chart extends Options
                 tmp = tmp.replace("#","%23");
                 if (opts.getOpt("quotes",false))
                 {
-                    s += "\"" + tmp + "\"";
+                    if (tmp.length > 0)
+                    {
+                        if (tmp[0] != '"')
+                        {
+                            s += "\"" + tmp + "\"";
+                        }
+                        else
+                        {
+                            s += tmp;
+                        }
+                    }
                 }
                 else
                 {
