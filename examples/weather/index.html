@@ -124,7 +124,8 @@ ready(connection)
 
     _conn.getEventCollection({window:_project + "/cq/aggr"}).then(
         function(result) {
-            _visuals.createBarChart("highsAndLows",result,{y:["high","low"],header:"High and Low Temperatures",line_width:2,fillx:true});
+            //_visuals.createBarChart("highsAndLows",result,{y:["high","low"],header:"High and Low Temperatures",line_width:2,fillx:true});
+            _visuals.createLineChart("highsAndLows",result,{y:["high","low"],header:"High and Low Temperatures",line_width:2,fillx:true});
 
             _esp.size();
         }

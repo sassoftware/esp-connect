@@ -87,9 +87,8 @@ The theme can be either of 2 types:
 The call to create the Visuals instance might look like this:
 ```
 function
-esp(api)
+init()
 {
-    _esp = api;
     var parms = _esp.getParms();
     _visuals = _esp.createVisuals(parms);
 }
@@ -99,8 +98,11 @@ esp(api)
 It is very easy to include charts in the web page once you have your server connection active and have created your Visuals instance. You 
 invoke the appropriate chart creation method, and then use the name of the chart when and where you want to display it:
 ```
-var alerts = conn.getEventCollection({window:"myproject/cq/alerts"});
-visuals.createBarChart("barchart",alerts,y=["total","restrictedTrades"])
+conn.getEventCollection({window:"myproject/cq/alerts"}).then(
+    function(alerts) {
+        visuals.createBarChart("barchart",alerts,y=["total","restrictedTrades"])
+    }
+);
 ```
 The different chart types will have different options specified in the option parameters. However, all charts will have the following options:
 * *header* - the chart header text
@@ -112,8 +114,11 @@ A bar chart can plot numeric variables on an x and y axes.
 
 They are created like this:
 ```
-var temps = conn.getEventCollection({window:"myproject/cq/temperatures"});
-var tempChart = visuals.createBarChart("mychart",temps,{y:["high","low"],header:"Temperature Chart"})
+conn.getEventCollection({window:"myproject/cq/temperatures"}).then(
+    function(temps) {
+        var tempChart = visuals.createBarChart("mychart",temps,{y:["high","low"],header:"Temperature Chart"})
+    }
+);
 ```
 The first parameter is the id of the div in which the chart is to be drawn.
 
@@ -131,8 +136,11 @@ A line chart can plot numeric variables on the y axes.
 
 They are created like this:
 ```
-var temps = conn.getEventCollection({window:"myproject/cq/temperatures"});
-var tempChart = visuals.createBarChart("mychart",temps,{y:["high","low"],header:"Temperature Chart"})
+conn.getEventCollection({window:"myproject/cq/temperatures"}).then(
+    function(temps) {
+        visuals.createBarChart("mychart",temps,{y:["high","low"],header:"Temperature Chart"})
+    }
+);
 ```
 The first parameter is the id of the div in which the chart is to be drawn.
 
@@ -152,8 +160,11 @@ A time series can plot numeric variables on the y axis with a date or time varia
 
 They are created like this:
 ```
-var rate = conn.getEventStream({window:"myproject/cq/rates"});
-visuals.createTimeSeries("rates",eventRate,{time:"timestamp",y:["totalRate","intervalRate"],header:"Event Rate"})
+conn.getEventStream({window:"myproject/cq/rates"}).then(
+    function(eventRate) {
+        visuals.createTimeSeries("rates",eventRate,{time:"timestamp",y:["totalRate","intervalRate"],header:"Event Rate"})
+    }
+);
 ```
 The first parameter is the id of the div in which the chart is to be drawn.
 
@@ -173,8 +184,11 @@ A pie chart can represent a numeric value as a *slice* of pie.
 
 They are created like this:
 ```
-var alerts = conn.getEventCollection({window:"myproject/cq/alerts"});
-visuals.createTimeSeries("piechart",alerts,{value:"total"],header:"Venue Alerts"})
+conn.getEventCollection({window:"myproject/cq/alerts"}).then(
+    function(alerts) {
+        visuals.createTimeSeries("piechart",alerts,{value:"total"],header:"Venue Alerts"})
+    }
+);
 ```
 The first parameter is the id of the div in which the chart is to be drawn.
 
@@ -190,8 +204,11 @@ A bubble chart can represent multiple numeric values as y, size, and color visua
 
 They are created like this:
 ```
-var alerts = conn.getEventCollection({window:"myproject/cq/alerts"});
-visuals.createBubbleChart("brokerAlerts",alerts,{y:"restrictedTrades",size:"total",color:"frontRunningSell",header:"Broker Alerts"})
+conn.getEventCollection({window:"myproject/cq/alerts"}).then(
+    function(alerts) {
+        visuals.createBubbleChart("brokerAlerts",alerts,{y:"restrictedTrades",size:"total",color:"frontRunningSell",header:"Broker Alerts"})
+    }
+);
 ```
 The first parameter is the id of the div in which the chart is to be drawn.
 
@@ -239,8 +256,11 @@ paris.addPolygons(polygons,{coords:"poly_data",text:"poly_desc",order:"lon_lat"}
 
 They are created like this:
 ```
-var venueAlerts = conn.getEventCollection({window:"p/cq/venueAlertsAggr"});
-visuals.createMap("venueAlerts",venueAlerts,{lat:"lat",lon:"lon",size:"count",color:"count",header:"Venue Alerts"})
+conn.getEventCollection({window:"p/cq/venueAlertsAggr"}).then(
+    function(venueAlerts) {
+        visuals.createMap("venueAlerts",venueAlerts,{lat:"lat",lon:"lon",size:"count",color:"count",header:"Venue Alerts"})
+    }
+);
 ```
 The first parameter is the id of the div in which the chart is to be drawn.
 
@@ -425,32 +445,41 @@ All of the Connect API examples use this layout mechanism. Also, the package pro
 
 As an example, we will look at the body of the *symbols* example.
 ```
-<body>
+<body onload="init()">
 
     <div id="banner">
         <table style="width:100%" cellspacing="0" cellpadding="0">
             <tr>
-                <td>ESP Symbols Example</td>
-                <td class="icon"><a class="icon" href="javascript:publish()"></a></td>
+                <td id="bannerTitle"></td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_modelXml)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'trades',type:true,memory:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('Trades Example','help.html',{width:'70%',height:'70%'})" title="Help">&#xf30b;</a>
+                </td>
             </tr>
         </table>
     </div>
 
     <div id="content">
-        <div class="container">
-            <div id="cheapBar" class="component" style="width:60%;height:400px"></div>
-            <div id="cheapTable" class="component" style="width:30%;height:400px"></div>
-            <div id="expensiveBar" class="component" style="width:60%;height:400px"></div>
-            <div id="expensiveTable" class="component" style="width:30%;height:400px"></div>
+        <div class="layout">
+            <div id="brokers" style="width:98%;height:190px"></div>
+            <div class="container" style="width:100%;height:300px">
+                <div id="venueMap" style="width:30%;height:100%"></div>
+                <div id="venueTable" style="width:20%;height:100%"></div>
+                <div id="symbolTable" style="width:40%;height:100%"></div>
+            </div>
+            <div class="container" style="width:100%;height:300px">
+                <div id="rates" style="width:40%;height:100%"></div>
+                <div class="container" style="width:25%;height:100%">
+                    <div id="totalCount" style="width:100%;height:48%"></div>
+                    <div id="intervalRate" style="width:100%;height:48%"></div>
+                </div>
+                <div id="violations" style="width:30%;height:100%"></div>
+            </div>
         </div>
     </div>
 
-    <div id="publish" style="display:none">
-        <input type="button" value="Publish"></input>
-    </div>
-
-    <div id="footer"> </div>
-
+    <div id="footer">&nbsp;</div>
 </body>
 ```
 The page has 3 components:

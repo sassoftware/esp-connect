@@ -58,44 +58,76 @@ called so that the client can use the new connection to perform initialization.
 * **Methods**
     * *getEventCollection(options)*
         * **Description**
-            * Create and return an EventCollection object
+            * Create and return a <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise" target="_blank">Promise</a>
+            that will create an EventCollection object.
         * **Option  Parameters**
             * *window* - the path of the ESP window, i.e. project/contquery/window.
             * *pagesize* -the page size for the collection (defaults to 50).
             * *filter* - the functional filter for the collection.
             * *interval* - The time, in milliseconds, for the server to wait before delivering any events that occurred. If this is not specified, the interval defaults to 1 second.
         * **Returns**
-            * An EventCollection object
+            * A Promise to return an EventCollection object
         * **Examples**
             ```javascript
-            var brokerAlerts = conn.getEventCollection({window:"secondary/cq/brokerAlertsAggr"})
-            var venueAlerts = conn.getEventCollection({window:"secondary/cq/venueAlertsAggr",filter:"in($city,'raleigh','atlanta')})
+            conn.getEventCollection({window:"secondary/cq/brokerAlertsAggr"}).then(
+                function(collection) {
+                    // now use the collection.
+                },
+                function(error) {
+                    console.log(error);
+                }
+            );
+
+            conn.getEventCollection({window:"secondary/cq/venueAlertsAggr",filter:"in($city,'raleigh','atlanta')}).then
+                function(collection) {
+                    // now use the collection.
+                },
+                function(error) {
+                    console.log(error);
+                }
+            );
             ```
 
     * *getEventStream(options)*
         * **Description**
-            * Create and return an EventStream object
+            * Create and return a <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise" target="_blank">Promise</a>
+            that will create an EventStream object.
         * **Option  Parameters**
             * *window* - the path of the ESP window, i.e. project/contquery/window.
             * *maxevents* - the maximumn number of events to store (defaults to 100).
             * *interval* - The time, in milliseconds, for the server to wait before delivering any events that occurred. If this is not specified, the interval defaults to 1 second.
         * **Returns**
-            * An EventStream object
+            * A Promise to return an EventStream object
         * **Examples**
             ```javascript
-            var rates = conn.getEventStream({window:"primary/cq/counter",maxevents:20});
+            conn.getEventStream({window:"primary/cq/counter",maxevents:20}).then(
+                function(stream) {
+                    // now use the stream.
+                },
+                function(error) {
+                    console.log(error);
+                }
+            );
             ```
 
     * *getPublisher(options)*
         * **Description**
-            * Create and return a Publisher object
+            * Create and return a <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise" target="_blank">Promise</a>
+            that will create a Publisher object.
         * **Option  Parameters**
             * *window* - the path of the ESP window, i.e. project/contquery/window.
         * **Returns**
-            * A Publisher object 
+            * A Promise to return a Publisher object
         * **Examples**
             ```javascript
-            var publisher = conn.getPublisher({window:"primary/cq/rawTrades"});
+            conn.getPublisher({window:"primary/cq/trades"}).then(
+                function(publisher) {
+                    // now publish something
+                },
+                function(error) {
+                    console.log(error);
+                }
+            );
             ```
 
     * *getStats(options)*
@@ -129,7 +161,11 @@ occurs that is not in the current page, that event is ignored. Otherwise, the ev
 
 You create event collections through the ServerConnection object.
 ```javascript
-var alerts = conn.getEventCollection({window:"secondary/cq/brokerAlertsAttr"});
+conn.getEventCollection({window:"secondary/cq/brokerAlertsAttr"}).then(
+    function(alerts) {
+        ...
+    }
+);
 ```
 The event collection manages itself and delivers change events to its delegates. If you are interested in receiving collection change notifications,
 you must register a delegate that implements the *dataChanged* method:
@@ -140,7 +176,11 @@ handle(collection,data,clear)
     console.log("data changed: " + JSON.stringify(data,null,"\t"));
 }
 
-alerts.addDelegate({dataChanged:handle});
+conn.getEventCollection({window:"secondary/cq/brokerAlertsAttr"}).then(
+    function(alerts) {
+        alerts.addDelegate({dataChanged:handle});
+    }
+);
 ```
 
 The *dataChanged* method receives the collection that changed along with the new data in the *data* parameter. If the collection was cleared of data,
@@ -211,7 +251,11 @@ stream receives.
 
 You create event streams through the ServerConnection object.
 ```javascript
-var rates = conn.getEventStream({window:"primary/cq/counter",maxevents:20})</pre>
+conn.getEventStream({window:"primary/cq/counter",maxevents:20}).then(
+    function(alerts) {
+        ...
+    }
+);
 ```
 The event stream delivers change events to its delegates. If you are interested in receiving stream change notifications,
 you must register a delegate that implements the *dataChanged* method:
@@ -222,7 +266,11 @@ handle(collection,data,clear)
     console.log("data changed: " + JSON.stringify(data,null,"\t"));
 }
 
-alerts.addDelegate({dataChanged:handle});
+conn.getEventStream({window:"secondary/cq/brokerAlertsAttr"}).then(
+    function(alerts) {
+        alerts.addDelegate({dataChanged:handle});
+    }
+);
 ```
 
 The *dataChanged* method receives the collection that changed along with the new data in the *data* parameter. If the collection was cleared of data,
@@ -258,20 +306,29 @@ to be published until the *publish()* method is called.
 
 The first method:
 ```javascript
-var publisher = conn.getPublisher({window:"p/cq/uievents"});
-publisher.begin();
-publisher.set("x",mouse.x);
-publisher.set("y",mouse.y);
-publisher.set("type","click");
-publisher.end();
-publisher.publish();
+conn.getPublisher({window:"p/cq/uievents"}).then(
+    function(publisher) {
+        publisher.begin();
+        publisher.set("x",mouse.x);
+        publisher.set("y",mouse.y);
+        publisher.set("type","click");
+        publisher.end();
+        publisher.publish();
+        publisher.close();
+    }
+);
 ```
 and the second:
 ```javascript
-var publisher = conn.getPublisher({window:"p/cq/uievents"});
-publisher.add({"x":mouse.x,"y":mouse.y,"type":"move");
-publisher.add({"x":mouse.x,"y":mouse.y,"type":"click");
-publisher.publish();
+
+conn.getPublisher({window:"p/cq/uievents"}).then(
+    function(publisher) {
+        publisher.add({"x":mouse.x,"y":mouse.y,"type":"move");
+        publisher.add({"x":mouse.x,"y":mouse.y,"type":"click");
+        publisher.publish();
+        publisher.close();
+    }
+);
 ```
 * **Methods**
     * *begin()*

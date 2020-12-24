@@ -233,10 +233,12 @@ ready(connection)
     _esp.clearStatus();
     _conn = connection;
 
-    var clicks  = _conn.getEventCollection({window:"myproject/cq/clicksAggr"});
-
-    _visuals.createBarChart("barchart",clicks,{y:"count",header:"Clicks Chart",xrange:[0,100],orientation:"horizontal",get_color:barcolor});
-    _visuals.createGauge("gauges",clicks,{value:"count",segments:5,header:"Clicks Indicators",width:200,range:[0,100],bar_color:"rgba(255,255,255,.7)"});
+    _conn.getEventCollection({window:"myproject/cq/clicksAggr"}).then(
+        function(collection) {
+            _visuals.createBarChart("barchart",collection,{y:"count",header:"Clicks Chart",xrange:[0,100],orientation:"horizontal",get_color:barcolor});
+            _visuals.createGauge("gauges",collection,{value:"count",segments:5,header:"Clicks Indicators",width:200,range:[0,100],bar_color:"rgba(255,255,255,.7)"});
+        }
+    );
 }
 ```
 
