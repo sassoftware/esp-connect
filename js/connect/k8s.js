@@ -1183,7 +1183,7 @@ class K8SProject extends K8S
 
         this._config = null;
 
-        this.loadConfig();
+        //this.loadConfig();
     }
 
     connect(connect,delegate,options,start)
@@ -1201,10 +1201,12 @@ class K8SProject extends K8S
                         function(pod)
                         {
                             self._pod = pod;
-                            /*
-                            self.readiness(delegate);
-                            */
-                            connect.connect(self.espUrl,delegate,options,start);
+                            self.readiness().then(
+                                function(result) {
+                                    connect.connect(self.espUrl,delegate,options,start);
+                                }
+                            );
+//connect.connect(self.espUrl,delegate,options,start);
                         }
                     );
                 }
@@ -1222,7 +1224,13 @@ class K8SProject extends K8S
                             }
                             else
                             {
-                                connect.connect(self.espUrl,delegate,options,start);
+                                self.readiness().then(
+                                    function(result) {
+                                        connect.connect(self.espUrl,delegate,options,start);
+                                    }
+                                );
+
+                                //connect.connect(self.espUrl,delegate,options,start);
                             }
                         }
                     ).then(
@@ -1268,41 +1276,53 @@ class K8SProject extends K8S
         );
     }
 
-    loadConfig(delegate)
+    loadConfig()
     {
         return(new Promise((resolve,reject) => {
             this._config = null;
+            var self = this;
 
-            var url = this.url;
+            function checkConfig() {
+                var url = self.url;
 
-            if (this._ns != null)
-            {
-                url += "/namespaces/" + this._ns;
+                if (self._ns != null)
+                {
+                    url += "/namespaces/" + self._ns;
+                }
+
+                url += "/espservers";
+                url += "/" + self._project;
+
+                var request = ajax.create(url);
+                request.setRequestHeader("accept","application/json");
+                request.get().then(
+                    function(result) {
+                        if (result.status == 404)
+                        {
+                            reject(result);
+                        }
+                        else
+                        {
+                            const   o = JSON.parse(result.text);
+                            const   state = o.access.state;
+                            if (state == "Succeeded")
+                            {
+                                self._config = o;
+                                resolve({config:o});
+                            }
+                            else
+                            {
+                                checkConfig();
+                            }
+                        }
+                    },
+                    function(result) {
+                        tools.exception(result);
+                    }
+                );
             }
 
-            url += "/espservers";
-            url += "/" + this._project;
-
-            var self = this;
-            var request = ajax.create(url);
-            request.setRequestHeader("accept","application/json");
-            request.get().then(
-                function(result) {
-                    if (result.status == 404)
-                    {
-                        reject(result);
-                    }
-                    else
-                    {
-                        var o = JSON.parse(result.text);
-                        self._config = o;
-                        resolve({config:o});
-                    }
-                },
-                function(result) {
-                    tools.exception(result);
-                }
-            );
+            checkConfig();
         }));
     }
 
@@ -1338,13 +1358,30 @@ class K8SProject extends K8S
                         tools.exception(result.text);
                     }
 
-                    self.loadConfig();
-
-                    self.isReady({
-                        ready:function() {
-                            resolve();
+                    self.loadConfig().then(
+                        function() {
+                            return(self.isReady());
                         }
+                    ).then(
+                        function() {
+                            return(self.readiness());
+                        }
+                    ).then(
+                        function() {
+                            resolve();
                     });
+
+                    /*
+                    self.loadConfig().then(
+                        function() {
+                            self.isReady({
+                                ready:function() {
+                                    resolve();
+                                }
+                            }
+                        )}
+                    );
+                    */
                 },
                 function(result) {
                     tools.exception("error: " + result);
@@ -1570,130 +1607,90 @@ class K8SProject extends K8S
         return(s);
     }
 
-    isReady(delegate)
+    isReady()
     {
-        if (tools.supports(delegate,"ready") == false)
-        {
-            tools.exception("the delegate must implement the ready function");
-        }
+        return(new Promise((resolve,reject) => {
+            const   self = this;
 
-        var state = "";
+            function checkReady() {
+                self.getPod().then(
+                    function(result) {
+                        var ready = false;
 
-        if (this._config != null)
-        {
-            state = this._config.access.state;
-        }
-
-        const   self = this;
-
-        if (state == "Succeeded")
-        {
-            self.getPod().then(
-                function(result) {
-                    var ready = false;
-
-                    if (result.status.phase == "Running")
-                    {
-                        for (var i = 0; i < result.status.conditions.length; i++)
+                        if (result.status.phase == "Running")
                         {
-                            var condition = result.status.conditions[i];
-
-                            if (condition.status != "True")
+                            for (var i = 0; i < result.status.conditions.length; i++)
                             {
-                                break;
+                                var condition = result.status.conditions[i];
+
+                                if (condition.status != "True")
+                                {
+                                    break;
+                                }
                             }
+
+                            ready = (i == result.status.conditions.length);
                         }
 
-                        ready = (i == result.status.conditions.length);
+                        if (ready)
+                        {
+                            self._pod = result;
+                            resolve();
+                        }
+                        else
+                        {
+                            setTimeout(checkReady,5000);
+                        }
                     }
+                );
+            }
 
-                    if (ready)
-                    {
-                        self._pod = result;
-                        setTimeout(function(){delegate.ready(self)},1000);
-                        /*
-                        delegate.ready(self);
-                        */
-                    }
-                    else
-                    {
-                        setTimeout(function(){self.isReady(delegate)},1000);
-                    }
-                }
-            );
-        }
-        else
-        {
-            this.loadConfig();
-            setTimeout(function(){self.isReady(delegate)},500);
-        }
+            checkReady();
+        }));
     }
 
-    readiness(delegate)
+    readiness()
     {
-        /*
         return(new Promise((resolve,reject) => {
-            var url = this.espUrl;
-            url += "/internal/ready";
-            const   req = ajax.create(url).get(
-                function(result) {
-                    console.log("ready status: " + result.status);
-                    if (result.status == 200)
-                    {
-                        resolve
-                        delegate.ready(this);
-                    }
-                    else
-                    {
-                        setTimeout(function(){k8s.readiness(delegate)},500);
-                    }
-                },
-                error(request,text) {
-                    tools.exception(text);
-                }
-            });
+            resolve();
         }));
-        */
-
-        /*
-        var certConfirm  = this.espUrl;
-        certConfirm  += "/eventStreamProcessing/v1/server";
-        req.setOpt("cert-confirm-url",certConfirm);
-        setTimeout(function() {req.head()},1000);
-        */
     }
 
     /*
-    readiness(delegate)
+    readiness()
     {
-        var url = this.espUrl;
-        url += "/internal/ready";
-        const   req = ajax.create(url,{
-            response(request,text) {
-                console.log("ready status: " + request.getStatus());
-                if (request.getStatus() == 200)
-                {
-                    k8s.getPod({
-                        handlePod:function(pod)
+        return(new Promise((resolve,reject) => {
+
+            const   self = this;
+
+            function checkReadiness() {
+                var url = self.espUrl;
+                url += "/internal/ready";
+                var request = ajax.create(url);
+                var certConfirm  = self.espUrl;
+                certConfirm  += "/eventStreamProcessing/v1/server";
+                request.setOpt("cert-confirm-url",certConfirm);
+                request.head().then(
+                    function(result) {
+                        console.log("ready status: " + result.status);
+                        if (result.status == 200)
                         {
-                            k8s._pod = pod;
-                            delegate.ready(this);
+                            resolve();
                         }
-                    });
-                }
-                else
-                {
-                    setTimeout(function(){k8s.isReady(delegate)},500);
-                }
-            },
-            error(request,text) {
-                tools.exception(text);
+                        else
+                        {
+                            checkReadiness();
+                        }
+                    },
+                    function(result) {
+                        tools.exception(result);
+                    }
+                );
             }
-        });
-        var certConfirm  = this.espUrl;
-        certConfirm  += "/eventStreamProcessing/v1/server";
-        req.setOpt("cert-confirm-url",certConfirm);
-        setTimeout(function() {req.head()},1000);
+
+            //checkReadiness();
+            setTimeout(checkReadiness,5000);
+        }));
     }
     */
 }

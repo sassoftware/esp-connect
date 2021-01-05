@@ -559,15 +559,19 @@ class Connection extends Options
 			return;
 		}
 
-		if (interval != null)
+        if (Connection.established(this.getUrl()) == false)
+        {
+			this._reconnect.interval = 5;
+        }
+		else
 		{
 			this._reconnect.interval = interval;
 		}
 
 		if (this.isConnected() == false)
 		{
-			var	connection = this;
-			this._reconnect.timer = setTimeout(function(){connection.start();},this._reconnect.interval * 1000);
+			var	self = this;
+			this._reconnect.timer = setTimeout(function(){self.start();},self._reconnect.interval * 1000);
 		}
 	}
 

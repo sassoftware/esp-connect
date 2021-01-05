@@ -105,7 +105,7 @@ class Ajax extends Options
 
                     if (self._method == "HEAD")
                     {
-                        if (received == false)
+                        if (this.status == 0)
                         {
                             reject(self);
                         }
@@ -120,6 +120,7 @@ class Ajax extends Options
                         {
                             var url = self.hasOpt("cert-confirm-url") ? self.getOpt("cert-confirm-url") : self._url;
                             window.open(url,url,"");
+                            reject(self);
                         }
                         else
                         {
@@ -335,14 +336,13 @@ class NodeAjax extends Options
                         const   fs = module.default;
                         fs.readFile(filename,null,
                             function(error,contents) {
-                                self._text = contents.toString();
-
                                 if (error != null)
                                 {
                                     reject(self);
                                 }
                                 else
                                 {
+                                    self._text = contents.toString();
                                     resolve(self);
                                 }
                             }

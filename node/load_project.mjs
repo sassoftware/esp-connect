@@ -47,7 +47,7 @@ ready(connection)
 function
 error(connection,message)
 {
-    console.log(message);
+    console.log("error: " + message);
     process.exit(0);
 }
 

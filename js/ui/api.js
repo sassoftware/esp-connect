@@ -123,6 +123,7 @@ var	_api =
         {
             if (connection.isSecure)
             {
+                /*
                 var o = new URL(connection.getUrl());
 
                 o.protocol = "https:";
@@ -144,6 +145,7 @@ var	_api =
                     this._prompted[url] = true;
                     window.open(url,"espconnect","width=800,height=800");
                 }
+                */
             }
         }
     },
