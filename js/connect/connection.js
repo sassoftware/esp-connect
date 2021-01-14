@@ -9,165 +9,78 @@ import {codec} from "./codec.js";
 
 var WS = null;
 var W3CWS = null;
+var TUNNEL = null;
 
 var _nodeWS = null;
-var _nodeWebsockets = null;
+
+var	http_proxy = null;
+var	https_proxy = null;
 
 if (tools.isNode)
 {
-    if (process.env.NODE_WEBSOCKETS == "ws")
-    {
-        _nodeWS = {
-            open:function(e)
-            {
-                var	conn = this._connection;
+	if (process.env.http_proxy != null)
+	{
+		http_proxy = new URL(process.env.http_proxy);
+	}
 
-                if (conn != null)
+	if (process.env.https_proxy != null)
+	{
+		https_proxy = new URL(process.env.https_proxy);
+	}
+
+    _nodeWS = {
+        open:function()
+        {
+            var	conn = this._conn;
+
+            if (conn != null)
+            {
+                conn._websocket = this;
+                conn._ready = true;
+                conn.ready();
+            }
+        },
+
+        close:function(e)
+        {
+            var	conn = this._conn;
+
+            if (conn != null)
+            {
+                conn.clear();
+                conn.closed();
+            }
+        },
+
+        error:function(e)
+        {
+            var	conn = this._conn;
+
+            if (conn != null)
+            {
+                conn.clear();
+                conn.error();
+            }
+        },
+
+        message:function(e)
+        {
+            var	conn = this._conn;
+
+            if (conn != null)
+            {
+                if (typeof(e.data) == "string")
                 {
-                    conn._websocket = this;
-                    conn._ready = true;
-                    conn.ready();
+                    conn.message(e.data);
                 }
-            },
-
-            close:function(e)
-            {
-                var	conn = this._connection;
-
-                if (conn != null)
+                else
                 {
-                    conn.clear();
-                    conn.closed();
-                }
-            },
-
-            error:function(e)
-            {
-                var	conn = this._connection;
-
-                if (conn != null)
-                {
-                    console.log(conn.getUrl() + ": " + e);
-                    conn.clear();
-                    conn.error();
-                }
-            },
-
-            message:function(message)
-            {
-                var	conn = this._connection;
-
-                if (conn != null)
-                {
-                    if (typeof(message) == "string")
-                    {
-                        conn.message(message);
-                    }
-                    else
-                    {
-                        var buffer = new ArrayBuffer(message.length);
-                        var view = new Uint8Array(buffer);
-                        for (var i = 0; i < message.length; ++i)
-                        {
-                           view[i] = message[i];
-                        }
-
-                        var o = codec.decode(buffer);
-                        conn.data(o);
-                    }
-                }
-            },
-
-            data:function(stream)
-            {
-                var	conn = this._connection;
-
-                if (conn != null)
-                {
-                    var data = Buffer.alloc(0);
-
-                    stream.on("readable",function()
-                    {
-                        var newData = stream.read();
-
-                        if (newData != null)
-                        {
-                            data = Buffer.concat([data,newData],data.length + newData.length);
-                        }
-                    });
-
-                    stream.on("end",function()
-                    {
-                        var buffer = new ArrayBuffer(data.length);
-                        var view = new Uint8Array(buffer);
-                        for (var i = 0; i < data.length; ++i)
-                        {
-                           view[i] = data[i];
-                        }
-
-                        var o = codec.decode(buffer);
-                        conn.data(o);
-                    });
+                    var o = codec.decode(e.data);
+                    conn.data(o);
                 }
             }
-        };
-    }
-    else
-    {
-        _nodeWebsockets = {
-            open:function()
-            {
-                var	conn = this._conn;
-
-                if (conn != null)
-                {
-                    conn._websocket = this;
-                    conn._ready = true;
-                    conn.ready();
-                }
-            },
-
-            close:function(e)
-            {
-                var	conn = this._conn;
-
-                if (conn != null)
-                {
-                    conn.clear();
-                    conn.closed();
-                }
-            },
-
-            error:function(e)
-            {
-                var	conn = this._conn;
-
-                if (conn != null)
-                {
-                    conn.clear();
-                    conn.error();
-                }
-            },
-
-            message:function(e)
-            {
-                var	conn = this._conn;
-
-                if (conn != null)
-                {
-                    if (typeof(e.data) == "string")
-                    {
-                        conn.message(e.data);
-                    }
-                    else
-                    {
-                        var o = codec.decode(e.data);
-                        conn.data(o);
-                    }
-                }
-            }
-        };
-    }
+        }
+    };
 }
 
 var	_websockets =
@@ -442,86 +355,92 @@ class Connection extends Options
 
         if (tools.isNode)
         {
-            if (process.env.NODE_WEBSOCKETS == "ws")
-            {
-                if (WS == null)
+            const   self = this;
+
+            var ws = function() {
+
+                function
+                WebSocketClient(url)
                 {
-                    import("ws").
-                        then((module) => {
-                            WS = module.default;
-                            var ws = new WS(url);
-                            ws._connection = this;
-                            ws.on("open",_nodeWS.open);
-                            ws.on("close",_nodeWS.close);
-                            ws.on("error",_nodeWS.error);
-                            ws.on("message",_nodeWS.message);
-                        }).
-                        catch((e) => {
-                            console.log("import error on ws: " + e);
-                        });
+                    this._conn = self;
+                    this.binaryType = "arraybuffer";
+                    var config = {};
+                    config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
+
+					var proxyHost = null;
+					var proxyPort = 80;
+
+                    if (http_proxy != null)
+                    {
+						proxyHost = http_proxy.hostname;
+						proxyPort = http_proxy.port;
+					}
+
+                    var options = null;
+
+					if (proxyHost != null)
+					{
+						var agent = TUNNEL.httpOverHttp({
+						  proxy: {
+							host: proxyHost,
+							port: proxyPort
+						  }
+						});
+
+						options = {};
+						options.agent = agent;
+					}
+
+                    W3CWS.call(this,url,null,null,null,options,config);
+                }
+
+                WebSocketClient.prototype = Object.create(W3CWS.prototype);
+                WebSocketClient.prototype.constructor = WebSocketClient;
+
+                var ws = new WebSocketClient(url,this);
+                ws.onopen = _nodeWS.open;
+                ws.onclose = _nodeWS.close;
+                ws.onerror = _nodeWS.error;
+                ws.onmessage = _nodeWS.message;
+            }
+
+            var checkProxy = function() {
+                if (http_proxy != null)
+                {
+                    if (TUNNEL == null)
+                    {
+                        import("tunnel").then(
+                            function(result) {
+                                TUNNEL = result.default;
+                                ws();
+                            }
+                        );
+                    }
+                    else
+                    {
+                        ws();
+                    }
                 }
                 else
                 {
-                    var ws = new WS(url);
-                    ws._connection = this;
-                    ws.on("open",_nodeWS.open);
-                    ws.on("close",_nodeWS.close);
-                    ws.on("error",_nodeWS.error);
-                    ws.on("message",_nodeWS.message);
+                    ws();
                 }
+            }
+
+            if (W3CWS == null)
+            {
+                import("websocket").then(
+                    function(result) {
+                        W3CWS = result.default.w3cwebsocket;
+                        checkProxy();
+                    }).
+                    catch((e) => {
+                        console.log("import error on websocket: " + e);
+                    });
             }
             else
             {
-                if (W3CWS == null)
-                {
-                    import("websocket").
-                        then((module) => {
-                            W3CWS = module.default.w3cwebsocket;
-
-                            function
-                            WebSocketClient(url,connection)
-                            {
-                                this._conn = connection;
-                                this.binaryType = "arraybuffer";
-                                var config = {};
-                                config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
-                                W3CWS.call(this,url,null,null,null,null,config);
-                            }
-
-                            WebSocketClient.prototype = Object.create(W3CWS.prototype);
-                            WebSocketClient.prototype.constructor = WebSocketClient;
-
-                            var ws = new WebSocketClient(url,this);
-                            ws.onopen = _nodeWebsockets.open;
-                            ws.onclose = _nodeWebsockets.close;
-                            ws.onerror = _nodeWebsockets.error;
-                            ws.onmessage = _nodeWebsockets.message;
-                        }).
-                        catch((e) => {
-                            console.log("import error on ws: " + e);
-                        });
-                }
-                else
-                {
-                    function
-                    WebSocketClient(url,connection)
-                    {
-                        this._conn = connection;
-                        this.binaryType = "arraybuffer";
-                        var config = {};
-                        config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
-                        W3CWS.call(this,url,null,null,null,null,config);
-                    }
-
-                    WebSocketClient.prototype = Object.create(W3CWS.prototype);
-                    WebSocketClient.prototype.constructor = WebSocketClient;
-
-                    var ws = new WebSocketClient(url,this);
-                    ws.onopen = _nodeWebsockets.open;
-                    ws.onclose = _nodeWebsockets.close;
-                    ws.onerror = _nodeWebsockets.error;
-                    ws.onmessage = _nodeWebsockets.message;
-                }
+                checkProxy();
             }
         }
         else

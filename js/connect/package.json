@@ -21,12 +21,10 @@
   },
   "dependencies": {
     "websocket": "latest",
-    "ws": "latest",
     "xmldom": "latest",
     "xpath": "latest",
     "xmlhttprequest": "latest",
-    "readline-sync": "latest",
-    "jsonpath": "latest",
+    "tunnel": "latest",
     "prompt-sync": "latest"
   }
 }
