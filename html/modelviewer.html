@@ -126,6 +126,7 @@ init()
         connect(server);
     };
 
+    /*
     if (server != null)
     {
         connect(server);
@@ -138,6 +139,8 @@ init()
     {
         _esp.showConnectDialog({connect:connect},_k8s);
     }
+    */
+    _esp.showConnectDialog({connect:connect},_k8s);
 
     _opcodes = document.createElement("select");
 

@@ -86,6 +86,7 @@ init()
         }
     }
 
+    /*
     if (server != null)
     {
         connect(server);
@@ -94,6 +95,8 @@ init()
     {
         _esp.showConnectDialog({connect:connect},_k8s);
     }
+    */
+    _esp.showConnectDialog({connect:connect},_k8s);
 
     _esp.handleLayout();
 }

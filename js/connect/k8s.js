@@ -1206,7 +1206,6 @@ class K8SProject extends K8S
                                     connect.connect(self.espUrl,delegate,options,start);
                                 }
                             );
-//connect.connect(self.espUrl,delegate,options,start);
                         }
                     );
                 }
@@ -1224,13 +1223,7 @@ class K8SProject extends K8S
                             }
                             else
                             {
-                                self.readiness().then(
-                                    function(result) {
-                                        connect.connect(self.espUrl,delegate,options,start);
-                                    }
-                                );
-
-                                //connect.connect(self.espUrl,delegate,options,start);
+                                return(self.readiness());
                             }
                         }
                     ).then(
@@ -1649,6 +1642,8 @@ class K8SProject extends K8S
         }));
     }
 
+    /*
+    */
     readiness()
     {
         return(new Promise((resolve,reject) => {
@@ -1684,6 +1679,11 @@ class K8SProject extends K8S
                     },
                     function(result) {
                         tools.exception(result);
+                    }
+                ).
+                catch(
+                    function(e) {
+                        window.open(certConfirm,certConfirm,"");
                     }
                 );
             }

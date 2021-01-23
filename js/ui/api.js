@@ -212,11 +212,10 @@ var	_api =
             }
             options.opts.push({"":""});
 
-            var handler =
-            {
-                handleProjects:function(data)
+            k8s.getProjects().then(
+                function(result)
                 {
-                    data.forEach((p) => {
+                    result.forEach((p) => {
                         var url = "";
                         url += k8s.k8sUrl;
                         url += "/" + p.metadata.namespace;
@@ -235,14 +234,11 @@ var	_api =
                     o.values = values;
                     dialogs.showDialog(o);
                 },
-
-                error:function(request,error)
+                function(result)
                 {
-                    throw("error: " + error);
+                    throw("error: " + result);
                 }
-            };
-
-            k8s.getProjects(handler);
+            );
         }
         else
         {

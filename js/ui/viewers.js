@@ -1296,15 +1296,14 @@ class LogViewer extends ViewerBase
 
         table.deselectAll();
 
-        this._connection.getLoggers({
-            response:function(connection,data)
-            {
-                if (Array.isArray(data))
+        this._connection.getLoggers().then(
+            function(result) {
+                if (Array.isArray(result))
                 {
-                    table.setData(data);
+                    table.setData(result);
                 }
             }
-        });
+        );
     }
 
     getFilter()

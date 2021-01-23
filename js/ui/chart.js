@@ -692,6 +692,10 @@ class Chart extends Options
         {
             serverRequest = this._connection.versionGreaterThan(7.6);
         }
+        else
+        {
+            return(null);
+        }
 
         var base = "";
         var parms = "";

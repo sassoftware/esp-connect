@@ -23,7 +23,7 @@ class Api extends Options
         super(options);
 
         this._connection = connection;
-        this._version = 7.1;
+        this._version = this.createVersion(6.2);
 
         Object.defineProperty(this,"connection", {
             get() {
@@ -42,7 +42,7 @@ class Api extends Options
                 return(this._version);
             },
             set(value) {
-                this._version = parseFloat(value);
+                this._version = this.createVersion(value);
             }
         });
 
@@ -142,12 +142,34 @@ class Api extends Options
 
     versionGreaterThan(version)
     {
-        return(this._version > version);
+        var v = this.createVersion(version);
+        var code = false;
+
+        if (this._version.major >= v.major)
+        {
+            if (this._version.minor > v.minor)
+            {
+                code = true;
+            }
+        }
+
+        return(code);
     }
 
     versionLessThan(version)
     {
-        return(this._version < version);
+        var v = this.createVersion(version);
+        var code = false;
+
+        if (this._version.major <= v.major)
+        {
+            if (this._version.minor < v.minor)
+            {
+                code = true;
+            }
+        }
+
+        return(code);
     }
 
     stop()
@@ -1062,6 +1084,7 @@ class Api extends Options
 
     getLoggers()
     {
+console.log("get loggers");
         return(new Promise((resolve,reject) => {
             var id = tools.guid();
 
@@ -1071,6 +1094,7 @@ class Api extends Options
 
             this.addHandler(id,{
                 process:function(result) {
+console.log("get loggers results");
                     resolve(result)
                 }
             });
@@ -1141,6 +1165,22 @@ class Api extends Options
     getStatus()
     {
         this.sendObject({request:"status"});
+    }
+
+    createVersion(value)
+    {
+        var s = new String(value);
+        var a = s.split(".");
+        var major = 0;
+        var minor = 0;
+
+        if (a.length == 2)
+        {
+            major = parseInt(a[0]);
+            minor = parseInt(a[1]);
+        }
+
+        return({major:major,minor:minor});
     }
 
     createEventSources(delegate)
