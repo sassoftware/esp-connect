@@ -32,7 +32,7 @@ if (cert != null)
 
 esp.config = config;
 
-var names = ["access_token","token","credentials"];
+var names = ["access_token","token","credentials","user","pw"];
 var o = opts.clone(names);
 opts.clearOpts(names);
 
@@ -72,8 +72,7 @@ showUsage()
             {name:"format",arg:"xml | json | ubjson",description:"format of events sent to the client (defaults to ubjson)"},
             {name:"interval",arg:"milliseconds",description:"the interval, in milliseconds, at which to deliver events (defaults to 0 which delivers events as they occur)."},
             {name:"maxevents",arg:"numevents",description:"the maximum number of events to deliver at any one time (delivers to 0 which means no maximum)"},
-            {name:"schema",arg:"true | false",description:"return schema on start, defaults to true."},
-            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
+            {name:"schema",arg:"true | false",description:"return schema on start, defaults to true."}
         ],
         description:"This command subscribes to an ESP window for streaming events.",
         examples:[

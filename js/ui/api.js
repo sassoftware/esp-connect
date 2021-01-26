@@ -70,8 +70,7 @@ var	_api =
                 },
                 cancel:dialogs.hideDialog,
                 header:"Enter User and Password",
-                //values:[{name:"user",label:"User"},{name:"password",label:"Password",type:"password"}]
-                values:[{name:"user",label:"User",value:"esp"},{name:"password",label:"Password",type:"password",value:"esppw"}]
+                values:[{name:"user",label:"User",value:""},{name:"password",label:"Password",type:"password",value:""}]
             };
 
             dialogs.showDialog(o);

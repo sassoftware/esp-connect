@@ -32,7 +32,7 @@ if (cert != null)
 
 esp.config = config;
 
-var names = ["access_token","token","credentials"];
+var names = ["access_token","token","credentials","user","pw"];
 var o = opts.clone(names);
 opts.clearOpts(names);
 
@@ -66,8 +66,7 @@ showUsage()
             {name:"window",arg:"ESP window",description:"ESP window in the form of project/contquery/window",required:true},
             {name:"events",arg:"filename",description:"file containing the ESP events",required:true},
             {name:"blocksize",arg:"size",description:"event block size (defaults to 1)"},
-            {name:"dateformat",arg:"format",description:"event date format"},
-            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
+            {name:"dateformat",arg:"format",description:"event date format"}
         ],
         description:"This command publishes events from a file into an ESP source window."
     });

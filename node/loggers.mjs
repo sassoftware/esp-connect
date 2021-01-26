@@ -32,7 +32,7 @@ if (cert != null)
 
 esp.config = config;
 
-var names = ["access_token","token","credentials"];
+var names = ["access_token","token","credentials","user","pw"];
 var o = opts.clone(names);
 opts.clearOpts(names);
 
@@ -72,8 +72,7 @@ showUsage()
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
             {name:"context",arg:"logging context",description:"The name of the logging context. This is used to set the log level when the level option is specified."},
-            {name:"level",arg:"level",description:"Set the logging context to this level. Possible values are\n\n\x1b[1mtrace | debug | info | warn | error | fatal | none.\x1b[0m\n"},,
-            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
+            {name:"level",arg:"level",description:"Set the logging context to this level. Possible values are\n\n\x1b[1mtrace | debug | info | warn | error | fatal | none.\x1b[0m\n"}
         ],
         description:"This command is used to both view existing logging contexts and to set the logging level for those contexts.",
         examples:[

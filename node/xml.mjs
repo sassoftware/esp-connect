@@ -32,7 +32,7 @@ if (cert != null)
 
 esp.config = config;
 
-var names = ["access_token","token","credentials"];
+var names = ["access_token","token","credentials","user","pw"];
 var o = opts.clone(names);
 opts.clearOpts(names);
 
@@ -64,8 +64,7 @@ showUsage()
         summary:"display project XML from an ESP server",
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
-            {name:"name",arg:"project name",description:"The name of the project for which to retrieve the xml (defaults to all)"},
-            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
+            {name:"name",arg:"project name",description:"The name of the project for which to retrieve the xml (defaults to all)"}
         ],
         description:"This command is used to view project XML from an ESP server."
     });

@@ -480,9 +480,15 @@ class K8S extends Options
         }));
     }
 
-    authenticate(delegate)
+    authenticate(connect,delegate)
     {
         return(new Promise((resolve,reject) => {
+
+            if (this.hasOpt("access_token"))
+            {
+                resolve();
+                return;
+            }
 
             const   self = this;
 
@@ -496,12 +502,26 @@ class K8S extends Options
 
                         if (d != null)
                         {
-                            const   credentials = d.getCredentials();
-
-                            if (credentials != null)
-                            {
-                                self.setOpts(credentials);
-                            }
+                            d.getCredentials().then(
+                                function(result) {
+                                    self.setOpt("user",result.user);
+                                    self.setOpt("pw",result.password);
+                                },
+                                function(result) {
+                                    console.log("credentials error");
+                                }
+                            );
+                        }
+                        else
+                        {
+                            connect.getCredentials().then(
+                                function(result) {
+                                    self.setOpt("user",result.user);
+                                    self.setOpt("pw",result.password);
+                                },
+                                function(result) {
+                                }
+                            );
                         }
 
                         reject();
@@ -528,11 +548,9 @@ class K8S extends Options
     getAuthToken()
     {
         return(new Promise((resolve,reject) => {
-            var ingress = null;
             var self = this;
             this.getIngress("sas-logon-app").then(
                 function(result) {
-                    ingress = result["ingress"];
                     self.saslogon(result).then(
                         function(result) {
                             self.setOpt("access_token",result);
@@ -550,8 +568,16 @@ class K8S extends Options
                         function(result) {
                             self.uaa(result).then(
                                 function(result) {
-                                    self.setOpt("access_token",result);
-                                    resolve(result);
+                                    if (result.status == 200)
+                                    {
+                                        self.setOpt("access_token",result);
+                                        resolve(result);
+                                    }
+                                    else
+                                    {
+                                        self.setOpt("uaa-error",true);
+                                        reject();
+                                    }
                                 },
                                 function(result) {
                                     self.setOpt("uaa-error",true);
@@ -634,11 +660,6 @@ class K8S extends Options
 
             request.setData(send);
 
-            /*
-            console.log(url);
-            console.log(send);
-            */
-
             request.post().then(
                 function(result) {
                     if (result.status >= 400)
@@ -652,6 +673,7 @@ class K8S extends Options
                     }
                 },
                 function(result) {
+                    console.log("got error: " + result);
                     reject(result);
                 }
             );
@@ -1139,6 +1161,11 @@ class K8SProject extends K8S
     constructor(url,options)
     {
         super(url,options);
+
+        /*
+        this.setOpt("user","esp");
+        this.setOpt("pw","esppw");
+        */
 
         if (this._project == null)
         {
@@ -1642,8 +1669,6 @@ class K8SProject extends K8S
         }));
     }
 
-    /*
-    */
     readiness()
     {
         return(new Promise((resolve,reject) => {

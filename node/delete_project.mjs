@@ -66,8 +66,7 @@ showUsage()
         summary:"Delete an ESP project from a server",
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
-            {name:"name",arg:"project name",description:"name of the ESP project",required:true},
-            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
+            {name:"name",arg:"project name",description:"name of the ESP project",required:true}
         ],
         description:"This command deletes an ESP model from an ESP server.",
         see_also:[

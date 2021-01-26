@@ -41,6 +41,10 @@ class ServerConnection extends Connection
             }
         }
 
+        var certConfirm  = this.httpurlBase;
+        certConfirm  += "/eventStreamProcessing/v1/server";
+        this.setOpt("cert-confirm-url",certConfirm);
+
         this._impl = null;
     }
 
@@ -282,7 +286,7 @@ class ServerConnection extends Connection
                 {
                     if (this.hasOpt("cert-confirm-url"))
                     {
-                        var url = this._ajax.getOpt("cert-confirm-url");
+                        var url = this.getOpt("cert-confirm-url");
 
                         if (_prompted.hasOwnProperty(url) == false)
                         {

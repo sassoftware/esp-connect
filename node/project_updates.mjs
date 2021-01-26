@@ -32,7 +32,7 @@ if (cert != null)
 
 esp.config = config;
 
-var names = ["access_token","token","credentials"];
+var names = ["access_token","token","credentials","user","pw"];
 var o = opts.clone(names);
 opts.clearOpts(names);
 
@@ -63,8 +63,7 @@ showUsage()
         name:"logs",
         summary:"view realtime ESP server logs",
         options:[
-            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
-            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
+            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true}
         ],
         description:"This command listens for project load and delete events.",
         see_also:[

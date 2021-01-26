@@ -3,6 +3,7 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
+var _prompts = null;
 var _fs = null;
 
 import {ServerConnection} from "./serverconn.js";
@@ -42,7 +43,7 @@ var	_api =
             options["k8s"] = project;
 
             function auth() {
-                project.authenticate(delegate).then(
+                project.authenticate(self,delegate).then(
                     function() {
                         if (project.hasOpt("access_token"))
                         {
@@ -73,25 +74,36 @@ var	_api =
                                         }
                                     );
                                 }
-
                             }
                         }
                         else if (project.getOpt("uaa-error",false))
                         {
-                            const   d = tools.anySupports(delegate,"getCredentials");
-                            if (d != null)
-                            {
-                                d.getCredentials().then(
-                                    function(result) {
-                                        project.setOpt("user",result.user);
-                                        project.setOpt("pw",result.password);
-                                        auth();
-                                    },
-                                    function(result) {
-                                    }
-                                );
-                            }
+                             const   d = tools.anySupports(delegate,"getCredentials");
 
+                             if (d != null)
+                             {
+                                 d.getCredentials().then(
+                                     function(result) {
+                                         project.setOpt("user",result.user);
+                                         project.setOpt("pw",result.password);
+                                         auth();
+                                     },
+                                     function(result) {
+                                     }
+                                 );
+                             }
+                             else
+                             {
+                                 self.getCredentials().then(
+                                     function(result) {
+                                         project.setOpt("user",result.user);
+                                         project.setOpt("pw",result.password);
+                                         auth();
+                                     },
+                                     function(result) {
+                                     }
+                                 );
+                             }
                         }
                         else
                         {
@@ -272,8 +284,8 @@ var	_api =
 
     usage:function(doc)
     {
-        var f = new Formatter(doc);
         var docopts = new Options(doc);
+        var f = new Formatter(doc);
         var command = docopts.getOpt("name","");
         var summary = docopts.getOpt("summary","");
 
@@ -287,7 +299,20 @@ var	_api =
         console.log("");
         console.log("\x1b[1m%s\x1b[0m","SYNOPSIS");
 
-        var options = docopts.getOpt("options");
+        var options = docopts.getOpt("options",[]);
+
+        if (docopts.getOpt("show_auth",true))
+        {
+            options.push({name:"access_token",arg:"OAuth Token",description:"OAuth authentiation token",required:false});
+            options.push({name:"user",arg:"Auth User",description:"Authentication user",required:false});
+            options.push({name:"pw",arg:"Auth Password",description:"Authentication password",required:false});
+        }
+
+        if (docopts.getOpt("show_cert",true))
+        {
+            options.push({name:"cert",arg:"certificate file",description:"certificate to use for secure connections."});
+        }
+
         var maxoptlen = 0;
 
         var s = "";
@@ -445,6 +470,46 @@ var	_api =
         console.log("");
         console.log("\x1b[1m\x1b[34m%s\x1b[0m","SAS ESP Connect\t\t\t\t"+ new Date().toDateString() + "\t\t\t\tSAS ESP Connect\x1b[30m\x1b[0m");
         console.log("");
+    },
+
+    getCredentials:function()
+    {
+        if (tools.isNode)
+        {
+            return(new Promise((resolve,reject) => {
+
+                var p = function() {
+                    console.log("");
+                    var p = _prompts();
+                    var user = p("User: ");
+                    if (user.length == 0)
+                    {
+                        process.exit(1);
+                    }
+                    var pw = p("Password: ");
+                    console.log("");
+                    resolve({user:user,password:pw});
+                }
+
+                if (_prompts == null)
+                {
+                    import("prompt-sync").then(
+                        function(result) {
+                            _prompts = result.default;
+                            p();
+                        },
+                        function() {
+                            console.log("failed to import prompt-sync");
+                            process.exit(1);
+                        }
+                    );
+                }
+                else
+                {
+                    p();
+                }
+            }));
+        }
     }
 };
 

@@ -32,7 +32,7 @@ if (cert != null)
 
 esp.config = config;
 
-var names = ["access_token","token","credentials"];
+var names = ["access_token","token","credentials","user","pw"];
 var o = opts.clone(names);
 opts.clearOpts(names);
 
@@ -72,8 +72,7 @@ showUsage()
             {name:"format",arg:"xml | json | ubjson",description:"format of events sent to the client (defaults to ubjson)"},
             {name:"pagesize",arg:"numevents",description:"page size of the collection (defaults to 50)."},
             {name:"schema",arg:"true | false",description:"return schema on start, defaults to true."},
-            {name:"sort",arg:"field",description:"sort field"},
-            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
+            {name:"sort",arg:"field",description:"sort field"}
         ],
         description:"This command subscribes to an ESP window for events.",
         examples:[

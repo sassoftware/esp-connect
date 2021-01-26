@@ -36,7 +36,7 @@ var names = ["access_token","token","credentials","user","pw"];
 var o = opts.clone(names);
 opts.clearOpts(names);
 
-esp.connect(server,{ready:ready,getCredentials:getCredentials},o);
+esp.connect(server,{ready:ready},o);
 
 function
 ready(connection)
@@ -53,19 +53,6 @@ ready(connection)
     );
 }
 
-import {default as prompts} from "prompt-sync";
-
-function
-getCredentials(options)
-{
-    console.log("");
-    var p = prompts();
-    var user = p("User: ");
-    var pw = p("Password: ");
-    console.log("");
-    return({user:user,pw:pw});
-}
-
 function
 showUsage()
 {
@@ -75,8 +62,7 @@ showUsage()
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
             {name:"name",arg:"project name",description:"name of the project for which to retrieve the model (defaults to all)"},
-            {name:"schema",arg:"true | false",description:"return schema information in data, defaults to true."},
-            {name:"cert",arg:"certificate file",description:"certificate to use for secure connections."}
+            {name:"schema",arg:"true | false",description:"return schema information in data, defaults to true."}
         ],
         description:"This command subscribes to an ESP window for streaming events.",
         examples:[
@@ -94,6 +80,7 @@ showUsage()
             name:"ESP User Guide",
             link:"https://go.documentation.sas.com/?cdcId=espcdc&cdcVersion=6.2&docsetId=espov&docsetTarget=home.htm&locale=en"
         }
-        ]
+        ],
+        show_auth:true
     });
 }
