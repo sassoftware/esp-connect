@@ -235,10 +235,22 @@ class EventSources
         return(this._eventsources.hasOwnProperty(name) ? this._eventsources[name] : null);
     }
 
-    togglePause()
+    togglePlay()
     {
-        this._paused = this._paused ? false : true;
-        return(this._paused);
+        if (this._running == false)
+        {
+            this.start();
+        }
+        else if (this._paused)
+        {
+            this._paused = false;
+        }
+        else
+        {
+            this._paused = true;
+        }
+
+        return(this._paused == false);
     }
 
     start()
@@ -896,7 +908,7 @@ class Sender
         }
         else if (this._index < target)
         {
-            var sender = this;
+            var self = this;
 
             if (this._eventsource._eventsources.paused == false)
             {
@@ -909,11 +921,11 @@ class Sender
 
                 this._eventsource._publisher.publish();
 
-                setTimeout(function(){sender.run();},this._delay);
+                setTimeout(function(){self.run();},this._delay);
             }
             else
             {
-                setTimeout(function(){sender.run();},1000);
+                setTimeout(function(){self.run();},1000);
             }
         }
         else

@@ -154,16 +154,8 @@ error(message)
 function
 playpause()
 {
-    if (_eventsources.running == false)
-    {
-        _eventsources.start();
-    }
-    else
-    {
-        _eventsources.togglePause();
-    }
-
-    document.getElementById("playpause").innerHTML = _eventsources.paused ? "&#xf513;" : "&#xf4f4;";
+    var code = _eventsources.togglePlay();
+    document.getElementById("playpause").innerHTML = code ? "&#xf4f4;" : "&#xf513;";
 }
 
 function

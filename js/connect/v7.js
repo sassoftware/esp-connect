@@ -23,7 +23,7 @@ class Api extends Options
         super(options);
 
         this._connection = connection;
-        this._version = this.createVersion(6.2);
+        this._version = this.createVersion(7.1);
 
         Object.defineProperty(this,"connection", {
             get() {

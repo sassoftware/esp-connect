@@ -563,33 +563,40 @@ class K8S extends Options
                     );
                 },
                 function(result) {
-                    //console.log("no viya");
-                    self.getIngress("uaa").then(
+                    self.getIngress("oauth2-proxy").then(
                         function(result) {
-                            self.uaa(result).then(
+                            self.getIngress("uaa").then(
                                 function(result) {
-                                    if (result.status == 200)
-                                    {
-                                        self.setOpt("access_token",result);
-                                        resolve(result);
-                                    }
-                                    else
-                                    {
-                                        self.setOpt("uaa-error",true);
-                                        reject();
-                                    }
+                                    self.uaa(result).then(
+                                        function(result) {
+                                            if (result.status == 200)
+                                            {
+                                                self.setOpt("access_token",result);
+                                                resolve(result);
+                                            }
+                                            else
+                                            {
+                                                self.setOpt("uaa-error",true);
+                                                reject();
+                                            }
+                                        },
+                                        function(result) {
+                                            self.setOpt("uaa-error",true);
+                                            reject();
+                                        }
+                                    );
                                 },
                                 function(result) {
-                                    self.setOpt("uaa-error",true);
-                                    reject();
+                                    console.log("no uaa");
+                                    resolve({status:0,token:null});
                                 }
-                            );
+                            )
                         },
                         function(result) {
-                            //console.log("no uaa");
+                            console.log("no oauth2");
                             resolve({status:0,token:null});
                         }
-                    )
+                    );
                 }
             );
         }));
@@ -605,8 +612,6 @@ class K8S extends Options
                     url += data.spec.tls[0].hosts[0];
                     url += "/SASLogon/oauth/clients/consul";
                     url += "?callback=false&serviceId=app";
-
-                    //console.log("curl -k -s '" + url + "' -H 'X-Consul-Token: " + secret + "' -X POST");
 
                     var request = ajax.create(url);
                     request.setRequestHeader("X-Consul-Token",secret);

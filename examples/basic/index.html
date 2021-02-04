@@ -93,13 +93,14 @@ connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.showStatus("Loading project...");
-    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_xml},overwrite:true,force:_esp.getParm("force",false)});
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_xml},overwrite:true,force:_esp.getParm("force",false),debug_receive:true});
     _esp.handleLayout();
 }
 
 function
 ready(conn)
 {
+console.log("ready");
     _esp.clearStatus();
 
     _conn = conn;
@@ -122,9 +123,14 @@ ready(conn)
         }
     );
 
+console.log("get publisher");
     _conn.getPublisher({window:_project + "/cq/clicks"}).then(
         function(result) {
+            console.log("get publisher success: " + result);
             _publisher = result;
+        },
+        function(result) {
+            console.log("get publisher failed");
         }
     );
 }
