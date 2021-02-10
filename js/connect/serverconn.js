@@ -278,9 +278,17 @@ class ServerConnection extends Connection
             return;
         }
 
-        if (tools.isNode == false)
+        if (Connection.established(this.getUrl()) == false)
         {
-            if (Connection.established(this.getUrl()) == false)
+            if (tools.isNode)
+            {
+                if (this.isSecure)
+                {
+                    var msg = "\n\nconnection to " + this.getUrl() + " failed. If you are using self-signed certificates you may need to\n\nexport NODE_TLS_REJECT_UNAUTHORIZED=0\n\nin your environment\n\n";
+                    throw new Error(msg);
+                }
+            }
+            else
             {
                 if (this.isSecure)
                 {

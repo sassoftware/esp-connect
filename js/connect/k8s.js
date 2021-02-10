@@ -593,7 +593,6 @@ class K8S extends Options
                             )
                         },
                         function(result) {
-                            console.log("no oauth2");
                             resolve({status:0,token:null});
                         }
                     );
@@ -644,7 +643,6 @@ class K8S extends Options
     uaa(data)
     {
         return(new Promise((resolve,reject) => {
-            var k8s = this;
             var url = "https://";
             url += data.spec.tls[0].hosts[0];
             url += "/uaa/oauth/token";
@@ -1539,8 +1537,9 @@ class K8SProject extends K8S
         }));
     }
 
-    getYaml(model)
+    getYaml(model,options)
     {
+        var opts = new Options(options);
         var s = "";
 
         s += "apiVersion: iot.sas.com/v1alpha1\n";
@@ -1574,12 +1573,13 @@ class K8SProject extends K8S
         s += "            matchLabels:\n";
         s += "          template:\n";
         s += "            spec:\n";
-        /*
-        s += "               volumes:\n";
-        s += "               - name: data\n";
-        s += "                 persistentVolumeClaim:\n";
-        s += "                   claimName: esp-pv\n";
-        */
+        if (opts.getOpt("pv",true))
+        {
+            s += "               volumes:\n";
+            s += "               - name: data\n";
+            s += "                 persistentVolumeClaim:\n";
+            s += "                   claimName: esp-pv\n";
+        }
         s += "               containers:\n";
         s += "               - name: ((PROJECT_SERVICE_NAME))\n";
         s += "                 resources:\n";
@@ -1589,11 +1589,12 @@ class K8SProject extends K8S
         s += "                   limits:\n";
         s += "                     memory: \"2Gi\"\n";
         s += "                     cpu: \"2\"\n";
-        /*
-        s += "                 volumeMounts:\n";
-        s += "                 - mountPath: /mnt/data\n";
-        s += "                   name: data\n";
-        */
+        if (opts.getOpt("pv",true))
+        {
+            s += "                 volumeMounts:\n";
+            s += "                 - mountPath: /mnt/data\n";
+            s += "                   name: data\n";
+        }
         s += "    loadBalancerTemplate:\n";
         s += "      deployment:\n";
         s += "        spec:\n";

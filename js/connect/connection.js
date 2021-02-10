@@ -367,10 +367,21 @@ class Connection extends Options
                     var config = {};
                     config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
 
+		            var u = new URL(url);
+                    var secure = (u.protocol.toLowerCase() == "wss:");
+
 					var proxyHost = null;
 					var proxyPort = 80;
 
-                    if (http_proxy != null)
+                    if (secure)
+                    {
+                        if (https_proxy != null)
+                        {
+                            proxyHost = https_proxy.hostname;
+                            proxyPort = https_proxy.port;
+                        }
+                    }
+                    else if (http_proxy != null)
                     {
 						proxyHost = http_proxy.hostname;
 						proxyPort = http_proxy.port;
@@ -380,12 +391,26 @@ class Connection extends Options
 
 					if (proxyHost != null)
 					{
-						var agent = TUNNEL.httpOverHttp({
-						  proxy: {
-							host: proxyHost,
-							port: proxyPort
-						  }
-						});
+						var agent = null;
+
+                        if (secure)
+                        {
+                            agent = TUNNEL.httpsOverHttp({
+                              proxy: {
+                                host: proxyHost,
+                                port: proxyPort
+                              }
+                            });
+                        }
+                        else
+                        {
+                            agent = TUNNEL.httpOverHttp({
+                              proxy: {
+                                host: proxyHost,
+                                port: proxyPort
+                              }
+                            });
+                        }
 
 						options = {};
 						options.agent = agent;

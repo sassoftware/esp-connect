@@ -468,7 +468,7 @@ class JsonDecoder
 
                 value = new Uint8Array(this._data.buffer,this._index,length);
 
-                if (tools.isNode != null)
+                if (tools.isNode)
                 {
                     value = Buffer.from(value).toString("base64");
                 }
