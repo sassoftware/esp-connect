@@ -553,6 +553,7 @@ class K8S extends Options
                 function(result) {
                     self.saslogon(result).then(
                         function(result) {
+                            self.setOpt("viya",true);
                             self.setOpt("access_token",result);
                             resolve(result);
                         },
@@ -571,6 +572,7 @@ class K8S extends Options
                                         function(result) {
                                             if (result.status == 200)
                                             {
+                                                self.setOpt("oauth2",true);
                                                 self.setOpt("access_token",result);
                                                 resolve(result);
                                             }
@@ -1256,7 +1258,6 @@ class K8SProject extends K8S
                         }
                     ).then(
                         function() {
-                            console.log("here");
                             setTimeout(function(){
                                     connect.connect(self.espUrl,delegate,options,start);
                                 },1000);
@@ -1324,6 +1325,7 @@ class K8SProject extends K8S
         return(new Promise((resolve,reject) => {
             this._config = null;
             var self = this;
+            var attempts = 0;
 
             function checkConfig() {
                 var url = self.url;
@@ -1355,7 +1357,13 @@ class K8SProject extends K8S
                             }
                             else
                             {
-                                checkConfig();
+                                if (attempts++ == 10)
+                                {
+                                    reject({status:404});
+                                    return;
+                                }
+
+                                setTimeout(checkConfig,1000);
                             }
                         }
                     },
@@ -1584,7 +1592,7 @@ class K8SProject extends K8S
         s += "            matchLabels:\n";
         s += "          template:\n";
         s += "            spec:\n";
-        if (opts.getOpt("pv",true))
+        if (this.getOpt("viya",false) == false)
         {
             s += "               volumes:\n";
             s += "               - name: data\n";
@@ -1600,7 +1608,7 @@ class K8SProject extends K8S
         s += "                   limits:\n";
         s += "                     memory: \"2Gi\"\n";
         s += "                     cpu: \"2\"\n";
-        if (opts.getOpt("pv",true))
+        if (this.getOpt("viya",false) == false)
         {
             s += "                 volumeMounts:\n";
             s += "                 - mountPath: /mnt/data\n";
