@@ -1212,8 +1212,6 @@ class K8SProject extends K8S
         });
 
         this._config = null;
-
-        //this.loadConfig();
     }
 
     connect(connect,delegate,options,start)
@@ -1258,7 +1256,10 @@ class K8SProject extends K8S
                         }
                     ).then(
                         function() {
-                            connect.connect(self.espUrl,delegate,options,start);
+                            console.log("here");
+                            setTimeout(function(){
+                                    connect.connect(self.espUrl,delegate,options,start);
+                                },1000);
                         }
                     );
                 }
@@ -1287,11 +1288,30 @@ class K8SProject extends K8S
                         }
                     ).then(
                         function(result) {
-                            return(self.load(result.xml,opts.getOpts()));
+                            return(self.load(result.xml,opts.getOpts()).then(
+                                function(result) {
+                                },
+                                function(result) {
+                                    tools.exception(JSON.stringify(result,null,"\t"));
+                                }
+                            ));
+                        }
+                    ).catch(
+                        function(message) {
+                            if (tools.supports(delegate,"error"))
+                            {
+                                delegate.error(connect,message);
+                            }
+                            else
+                            {
+                                console.log(JSON.stringify(message,null,"\t"));
+                            }
                         }
                     ).then(
                         function() {
-                            connect.connect(self.espUrl,delegate,options,start);
+                            setTimeout(function(){
+                                    connect.connect(self.espUrl,delegate,options,start);
+                                },1000);
                         }
                     );
                 }
@@ -1388,23 +1408,14 @@ class K8SProject extends K8S
                     ).then(
                         function() {
                             return(self.readiness());
+                        },
+                        function(result) {
+                            reject(result);
                         }
                     ).then(
                         function() {
                             resolve();
                     });
-
-                    /*
-                    self.loadConfig().then(
-                        function() {
-                            self.isReady({
-                                ready:function() {
-                                    resolve();
-                                }
-                            }
-                        )}
-                    );
-                    */
                 },
                 function(result) {
                     tools.exception("error: " + result);
@@ -1641,6 +1652,26 @@ class K8SProject extends K8S
             function checkReady() {
                 self.getPod().then(
                     function(result) {
+
+                        if (result.status.hasOwnProperty("containerStatuses"))
+                        {
+                            var status = result.status.containerStatuses[0];
+
+                            if (status.hasOwnProperty("lastState"))
+                            {
+                                const   state = status.lastState;
+
+                                if (state.hasOwnProperty("terminated"))
+                                {
+                                    if (state.terminated.exitCode != 0 || state.terminated.reason == "Error")
+                                    {
+                                        reject(status);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+
                         var ready = false;
 
                         if (result.status.phase == "Running")

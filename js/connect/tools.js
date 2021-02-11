@@ -1140,15 +1140,17 @@ var _api =
 
     exception:function(message)
     {
+        var text = (typeof(message) == "string") ? message : this.stringify(message);
+
         if (_isNode)
         {
-            throw new Error(message);
+            throw new Error(text);
         }
         else
         {
-            throw(message);
+            throw(text);
         }
-    },
+    }
 };
 
 String.prototype.splitNoSpaces =
