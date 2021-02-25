@@ -198,11 +198,19 @@ class K8S extends Options
 
         Object.defineProperty(this,"projectUrl", {
             get() {
-                if (this.namespace == null || this.project == null)
+                var url = null;
+
+                if (this.namespace != null)
                 {
-                    return(null);
+                    url = this.k8sUrl + "/" + this.namespace;
+
+                    if (this.project != null)
+                    {
+                        url += "/" + this.project;
+                    }
                 }
-                return(this.k8sUrl + "/" + this.namespace + "/" + this.project);
+
+                return(url);
             }
         });
 
@@ -223,6 +231,27 @@ class K8S extends Options
                 return(this._pod);
             }
         });
+    }
+
+    getNamespaces()
+    {
+        return(new Promise((resolve,reject) => {
+            var url = this.baseUrl;
+            url += "api/v1/namespaces";
+
+            var request = ajax.create(url);
+            request.setRequestHeader("accept","application/json");
+
+            var a = null;
+
+            request.get().then(
+                function(result) {
+                    var o = JSON.parse(result.text);
+                    a = o.items;
+                    resolve(a);
+                }
+            );
+        }));
     }
 
     getMyProjects()
@@ -248,7 +277,6 @@ class K8S extends Options
                 url += "/" + name;
             }
 
-            var k8s = this;
             var request = ajax.create(url);
             request.setRequestHeader("accept","application/json");
 
@@ -335,7 +363,7 @@ class K8S extends Options
 
             url += "/pods";
 
-            var k8s = this;
+            var self = this;
             var request = ajax.create(url);
             request.setRequestHeader("accept","application/json");
 
@@ -344,9 +372,9 @@ class K8S extends Options
                     var o = JSON.parse(result.text);
                     var a = [];
 
-                    if (k8s.project != null)
+                    if (self.project != null)
                     {
-                        var match = k8s.project + "-";
+                        var match = self.project + "-";
                         for (var item of o.items)
                         {
                             if (item.metadata.name.startsWith(match))
@@ -407,13 +435,13 @@ class K8S extends Options
                 tools.exception("the instance requires both namespace and project name to get the pod");
             }
 
-            var k8s = this;
+            var self = this;
 
             this.getPod().then(
                 function(pod) {
-                    var url = k8s.baseUrl;
+                    var url = self.baseUrl;
                     url += "api/v1";
-                    url += "/namespaces/" + k8s.namespace;
+                    url += "/namespaces/" + self.namespace;
                     url += "/pods/" + pod.metadata.name;
                     url += "/log";
 
@@ -1076,8 +1104,6 @@ class K8S extends Options
         url += "&stdout=true";
         url += "&stderr=true";
         
-        const   k8s = this;
-
         var o = {
             open:function()
             {
@@ -1166,11 +1192,6 @@ class K8SProject extends K8S
     constructor(url,options)
     {
         super(url,options);
-
-        /*
-        this.setOpt("user","esp");
-        this.setOpt("pw","esppw");
-        */
 
         if (this._project == null)
         {
@@ -1436,16 +1457,16 @@ class K8SProject extends K8S
     {
         return(new Promise((resolve,reject) => {
 
-            const   k8s = this;
+            const   self = this;
 
             this.getProject(this.namespace,this.project).then(
                 function(p) 
                 {
                     const   s = p.spec.espProperties["server.xml"];
                     const   xml = tools.b64Decode(s.substr(3)).toString();
-                    k8s.del().then(
+                    self.del().then(
                         function() {
-                            k8s.load(xml,{force:true}).then(
+                            self.load(xml,{force:true}).then(
                                 function() {
                                     resolve();
                                 }

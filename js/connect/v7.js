@@ -1084,7 +1084,6 @@ class Api extends Options
 
     getLoggers()
     {
-console.log("get loggers");
         return(new Promise((resolve,reject) => {
             var id = tools.guid();
 
@@ -1094,7 +1093,6 @@ console.log("get loggers");
 
             this.addHandler(id,{
                 process:function(result) {
-console.log("get loggers results");
                     resolve(result)
                 }
             });
@@ -3215,7 +3213,7 @@ class Publisher extends Options
                     resolve();
                 },
                 error:function(result) {
-                    console.log("error");
+                    console.log("error: " + JSON.stringify(result));
                     reject();
                 }
             });

@@ -41,7 +41,6 @@ var _opcodes = null;
 var _genGuid = null;
 var _visuals = null;
 var _publish = null;
-var	_common = null;
 var _viewer = null;
 var _schema = null;
 var _detail = null;
@@ -56,7 +55,8 @@ var _viewerSplit = "70%";
 function
 init()
 {
-    _common = _esp.getStorage("esp-connect");
+    var common = _esp.getStorage("esp-connect");
+
     _storage = _esp.getStorage("modelviewer");
 
     const   k8s = _storage.getOpt("k8s",false);
@@ -73,9 +73,9 @@ init()
 
     if (k8s)
     {
-        if (_common.hasOpt("k8s-server"))
+        if (common.hasOpt("k8s-server"))
         {
-            server = _common.getOpt("k8s-server");
+            server = common.getOpt("k8s-server");
         }
     }
     else
@@ -84,9 +84,9 @@ init()
         {
             server = encodeURI(_esp.getParm("server"));
         }
-        else if (_common.hasOpt("esp-server"))
+        else if (common.hasOpt("esp-server"))
         {
-            server = _common.getOpt("esp-server");
+            server = common.getOpt("esp-server");
         }
     }
 
@@ -126,20 +126,6 @@ init()
         connect(server);
     };
 
-    /*
-    if (server != null)
-    {
-        connect(server);
-    }
-    else if (_esp.hasParm("xml"))
-    {
-        loadModel(_esp.getParm("xml"));
-    }
-    else
-    {
-        _esp.showConnectDialog({connect:connect},_k8s);
-    }
-    */
     _esp.showConnectDialog({connect:connect},_k8s);
 
     _opcodes = document.createElement("select");
@@ -434,7 +420,10 @@ setKubernetes(value)
 {
     if (value)
     {
-        _k8s = _esp.createK8S();
+        var common = _esp.getStorage("esp-connect");
+
+        _k8s = _esp.createK8S(common.getOpt("k8s-server"));
+
         _k8s.getProjects({handleProjects:function() {
             },
             error:function(message) {
@@ -696,13 +685,15 @@ clear()
 function
 modelLoaded(viewer,model)
 {
+    var common = _esp.getStorage("esp-connect");
+
     if (_k8s != null)
     {
-        _common.setOpt("k8s-server",_viewer.connection.k8s.projectUrl);
+        common.setOpt("k8s-server",_viewer.connection.k8s.projectUrl);
     }
     else
     {
-        _common.setOpt("esp-server",_viewer.connection.httpurl);
+        common.setOpt("esp-server",_viewer.connection.httpurl);
     }
 
     setTimeout(setProject,1000);

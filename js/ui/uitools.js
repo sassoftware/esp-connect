@@ -128,6 +128,24 @@ var _uitools =
         return(o);
     },
 
+    getSize:function(element)
+    {
+        var size = {width:0,height:0};
+
+        if (element != null)
+        {
+            size.width = element.offsetWidth;
+            size.height = element.offsetHeight;
+        }
+
+        size.toString = function()
+        {
+            return("width=" + this.width + ", height=" + this.height);
+        }
+
+        return(size);
+    },
+
     getOffset:function(element)
     {
         var	offset = new Object();

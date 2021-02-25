@@ -164,93 +164,181 @@ var	_api =
             throw "The delegate must implement the connect method";
         }
 
-        var storage = new StoredData("esp-connect");
-        var server = (k8s != null) ? storage.getOpt("k8s-server","") : storage.getOpt("esp-server","");
-
         var o = {
-            ok:function(data) {
-                var server = "";
+            ok:function(dialog) {
+                var s = dialog.getValue("server","").trim();
 
-                if (data.hasOwnProperty("server"))
+                if (s.length > 0)
                 {
-                    server = data.server.trim();
-                    storage.setOpt("esp-server",server);
+                    storage.setOpt("esp-server",s);
                 }
-
-                if (server.length == 0)
+                else
                 {
-                    if (data.hasOwnProperty("k8s"))
+                    s = dialog.getValue("k8s_project","").trim();
+
+                    if (s.length > 0)
                     {
-                        server = data.k8s.trim();
-                        storage.setOpt("k8s-server",server);
+                        storage.setOpt("k8s-server",s);
                     }
                 }
 
-                if (server.length == 0)
+                if (s.length == 0)
                 {
                     return(false);
                 }
 
-                delegate.connect(server);
+                delegate.connect(s);
 
                 return(true);
-            },
-            header:"Connect to ESP Server",
+            }
         };
 
-        var values = [];
+        var storage = new StoredData("esp-connect");
+        var server = (k8s != null) ? storage.getOpt("k8s-server","") : storage.getOpt("esp-server","");
+        var form = [];
 
-        if (k8s != null)
+        const   url = new URL(server,document.URL);
+
+        if (k8s == null)
         {
-            var value = {name:"k8s",label:"ESP K8S Server",type:"select"};
-            var options = {};
-            options.opts = [];
-            if (server != null)
+            if (url.protocol != "http:" && url.protocol != "https:")
             {
-                options.value = server;
+                server = "";
             }
-            options.opts.push({"":""});
+            else
+            {
+                server = url.origin;
+            }
+            form.push({name:"server",label:"ESP Server",value:server});
+            dialogs.showDialog({title:"Connect to ESP Server",delegate:o,form:form});
+        }
+        else
+        {
+            server = url.origin;
 
-            k8s.getProjects().then(
+            const   self = this;
+
+            var value = {name:"k8s_ns",label:"K8S Namespace",type:"select"};
+            if (k8s.namespace != null)
+            {
+                value.value = k8s.namespace;
+            }
+            value.options = [];
+            value.options.push({name:"",value:""});
+
+            k8s.getNamespaces().then(
                 function(result)
                 {
-                    result.forEach((p) => {
-                        var url = "";
-                        url += k8s.k8sUrl;
-                        url += "/" + p.metadata.namespace;
-                        url += "/" + p.metadata.name;
-                        var s = p.metadata.namespace + "/" + p.metadata.name;
-                        var o = {};
-                        o[p.metadata.namespace + "/" + p.metadata.name] = url;
-                        options.opts.push(o);
-                    });
+                    return(new Promise((resolve,reject) => {
+                        result.forEach((p) => {
+                            var url = "";
+                            url += k8s.k8sUrl;
+                            url += "/" + p.metadata.name;
+                            var o = {};
+                            o.name = p.metadata.name;
+                            o.value = url;
+                            value.options.push(o);
+                        });
 
-                    //values.push({name:"server",label:"ESP Server",value:""});
+                        value.onchange = function(e) {self.loadK8SProjects(e)};
+                        form.push(value);
 
-                    value.options = options;
-                    values.push(value);
-
-                    o.values = values;
-                    dialogs.showDialog(o);
+                        resolve();
+                    }));
                 },
                 function(result)
                 {
                     throw("error: " + result);
                 }
+            ).then(
+                function() {
+                    return(new Promise((resolve,reject) => {
+
+                        var value = {name:"k8s_project",label:"K8S Project",type:"select"};
+                        form.push(value);
+
+                        if (k8s.namespace == null)
+                        {
+                            resolve();
+                            return;
+                        }
+                        else
+                        {
+                            k8s.getProjects(k8s.namespace).then(
+                                function(result)
+                                {
+                                    if (k8s.project != null)
+                                    {
+                                        value.value = k8s.project;
+                                    }
+
+                                    value.options = [];
+
+                                    result.forEach((p) => {
+                                        var url = "";
+                                        url += k8s.k8sUrl;
+                                        url += "/" + p.metadata.namespace;
+                                        url += "/" + p.metadata.name;
+                                        var o = {};
+                                        o.name = p.metadata.name;
+                                        o.value = url;
+                                        value.options.push(o);
+                                    });
+
+                                    resolve();
+                                }
+                            );
+                        }
+                    }));
+                }
+            ).then(
+                function(result) {
+                    dialogs.showDialog({title:"Connect to ESP Server",delegate:o,form:form});
+                }
             );
         }
-        else
+    },
+
+    loadK8SProjects:function(e)
+    {
+        const   url = e.target.value;
+        const   k8s = this.createK8S(url);
+        const   self = this;
+
+        var projects = e.target.dialog.getControl("k8s_project");
+
+        while (projects.options.length > 0)
         {
-            values.push({name:"server",label:"ESP Server",value:server});
-            o.values = values;
-            dialogs.showDialog(o);
+            projects.remove(0);
         }
+
+        k8s.getProjects(k8s.namespace).then(
+            function(result)
+            {
+                result.forEach((p) => {
+
+                    var url = "";
+                    url += k8s.k8sUrl;
+                    url += "/" + p.metadata.namespace;
+                    url += "/" + p.metadata.name;
+
+                    var option = document.createElement("option");
+                    option.value = url;
+                    option.appendChild(document.createTextNode(p.metadata.name));
+                    projects.add(option);
+                });
+            },
+            function(result)
+            {
+                throw("error: " + result);
+            }
+        );
     },
 
     showCodeDialog:function(header,code,options)
     {
         var opts = connect.createOptions(options);
-        opts.setOpt("header",header);
+        opts.setOpt("title",header);
         opts.setOpt("code",code);
         dialogs.showCodeDialog(opts.getOpts());
     },
@@ -258,7 +346,7 @@ var	_api =
     showFrameDialog:function(header,url,options)
     {
         var opts = connect.createOptions(options);
-        opts.setOpt("header",header);
+        opts.setOpt("title",header);
         opts.setOpt("url",url);
         dialogs.showFrameDialog(opts.getOpts());
     },

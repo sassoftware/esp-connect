@@ -5,724 +5,474 @@
 
 import {Options} from "../connect/options.js";
 import {tools} from "../connect/tools.js";
+import {uitools} from "./uitools.js";
 
-window._dialogs_ = null;
-
-var	_api =
+class Dialog extends Options
 {
-    _okText:"Ok",
-    _cancelText:"Cancel",
-    _codeDiv:null,
-    _divDialog:null,
-    _frameDialog:null,
+    static _modals = null;
+    static _cover = null;
+    static _obscureCount = 0;
+    static _dialogInset = 0;
+    static _opts = new Options();
 
-    init:function(okText,cancelText)
+    constructor(options)
     {
-        this._okText = okText;
-        this._cancelText = cancelText;
+		super(options);
 
-        var	d = window.document;
+        if (Dialog._modals == null)
+        {
+            Dialog._modals = [];
 
-        this._popup = d.createElement("div");
-        this._popup.className = "dialog";
-        this._popup.id = "_popup";
-        this._popupTimer = null;
+            Dialog._cover = document.createElement("div");
+            Dialog._cover.className = "obscureCover";
+            Dialog._cover.style.width = "100%";
+            Dialog._cover.style.height = "100%";
+            Dialog._cover.style.position = "absolute";
+            Dialog._cover.style.left = "0";
+            Dialog._cover.style.top = "0";
+        }
 
-        this._dialog = d.createElement("div");
-        this._dialog.className = "dialog";
-        this._dialog.id = "_dialog";
+        this._div = null;
+        this._header = null;
+        this._content = null;
+        this._footer = null;
 
-        this._modals = new Array();
-
-        var	cover = d.createElement("div");
-        cover.className = "obscureCover";
-        cover.style.width = "100%";
-        cover.style.height = "100%";
-        cover.style.position = "absolute";
-        cover.style.left = "0";
-        cover.style.top = "0";
-
-        d._cover = cover;
-
-        this._obscureCount = 0;
-
-        var	s = "";
-
-        s = "";
-        s += "<div class='dialogTop'>";
-        s += "<div class='dialogHeader'>";
-        s += "<div class='dialogTitle' id='_popupTitle'>&nbsp;</div>";
-        s += "</div>";
-        /*
-        s += "<div class='dialogDivider'>&nbsp;</div>";
-        */
-        s += "<div class='dialogContent' id='_popupContent'>&nbsp;</div>";
-        /*
-        s += "<div class='dialogDivider'>&nbsp;</div>";
-        */
-        s += "</div>";
-        s += "<div class='dialogButtons'>";
-        s += "<table style='width:100%'>";
-        s += "<tr>";
-        s += "<td class='dialogButton'><span><button onclick='_dialogs_.removePopup()'>" + this._okText + "</button></span></td>";
-        s += "</tr>";
-        s += "</table>";
-        s += "</div>";
-
-        this._popup.innerHTML = s;
-
-        s = "";
-        s += "<div class='dialogTop'>";
-        s += "<div class='dialogHeader'>";
-        s += "<div class='dialogTitle' id='_dialogTitle'>&nbsp;</div>";
-        s += "</div>";
-        s += "<div class='dialogContent' id='_dialogContent'>&nbsp;</div>";
-        s += "</div>";
-        s += "<div class='dialogButtons'>";
-        s += "<table style='width:100%'>";
-        s += "<tr>";
-        s += "<td class='dialogButton'><span><button onclick='_dialogs_.ok()'>" + this._okText + "</button></span><span><button onclick='_dialogs_.cancel()'>" + this._cancelText + "</button></span></td>";
-        s += "</tr>";
-        s += "</table>";
-        s += "</div>";
-
-        this._dialog.innerHTML = s;
-
-        this._ok = null;
-        this._cancel = null;
-
+        this._form = null;
         this._zFactor = 10000;
+        this._delegate = null;
 
-        this._formdata = [];
-
-        this._dialogInset = 0;
-
-        this._focus = null;
-        this._selection = null;
-        this._interval = null;
-    },
-
-    check:function()
-    {
-        if (this._dialog == null)
-        {
-            this.init("Ok","Cancel");
-        }
-    },
-
-    showDialog:function(options)
-    {
-        var opts = new Options(options);
-
-        this.check();
-
-        this._ok = opts.getOpt("ok");
-        this._cancel = opts.getOpt("cancel");
-
-        this._dialog.style.width = opts.getOpt("width","50%");
-        this._dialog.style.height = opts.getOpt("height","auto");
-
-        var	d = window.document;
-
-        d.body.appendChild(this._dialog);
-
-        var values = opts.getOpt("values",[]);
-        var form = this.createForm(values);
-
-        d.getElementById("_dialogTitle").innerHTML = opts.getOpt("header","");
-        d.getElementById("_dialogContent").innerHTML = form;
-
-        this.pushModal("_dialog");
-
-        if (this._formdata.length > 0)
-        {
-            var element;
-            this._formdata.forEach((item) => {
-                if (item.getOpt("type") == "code")
-                {
-                    if ((element = d.getElementById(item.getOpt("id"))) != null)
-                    {
-                        element.innerText = item.getOpt("value");
-                    }
-                }
-            });
-
-            if ((element = d.getElementById(this._formdata[0].getOpt("id"))) != null)
-            {
-                element.focus();
+        Object.defineProperty(this,"content", {
+            get() {
+                return(this._content);
+            },
+            set(value) {
+                value.style.position = "absolute";
+                this._div.replaceChild(value,this._content);
+                this._content = value;
+                this.layout();
             }
-        }
-    },
-
-    hideDialog:function()
-    {
-        this.popModal("_dialog");
-    },
-
-    showCodeDialog:function(options)
-    {
-        var opts = new Options(options);
-
-        if (this._codeDiv == null)
-        {
-            this._codeDiv = document.createElement("div");
-            this._codeDiv.className = "dialog";
-            this._codeDiv.innerHTML = "<div class='dialogTop' style='height:80%;overflow:auto'>\
-                    <div class='dialogHeader'>\
-                        <div class='dialogTitle'>\
-                            <table style='width:100%;height:10%;border:0' cellspacing='0' cellpadding='0'>\
-                                <tr>\
-                                    <td><div id='_dialogCodeHeader'></div></td>\
-                                </tr>\
-                            </table>\
-                        </div>\
-                    </div>\
-                    <div class='dialogContent' style='width:95%;height:85%;margin:auto'>\
-                        <pre id='_dialogCode' class='dialogCode'></pre>\
-                    </div>\
-                </div>\
-                <div class='dialogButtons' style='height:10%;padding:0;padding-right:30px'>\
-                    <table style='width:100%;height:100%'>\
-                        <tr>\
-                            <td class='dialogButton' style='vertical-align:middle'>\
-                                <span><button class='close' onclick='javascript:_dialogs_.clearCodeDialog()'>Done</button></span>\
-                            </td>\
-                        </tr>\
-                    </table>\
-                </div>";
-        }
-
-        this._codeDiv.style.width = opts.getOpt("width","90%");
-        this._codeDiv.style.height = opts.getOpt("height","90%");
-
-        this.pushModal(this._codeDiv);
-
-        document.getElementById("_dialogCodeHeader").innerHTML = opts.getOpt("header","");
-        document.getElementById("_dialogCode").innerText = opts.getOpt("code","");
-    },
-
-    clearCodeDialog:function(options)
-    {
-        if (this._codeDiv != null)
-        {
-            this.popModal(this._codeDiv);
-        }
-    },
-
-    showDivDialog:function(div,options)
-    {
-        var opts = new Options(options);
-
-        if (this._divDialog == null)
-        {
-            var table;
-            var tr;
-            var td;
-
-            this._divDialog = document.createElement("div");
-            this._divDialog.className = "dialog";
-            this._divDialog.style.width = opts.getOpt("width","80%");
-            this._divDialog.style.height = opts.getOpt("height","80%");
-            this._divDialog.style.overflow = "hidden";
-
-            var top = document.createElement("div");
-            this._divDialog.appendChild(top);
-            top.className = "dialogTop";
-            top.style.height = "80%";
-            top.style.overflow = "hidden";
-
-            var header = document.createElement("div");
-            top.appendChild(header);
-            header.className = "dialogHeader";
-
-            var title = document.createElement("div");
-            header.appendChild(title);
-            title.className = "dialogTitle";
-            //title.style.width = "100%";
-
-            title.appendChild(table = document.createElement("table"));
-            table.cellSpacing = 0;
-            table.cellPadding = 0;
-            table.style.width = "100%";
-            table.style.height = "10%";
-
-            table.appendChild(tr = document.createElement("tr"));
-            this._divDialogTitle = document.createElement("td"); 
-            tr.appendChild(this._divDialogTitle);
-
-            this._divDialogContent = document.createElement("div"); 
-            this._divDialogContent.style.height = "100%";
-            top.appendChild(this._divDialogContent);
-
-            var buttons = document.createElement("div");
-            this._divDialog.appendChild(buttons);
-            buttons.className = "dialogButtons";
-            buttons.style.height = "10%";
-            buttons.style.padding = 0;
-            buttons.style.paddingRight = "10px";
-
-            buttons.appendChild(table = document.createElement("table"));
-            table.style.width = "100%";
-            table.style.height = "100%";
-            table.appendChild(tr = document.createElement("tr"));
-            tr.appendChild(td = document.createElement("td"));
-            td.className = "dialogButton";
-            td.innerHTML = "<span><button class='close' onclick='javascript:_dialogs_.clearDivDialog()'>Done</button></span>";
-        }
-
-        this._divDialogTitle.innerHTML = opts.getOpt("title","");
-
-        this._divDialogContent.innerHTML = "";
-        this._divDialogContent.appendChild(div);
-        div.style.width = "100%";
-        div.style.height = "90%";
-
-        this.pushModal(this._divDialog);
-    },
-
-    clearDivDialog:function(options)
-    {
-        if (this._divDialog != null)
-        {
-            this.popModal(this._divDialog);
-        }
-    },
-
-    showFrameDialog:function(options)
-    {
-        var opts = new Options(options);
-
-        if (this._frameDialog == null)
-        {
-            var table;
-            var tr;
-            var td;
-
-            this._frameDialog = document.createElement("div");
-            this._frameDialog.className = "dialog";
-            this._frameDialog.style.width = opts.getOpt("width","80%");
-            this._frameDialog.style.height = opts.getOpt("height","80%");
-            this._frameDialog.style.overflow = "hidden";
-
-            var top = document.createElement("div");
-            this._frameDialog.appendChild(top);
-            top.className = "dialogTop";
-            top.style.height = "70%";
-            top.style.overflow = "hidden";
-
-            var header = document.createElement("div");
-            top.appendChild(header);
-            header.className = "dialogHeader";
-
-            var title = document.createElement("div");
-            header.appendChild(title);
-            title.className = "dialogTitle";
-
-            title.appendChild(table = document.createElement("table"));
-            table.cellSpacing = 0;
-            table.cellPadding = 0;
-            table.style.width = "100%";
-            table.style.height = "10%";
-
-            table.appendChild(tr = document.createElement("tr"));
-            this._frameDialogTitle = document.createElement("td"); 
-            tr.appendChild(this._frameDialogTitle);
-
-            this._frameDialogContent = document.createElement("iframe"); 
-            top.appendChild(this._frameDialogContent);
-            this._frameDialogContent.frameBorder = 0;
-            this._frameDialogContent.className = "dialogFrame";
-            this._frameDialogContent.style.width = "100%";
-            this._frameDialogContent.style.height = "80%";
-
-            var buttons = document.createElement("div");
-            this._frameDialog.appendChild(buttons);
-            buttons.className = "dialogButtons";
-            buttons.style.height = "10%";
-            buttons.style.padding = 0;
-            buttons.style.paddingRight = "10px";
-
-            buttons.appendChild(table = document.createElement("table"));
-            table.style.width = "100%";
-            table.style.height = "100%";
-            table.appendChild(tr = document.createElement("tr"));
-            tr.appendChild(td = document.createElement("td"));
-            td.className = "dialogButton";
-            td.innerHTML = "<span><button class='close' onclick='javascript:_dialogs_.clearFrameDialog()'>Done</button></span>";
-        }
-
-        this._frameDialogTitle.innerHTML = opts.getOpt("header","");
-        this._frameDialogContent.src = opts.getOpt("url","");
-
-        this.pushModal(this._frameDialog);
-    },
-
-    clearFrameDialog:function(options)
-    {
-        if (this._frameDialog != null)
-        {
-            this.popModal(this._frameDialog);
-        }
-    },
-
-    dialog:function(content,ok,header,cancel,values)
-    {
-        this.check();
-
-        this._ok = ok;
-        this._cancel = cancel;
-
-        var	d = window.document;
-
-        d.body.appendChild(this._dialog);
-
-        d.getElementById("_dialogTitle").innerHTML = header;
-        d.getElementById("_dialogContent").innerHTML = content;
-
-        this.pushModal("_dialog");
-
-        if (values != null)
-        {
-            var	element;
-
-            for (var x in values)
-            {
-                if ((element = document.getElementById(x)) != null)
-                {
-                    element.value = values[x];
-                }
-            }
-        }
-    },
-
-    ok:function()
-    {
-        var data = {};
-
-        this._formdata.forEach((fd) => {
-            data[fd.getOpt("name")] = document.getElementById(fd.getOpt("id")).value;
         });
 
-        if (this._ok != null)
-        {
-            if (this._ok(data) == false)
-            {
-                return;
+        Object.defineProperty(this,"title", {
+            get() {
+                return(this.getOpt("title",""));
+            },
+            set(value) {
+                this.setOpt("title",value);
+                this._title.innerHTML = value;
             }
-        }
-
-        this.popModal("_dialog");
-    },
-
-    cancel:function()
-    {
-        if (this._cancel != null)
-        {
-            this._cancel();
-        }
-
-        this.popModal("_dialog");
-    },
-
-    createForm:function(values)
-    {
-        this._formdata = [];
-
-        var code = {};
-        var	html = "";
-        html += "<table style='margin:auto;width:80%'>";
-        values.forEach((value) => {
-            var opts = new Options(value);
-            var id = opts.getOpt("id",tools.guid());
-            var name = opts.getOpt("name","");
-            var value = opts.getOpt("value","");
-            var label = opts.getOpt("label",name);
-            var classname = opts.getOpt("class","dialogValue");
-            var type = opts.getOpt("type","input");
-            var style = opts.getOpt("style");
-            if (label.length > 0)
-            {
-                html += "<tr><td class='dialogLabel'>" + label + "</td></tr>";
-            }
-            html += "<tr><td class='" + classname + "'>";
-            if (type == "select")
-            {
-                html += "<select id='" + id + "'";
-                if (style != null)
-                {
-                    html += " style='" + style + "'";
-                }
-                html += ">";
-                if (opts.hasOpt("options"))
-                {
-                    var tmp = opts.getOpt("options");
-                    var option;
-
-                    const   value = (tmp.hasOwnProperty("value")) ? tmp.value : null;
-
-                    tmp.opts.forEach((opt) => {
-                        for (var name in opt)
-                        {
-                            html += "<option value='" + opt[name] + "'";
-                            if (opt[name] == value)
-                            {
-                                html += " selected='true'";
-                            }
-                            html += ">" + name + "</option>";
-                        }
-                    });
-
-                    /*
-                    for (var name in tmp)
-                    {
-                        html += "<option value='" + tmp[name] + "'";
-                        if (tmp[name] == value)
-                        {
-                            html += " selected='true'";
-                        }
-                        html += ">" + name + "</option>";
-                    }
-                    */
-                }
-                html += "</select>";
-            }
-            else if (type == "textarea")
-            {
-                html += "<textarea id='" + id + "' value='" + value + "'";
-                if (style != null)
-                {
-                    html += " style='" + style + "'";
-                }
-                html += "></textarea>";
-            }
-            else if (type == "code")
-            {
-                html += "<pre id='" + id + "' style='overflow:auto";
-                if (style != null)
-                {
-                    html += ";" + style + "'";
-                }
-                html += ">" + "</pre>";
-            }
-            else
-            {
-                html += "<input id='" + id + "' type='" + opts.getOpt("type","text") + "' value=\"" + value + "\"";
-                if (style != null)
-                {
-                    html += " style='" + style + "'";
-                }
-                html += "></input>";
-            }
-            html += "</td></tr>";
-            opts.setOpt("id",id);
-
-            this._formdata.push(opts);
         });
-        html += "</table>";
-        return(html);
-    },
 
-    popup:function(title,text,duration)
-    {
-        this.check();
-
-        var	d = window.document;
-        var	bodyWidth = d.body.offsetWidth;
-        var	bodyHeight = d.body.offsetHeight;
-
-        d.body.appendChild(this._popup);
-
-        var	popupTitle = d.getElementById("_popupTitle");
-        var	popupText = d.getElementById("_popupContent");
-        popupTitle.innerHTML = title;
-        popupText.innerHTML = text;
-
-        if (this._popupTimer != null)
-        {
-            clearTimeout(this._popupTimer);
-            this._popupTimer = null;
-        }
-
-        if (duration > 0)
-        {
-            this._popupTimer = setTimeout(function(){_dialogs_.removePopup()},(duration * 1000));
-        }
-
-        this.pushModal("_popup");
-
-        var	x = (bodyWidth / 2) - (this._popup.offsetWidth / 2);
-        var	y = (bodyHeight / 2) - (this._popup.offsetHeight / 2);
-
-        this._popup.style.left = parseInt(x) + "px";
-        this._popup.style.top = parseInt(y) + "px";
-        this._popup.style.position = "absolute";
-    },
-
-    removePopup:function()
-    {
-        this.popModal("_popup");
-    },
-
-    pushModal:function(modal,xAlign,yAlign)
-    {
-        this.check();
-
-        var	element = (typeof(modal) == "string") ? document.getElementById(modal) : modal;
-
-        if (element == null)
-        {
-            return;
-        }
-
-        element._xAlign = (xAlign != null) ? xAlign : "center";
-        element._yAlign = (yAlign != null) ? yAlign : "center";
-
-        element.style.display = "block";
-        element.style.position = "absolute";
-
-        var	d = window.document;
-        var	bodyWidth = d.body.offsetWidth;
-        var	bodyHeight = d.body.offsetHeight;
-        var	width = element.offsetWidth;
-        var	height = element.offsetHeight;
-
-        if (element._xAlign == "left")
-        {
-            element.style.left = this._dialogInset + "px";
-        }
-        else if (element._xAlign == "right")
-        {
-            element.style.left = (bodyWidth - width - this._dialogInset) + "px";
-        }
-        else
-        {
-            element.style.left = parseInt((bodyWidth / 2) - (width / 2)) + "px";
-        }
-
-        if (element._yAlign == "top")
-        {
-            element.style.top = this._dialogInset + "px";
-        }
-        else if (element._yAlign == "bottom")
-        {
-            element.style.top = (bodyHeight - height - this._dialogInset) + "px";
-        }
-        else
-        {
-            element.style.top = parseInt((bodyHeight / 2) - (height / 2)) + "px";
-        }
-
-        d.body.appendChild(element);
-
-        this._modals.push(element);
-
-        element.style.zIndex = this._zFactor + this._modals.length;
-
-        this.obscure();
-    },
-
-    popModal:function(modal)
-    {
-        if (this._modals.length == 0)
-        {
-            return;
-        }
-
-        var	element = (typeof(modal) == "string") ? document.getElementById(modal) : modal;
-
-        if (element == null)
-        {
-            return;
-        }
-
-        var	current = this._modals[this._modals.length - 1];
-
-        if (current != element)
-        {
-            return;
-        }
-
-        current.style.display = "none";
-
-        this._modals.pop();
-
-        if (this._modals.length == 0)
-        {
-            this.unObscure(true);
-        }
-        else
-        {
-            current = this._modals[this._modals.length - 1];
-            current.style.display = "block";
-            current.style.zIndex = this._zFactor + this._modals.length;
-            this.obscure();
-        }
-    },
-
-    getTopModal:function()
-    {
-        return((this._modals.length > 0) ? this._modals[0] : null);
-    },
-
-    getTopModalId:function()
-    {
-        var	modal = this.getTopModal();
-        return((modal != null) ? modal.id : "");
-    },
-
-    getBottomModal:function()
-    {
-        return((this._modals.length > 0) ? this._modals[this._modals.length - 1] : null);
-    },
-
-    getBottomModalId:function()
-    {
-        var	modal = this.getBottomModal();
-        return((modal != null) ? modal.id : "");
-    },
-
-    clearModals:function()
-    {
-        if (this._modals != null)
-        {
-            for (var i = 0; i < this._modals.length; i++)
-            {
-                this._modals[i].style.display = "none";
+        Object.defineProperty(this,"htmlcontent", {
+            get() {
+                return(this.getOpt("htmlcontent",""));
+            },
+            set(value) {
+                this.setOpt("htmlcontent",value);
+                this._content.innerHTML = value;
             }
+        });
 
-            this._modals = new Array();
-
-            this.unObscure(true);
-        }
-    },
-
-    hasModals:function()
-    {
-        return(this._modals != null && this._modals.length > 0);
-    },
-
-    isDisplayed:function(id)
-    {
-        var	code = false;
-
-        if (this._modals != null)
+        if (this.hasOpt("div"))
         {
-            for (var i = 0; i < this._modals.length; i++)
+            var value = this.getOpt("div");
+            this._div = (typeof(value) == "string") ? document.getElementById(value) : value;
+        }
+        else
+        {
+            this.init();
+        }
+    }
+
+    init()
+    {
+        this._div = document.createElement("div");
+        this._div.style.margin = "4px";
+        this._div.style.width = this.getOpt("width","50%");
+        this._div.style.height = this.getOpt("height","auto");
+        this._div.className = "dialog";
+
+        this._header = document.createElement("div");
+        this._header.className = "dialogHeader";
+        this._header.style.position = "absolute";
+        this._div.appendChild(this._header);
+
+        this._title = document.createElement("div");
+        this._title.className = "dialogTitle";
+        this._header.appendChild(this._title);
+
+        this._content = document.createElement("div");
+        this._content.style.position = "absolute";
+        this._content.style.overflow = "auto";
+        this._content.className = "dialogContent";
+        this._div.appendChild(this._content);
+
+        this._footer = document.createElement("div");
+        this._footer.style.position = "absolute";
+        this._footer.className = "dialogButtons";
+        this._footer.style.padding = "5px";
+        this._footer.style.paddingRight = "10px";
+        this._footer.style.paddingBottom = 0;
+        this._div.appendChild(this._footer);
+
+        if (this.hasOpt("title"))
+        {
+            this._title.innerHTML = this.getOpt("title");
+        }
+
+        if (this.hasOpt("form"))
+        {
+            this.createForm(this.getOpt("form"));
+        }
+        else if (this.hasOpt("content"))
+        {
+            this._content.innerHTML = this.getOpt("content");
+        }
+
+        this.setButtons();
+    }
+
+    layout()
+    {
+        if (this._content == null)
+        {
+            return;
+        }
+
+        var margins = uitools.getMargins(this._div);
+        var	margin = 0;
+
+        if (margins.hasOwnProperty("left"))
+        {
+            margin = margins.left * 2;
+        }
+
+        var	width = this._div.clientWidth - (margin * 2);
+        var	height = this._div.clientHeight - (margin * 2);
+
+        var headerSize = uitools.getSize(this._header);
+        var contentSize = uitools.getSize(this._content);
+        var footerSize = uitools.getSize(this._footer);
+
+        if (height <= 0)
+        {
+            var tmp = headerSize.height + contentSize.height + footerSize.height + 50;
+            this._div.style.height = tmp + "px";
+            height = this._div.clientHeight - (margin * 2);
+        }
+
+        var	top = margin;
+
+        var	headerBorders = uitools.getBorders(this._header,true);
+        this._header.style.left = margin + "px";
+        this._header.style.top = margin + "px";
+        this._header.style.width = (width - headerBorders.hsize - margin) + "px";
+        top = this._header.offsetTop + this._header.offsetHeight;
+
+        var	contentBorders = uitools.getBorders(this._content,true);
+
+        this._content.style.left = margin + "px";
+        this._content.style.top = top + "px";
+        this._content.style.width = (width - contentBorders.hsize - margin) + "px";
+
+        var h = height - this._content.offsetTop - contentBorders.vsize;
+
+        var	footerBorders = uitools.getBorders(this._footer,true);
+
+        this._footer.style.left = margin + "px";
+        this._footer.style.top = (height - this._footer.offsetHeight) + "px";
+        this._footer.style.width = (width - footerBorders.hsize - margin) + "px";
+
+        h -= this._footer.offsetHeight;
+
+        this._content.style.height = h + "px";
+    }
+
+    show()
+    {
+        this._div.style.display = "block";
+        document.body.appendChild(this._div);
+    }
+
+    hide()
+    {
+        this._div.style.display = "none";
+        document.body.removeChild(this._div);
+    }
+
+    push(options)
+    {
+        this.setOpts(options);
+
+        var xalign = Dialog._opts.getOpt("xalign","center");
+        var yalign = Dialog._opts.getOpt("yalign","center");
+
+        this._div.style.display = "block";
+        this._div.style.position = "absolute";
+
+        var	d = window.document;
+        var	bodyWidth = d.body.offsetWidth;
+        var	bodyHeight = d.body.offsetHeight;
+        var	width = this._div.offsetWidth;
+        var	height = this._div.offsetHeight;
+
+        if (xalign == "left")
+        {
+            this._div.style.left = Dialog._dialogInset + "px";
+        }
+        else if (yalign == "right")
+        {
+            this._div.style.left = (bodyWidth - width - Dialog._dialogInset) + "px";
+        }
+        else
+        {
+            this._div.style.left = parseInt((bodyWidth / 2) - (width / 2)) + "px";
+        }
+
+        if (yalign == "top")
+        {
+            this._div.style.top = Dialog._dialogInset + "px";
+        }
+        else if (yalign == "bottom")
+        {
+            this._div.style.top = (bodyHeight - height - Dialog._dialogInset) + "px";
+        }
+        else
+        {
+            this._div.style.top = parseInt((bodyHeight / 2) - (height / 2)) + "px";
+        }
+
+        d.body.appendChild(this._div);
+
+        Dialog._modals.push(this);
+
+        this._div.style.zIndex = this._zFactor + Dialog._modals.length;
+
+        Dialog.obscure(this);
+
+        this.layout();
+    }
+
+    pop()
+    {
+        if (Dialog._modals.length == 0)
+        {
+            return;
+        }
+
+        var	current = Dialog._modals[Dialog._modals.length - 1];
+
+        if (current != this)
+        {
+            return;
+        }
+
+        this._div.style.display = "none";
+
+        Dialog._modals.pop();
+
+        if (Dialog._modals.length == 0)
+        {
+            Dialog.unobscure(true);
+        }
+        else
+        {
+            current = Dialog._modals[Dialog._modals.length - 1];
+            current._div.style.display = "block";
+            current._div.style.zIndex = current._zFactor + Dialog._modals.length;
+            Dialog.obscure(current);
+        }
+    }
+
+    setButtons()
+    {
+        const   style = this.getOpt("buttons","ok_cancel");
+        var     buttons = null;
+
+        if (style == "ok_cancel")
+        {
+            buttons = this.getOkCancel();
+        }
+        else if (style == "done")
+        {
+            buttons = this.getDone();
+        }
+
+        if (buttons != null)
+        {
+            this._footer.innerHTML = "";
+            this._footer.appendChild(buttons);
+        }
+    }
+
+    getOkCancel()
+    {
+        var buttons = document.createElement("table");
+        var tr = document.createElement("tr");
+        var button;
+        var span;
+        var td;
+
+        const   self = this;
+
+        buttons.style.width = "100%";
+        buttons.appendChild(tr);
+
+        tr.appendChild(td = document.createElement("td"));
+        td.className = "dialogButton";
+
+        td.appendChild(span = document.createElement("span"));
+        span.appendChild(button = document.createElement("button"));
+        button.innerText = "Ok";
+        button.addEventListener("click",function(){self.ok()});
+
+        td.appendChild(span = document.createElement("span"));
+        span.appendChild(button = document.createElement("button"));
+        button.innerText = "Cancel";
+        button.addEventListener("click",function(){self.cancel()});
+
+        this._footer.innerHTML = "";
+        this._footer.appendChild(buttons);
+    }
+
+    getDone()
+    {
+        var buttons = document.createElement("table");
+        var tr = document.createElement("tr");
+        var button;
+        var span;
+        var td;
+
+        const   self = this;
+
+        buttons.style.width = "100%";
+        buttons.appendChild(tr);
+
+        tr.appendChild(td = document.createElement("td"));
+        td.className = "dialogButton";
+
+        td.appendChild(span = document.createElement("span"));
+        span.appendChild(button = document.createElement("button"));
+        button.innerText = "Done";
+        button.addEventListener("click",function(){self.done()});
+        return(buttons);
+    }
+
+    createForm(values)
+    {
+        this._form = new Form(this,values);
+        this._content.innerHTML = "";
+        this._content.appendChild(this._form.table);
+
+    }
+
+    getData()
+    {
+        return((this._form != null) ? this._form.data : null);
+    }
+
+    getValue(name,dv)
+    {
+        return((this._form != null) ? this._form.getValue(name,dv) : null);
+    }
+
+    getControl(name)
+    {
+        return((this._form != null) ? this._form.getControl(name) : null);
+    }
+
+    ok()
+    {
+        const   delegate = this.getOpt("delegate");
+
+        if (tools.supports(delegate,"ok"))
+        {
+            if (delegate.ok(this))
             {
-                if (this._modals[i].id == id)
-                {
-                    code = true;
-                    break;
-                }
+                this.pop();
             }
         }
+        else
+        {
+            this.pop();
+        }
+    }
 
-        return(code);
-    },
-
-    placeModals:function()
+    cancel()
     {
-        if (this._modals == null || this._modals.length == 0)
+        const   delegate = this.getOpt("delegate");
+
+        if (tools.supports(delegate,"cancel"))
+        {
+            if (delegate.cancel(this))
+            {
+                this.pop();
+            }
+        }
+        else
+        {
+            this.pop();
+        }
+    }
+
+    done()
+    {
+        const   delegate = this.getOpt("delegate");
+
+        if (tools.supports(delegate,"done"))
+        {
+            if (delegate.done(this))
+            {
+                this.pop();
+            }
+        }
+        else
+        {
+            this.pop();
+        }
+    }
+
+    static setOptions(options)
+    {
+        Dialog._opts.setOpts(options);
+    }
+
+    static obscure(dialog)
+    {
+        if (Dialog._cover != null)
+        {
+            Dialog._cover.style.display = "block";
+            Dialog._cover.style.zIndex = dialog._zFactor + Dialog._modals.length - 1;
+            document.body.appendChild(Dialog._cover);
+        }
+
+        Dialog._obscureCount++;
+
+        Dialog.placeModals();
+    }
+
+    static unobscure(force)
+    {
+        if (force)
+        {
+            Dialog._obscureCount = 0;
+        }
+        else
+        {
+            Dialog._obscureCount--;
+        }
+
+        if (Dialog._obscureCount == 0)
+        {
+            Dialog._cover.style.display = "none";
+        }
+
+        Dialog.placeModals();
+    }
+
+    static placeModals()
+    {
+        if (Dialog._modals == null || Dialog._modals.length == 0)
         {
             return;
         }
@@ -730,6 +480,8 @@ var	_api =
         var	d = window.document;
         var	bodyWidth = d.body.offsetWidth;
         var	bodyHeight = d.body.offsetHeight;
+        var xalign;
+        var yalign;
         var	element;
         var borders;
         var	width;
@@ -737,148 +489,356 @@ var	_api =
         var	x;
         var	y;
 
-        for (var i = 0; i < this._modals.length; i++)
-        {
-            element = this._modals[i];
+        Dialog._modals.forEach((dialog) => {
 
-            width = element.offsetWidth;
-            height = element.offsetHeight;
+            dialog.layout();
 
-            if (element._xAlign == "left")
+            width = dialog._div.offsetWidth;
+            height = dialog._div.offsetHeight;
+
+            xalign = Dialog._opts.getOpt("xalign","center");
+            yalign = Dialog._opts.getOpt("yalign","center");
+
+            if (xalign == "left")
             {
-                element.style.left = this._dialogInset + "px";
+                dialog._div.style.left = Dialog._dialogInset + "px";
             }
-            else if (element._xAlign == "right")
+            else if (yalign == "right")
             {
-                element.style.left = (bodyWidth - width - this._dialogInset) + "px";
+                dialog._div.style.left = (bodyWidth - width - Dialog._dialogInset) + "px";
             }
             else
             {
-                element.style.left = parseInt((bodyWidth / 2) - (width / 2)) + "px";
+                dialog._div.style.left = parseInt((bodyWidth / 2) - (width / 2)) + "px";
             }
 
-            if (element._yAlign == "top")
+            if (yalign == "top")
             {
-                element.style.top = this._dialogInset + "px";
+                dialog._div.style.top = Dialog._dialogInset + "px";
             }
-            else if (element._yAlign == "bottom")
+            else if (yalign == "bottom")
             {
-                element.style.top = (bodyHeight - height - this._dialogInset) + "px";
+                dialog._div.style.top = (bodyHeight - height - Dialog._dialogInset) + "px";
             }
             else
             {
-                element.style.top = parseInt((bodyHeight / 2) - (height / 2)) + "px";
+                dialog._div.style.top = parseInt((bodyHeight / 2) - (height / 2)) + "px";
             }
-        }
+        });
 
-        d._cover.style.width = bodyWidth + "px";
-        d._cover.style.height = bodyHeight + "px";
-    },
+        Dialog._cover.style.width = bodyWidth + "px";
+        Dialog._cover.style.height = bodyHeight + "px";
+    }
 
-    focusIn:function(id,milliseconds)
+    static clearModals()
     {
-        if (this._focus != null)
+        if (Dialog._modals != null)
+        {
+            for (var i = 0; i < Dialog._modals.length; i++)
+            {
+                Dialog._modals[i]._div.style.display = "none";
+            }
+
+            Dialog._modals = new Array();
+
+            Dialog.unobscure(true);
+        }
+    }
+}
+
+class Form extends Options
+{
+    constructor(dialog,values,options)
+    {
+		super(options);
+
+        this._dialog = dialog;
+        this._table = null;
+        this._opts = [];
+        this._optsmap = {};
+
+        Object.defineProperty(this,"table", {
+            get() {
+                return(this._table);
+            }
+        });
+
+        Object.defineProperty(this,"data", {
+            get() {
+                var data = {};
+
+                this._opts.forEach((opts) => {
+                    if (opts.hasOpt("control"))
+                    {
+                        data[opts.getOpt("name")] = opts.getOpt("control").value;
+                    }
+                });
+
+                return(data);
+            }
+        });
+
+        this.create(values);
+    }
+
+    create(values)
+    {
+        this._values = values;
+        this._opts = [];
+        this._optsmap = {};
+        this._table = document.createElement("table");
+        this._table.style.width = "80%";
+        this._table.style.margin = "auto";
+
+        if (this._values == null)
         {
             return;
         }
 
-        this._focus = id;
+        var tr;
+        var td;
 
-        var	dialogs = this;
+        values.forEach((o) => {
+            var opts = new Options(o);
+            var id = opts.getOpt("id",tools.guid());
+            var name = opts.getOpt("name","");
+            var value = opts.getOpt("value","");
+            var label = opts.getOpt("label",name);
+            var classname = opts.getOpt("class","dialogValue");
+            var type = opts.getOpt("type","input");
+            var style = opts.getOpt("style");
 
-        setInterval(function(){dialogs.focus()},milliseconds);
-    },
+            this._table.appendChild(tr = document.createElement("tr"));
+            tr.appendChild(td = document.createElement("td"));
+            td.className = "dialogLabel";
+            td.innerHTML = label;
 
-    focus:function()
-    {
-        if (this._focus != null)
-        {
-            var	element = document.getElementById(this._focus);
+            this._table.appendChild(tr = document.createElement("tr"));
+            tr.appendChild(td = document.createElement("td"));
+            td.className = classname;
 
-            if (element != null)
+            var control = null;
+
+            if (type == "select")
             {
-                element.focus();
+                control = document.createElement("select");
+
+                if (opts.hasOpt("options"))
+                {
+                    var tmp = opts.getOpt("options");
+
+                    tmp.forEach((opt) => {
+                        var n = opt.name;
+                        var v = opt.hasOwnProperty("value") ? opt.value : name;
+                        var option = document.createElement("option");
+                        option.value = v;
+                        option.appendChild(document.createTextNode(n));
+                        if (n == value || v == value)
+                        {
+                            option.selected = true;
+                        }
+                        control.add(option);
+                    });
+                }
+            }
+            else if (type == "textarea")
+            {
+                control = document.createElement("textarea");
+            }
+            else if (type == "code")
+            {
+                control = document.createElement("pre");
+                control.style.overflow = "auto";
+
+                control.id = id;
+                control.innerText = value;
+
+                if (style != null)
+                {
+                    control.style = style;
+                }
+
+                td.appendChild(control);
+
+                control = null;
+            }
+            else
+            {
+                control = document.createElement("input");
+                control.type = opts.getOpt("type","text");
             }
 
-            this._focus = null;
+            if (control != null)
+            {
+                control.dialog = this._dialog;
+
+                control.id = id;
+
+                if (type != "select")
+                {
+                    control.value = value;
+                }
+
+                if (style != null)
+                {
+                    control.style = style;
+                }
+
+                if (opts.hasOpt("onchange"))
+                {
+                    control.addEventListener("change",opts.getOpt("onchange"));
+                }
+
+                td.appendChild(control);
+
+                opts.setOpt("control",control);
+            }
+
+            this._opts.push(opts);
+            this._optsmap[name] = opts;
+        });
+    }
+
+    getValue(name,dv)
+    {
+        var value = (dv != null) ? dv : null;
+        var control = this.getControl(name);
+
+        if (control != null)
+        {
+            value = control.value;
         }
+
+        return(value);
+    }
+
+    getControl(name)
+    {
+        var control = null;
+
+        if (this._optsmap.hasOwnProperty(name))
+        {
+            var opts = this._optsmap[name];
+            control = opts.getOpt("control");
+        }
+
+        return(control);
+    }
+}
+
+var	_api =
+{
+    showDialog:function(options)
+    {
+        var dialog = new Dialog(options);
+        dialog.push();
+        return(dialog);
     },
 
-    selectIn:function(id,milliseconds)
+    showCodeDialog:function(options)
     {
-        if (this._select != null)
+        options.buttons = "done";
+        var dialog = new Dialog(options);
+        var pre = document.createElement("pre");
+        pre.style.width = "100%";
+        pre.style.height = "100%";
+        pre.className = "dialogCode";
+        pre.innerText = dialog.getOpt("code");
+        pre.style.margin = "auto";
+        dialog._div.style.width = "80%";
+        dialog._div.style.height = "80%";
+        dialog.content = pre;
+        dialog.push();
+        return(dialog);
+    },
+
+    showDivDialog:function(div,options)
+    {
+        options.buttons = "done";
+        var dialog = new Dialog(options);
+        div.className = "dialogCode";
+        dialog._div.style.width = "80%";
+        dialog._div.style.height = "80%";
+        dialog.content = div;
+        dialog.push();
+        return(dialog);
+    },
+
+    showFrameDialog:function(options)
+    {
+        options.buttons = "done";
+        var frame = document.createElement("iframe");
+        frame.style.width = "100%";
+        frame.style.height = "100%";
+        frame.className = "dialogCode";
+        var dialog = new Dialog(options);
+        frame.src = dialog.getOpt("url","");
+        frame.className = "dialogFrame";
+        dialog._div.style.width = "80%";
+        dialog._div.style.height = "80%";
+        dialog.content = frame;
+        dialog.push();
+        return(dialog);
+    },
+
+    pushModal:function(modal,options)
+    {
+        if (options == null)
+        {
+            options = {};
+        }
+        options["div"] = modal;
+        var dialog = new Dialog(options);
+        dialog.push();
+        return(dialog);
+    },
+
+    popModal:function(modal)
+    {
+        if (Dialog._modals.length == 0)
         {
             return;
         }
 
-        this._selection = id;
+        var	element = (typeof(modal) == "string") ? document.getElementById(modal) : modal;
 
-        var	dialogs = this;
+        if (element == null)
+        {
+            return;
+        }
 
-        setInterval(function(){dialogs.select()},milliseconds);
+        var	current = Dialog._modals[Dialog._modals.length - 1];
+
+        if (current._div != element)
+        {
+            return;
+        }
+
+        current.pop();
     },
 
-    select:function()
+    popup:function(options)
     {
-        if (this._selection != null)
-        {
-            var	element = document.getElementById(this._selection);
-
-            if (element != null)
-            {
-                element.setSelectionRange(0,element.value.length);
-                element.focus();
-            }
-
-            this._selection = null;
-        }
+        var dialog = this.create(options);
+        dialog.show();
+        return(dialog);
     },
 
-    obscure:function()
+    create:function(options)
     {
-        this.check();
-
-        var	d = window.document;
-
-        if (d.hasOwnProperty("_cover"))
-        {
-            d._cover.style.display = "block";
-            d._cover.style.zIndex = this._zFactor + this._modals.length - 1;
-            d.body.appendChild(d._cover);
-        }
-
-        this._obscureCount++;
-
-        this.placeModals();
+        var dialog = new Dialog(options);
+        return(dialog);
     },
 
-    unObscure:function(force)
+    placeModals:function()
     {
-        this.check();
-
-        if (force)
-        {
-            this._obscureCount = 0;
-        }
-        else
-        {
-            this._obscureCount--;
-        }
-
-        if (this._obscureCount == 0)
-        {
-            var	d = window.document;
-
-            if (d.hasOwnProperty("_cover"))
-            {
-                d._cover.style.display = "none";
-            }
-        }
-
-        this.placeModals();
+        Dialog.placeModals();
     },
-};
 
-window._dialogs_ = _api;
+    clearModals:function()
+    {
+        Dialog.clearModals();
+    }
+}
 
 export {_api as dialogs};

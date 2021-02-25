@@ -220,6 +220,12 @@ class Options
         return(o);
     }
 
+    supports(name)
+    {
+        var value = this.getOpt(name);
+        return(value != null && typeof(value) == "function");
+    }
+
     toString()
     {
         return(JSON.stringify(this._options));

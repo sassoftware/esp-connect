@@ -2586,7 +2586,6 @@ class Gauge extends Chart
         });
 
         this._range = this.getOpt("range",[0,100]);
-        this._decimals = this.getOpt("decimals",true);
     }
 
     getType()
@@ -2780,13 +2779,13 @@ class GaugeEntry extends Options
             {
                 var num;
 
-                if (this._gauge._decimals)
+                if (this._gauge.getOpt("integer",false))
                 {
-                    num = parseFloat(value);
+                    num = parseInt(value);
                 }
                 else
                 {
-                    num = parseInt(value);
+                    num = parseFloat(value);
                 }
 
                 if (this._data != null)
@@ -2950,7 +2949,7 @@ class ImageViewer extends Chart
         this._canvas.style.left = 0;
         this._canvas.style.top = 0;
         this._canvas.style.zIndex = "5000";
-        this._canvas.style.border = this.getOpt("image_border","10px solid #d8d8d8");
+        this._canvas.style.border = this.getOpt("image_border","0");
         this._viewerDiv.style.position = "relative";
         this._viewerDiv.style.margin = "auto";
         this._viewerDiv.style.padding = 0;

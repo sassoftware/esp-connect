@@ -30,7 +30,6 @@ var _connection = null;
 var _maxentries = 100;
 var _visuals = null;
 var	_storage = null;
-var	_common = null;
 var _viewer = null;
 var _parms = null;
 var _k8s = null;
@@ -38,7 +37,8 @@ var _k8s = null;
 function
 init()
 {
-    _common = _esp.getStorage("esp-connect");
+    var common = _esp.getStorage("esp-connect");
+
     _storage = _esp.getStorage("logviewer");
 
     const   k8s = _storage.getOpt("k8s",false);
@@ -69,9 +69,9 @@ init()
 
     if (k8s)
     {
-        if (_common.hasOpt("k8s-server"))
+        if (common.hasOpt("k8s-server"))
         {
-            server = _common.getOpt("k8s-server");
+            server = common.getOpt("k8s-server");
         }
     }
     else
@@ -80,9 +80,9 @@ init()
         {
             server = encodeURI(_esp.getParm("server"));
         }
-        else if (_common.hasOpt("esp-server"))
+        else if (common.hasOpt("esp-server"))
         {
-            server = _common.getOpt("esp-server");
+            server = common.getOpt("esp-server");
         }
     }
 
@@ -184,7 +184,8 @@ setKubernetes(value)
 {
     if (value)
     {
-        _k8s = _esp.createK8S();
+        var common = _esp.getStorage("esp-connect");
+        _k8s = _esp.createK8S(common.getOpt("k8s-server"));
         document.getElementById("kubernetes").checked = true;
         document.getElementById("k8sProjectCell").style.display = "table-cell";
         _esp.setLinkState("connect",false);

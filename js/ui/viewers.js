@@ -81,6 +81,8 @@ class ModelViewer extends ViewerBase
 
         super(visuals,container,connection,opts.getOpts());
 
+        this._k8s = null;
+
         this._project = null;
 
         Object.defineProperty(this,"connection", {
@@ -107,12 +109,15 @@ class ModelViewer extends ViewerBase
 
                 this._connection = value;
                 this._model = null;
+                this._k8s = null;
                 this.draw();
 
                 if (this._connection != null)
                 {
                     this._stats = this._connection.getStats();
                     this.setStats();
+
+                    this._k8s = this._connection.k8s;
 
                     const   self = this;
 
@@ -187,11 +192,11 @@ class ModelViewer extends ViewerBase
 
     loadK8S(server)
     {
-        var mv = this;
+        const   self = this;
 
         this._visuals._api.connect(server,{
             ready:function(conn) {
-                mv.connection = conn;
+                self.connection = conn;
             },
         });
     }
@@ -630,7 +635,7 @@ class ModelViewer extends ViewerBase
         {
             this._project = "*";
 
-            var mv = this;
+            const   self = this;
 
             connection.k8s.getProjects().then(
                 function(result)
@@ -647,7 +652,7 @@ class ModelViewer extends ViewerBase
                         {
                             option.selected = true;
                         }
-                        mv._projectSelect.add(option);
+                        self._projectSelect.add(option);
                     });
                 },
                 function(result)
