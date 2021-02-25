@@ -154,11 +154,12 @@ class Dialog extends Options
         var contentSize = uitools.getSize(this._content);
         var footerSize = uitools.getSize(this._footer);
 
-        if (height <= 0)
+        if (height <= 0 && this._div.style.height == "auto")
         {
             var tmp = headerSize.height + contentSize.height + footerSize.height + 50;
             this._div.style.height = tmp + "px";
             height = this._div.clientHeight - (margin * 2);
+            this._div.style.height == "auto";
         }
 
         var	top = margin;
