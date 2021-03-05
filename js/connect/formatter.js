@@ -172,7 +172,7 @@ class Formatter extends Options
         }
         else if (this._command == "/b")
         {
-            this._text += "\x1b[0m";
+            this._text += "\x1b[22m";
         }
         else if (this._command == "br/")
         {
@@ -205,7 +205,7 @@ class Formatter extends Options
         }
         else if (this._command == "/fg")
         {
-            this._text += "\x1b[0m";
+            this._text += "\x1b[30m";
         }
         else if (this._command == "/bg")
         {

@@ -939,7 +939,7 @@ class K8S extends Options
         }));
     }
 
-    puturl(url,path,options,delegate)
+    putFile(filename,path,options)
     {
         return(new Promise((resolve,reject) => {
 
@@ -947,31 +947,36 @@ class K8S extends Options
 
             if (opts.hasOpt("name") == false)
             {
-                const   index = url.lastIndexOf("/");
+                const   index = filename.lastIndexOf("/");
                 if (index != -1)
                 {
-                    opts.setOpt("name",url.substr(index));
+                    opts.setOpt("name",filename.substr(index));
+                }
+                else
+                {
+                    opts.setOpt("name",filename);
                 }
             }
 
-            var self = this;
+            const   self = this;
 
-            ajax.create(url).get().then(
+            tools.readfile(filename).then(
                 function(result) {
-                    return(self.put(result.text,path,opts.getOpts(),delegate));
+                    return(self.put(result,path,opts.getOpts()));
                 }
             ).then(
                 function() {
                     resolve();
                 },
             ).catch(
-                function() {
-                    reject();
+                function(e) {
+                    reject(e);
                 }
             );
         }));
     }
-    puturlx(url,path,options,delegate)
+
+    putUrl(url,path,options)
     {
         return(new Promise((resolve,reject) => {
 
@@ -984,30 +989,27 @@ class K8S extends Options
                 {
                     opts.setOpt("name",url.substr(index));
                 }
+                else
+                {
+                    opts.setOpt("name",filename);
+                }
             }
 
             var self = this;
 
             ajax.create(url).get().then(
                 function(result) {
-                    self.put(result.text,path,opts.getOpts(),delegate).then(
-                        function() {
-                            resolve();
-                        },
-                        function() {
-                            reject();
-                        }
-                    );
+                    return(self.put(result.text,path,opts.getOpts()));
+                }
+            ).then(
+                function() {
+                    resolve();
                 },
-                function(result) {
-                    tools.exception("error: " + result);
+            ).catch(
+                function(e) {
+                    reject(e);
                 }
-            ).
-            catch(
-                function(result) {
-                    console.log("caught error: " + result);
-                }
-            );                    
+            );
         }));
     }
 
@@ -1594,8 +1596,11 @@ class K8SProject extends K8S
         s += "    loadBalancePolicy: \"default\" \n";
         s += "    espProperties:\n";
         s += "      server.xml: \"" + model + "\"\n";
-        s += "      meta.meteringhost: \"sas-event-stream-processing-metering-app." + this._ns + "\"\n";
-        s += "      meta.meteringport: \"80\"\n";
+        if (this.getOpt("viya",false))
+        {
+            s += "      meta.meteringhost: \"sas-event-stream-processing-metering-app." + this._ns + "\"\n";
+            s += "      meta.meteringport: \"80\"\n";
+        }
         s += "    projectTemplate:\n";
         s += "      autoscale:\n";
         s += "        minReplicas: 1\n";

@@ -1150,6 +1150,19 @@ var _api =
         {
             throw(text);
         }
+    },
+
+    readfile:function(path)
+    {
+        return(new Promise((resolve,reject) => {
+            import("fs").then(
+                function(result) {
+                    const   fs = result.default;
+                    const   contents = fs.readFileSync(path);
+                    resolve(contents);
+                }
+            );
+        }));
     }
 };
 

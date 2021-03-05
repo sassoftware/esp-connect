@@ -125,6 +125,32 @@ class JsonEncoder
         this._index += 8;
     }
 
+    writeF32(value,name)
+    {
+        this.writeName(name);
+        this.writeType('d');
+
+        if (this._debug)
+        {
+            console.log("index: " + this._index + " write f32: " + value);
+        }
+        this._view.setFloat32(this._index,value);
+        this._index += 4;
+    }
+
+    writeF64(value,name)
+    {
+        this.writeName(name);
+        this.writeType('d');
+
+        if (this._debug)
+        {
+            console.log("index: " + this._index + " write f64: " + value);
+        }
+        this._view.setFloat64(this._index,value);
+        this._index += 8;
+    }
+
     writeBuffer(value,name)
     {
         this.writeName(name);
@@ -333,7 +359,6 @@ class JsonDecoder
         }
 
         var length;
-        var name;
         var value;
         var type;
 
@@ -350,7 +375,7 @@ class JsonDecoder
             {
                 length = this.getLength();
                 name = this.getString(length);
-                type = this.getType();
+                type = this.getType(false);
 
                 if (type == '{')
                 {

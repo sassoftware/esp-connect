@@ -294,7 +294,8 @@ var	_api =
 
         console.log("");
         console.log("\x1b[1m%s\x1b[0m","NAME");
-        console.log(f.tab() + "node " + command + ".mjs -- " + summary);
+        //console.log(f.tab() + "node " + command + ".mjs -- " + summary);
+        console.log(f.tab() + command + " -- " + summary);
 
         console.log("");
         console.log("\x1b[1m%s\x1b[0m","SYNOPSIS");
@@ -348,7 +349,7 @@ var	_api =
             });
         }
 
-        console.log("%s\x1b[1m%s\x1b[0m",f.tab(),command + s);
+        console.log("%s\x1b[1m%s\x1b[0m",f.tab(),"node " + command + ".mjs" + s);
         console.log("");
 
         console.log("\x1b[1m%s\x1b[0m","DESCRIPTION");
@@ -427,7 +428,8 @@ var	_api =
             docopts.getOpt("examples").forEach((example) => {
                 var opts = new Options(example);
                 var title = opts.getOpt("title","Example " + index);
-                console.log("%s\x1b[1m%s\x1b[0m",f.tab(),title);
+                title = f.format(title,null,f.tab(0),f.tab(0));
+                console.log("%s\x1b[1m%s\x1b[22m",f.tab(),title);
                 console.log(f.tab(2) + "$ node " + command + " " + opts.getOpt("command",""));
                 var output = f.format(opts.getOpt("output",""),null,f.tab(2),f.tab(2));
                 console.log(output);

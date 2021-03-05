@@ -14,41 +14,134 @@ $ npm install @work@/js/connect
 * run a test using the following command (use your own ESP server):
 
 ```sh
-$ node model.mjs -server http://espsrv01:7777
+$ node connect.mjs --server http://espsrv01:7777 --model
 ```
 
-Connect provides several utilities you can use to communicate with an ESP server. These utilities contain JSON objects which are sent to the ESP server in order to perform tasks such
-as loading projects, subscribing to events, and model viewing. The utilities are:
-* *collection.mjs* - Subscribe to an event collection.</li>
-* *stream.mjs* - Subscribe to an event stream.</li>
-* *model.mjs* - Retrieve the ESP model.</li>
-* *logs.mjs* - Set up a live view of ESP logs.</li>
-* *load_project.mjs* - Load an ESP project from a file.</li>
-* *load_router.mjs* - Load an ESP router from a file.</li>
-* *publish_data.mjs* - Publish ESP event data from a file.</li>
-* *publish_url.mjs* - Publish ESP event data from a URL (the server pulls from the URL).</li>
-* *stats.mjs* - Set up a live view of ESP usage and memory statistics.</li>
-* *xml.mjs* - Retrieve ESP project XML.
+Connect provides the *connect.mjs* utility to allow you to run ESP connect commands against an ESP server.
+This utility contains JSON objects which are sent to the ESP server in order to perform tasks such
+as loading projects, subscribing to events, and model viewing.
 
-To run these utilities you run the *node* command on the desired javascript file:
+You can get a list of options by running the command with *--help* specified:
 
 ```sh
-$ node model.mjs -server http://espsr01:7777
+$ node connect.mjs --help
 ```
 
-If the utility requires arguments you will get a usage statement. For example, if you run *collection.js* without arguments you will see:
-
 ```sh
-$ node collection.mjs -server http://espsrv01:7777
-
-
-collection(1)			ESP Connect Node.js Commands			collection(1)
+connect(1)			ESP Connect Node.js Commands			connect(1)
 
 NAME
-    node collection.mjs -- subscribe to an ESP event collection
+    connect -- Run ESP Connect commands
 
 SYNOPSIS
-    collection --server --window [--format] [--pagesize] [--schema] [--sort] [--cert]
+    node connect.mjs [--load-project] [--delete-project] [--collection] [--stream] [--model] [--xml] [--stats] [--logs] [--publish-data] [--publish-url] [--loggers] [--load-router] [--router] [--eventsource] [--project-updates] [--k8s-projects] [--k8s-log] [--k8s-ls] [--k8s-get] [--k8s-put] [--k8s-cat] [--k8s-rm] [--k8s-restart] [--k8s-exec]
+
+DESCRIPTION
+    Run ESP Connect commands
+
+OPTIONS
+    --load-project
+        Load a project from a file
+
+    --delete-project
+        Delete a project
+
+    --collection
+        Subscribe to an ESP event collection
+
+    --stream
+        Subscribe to an ESP event stream
+
+    --model
+        Display one or more ESP models from an ESP server
+
+    --xml
+        Display project XML from an ESP server
+
+    --stats
+        Display ESP server statistics
+
+    --logs
+        View realtime ESP server logs
+
+    --publish-data
+        Publish ESP events from a file
+
+    --publish-url
+        Publish ESP events from a URL
+
+    --loggers
+        Display and set ESP logging contexts
+
+    --load-router
+        Load an ESP router from a file
+
+    --router
+        Run a javascript router
+
+    --eventsource
+        Read a configuration file and create event sources to publish data into
+        an ESP server
+
+    --project-updates
+        Listen for and report project load and delete events
+
+    --k8s-projects
+        List ESP projects in a Kubernetes cluster
+
+    --k8s-log
+        Retrieve the log from a K8S pod. The URL must contain both a namespace and a
+        project name
+
+    --k8s-ls
+        Execute a file listing in a pod. The URL must contain both a namespace and a
+        project name
+
+    --k8s-get
+        Retrieve a file from a pod
+
+    --k8s-put
+        Copy a file into a pod
+
+    --k8s-cat
+        Display file contents from a pod
+
+    --k8s-rm
+        Remove a file from a pod
+
+    --k8s-restart
+        Restart a project in a pod. The URL must contain both a namespace and a project
+        name.
+
+    --k8s-exec
+        Execute a command in the pod. Any text after the -- characters will be sent
+        to the pod to be executed.
+
+
+SEE ALSO
+    ESP User Guide   https://go.documentation.sas.com/?cdcId=espcdc&cdcVersion=6.2&docsetId=espov&docsetTarget=home.htm&locale=en
+
+SAS ESP Connect				Thu Mar 04 2021				SAS ESP Connect
+```
+
+Note that there are several available Kubernetes commands you can use to communicate with ESP servers in K8S Clusters. All of the
+other commands work seamlessly with ESP servers in Kubernetes.
+
+To get usage information on a specific command, run with the specified command and *--help*.
+For example, to get usage information on event collections:
+
+```sh
+$ node connect.mjs --collection --help
+```
+
+```sh
+connect(1)			ESP Connect Node.js Commands			connect(1)
+
+NAME
+    connect -- Run ESP Connect commands
+
+SYNOPSIS
+    node connect.mjs --server --collection --window [--format] [--pagesize] [--schema] [--sort]
 
 DESCRIPTION
     This command subscribes to an ESP window for events.
@@ -56,6 +149,9 @@ DESCRIPTION
 OPTIONS
     --server ESP server
         ESP Server to which to connect in the form http://espserver:7777
+
+    --collection
+        subscribe to an ESP event collection
 
     --window ESP window
         ESP window in the form of project/contquery/window
@@ -72,20 +168,11 @@ OPTIONS
     --sort field
         sort field
 
-    --cert certificate file
-        certificate to use for secure connections.
-
-
-EXAMPLES
-    Subscribe to events
-        $ node collection --server http://espsrv01:7777 --window secondary/cq/brokerAlertsAggr
-        
 
 SEE ALSO
     ESP User Guide   https://go.documentation.sas.com/?cdcId=espcdc&cdcVersion=6.2&docsetId=espov&docsetTarget=home.htm&locale=en
 
-SAS ESP Connect				Wed Oct 21 2020				SAS ESP Connect
-
+SAS ESP Connect				Thu Mar 04 2021				SAS ESP Connect
 ```
 
 To write your own Node.js programs you will need to follow a couple simple steps. Begin your javascript file with the following code to get a 

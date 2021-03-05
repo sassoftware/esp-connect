@@ -1082,18 +1082,22 @@ class Api extends Options
         this.getProjectXml(null,delegate);
     }
 
-    getLoggers()
+    getLoggers(context)
     {
         return(new Promise((resolve,reject) => {
             var id = tools.guid();
 
             var request = {"loggers":{}};
             var o = request["loggers"];
+            if (context != null)
+            {
+                o["context"] = context;
+            }
             o["id"] = id;
 
             this.addHandler(id,{
                 process:function(result) {
-                    resolve(result)
+                    resolve(result);
                 }
             });
 
@@ -2087,7 +2091,7 @@ class EventCollection extends Datasource
                     resolve(self);
                 },
                 error:function(result) {
-                    reject(self);
+                    reject(result);
                 }
             });
 
@@ -2474,7 +2478,7 @@ class EventStream extends Datasource
                     resolve(self);
                 },
                 error:function(result) {
-                    reject(self);
+                    reject(result);
                 }
             });
 
