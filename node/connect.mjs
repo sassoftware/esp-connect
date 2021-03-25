@@ -155,10 +155,10 @@ else if (opts.hasOpt("k8s-projects"))
                     a = [];
                 }
                 o = esp.createOptions();
-                o.setOpt("name",item.metadata.name);
-                o.setOpt("namespace",item.metadata.namespace);
+                o.setOpt("Name",item.metadata.name);
+                o.setOpt("Namespace",item.metadata.namespace);
 
-                o.setOpt("ingress",s);
+                o.setOpt("Ingress",s);
                 a.push(o);
 
                 if (opts.getOpt("info",false))
@@ -569,6 +569,7 @@ else
                     {name:"collection",description:"subscribe to an ESP event collection",required:true},
                     {name:"window",arg:"ESP window",description:"ESP window in the form of project/contquery/window",required:true},
                     {name:"format",arg:"xml | json | ubjson",description:"format of events sent to the client (defaults to ubjson)"},
+                    {name:"interval",arg:"milliseconds",description:"the interval, in milliseconds, at which to deliver events (defaults to 0 which delivers events as they occur)."},
                     {name:"pagesize",arg:"numevents",description:"page size of the collection (defaults to 50)."},
                     {name:"schema",arg:"true | false",description:"return schema on start, defaults to true."},
                     {name:"sort",arg:"field",description:"sort field"}
@@ -613,7 +614,7 @@ else
                     {name:"window",arg:"ESP window",description:"ESP window in the form of project/contquery/window",required:true},
                     {name:"format",arg:"xml | json | ubjson",description:"format of events sent to the client (defaults to ubjson)"},
                     {name:"interval",arg:"milliseconds",description:"the interval, in milliseconds, at which to deliver events (defaults to 0 which delivers events as they occur)."},
-                    {name:"maxevents",arg:"numevents",description:"the maximum number of events to deliver at any one time (delivers to 0 which means no maximum)"},
+                    {name:"maxevents",arg:"numevents",description:"the maximum number of events to deliver at any one time (defaults to 0 which means no maximum)"},
                     {name:"schema",arg:"true | false",description:"return schema on start, defaults to true."}
                 ]
             }
@@ -680,7 +681,7 @@ else
         }
         else if (opts.hasOpt("delete-project"))
         {
-            var name = opts.getOpt("delete-project");
+            var name = opts.getOpt("name");
 
             connection.deleteProject(name).then(
                 function(result) {
@@ -772,7 +773,7 @@ else
         }
         else if (opts.hasOpt("publish-url"))
         {
-            var url = opts.getOpt("publish-url","");
+            var url = opts.getOpt("url","");
             var w = opts.getOpt("window","");
 
             if (url.length == 0 || w.length == 0)
@@ -781,7 +782,8 @@ else
                     description:"Publish a URL into an ESP model",
                     options:[
                         {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
-                        {name:"publish-url",arg:"URL",description:"URL containing the ESP events",required:true},
+                        {name:"publish-url",description:"Publish a URL into an ESP model",required:true},
+                        {name:"url",arg:"URL",description:"URL containing the ESP events",required:true},
                         {name:"window",arg:"ESP window",description:"ESP source window in the form of project/contquery/window",required:true},
                         {name:"informat",arg:"csv | xml | json | bin",description:"input data format, default is to derive from the URL"},
                         {name:"blocksize",arg:"size",description:"event block size (defaults to 1)"},

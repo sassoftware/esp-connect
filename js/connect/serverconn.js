@@ -41,7 +41,7 @@ class ServerConnection extends Connection
             }
         }
 
-        var certConfirm  = this.httpurlBase;
+        var certConfirm = this.httpurlBase;
         certConfirm  += "/eventStreamProcessing/v1/server";
         this.setOpt("cert-confirm-url",certConfirm);
 

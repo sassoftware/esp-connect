@@ -7,7 +7,6 @@ import {Options} from "./options.js";
 import {tools} from "./tools.js";
 import {codec} from "./codec.js";
 
-var WS = null;
 var W3CWS = null;
 var TUNNEL = null;
 
@@ -261,11 +260,21 @@ class Connection extends Options
         Object.defineProperty(this,"httpurlBase", {
             get() {
                 var	base = "";
-                base += this.httpProtocol;
-                base += "://";
-                base += this.host;
-                base += ":";
-                base += this.port;
+
+                if (this.hasOpt("k8s"))
+                {
+                    var k8s = this.getOpt("k8s");
+                    base = k8s.espUrl;
+                }
+                else
+                {
+                    base += this.httpProtocol;
+                    base += "://";
+                    base += this.host;
+                    base += ":";
+                    base += this.port;
+                }
+
                 return(base);
             }
         });

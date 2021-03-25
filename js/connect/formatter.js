@@ -53,6 +53,11 @@ class Formatter extends Options
 
     process(text,length,indent)
     {
+        if (text == null)
+        {
+            return;
+        }
+
         var word = "";
         var c;
 

@@ -5,8 +5,7 @@
 
 import {connect as esp} from "@sassoftware/esp-connect";
 import {default as fs} from "fs";
-
-const   url = require("url");
+import {default as url} from "url";
 
 var opts = esp.getArgs();
 var server = opts.getOpt("server");
@@ -20,7 +19,7 @@ if (server == null || logfile == null)
 
 var _websockets = {};
 
-var WS = require("ws");
+import {default as ws} from "websocket";
 
 function
 SendRequestMgr(server,logfile)
@@ -120,10 +119,15 @@ function()
     {
         if (request._isWebSocket)
         {
-            this._ws = request.createWebSocket();
-            var mgr = this;
-            setTimeout(function(){mgr.run()},100);
-            return;
+            const   self = this;
+            request.createWebSocket().then(
+                function(result) {
+                    self._ws = result;
+                    setTimeout(function(){mgr.run()},100);
+                },
+                function(result) {
+                }
+            );
         }
         else
         {
@@ -423,13 +427,19 @@ function()
 SendRequest.prototype.createWebSocket =
 function()
 {
-    var websocket = new WS(this._url.toString(),{"headers":this._headers});
-    websocket._handler = new WebsocketHandler(this);
-    websocket.on("open",wsOpen);
-    websocket.on("close",wsClose);
-    websocket.on("error",wsError);
-    websocket.on("message",wsText);
-    return(websocket);
+    return(new Promise((resolve,reject) => {
+        const   self = this;
+        const   delegate = {open:wsOpen,close:wsClose,error:wsError,message:wsText};
+        esp.createWebSocket(this._url.toString(),delegate).then(
+            function(result) {
+                result._handler = new WebsocketHandler(self);
+                resolve(result);
+            },
+            function(result) {
+                reject(result);
+            }
+        );
+    }));
 }
 
 SendRequest.prototype.response =
@@ -532,14 +542,20 @@ wsText(message)
 function
 showUsage()
 {
-    console.log("");
-    console.log("usage: node playback -server -logfile [-start number] [-responses] [-maxwait ms]");
-    console.log("");
-    console.log("options:");
-    console.log("\t-server\t\tESP Server to which to connect in the form http://espserver:7777");
-    console.log("\t-logfile\tfile containing ESP log");
-    console.log("\t-start\t\tthe line at which to begin reading");
-    console.log("\t-responses\toutput the responses to the console");
-    console.log("\t-maxwait\tthe maximum number of milliseconds to wait before sending requests");
-    console.log("");
+    const   usage = {
+        name:"playback",
+        summary:"Playback ESP requests from the server log",
+        description:"Playback ESP requests from the server log",
+        options:[
+            {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
+            {name:"logfile",arg:"filename",description:"file containing ESP server log",required:true},
+            {name:"start",arg:"line number",description:"name of the ESP router"},
+            {name:"responses",arg:"true | false",description:"output the responses to the console"},
+            {name:"maxwait",arg:"milliseconds",description:"the maximum number of milliseconds to wait before sending requests"}
+        ],
+        show_auth:false,
+        show_cert:false
+    }
+
+    esp.usage(usage);
 }

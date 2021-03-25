@@ -706,18 +706,21 @@ class Visuals extends Options
 
     editFilter(delegate)
     {
-        var o =
+        if (tools.supports(delegate,"setFilter") == false || tools.supports(delegate,"getFilter") == false)
         {
-            ok:function(data)
+            throw "The delegate must implement the getFilter and setFilter methods";
+        }
+
+        var form = [];
+        form.push({name:"filter",label:"Filter",value:delegate.getFilter()});
+        dialogs.showDialog({title:"Set Filter",delegate:{
+            ok:function(dialog)
             {
-                delegate.setFilter(data.filter);
-                dialogs.hideDialog();
-            },
-            cancel:dialogs.hideDialog,
-            header:"Edit Filter",
-            values:[{name:"filter",label:"Filter",value:delegate.getFilter()}]
-        };
-        dialogs.showDialog(o);
+                var value = dialog.getValue("filter","");
+                delegate.setFilter(value);
+                dialog.pop();
+            }
+        },form:form});
     }
 }
 

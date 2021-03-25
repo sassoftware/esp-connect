@@ -412,9 +412,8 @@ var	_api =
                         var output = f.format(opts.getOpt("output",""),null,f.tab(5),f.tab(5));
                         console.log(output);
                     });
+                    index++;
                 }
-
-                index++;
 
                 console.log("");
             });

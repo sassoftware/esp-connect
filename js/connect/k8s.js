@@ -54,7 +54,7 @@ class K8S extends Options
             get() {
                 var protocol = "k8s";
 
-                if (this._proxy != null)
+                if (this._proxy)
                 {
                     protocol += "-proxy";
                 }
@@ -166,7 +166,7 @@ class K8S extends Options
                     url += "http";
                 }
 
-                if (this._proxy != null)
+                if (this._proxy)
                 {
                     url += "-proxy";
                 }

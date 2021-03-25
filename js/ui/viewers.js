@@ -635,31 +635,34 @@ class ModelViewer extends ViewerBase
         {
             this._project = "*";
 
-            const   self = this;
+            if (this.getOpt("show_projects",true))
+            {
+                const   self = this;
 
-            connection.k8s.getProjects().then(
-                function(result)
-                {
-                    result.forEach((p) => {
-                        var url = "";
-                        url += connection.k8s.k8sUrl;
-                        url += "/" + p.metadata.namespace;
-                        url += "/" + p.metadata.name;
-                        option = document.createElement("option");
-                        option.value = url;
-                        option.appendChild(document.createTextNode(p.metadata.namespace + "/" + p.metadata.name));
-                        if (option.value == connection.k8s.projectUrl)
-                        {
-                            option.selected = true;
-                        }
-                        self._projectSelect.add(option);
-                    });
-                },
-                function(result)
-                {
-                    tools.exception("error: " + opts);
-                }
-            );
+                connection.k8s.getProjects().then(
+                    function(result)
+                    {
+                        result.forEach((p) => {
+                            var url = "";
+                            url += connection.k8s.k8sUrl;
+                            url += "/" + p.metadata.namespace;
+                            url += "/" + p.metadata.name;
+                            option = document.createElement("option");
+                            option.value = url;
+                            option.appendChild(document.createTextNode(p.metadata.namespace + "/" + p.metadata.name));
+                            if (option.value == connection.k8s.projectUrl)
+                            {
+                                option.selected = true;
+                            }
+                            self._projectSelect.add(option);
+                        });
+                    },
+                    function(result)
+                    {
+                        tools.exception("error: " + opts);
+                    }
+                );
+            }
         }
         else
         {
@@ -1108,7 +1111,7 @@ class ModelViewer extends ViewerBase
         if (after != null)
         {
             var self = this;
-            setTimeout(function(){self.fit()},after);
+            setTimeout(function(){self.fit();self.draw()},after);
         }
         else
         {

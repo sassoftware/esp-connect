@@ -17,18 +17,13 @@ _esp = api;
 
 <script type="text/javascript">
 
-var _namespace = null;
 var _server = null;
+var _k8s = null;
 
 function
 init()
 {
     var parms = _esp.getParms();
-
-    if (parms.hasOwnProperty("namespace"))
-    {
-        _namespace = parms["namespace"];
-    }
 
     _esp.handleLayout();
 
@@ -36,6 +31,18 @@ init()
 
     if (_server != null)
     {
+        var u = new URL(_server);
+
+        if (u.protocol.startsWith("k8s"))
+        {
+            _k8s = _esp.createK8S(_server);
+
+            if (_k8s.namespace == null)
+            {
+                alert("No namespace");
+            }
+        }
+
         connect(_server);
     }
     else
@@ -58,16 +65,13 @@ go(example)
 {
     var s = "";
 
-    if (_namespace != null)
+    if (example == "../html/modelviewer.html" || example == "../html/logviewer.html")
     {
-        if (example == "../html/modelviewer.html" || example == "../html/logviewer.html")
-        {
-            s += "?k8s=true";
-        }
-        else
-        {
-            s += "?namespace=" + _namespace;
-        }
+        s += "?server=" + _server;
+    }
+    else if (_k8s != null)
+    {
+        s += "?namespace=" + _k8s.namespace;
     }
     else if (_server != null)
     {
@@ -78,11 +82,6 @@ go(example)
 
     for (var x in parms)
     {
-        if (x == "namespace" || x == "server")
-        {
-            continue;
-        }
-
         s += ((s.length > 0) ? "&" : "?");
         s += (x + "=" + parms[x]);
     }

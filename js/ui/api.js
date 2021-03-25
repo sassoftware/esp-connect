@@ -157,35 +157,41 @@ var	_api =
         }
     },
 
-    showConnectDialog:function(delegate,k8s)
+    showConnectDialog:function(delegate,server)
     {
         if (connect.getTools().supports(delegate,"connect") == false)
         {
             throw "The delegate must implement the connect method";
         }
 
+        var storage = new StoredData("esp-connect");
+        var k8s = null;
+
+        if (server != null && server.length > 0)
+        {
+            var u = new URL(server);
+
+            if (u.protocol.startsWith("k8s"))
+            {
+                k8s = this.createK8S(server);
+            }
+        }
+
+        if (server == null || server.length == 0)
+        {
+            server = storage.getOpt("esp-server","");
+        }
+
         var o = {
             ok:function(dialog) {
-                var s = dialog.getValue("server","").trim();
-
-                if (s.length > 0)
-                {
-                    storage.setOpt("esp-server",s);
-                }
-                else
-                {
-                    s = dialog.getValue("k8s_project","").trim();
-
-                    if (s.length > 0)
-                    {
-                        storage.setOpt("k8s-server",s);
-                    }
-                }
+                var s = (k8s == null) ? dialog.getValue("server","").trim() : dialog.getValue("k8s_project","").trim();
 
                 if (s.length == 0)
                 {
                     return(false);
                 }
+
+                storage.setOpt("esp-server",s);
 
                 delegate.connect(s);
 
@@ -193,29 +199,19 @@ var	_api =
             }
         };
 
-        var storage = new StoredData("esp-connect");
-        var server = (k8s != null) ? storage.getOpt("k8s-server","") : storage.getOpt("esp-server","");
         var form = [];
-
-        const   url = new URL(server,document.URL);
 
         if (k8s == null)
         {
-            if (url.protocol != "http:" && url.protocol != "https:")
+            if (server == null)
             {
                 server = "";
-            }
-            else
-            {
-                server = url.origin;
             }
             form.push({name:"server",label:"ESP Server",value:server});
             dialogs.showDialog({title:"Connect to ESP Server",delegate:o,form:form});
         }
         else
         {
-            server = url.origin;
-
             const   self = this;
 
             var value = {name:"k8s_ns",label:"K8S Namespace",type:"select"};
@@ -496,7 +492,7 @@ var	_api =
             delete parms["namespace"];
 
             const   url = new URL(".",document.URL);
-            const   s = "https://" + url.host + "/" + namespace;
+            const   s = "k8s-proxy://" + url.host + "/" + namespace;
             const   k8s = this.createK8S(s);
 
             server = k8s.k8sUrl;
