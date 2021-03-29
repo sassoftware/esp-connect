@@ -246,7 +246,9 @@ class Splitter
     {
         to._splitter = this;
         to.appendChild(this._div);
+        /*
         to.addEventListener("resize",function(){console.log("resize")});
+        */
         this.size();
     }
 

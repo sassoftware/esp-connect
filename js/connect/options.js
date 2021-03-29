@@ -181,15 +181,32 @@ class Options
             names.forEach((name) => {
                 if (this._options.hasOwnProperty(name))
                 {
-                    to[name] = this._options[name];
+                    const   value = this._options[name];
+                    if (value instanceof Function)
+                    {
+                        to[name] = value.toString();
+                    }
+                    else
+                    {
+                        to[name] = value;
+                    }
                 }
+
             });
         }
         else
         {
             for (var x in this._options)
             {
-                to[x] = this._options[x];
+                const   value = this._options[x];
+                if (value instanceof Function)
+                {
+                    to[x] = value.toString();
+                }
+                else
+                {
+                    to[x] = value;
+                }
             }
         }
     }

@@ -329,6 +329,56 @@ var _api =
         return(new Timer());
     },
 
+    createFunction:function(text,options)
+    {
+        var f = null;
+        var index = text.indexOf("function");
+
+        if (index != -1)
+        {
+            var start = text.indexOf("(",index);
+            var end = text.indexOf(")",start);
+            var s = text.substring(start + 1,end);
+            var parms = s.split(",");
+
+            start = text.indexOf("{",end + 1);
+
+            if (start != -1)
+            {
+                end = -1;
+
+                start++;
+
+                var count = 1;
+
+                for (var i = start; i < text.length; i++)
+                {
+                    if (text[i] == '}')
+                    {
+                        count--;
+                        if (count == 0)
+                        {
+                            end = i;
+                            break;
+                        }
+                    }
+                    else if (text[i] == '{')
+                    {
+                        count++;
+                    }
+                }
+
+                if (end != -1)
+                {
+                    var code = text.substring(start,end);
+                    f = new Function(parms,code);
+                }
+            }
+        }
+
+        return(f);
+    },
+
     createUrl:function(url)
     {
         var u = {};

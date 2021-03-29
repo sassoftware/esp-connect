@@ -697,27 +697,13 @@ class Chart extends Options
             return(null);
         }
 
-        var base = "";
-        var parms = "";
-
         if (serverRequest)
         {
-            if (this._datasource != null)
-            {
-                base += this._datasource._api.httpurlBase;
-            }
-            else if (this.hasOwnProperty("_connection") && this._connection != null)
-            {
-                base += this._connection.httpurlBase;
-            }
+            return(this.getEncodedUrl());
+        }
 
-            base += "/eventStreamProcessing/v1/visual";
-        }
-        else
-        {
-            base += "/esp-connect/html/visual.html";
-            parms += "server=" + this._datasource._api.httpurlBase;
-        }
+        var base = "/esp-connect/html/visual.html";
+        var parms = "server=" + this._datasource._api.httpurlBase;
 
         if (this._datasource != null)
         {
@@ -734,13 +720,61 @@ class Chart extends Options
             o = opts[name];
             parms += "&" + this.addToUrl(o,name);
         }
-            
+
         if (this._visuals.hasOpt("theme"))
         {
             parms += "&theme=" + this._visuals.getOpt("theme");
         }
 
         const   url = base + "?" + parms;
+
+        return(url);
+    }
+
+    getEncodedUrl()
+    {
+        var opts = new Options();
+
+        opts.setOpt("visual",this.type);
+
+        if (this._visuals.hasOpt("theme"))
+        {
+            opts.setOpt("theme",this._visuals.getOpt("theme"));
+        }
+
+        var parms = "";
+        var ui = "";
+        var conn = null;
+
+        if (this._datasource != null)
+        {
+            var o = {};
+            this._datasource.addOpts(o);
+            opts.setOpt("datasource",o);
+            ui = this._datasource._api.httpurlBase;
+            conn = this._datasource.connection;
+        }
+        else if (this.hasOwnProperty("_connection") && this._connection != null)
+        {
+            ui = this._connection.httpurlBase;
+            conn = this._connection;
+        }
+
+        this.addOpts(opts.getOpts());
+        opts.setOpt("_ui",ui + "/eventStreamProcessing/v1/connect-ui");
+        if (conn.hasOpt("k8s"))
+        {
+            var k8s = conn.getOpt("k8s");
+            opts.setOpt("_server",k8s.projectUrl);
+        }
+        else
+        {
+            opts.setOpt("_server",ui);
+        }
+
+        var url = ui;
+        url += "/eventStreamProcessing/v1/connect-visual?_opts=";
+        url += encodeURIComponent(btoa(opts.toString()));
 
         return(url);
     }

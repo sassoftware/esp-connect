@@ -831,8 +831,9 @@ class BarChart extends Chart
                 {
                     colors.push(get_color(item));
                 }
-                catch (exc)
+                catch (e)
                 {
+                    console.log(e);
                     error = true;
                     break;
                 }

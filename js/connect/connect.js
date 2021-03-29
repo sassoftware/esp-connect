@@ -232,6 +232,11 @@ var	_api =
         return(tools.createTimer());
     },
 
+    createFunction:function(text,options)
+    {
+        return(tools.createFunction(text,options));
+    },
+
     createK8S:function(url,options)
     {
         return(k8s.create(url,options));

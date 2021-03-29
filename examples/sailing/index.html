@@ -164,20 +164,23 @@ complete(eventsources)
     document.getElementById("playpause").innerHTML = "&#xf513;";
 }
 
-var _markers = {};
-
 function
 getSailboat(map,data,color)
 {
     var boat = data.boat_id;
-    var zoom = parseInt(_map.getZoom());
+    var zoom = parseInt(map.getZoom());
     var speed = parseFloat(data.speed);
     var heading = parseInt(data.heading);
     var marker = "";
 
-    if (speed == 0.0 && _markers.hasOwnProperty(boat))
+    if (window._markers == null)
     {
-        marker = _markers[boat];
+        window._markers = {};
+    }
+
+    if (speed == 0.0 && window._markers.hasOwnProperty(boat))
+    {
+        marker = window._markers[boat];
     }
     else
     {
@@ -212,7 +215,7 @@ getSailboat(map,data,color)
 
         marker = "<div class='mapicon' style='" + style + "'>&#xf39e;</div>";
 
-        _markers[boat] = marker;
+        window._markers[boat] = marker;
     }
 
     return(marker);

@@ -345,7 +345,6 @@ class EventSources
             var eventsources = this;
             setTimeout(function(){eventsources.run()},interval);
         }
-        console.log("done sources run");
     }
 
     publish(name,options)

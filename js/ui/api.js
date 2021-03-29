@@ -615,6 +615,11 @@ var	_api =
         return(connect.createTimer());
     },
 
+    createFunction:function(text,options)
+    {
+        return(connect.createFunction(text,options));
+    },
+
     formatDate:function(date,format)
     {
         return(connect.formatDate(date,format));

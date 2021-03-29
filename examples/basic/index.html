@@ -110,7 +110,16 @@ ready(conn)
 
     _conn.getEventCollection({window:_project + "/cq/clicksAggr"}).then(
         function(result) {
-            _visuals.createBarChart("barchart",result,{y:"count",header:"Clicks Chart",xrange:[0,100],orientation:"horizontal",get_color:barcolor});
+            /*
+            _visuals.createBarChart("barchart",result,{y:"count",header:"Clicks Chart",xrange:[0,100],orientation:"horizontal",get_color:function(item){
+                return(item.element);
+                }
+            });
+            */
+
+	        var parms = {"visual":"bar","datasource":{"window":"basic/cq/clicksAggr","mode":"collection","format":"ubjson","interval":"0"},"y":"count","header":"Clicks Chart","xrange":["0","100"],"orientation":"horizontal","get_color":function(item){return(item.element);}};
+            _visuals.createBarChart("barchart",result,parms);
+
             _visuals.createGauge("gauges",result,{value:"count",segments:5,header:"Clicks Indicators",width:200,range:[0,100],bar_color:"rgba(255,255,255,.7)"});
             _esp.size();
         }
@@ -150,12 +159,6 @@ var _model = null;
 function
 loaded()
 {
-}
-
-function
-barcolor(item)
-{
-    return(item.element);
 }
 
 function

@@ -1249,6 +1249,12 @@ class Datasource extends Options
             }
         });
 
+        Object.defineProperty(this,"connection", {
+            get() {
+                return(this._api.connection);
+            }
+        });
+
         Object.defineProperty(this,"schema", {
             get() {
                 return(this._schema);
