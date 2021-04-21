@@ -1710,7 +1710,9 @@ class K8SProject extends K8S
 
                         if (result.status.phase == "Running")
                         {
-                            for (var i = 0; i < result.status.conditions.length; i++)
+                            var i = 0;
+
+                            while (i < result.status.conditions.length)
                             {
                                 var condition = result.status.conditions[i];
 
@@ -1718,6 +1720,8 @@ class K8SProject extends K8S
                                 {
                                     break;
                                 }
+
+                                i++;
                             }
 
                             ready = (i == result.status.conditions.length);

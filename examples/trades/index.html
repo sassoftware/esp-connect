@@ -95,9 +95,9 @@ ready(connection)
 
     if (_esp.getParm("publish",true))
     {
-        _conn.getPublisher({window:_project + "/cq/trades",blocksize:100}).then(
+        _conn.getPublisher({window:_project + "/cq/trades",blocksize:5000}).then(
             function(result) {
-                result.publishCsvFrom("trades.txt",{pause:2,opcodes:true,flags:true});
+                result.publishCsvFrom("trades.txt",{pause:2,opcodes:true,flags:true,chunksize:100});
             },
             function(result) {
                 console.log("get publisher error");

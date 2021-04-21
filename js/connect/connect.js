@@ -214,7 +214,7 @@ var	_api =
 
     getArg:function(name,dv)
     {
-        return(args.getOpt(name,dv));
+        return(this.getArgs().getOpt(name,dv));
     },
 
     hasArg:function(name)

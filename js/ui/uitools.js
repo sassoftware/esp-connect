@@ -58,6 +58,10 @@ var _uitools =
             o.bottom = 0;
         }
 
+        o.toString = function() {
+            return("x=" + this.left + ", y=" + this.top + ", right=" + this.right + ", bottom=" + this.bottom);
+        };
+
         return(o);
     },
 

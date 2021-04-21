@@ -3310,14 +3310,15 @@ class Publisher extends Options
     {
         if (this._csv.index < this._csv.items.length)
         {
-            const   blocksize = this.getOpt("blocksize",1);
+            const   chunksize = this._csv.options.getOpt("chunksize",1);
+            const   opcode = this._csv.options.getOpt("opcode","insert");
 
             while (this._csv.index < this._csv.items.length)
             {
                 this.add(this._csv.items[this._csv.index]);
                 this._csv.index++;
 
-                if (this.size >= blocksize)
+                if (this.size >= chunksize)
                 {
                     break;
                 }
@@ -3325,12 +3326,20 @@ class Publisher extends Options
 
             this.publish();
 
-            var pause = this._csv.options.getOpt("pause",0);
-
-            if (pause > 0)
+            if (this._csv.index < this._csv.items.length)
             {
-                var self = this;
-                setTimeout(function(){self.send();},pause);
+                var pause = this._csv.options.getOpt("pause",0);
+
+                if (pause > 0)
+                {
+                    var self = this;
+                    setTimeout(function(){self.send();},pause);
+                }
+            }
+            else if (this._csv.options.getOpt("close",false))
+            {
+console.log("ALL DONE");
+                this.close();
             }
         }
     }
@@ -3339,9 +3348,7 @@ class Publisher extends Options
     {
         this._csv.items = this._schema.createDataFromCsv(this._csv.data,this._csv.options.getOpts());
 
-        const   blocksize = this._csv.options.getOpt("blocksize",1);
         const   pause = this._csv.options.getOpt("pause",0);
-        const   opcode = this._csv.options.getOpt("opcode","insert");
 
         if (pause > 0)
         {
@@ -3350,11 +3357,14 @@ class Publisher extends Options
         }
         else
         {
+            const   chunksize = this._csv.options.getOpt("chunksize",1);
+            const   opcode = this._csv.options.getOpt("opcode","insert");
+
             for (var o of this._csv.items)
             {
                 o["opcode"] = (o.hasOwnProperty("@opcode")) ? o["@opcode"] : opcode;
                 this.add(o);
-                if (this.size >= blocksize)
+                if (this.size >= chunksize)
                 {
                     this.publish();
                 }

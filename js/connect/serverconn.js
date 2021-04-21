@@ -382,10 +382,41 @@ class ServerConnection extends Connection
         }
         url += "eventStreamProcessing/v1/connect";
 
+        var parms = "";
+        var threads = "";
+
         if (this.hasOpt("access_token"))
         {
-            url += "?";
-            url += "access_token=" + this.getOpt("access_token");
+            parms += "access_token=" + this.getOpt("access_token");
+        }
+
+        if (this.hasOpt("threadin"))
+        {
+            threads += "incoming";
+        }
+
+        if (this.hasOpt("threadout"))
+        {
+            if (threads.length > 0)
+            {
+                threads += ",";
+            }
+            threads += "outgoing";
+        }
+
+        if (threads.length > 0)
+        {
+            if (parms.length > 0)
+            {
+                parms += "&";
+            }
+
+            parms += "_threads=" + threads;
+        }
+
+        if (parms.length > 0)
+        {
+            url += "?" + parms;
         }
 
         return(url);

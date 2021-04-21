@@ -544,9 +544,12 @@ else if (opts.hasOpt("k8s-exec"))
 }
 else
 {
-    var names = ["access_token","token","credentials","user","pw"];
+    /*
+    var names = ["access_token","token","credentials","user","pw","threadin","threadout"];
     var o = opts.clone(names);
     opts.clearOpts(names);
+    */
+    var o = opts.clone();
 
     if (server.length > 0)
     {
@@ -730,6 +733,40 @@ else
                 function(result) {
                     console.log("" + esp.getXPath().xmlString(result));
                     process.exit(0);
+                }
+            );
+        }
+        else if (opts.hasOpt("publish-csv"))
+        {
+            const   usage = {
+                description:"Publish ESP events from a CSV file",
+                options:[
+                    {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
+                    {name:"publish-csv",description:"Publish CSV data",required:true},
+                    {name:"window",arg:"ESP window",description:"ESP window in the form of project/contquery/window",required:true},
+                    {name:"events",arg:"filename",description:"file containing the ESP events in CSV",required:true},
+                    {name:"blocksize",arg:"size",description:"event block size (defaults to 1)"},
+                    {name:"dateformat",arg:"format",description:"event date format"}
+                ]
+            }
+
+            var events = opts.getOpt("events","");
+            var w = opts.getOpt("window","");
+
+            if (events.length == 0 || w.length == 0)
+            {
+                showUsage(usage);
+                process.exit(1);
+            }
+
+            console.log("begin publish...");
+
+            connection.getPublisher(opts.getOpts()).then(
+                function(result) {
+                    result.publishCsvFrom(events,{pause:2,opcodes:true,flags:true});
+                },
+                function(result) {
+                    console.log("get publisher error");
                 }
             );
         }
