@@ -318,6 +318,14 @@ class Visuals extends Options
 
     showModel(connection,options)
     {
+        if (options.hasOwnProperty("width") == false)
+        {
+            options["width"] = "80%";
+        }
+        if (options.hasOwnProperty("height") == false)
+        {
+            options["height"] = "80%";
+        }
         var div = (this._modelDivs.hasOwnProperty(connection.url)) ? this._modelDivs[connection.url] : null;
         var viewer = null;
 

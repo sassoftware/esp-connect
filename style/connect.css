@@ -26,7 +26,7 @@ div.container
     justify-content:space-between;
     justify-content:space-around;
     font-family:Arial, Helvetica, sans-serif;
-    font-size:12pt;
+    font-size:1.5rem;
 }
 
 div#banner,
@@ -40,7 +40,7 @@ div#footer
 div#banner
 {
     background:#3b99fc;
-    font-size:14pt;
+    font-size:1.5rem;
     padding:.5rem;
     color:white;
     z-index:10;
@@ -63,6 +63,12 @@ div#footer
     padding:5px;
     font-size:1rem;
     color:white;
+}
+
+div.obscure
+{
+    background:#3b99fc;
+	opacity:.2;
 }
 
 /* Icons */
@@ -114,11 +120,10 @@ div.Images
 
 div.Images div.ObjectText
 {
-    font-size:10pt;
+    font-size:1rem;
 }
 
 /* End Images */
-
 /* Dialogs */
 div.dialog
 {
@@ -126,169 +131,137 @@ div.dialog
 	position:absolute;
 	display:none;
 	background:white;
-	overflow:auto;
-	border:0;
+	overflow:hidden;
+    margin:0;
+    padding:0;
 	box-shadow:0px 2px 2px 0px rgba(0,0,0,0.10);
 	box-shadow:0px 20px 20px 0px rgba(0,0,0,0.50);
     width:80%;
-    border-radius:10px;
+    border:2px solid #c0c0c0;
+    border:1px solid black;
+    border-radius:8px;
 }
 
-div.dialogTop
-{
-	padding:2rem;
-}
-
-div.dialogHeader
+div.dialog div.header
 {
 	padding-bottom:2rem;
 }
 
-div.dialogTitle
+div.dialog div.title
 {
 	font-family:Arial, Helvetica, sans-serif;
 	font-size:1.5rem;
-	color:#0072b2;
+    width:100%;
+    text-align:center;
+    background:#3b99fc;
+    color:white;
+    padding:4px;
 }
 
-div.dialogTitle td.icon
+div.dialog div.title td.icon
 {
 	text-align:right;
 }
 
-div.dialogTitle a
+div.dialog div.title a
 {
 	color:black;
 }
 
-div.dialogToolbar
-{
-	padding-bottom:.5rem;
-}
-
-div.dialogDivider
-{
-	padding-left:2rem;
-	padding-right:2rem;
-	background:#d8d8d8;
-	font-size:.25rem;
-	font-size:2px;
-}
-
-div.dialogContent
-{
-    width:90%;
-    margin:auto;
-}
-
-div.dialogContent input,
-div.dialogContent select,
-div.dialogContent textarea
+div.dialog div.content
 {
 	font-family:Arial, Helvetica, sans-serif;
-	font-size:.875rem;
+	font-size:1.5rem;
+    width:90%;
+    margin:auto;
+    padding:20px;
+    border-bottom:1px solid #c0c0c0;
 }
 
-div.dialogContent textarea
+div.dialog div.content input,
+div.dialog div.content select,
+div.dialog div.content textarea
+{
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:1.5rem;
+}
+
+div.dialog div.content textarea
 {
 	height:100px;
 	resize:none;
 }
 
-/*
-div.dialogContent td
-{
-	padding:4px;
-}
-*/
-
-div.dialogButtons
-{
-	padding-top:0;
-	padding:1rem;
-}
-
-div.dialogButtons td.dialogStatus
-{
-	width:70%;
-}
-
-div.dialogButtons button,
-div#_popup button,
-button#resourcePublishClear
+div.dialog div.content td
 {
 	font-family:Arial, Helvetica, sans-serif;
-	font-size:.875rem;
+	font-size:1.5rem;
 }
 
-div.dialogButtons td.dialogButton span
-{
-	padding-left:4px;
-	padding-right:4px;
-}
-
-div.dialogButtons td.dialogButton
-{
-	text-align:right;
-}
-
-div.dialogButtons button
-{
-	height:1.75rem;
-	padding-left:1rem;
-	padding-right:1rem;
-}
-
-div.dialogButtons button:focus
-{
-    border:2px solid #c0c0c0;
-    background:white;
-}
-
-div.obscureCover
-{
-	background:#000000;
-	opacity:.2;
-}
-
-table.dialogClose td
-{
-	text-align:right;
-	padding-top:.5rem;
-	padding-right:.5rem;
-}
-
-td.dialogLabel,
-td.dialogValue input,
-td.dialogValue select,
-td.dialogValue textarea,
-td.dialogValue label
+div.dialog td.value input,
+div.dialog td.value select,
+div.dialog td.value textarea,
+div.dialog td.value label
 {
     min-width:250px;
     width:100%;
     font-family:Arial, Helvetica, sans-serif;
     font-weight:regular;
+    border:1px solid #c0c0c0;
 }
 
-td.dialogLabel
+div.dialog td.value input[type=checkbox]
+{
+    width:20px;
+    height:20px;
+}
+
+div.dialog td.label
 {
     padding-top:10px;
+    font-size:1.5rem;
+    width:auto;
+}
+
+div.dialog table.buttons
+{
+    padding:6px;
+}
+
+div.dialog table.buttons td.button span
+{
+	padding-left:4px;
+	padding-right:4px;
+}
+
+div.dialog table.buttons td.button
+{
+	text-align:right;
+}
+
+div.dialog table.buttons button
+{
+	font-family:Arial, Helvetica, sans-serif;
+    border:1px solid black;
+	height:2.5rem;
+	border-radius:4px;
+	padding-left:1rem;
+	padding-right:1rem;
+	font-size:1.5rem;
+}
+
+div.dialog table.buttons button:focus
+{
+    border:2px solid #c0c0c0;
+    background:white;
 }
 
 /* End Dialogs */
 
-/*
-div.box
-{
-    font-family:Arial, Helvetica, sans-serif;
-    font-size:12pt;
-}
-*/
-
 div.visualHeader
 {
     padding-top:10px;
-    font-size:12pt;
+    font-size:1.5rem;
 }
 
 div.visual
@@ -304,7 +277,7 @@ div.visualHeader td.icons a
 {
     padding-left:5px;
     padding-right:5px;
-    font-size:14pt;
+    font-size:1.5rem;
     color:black;
     text-decoration:none;
     color:#808080;
@@ -396,7 +369,7 @@ td.visualControlPanelFilter a.icon
 td.visualControlPanelFilter input
 {
 	font-family:Arial, Helvetica, sans-serif;
-    font-size:12pt;
+    font-size:1.5rem;
     width:70%;
 }
 
@@ -407,7 +380,7 @@ div.modelViewerHeader
 
 div.modelViewerHeader td.action a
 {
-    font-size:16pt;
+    font-size:1rem;
 }
 
 table.modelViewerHeader table.controls td.display
@@ -420,7 +393,7 @@ div.modelViewerFooter td,
 div.modelViewerHeader select
 {
 	font-family:Arial, Helvetica, sans-serif;
-    font-size:11pt;
+    font-size:1.5rem;
 }
 
 div.modelViewerHeader select
@@ -501,7 +474,6 @@ div.logcontrols
 div.logcontrols input
 {
 	font-family:Arial, Helvetica, sans-serif;
-    font-size:14pt;
     font-size:1rem;
 }
 
@@ -563,7 +535,7 @@ div.visualHeader td.close
 div.visualHeader td.close a
 {
     padding:0;
-    font-size:14pt;
+    font-size:1rem;
 }
 
 .mapicon
@@ -617,7 +589,7 @@ table.tabs
 table.tabs td.tabAfter
 {
 	border:0;
-	font-size:10pt;
+    font-size:1rem;
 	padding-left:10px;
 	font-style:italic;
 }
@@ -633,7 +605,7 @@ table.tabs td.tabs button
 	cursor:pointer;
 	font-family:Arial, Helvetica, sans-serif;
 	font-weight:normal;
-	font-size:12pt;
+    font-size:1rem;
 	padding:2px;
 	padding-left:5px;
 	padding-right:5px;
@@ -708,7 +680,7 @@ div.layout
 pre.help
 {
 	font-family:Arial, Helvetica, sans-serif;
-    font-size:12pt;
+    font-size:1rem;
 }
 
 @font-face

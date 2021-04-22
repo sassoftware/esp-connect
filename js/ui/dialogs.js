@@ -9,27 +9,17 @@ import {uitools} from "./uitools.js";
 
 class Dialog extends Options
 {
-    static _modals = null;
-    static _cover = null;
-    static _obscureCount = 0;
-    static _dialogInset = 0;
-    static _opts = new Options();
-
     constructor(options)
     {
 		super(options);
 
-        if (Dialog._modals == null)
+        if (_api._modals == null)
         {
-            Dialog._modals = [];
+            _api._modals = [];
 
-            Dialog._cover = document.createElement("div");
-            Dialog._cover.className = "obscureCover";
-            Dialog._cover.style.width = "100%";
-            Dialog._cover.style.height = "100%";
-            Dialog._cover.style.position = "absolute";
-            Dialog._cover.style.left = "0";
-            Dialog._cover.style.top = "0";
+            _api._cover = document.createElement("div");
+            _api._cover.className = "obscure";
+            _api._cover.style.position = "absolute";
         }
 
         this._div = null;
@@ -87,29 +77,31 @@ class Dialog extends Options
     init()
     {
         this._div = document.createElement("div");
+        /*
         this._div.style.margin = "4px";
+        */
         this._div.style.width = this.getOpt("width","50%");
         this._div.style.height = this.getOpt("height","auto");
         this._div.className = "dialog";
 
         this._header = document.createElement("div");
-        this._header.className = "dialogHeader";
+        this._header.className = "header";
         this._header.style.position = "absolute";
         this._div.appendChild(this._header);
 
         this._title = document.createElement("div");
-        this._title.className = "dialogTitle";
+        this._title.className = "title";
         this._header.appendChild(this._title);
 
         this._content = document.createElement("div");
         this._content.style.position = "absolute";
         this._content.style.overflow = "auto";
-        this._content.className = "dialogContent";
+        this._content.className = "content";
         this._div.appendChild(this._content);
 
         this._footer = document.createElement("div");
         this._footer.style.position = "absolute";
-        this._footer.className = "dialogButtons";
+        this._footer.className = "buttons";
         this._footer.style.padding = "5px";
         this._footer.style.paddingRight = "10px";
         this._footer.style.paddingBottom = 0;
@@ -205,8 +197,8 @@ class Dialog extends Options
     {
         this.setOpts(options);
 
-        var xalign = Dialog._opts.getOpt("xalign","center");
-        var yalign = Dialog._opts.getOpt("yalign","center");
+        var xalign = _api._opts.getOpt("xalign","center");
+        var yalign = _api._opts.getOpt("yalign","center");
 
         this._div.style.display = "block";
         this._div.style.position = "absolute";
@@ -219,11 +211,11 @@ class Dialog extends Options
 
         if (xalign == "left")
         {
-            this._div.style.left = Dialog._dialogInset + "px";
+            this._div.style.left = _api._dialogInset + "px";
         }
         else if (yalign == "right")
         {
-            this._div.style.left = (bodyWidth - width - Dialog._dialogInset) + "px";
+            this._div.style.left = (bodyWidth - width - _api._dialogInset) + "px";
         }
         else
         {
@@ -232,11 +224,11 @@ class Dialog extends Options
 
         if (yalign == "top")
         {
-            this._div.style.top = Dialog._dialogInset + "px";
+            this._div.style.top = _api._dialogInset + "px";
         }
         else if (yalign == "bottom")
         {
-            this._div.style.top = (bodyHeight - height - Dialog._dialogInset) + "px";
+            this._div.style.top = (bodyHeight - height - _api._dialogInset) + "px";
         }
         else
         {
@@ -245,23 +237,23 @@ class Dialog extends Options
 
         d.body.appendChild(this._div);
 
-        Dialog._modals.push(this);
+        _api._modals.push(this);
 
-        this._div.style.zIndex = this._zFactor + Dialog._modals.length;
+        this._div.style.zIndex = this._zFactor + _api._modals.length;
 
-        Dialog.obscure(this);
+        _api.obscure(this);
 
         this.layout();
     }
 
     pop()
     {
-        if (Dialog._modals.length == 0)
+        if (_api._modals.length == 0)
         {
             return;
         }
 
-        var	current = Dialog._modals[Dialog._modals.length - 1];
+        var	current = _api._modals[_api._modals.length - 1];
 
         if (current != this)
         {
@@ -270,18 +262,18 @@ class Dialog extends Options
 
         this._div.style.display = "none";
 
-        Dialog._modals.pop();
+        _api._modals.pop();
 
-        if (Dialog._modals.length == 0)
+        if (_api._modals.length == 0)
         {
-            Dialog.unobscure(true);
+            _api.unobscure(true);
         }
         else
         {
-            current = Dialog._modals[Dialog._modals.length - 1];
+            current = _api._modals[_api._modals.length - 1];
             current._div.style.display = "block";
-            current._div.style.zIndex = current._zFactor + Dialog._modals.length;
-            Dialog.obscure(current);
+            current._div.style.zIndex = current._zFactor + _api._modals.length;
+            _api.obscure(current);
         }
     }
 
@@ -294,9 +286,17 @@ class Dialog extends Options
         {
             buttons = this.getOkCancel();
         }
+        else if (style == "ok")
+        {
+            buttons = this.getOk();
+        }
         else if (style == "done")
         {
             buttons = this.getDone();
+        }
+        else if (style == "close")
+        {
+            buttons = this.getClose();
         }
 
         if (buttons != null)
@@ -309,6 +309,7 @@ class Dialog extends Options
     getOkCancel()
     {
         var buttons = document.createElement("table");
+        buttons.className = "buttons";
         var tr = document.createElement("tr");
         var button;
         var span;
@@ -320,7 +321,7 @@ class Dialog extends Options
         buttons.appendChild(tr);
 
         tr.appendChild(td = document.createElement("td"));
-        td.className = "dialogButton";
+        td.className = "button";
 
         td.appendChild(span = document.createElement("span"));
         span.appendChild(button = document.createElement("button"));
@@ -336,9 +337,25 @@ class Dialog extends Options
         this._footer.appendChild(buttons);
     }
 
+    getOk()
+    {
+        return(this.getDoneButton("Ok"));
+    }
+
     getDone()
     {
+        return(this.getDoneButton("Done"));
+    }
+
+    getClose()
+    {
+        return(this.getDoneButton("Close"));
+    }
+
+    getDoneButton(text)
+    {
         var buttons = document.createElement("table");
+        buttons.className = "buttons";
         var tr = document.createElement("tr");
         var button;
         var span;
@@ -350,26 +367,35 @@ class Dialog extends Options
         buttons.appendChild(tr);
 
         tr.appendChild(td = document.createElement("td"));
-        td.className = "dialogButton";
+        td.className = "button";
 
         td.appendChild(span = document.createElement("span"));
         span.appendChild(button = document.createElement("button"));
-        button.innerText = "Done";
+        button.innerText = text;
         button.addEventListener("click",function(){self.done()});
         return(buttons);
     }
 
     createForm(values)
     {
-        this._form = new Form(this,values);
+        this._form = new Form(this,values,this.getOpts());
         this._content.innerHTML = "";
         this._content.appendChild(this._form.table);
-
     }
 
     getData()
     {
         return((this._form != null) ? this._form.data : null);
+    }
+
+    getValues()
+    {
+        return((this._form != null) ? this._form.getValues() : null);
+    }
+
+    getChangedValues()
+    {
+        return((this._form != null) ? this._form.getChangedValues() : null);
     }
 
     getValue(name,dv)
@@ -432,119 +458,6 @@ class Dialog extends Options
             this.pop();
         }
     }
-
-    static setOptions(options)
-    {
-        Dialog._opts.setOpts(options);
-    }
-
-    static obscure(dialog)
-    {
-        if (Dialog._cover != null)
-        {
-            Dialog._cover.style.display = "block";
-            Dialog._cover.style.zIndex = dialog._zFactor + Dialog._modals.length - 1;
-            document.body.appendChild(Dialog._cover);
-        }
-
-        Dialog._obscureCount++;
-
-        Dialog.placeModals();
-    }
-
-    static unobscure(force)
-    {
-        if (force)
-        {
-            Dialog._obscureCount = 0;
-        }
-        else
-        {
-            Dialog._obscureCount--;
-        }
-
-        if (Dialog._obscureCount == 0)
-        {
-            Dialog._cover.style.display = "none";
-        }
-
-        Dialog.placeModals();
-    }
-
-    static placeModals()
-    {
-        if (Dialog._modals == null || Dialog._modals.length == 0)
-        {
-            return;
-        }
-
-        var	d = window.document;
-        var	bodyWidth = d.body.offsetWidth;
-        var	bodyHeight = d.body.offsetHeight;
-        var xalign;
-        var yalign;
-        var	element;
-        var borders;
-        var	width;
-        var	height;
-        var	x;
-        var	y;
-
-        Dialog._modals.forEach((dialog) => {
-
-            dialog.layout();
-
-            width = dialog._div.offsetWidth;
-            height = dialog._div.offsetHeight;
-
-            xalign = Dialog._opts.getOpt("xalign","center");
-            yalign = Dialog._opts.getOpt("yalign","center");
-
-            if (xalign == "left")
-            {
-                dialog._div.style.left = Dialog._dialogInset + "px";
-            }
-            else if (yalign == "right")
-            {
-                dialog._div.style.left = (bodyWidth - width - Dialog._dialogInset) + "px";
-            }
-            else
-            {
-                dialog._div.style.left = parseInt((bodyWidth / 2) - (width / 2)) + "px";
-            }
-
-            if (yalign == "top")
-            {
-                dialog._div.style.top = Dialog._dialogInset + "px";
-            }
-            else if (yalign == "bottom")
-            {
-                dialog._div.style.top = (bodyHeight - height - Dialog._dialogInset) + "px";
-            }
-            else
-            {
-                dialog._div.style.top = parseInt((bodyHeight / 2) - (height / 2)) + "px";
-            }
-        });
-
-        Dialog._cover.style.width = bodyWidth + "px";
-        Dialog._cover.style.height = bodyHeight + "px";
-    }
-
-    static clearModals()
-    {
-        if (Dialog._modals != null)
-        {
-            for (var i = 0; i < Dialog._modals.length; i++)
-            {
-                Dialog._modals[i]._div.style.display = "none";
-            }
-
-            Dialog._modals = new Array();
-
-            Dialog.unobscure(true);
-        }
-    }
 }
 
 class Form extends Options
@@ -584,37 +497,48 @@ class Form extends Options
 
     create(values)
     {
-        this._values = values;
+        this._values = null;
         this._opts = [];
         this._optsmap = {};
         this._table = document.createElement("table");
         this._table.style.width = "80%";
         this._table.style.margin = "auto";
 
-        if (this._values == null)
+        if (values == null)
         {
             return;
         }
+
+        this._values = [];
 
         var tr;
         var td;
 
         values.forEach((o) => {
+
             var opts = new Options(o);
+            this._values.push(opts);
+
             var id = opts.getOpt("id",tools.guid());
             var name = opts.getOpt("name","");
             var value = opts.getOpt("value","");
             var label = opts.getOpt("label",name);
-            var classname = opts.getOpt("class","dialogValue");
+            var classname = opts.getOpt("class","value");
             var type = opts.getOpt("type","input");
             var style = opts.getOpt("style");
+            var oneline = this.getOpt("oneline",true);
+
+            opts.setOpt("current",value);
 
             this._table.appendChild(tr = document.createElement("tr"));
             tr.appendChild(td = document.createElement("td"));
-            td.className = "dialogLabel";
+            td.className = "label";
             td.innerHTML = label;
 
-            this._table.appendChild(tr = document.createElement("tr"));
+            if (oneline == false)
+            {
+                this._table.appendChild(tr = document.createElement("tr"));
+            }
             tr.appendChild(td = document.createElement("td"));
             td.className = classname;
 
@@ -663,6 +587,72 @@ class Form extends Options
 
                 control = null;
             }
+            else if (type == "image")
+            {
+                var img = document.createElement("img");
+                img.onload = function() {
+                    //console.log("image is loaded: " + this.naturalWidth + " :: " + this.naturalHeight);
+                };
+                var input = document.createElement("input");
+                img.src = value;
+                img.style.border = "1px solid #d8d8d8";
+                img.style.height = opts.getOpt("height","200px");
+                img.style.cursor = "pointer";
+                img._form = this;
+
+                input.type = "file";
+                input.style.display = "none";
+
+                const   self = this;
+
+                input.addEventListener("change",function(event) {
+                    var files = event.target.files;
+                    var file = files[0];
+                    var reader = new FileReader();
+                    reader.onload = function() {
+                        var data = reader.result;
+                        if (self.hasOpt("maximagesize") && data.length > self.getOpt("maximagesize"))
+                        {
+                            var tmp = document.createElement("img");
+                            tmp.onload = function() {
+                                var w = tmp.naturalWidth;
+                                var h = tmp.naturalHeight;
+                                var ratio = w / h;
+                                h = 200;
+                                w = 200 * ratio;
+console.log("ratio is: " + ratio);
+console.log(tmp.naturalWidth + " :: " + w);
+console.log(tmp.naturalHeight + " :: " + h);
+                                _api.context.drawImage(tmp,0,0,w,h);
+                                var quality = .5;
+                                data = _api.canvas.toDataURL("image/jpeg",quality);
+                                img.style.width = w + "px";
+                                img.style.height = h + "px";
+                                img.src = data;
+                                opts.setOpt("_data",data);
+                                opts.setOpt("_changed",true);
+                            };
+                            tmp.src = data;
+                        }
+                        else
+                        {
+                            img.src = data;
+                            opts.setOpt("_data",data);
+                            opts.setOpt("_changed",true);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                },false);
+                img.addEventListener("click",function(e) {
+                    input.click();
+                });
+                td.appendChild(img);
+                td.appendChild(input);
+
+                opts.setOpt("control",img);
+                opts.setOpt("_image",img);
+                opts.setOpt("_changed",false);
+            }
             else
             {
                 control = document.createElement("input");
@@ -675,9 +665,16 @@ class Form extends Options
 
                 control.id = id;
 
-                if (type != "select")
+                if (type != "select" && type != "image")
                 {
-                    control.value = value;
+                    if (type == "checkbox")
+                    {
+                        control.checked = value;
+                    }
+                    else
+                    {
+                        control.value = value;
+                    }
                 }
 
                 if (style != null)
@@ -700,14 +697,94 @@ class Form extends Options
         });
     }
 
+    getValues()
+    {
+        var values = null;
+
+        this._values.forEach((v) =>
+        {
+            if (values == null)
+            {
+                values = {};
+            }
+
+            var name = v.getOpt("name");
+            var value = this.getValue(name);
+            if (value != null)
+            {
+                values[name] = value;
+            }
+        });
+
+        return(values);
+    }
+
+    getChangedValues()
+    {
+        var values = null;
+
+        this._values.forEach((v) =>
+        {
+            var name = v.getOpt("name");
+            var type = v.getOpt("type");
+            var current = v.getOpt("current");
+            var value = this.getValue(name);
+            if (type == "image")
+            {
+                if (v.hasOpt("_data"))
+                {
+                    if (values == null)
+                    {
+                        values = {};
+                    }
+
+                    values[name] = v.getOpt("_data");
+                }
+            }
+            else if (current != value)
+            {
+                if (values == null)
+                {
+                    values = {};
+                }
+                values[name] = value;
+            }
+        });
+
+        return(values);
+    }
+
     getValue(name,dv)
     {
-        var value = (dv != null) ? dv : null;
-        var control = this.getControl(name);
+        var value = null;
+        var entry = this.getEntry(name);
 
-        if (control != null)
+        if (entry != null)
         {
-            value = control.value;
+            var control = entry.getOpt("control");
+            var type = entry.getOpt("type");
+
+            if (type == "image")
+            {
+                value = control.src;
+            }
+            else if (control.type != null)
+            {
+                if (control.type == "checkbox")
+                {
+                    value = control.checked;
+                }
+            }
+
+            if (value == null)
+            {
+                value = control.value;
+            }
+        }
+
+        if (value == null && dv != null)
+        {
+            value = dv;
         }
 
         return(value);
@@ -716,19 +793,39 @@ class Form extends Options
     getControl(name)
     {
         var control = null;
+        var entry = this.getEntry(name);
 
-        if (this._optsmap.hasOwnProperty(name))
+        if (entry != null)
         {
-            var opts = this._optsmap[name];
-            control = opts.getOpt("control");
+            control = entry.getOpt("control");
         }
 
         return(control);
+    }
+
+    getEntry(name)
+    {
+        var entry = null;
+
+        if (this._optsmap.hasOwnProperty(name))
+        {
+            entry = this._optsmap[name];
+        }
+
+        return(entry);
     }
 }
 
 var	_api =
 {
+    _modals:null,
+    _cover:null,
+    _obscureCount:0,
+    _dialogInset:0,
+    _opts:new Options(),
+    _canvas:null,
+    _context:null,
+
     showDialog:function(options)
     {
         var dialog = new Dialog(options);
@@ -755,11 +852,22 @@ var	_api =
 
     showDivDialog:function(div,options)
     {
-        options.buttons = "done";
+        if (options == null)
+        {
+            options = {};
+        }
+
+        if (options.hasOwnProperty("buttons") == false)
+        {
+            options.buttons = "done";
+        }
+
         var dialog = new Dialog(options);
-        div.className = "dialogCode";
+        /*
         dialog._div.style.width = "80%";
         dialog._div.style.height = "80%";
+        dialog.content.appendChild(div);
+        */
         dialog.content = div;
         dialog.push();
         return(dialog);
@@ -796,7 +904,7 @@ var	_api =
 
     popModal:function(modal)
     {
-        if (Dialog._modals.length == 0)
+        if (this._modals.length == 0)
         {
             return;
         }
@@ -808,7 +916,7 @@ var	_api =
             return;
         }
 
-        var	current = Dialog._modals[Dialog._modals.length - 1];
+        var	current = this._modals[this._modals.length - 1];
 
         if (current._div != element)
         {
@@ -825,21 +933,175 @@ var	_api =
         return(dialog);
     },
 
+    message:function(title,text)
+    {
+        var options = {};
+        options.title = title;
+        options.buttons = "ok";
+        var dialog = this.create(options);
+        dialog.htmlcontent = "<div>" + text + "</div>";
+        dialog.push();
+        return(dialog);
+    },
+
+    confirmAction:function(title,text,delegate)
+    {
+        var options = {};
+        options.title = title;
+        options.delegate = delegate;
+        var dialog = this.create(options);
+        dialog.htmlcontent = "<div>" + text + "</div>";
+        dialog.push();
+        return(dialog);
+    },
+
     create:function(options)
     {
         var dialog = new Dialog(options);
         return(dialog);
     },
 
+    setOptions:function(options)
+    {
+        _opts.setOpts(options);
+    },
+
+    obscure:function(dialog)
+    {
+        if (this._cover != null)
+        {
+            this._cover.style.left = document.documentElement.scrollLeft + "px";
+            this._cover.style.top = document.documentElement.scrollTop + "px";
+            this._cover.style.width = document.documentElement.clientWidth + "px";
+            this._cover.style.height = document.documentElement.clientHeight + "px";
+            this._cover.style.display = "block";
+            this._cover.style.zIndex = dialog._zFactor + this._modals.length - 1;
+            document.body.appendChild(this._cover);
+        }
+
+        this._obscureCount++;
+
+        this.placeModals();
+        document.body.style.overflow = "hidden";
+    },
+
+    unobscure:function(force)
+    {
+        if (force)
+        {
+            this._obscureCount = 0;
+        }
+        else
+        {
+            this._obscureCount--;
+        }
+
+        if (this._obscureCount == 0)
+        {
+            this._cover.style.display = "none";
+            document.body.style.overflow = "auto";
+        }
+
+        this.placeModals();
+    },
+
     placeModals:function()
     {
-        Dialog.placeModals();
+        if (this._modals == null || this._modals.length == 0)
+        {
+            return;
+        }
+
+        var	d = window.document;
+        var	bodyWidth = d.documentElement.clientWidth;
+        var	bodyHeight = d.documentElement.clientHeight;
+        var	bodyLeft = d.documentElement.scrollLeft;
+        var	bodyTop = d.documentElement.scrollTop;
+        var xalign;
+        var yalign;
+        var	element;
+        var borders;
+        var	width;
+        var	height;
+        var	x;
+        var	y;
+
+        this._modals.forEach((dialog) => {
+
+            dialog.layout();
+
+            width = dialog._div.offsetWidth;
+            height = dialog._div.offsetHeight;
+
+            xalign = this._opts.getOpt("xalign","center");
+            yalign = this._opts.getOpt("yalign","center");
+
+            if (xalign == "left")
+            {
+                dialog._div.style.left = bodyLeft + this._dialogInset + "px";
+            }
+            else if (yalign == "right")
+            {
+                dialog._div.style.left = (bodyLeft + bodyWidth - width - this._dialogInset) + "px";
+            }
+            else
+            {
+                dialog._div.style.left = parseInt((bodyLeft + bodyWidth / 2) - (width / 2)) + "px";
+            }
+
+            if (yalign == "top")
+            {
+                dialog._div.style.top = bodyTop + this._dialogInset + "px";
+            }
+            else if (yalign == "bottom")
+            {
+                dialog._div.style.top = (bodyTop + bodyHeight - height - this._dialogInset) + "px";
+            }
+            else
+            {
+                dialog._div.style.top = parseInt(bodyTop + (bodyHeight / 2) - (height / 2)) + "px";
+            }
+        });
+
+        this._cover.style.width = bodyWidth + "px";
+        this._cover.style.height = bodyHeight + "px";
     },
 
     clearModals:function()
     {
-        Dialog.clearModals();
+        if (this._modals != null)
+        {
+            for (var i = 0; i < this._modals.length; i++)
+            {
+                this._modals[i]._div.style.display = "none";
+            }
+
+            this._modals = new Array();
+
+            this.unobscure(true);
+        }
     }
 }
+
+Object.defineProperty(_api,"canvas", {
+    get() {
+        if (this._canvas == null)
+        {
+            this._canvas = document.createElement("canvas");
+        }
+        return(this._canvas);
+    }
+});
+
+Object.defineProperty(_api,"context", {
+    get() {
+        if (this._context == null)
+        {
+            var canvas = this.canvas;
+            this._context = canvas.getContext("2d");
+        }
+        return(this._context);
+    }
+});
 
 export {_api as dialogs};
