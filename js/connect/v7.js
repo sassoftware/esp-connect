@@ -864,7 +864,7 @@ class Api extends Options
         }));
     }
 
-    loadProject(name,data,options)
+    loadProject(name,data,options,parms)
     {
         return(new Promise((resolve,reject) => {
             if (this.k8s != null)
@@ -886,6 +886,7 @@ class Api extends Options
                 o["name"] = name;
                 o["id"] = id;
                 o["action"] = "load";
+
                 if (options != null)
                 {
                     for (var x in options)
@@ -893,6 +894,17 @@ class Api extends Options
                         o[x] = options[x];
                     }
                 }
+
+                if (parms != null && Object.keys(parms).length > 0)
+                {
+                    var p = {};
+                    for (var x in parms)
+                    {
+                        p[x] = parms[x];
+                    }
+                    o["parms"] = p;
+                }
+
                 o["data"] = tools.b64Encode(data);
 
                 this.addHandler(id,{

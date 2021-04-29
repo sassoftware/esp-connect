@@ -26,7 +26,7 @@ div.container
     justify-content:space-between;
     justify-content:space-around;
     font-family:Arial, Helvetica, sans-serif;
-    font-size:1.5rem;
+    font-size:1.2rem;
 }
 
 div#banner,
@@ -134,10 +134,8 @@ div.dialog
 	overflow:hidden;
     margin:0;
     padding:0;
-	box-shadow:0px 2px 2px 0px rgba(0,0,0,0.10);
 	box-shadow:0px 20px 20px 0px rgba(0,0,0,0.50);
     width:80%;
-    border:2px solid #c0c0c0;
     border:1px solid black;
     border-radius:8px;
 }
@@ -171,7 +169,7 @@ div.dialog div.title a
 div.dialog div.content
 {
 	font-family:Arial, Helvetica, sans-serif;
-	font-size:1.5rem;
+	font-size:1.2rem;
     width:90%;
     margin:auto;
     padding:20px;
@@ -183,7 +181,7 @@ div.dialog div.content select,
 div.dialog div.content textarea
 {
 	font-family:Arial, Helvetica, sans-serif;
-	font-size:1.5rem;
+	font-size:1.2rem;
 }
 
 div.dialog div.content textarea
@@ -195,7 +193,7 @@ div.dialog div.content textarea
 div.dialog div.content td
 {
 	font-family:Arial, Helvetica, sans-serif;
-	font-size:1.5rem;
+	font-size:1.2rem;
 }
 
 div.dialog td.value input,
@@ -208,6 +206,13 @@ div.dialog td.value label
     font-family:Arial, Helvetica, sans-serif;
     font-weight:regular;
     border:1px solid #c0c0c0;
+    padding:4px;
+}
+
+div.dialog td.value div.boolean
+{
+    cursor:pointer;
+    padding:4px;
 }
 
 div.dialog td.value input[type=checkbox]
@@ -219,7 +224,7 @@ div.dialog td.value input[type=checkbox]
 div.dialog td.label
 {
     padding-top:10px;
-    font-size:1.5rem;
+	font-size:1.2rem;
     width:auto;
 }
 
@@ -243,11 +248,11 @@ div.dialog table.buttons button
 {
 	font-family:Arial, Helvetica, sans-serif;
     border:1px solid black;
-	height:2.5rem;
+	height:2.0rem;
 	border-radius:4px;
 	padding-left:1rem;
 	padding-right:1rem;
-	font-size:1.5rem;
+	font-size:1.2rem;
 }
 
 div.dialog table.buttons button:focus
@@ -258,10 +263,16 @@ div.dialog table.buttons button:focus
 
 /* End Dialogs */
 
+div.box
+{
+    font-family:Arial, Helvetica, sans-serif;
+    font-size:1.2rem;
+}
+
 div.visualHeader
 {
     padding-top:10px;
-    font-size:1.5rem;
+    font-size:1.3rem;
 }
 
 div.visual

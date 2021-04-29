@@ -65,7 +65,8 @@ class Visuals extends Options
         var style = window.getComputedStyle(document.body);
         var font = style.getPropertyValue("font-family");
 
-        this._fontFamily = (font != null) ? font : "Verdana";
+        //this._fontFamily = (font != null) ? font : "Verdana";
+        this._fontFamily = (font != null) ? font : "Arial, Helvetica, sans-serif";
 
         Object.defineProperty(this,"fontFamily", {
             get() {
@@ -282,7 +283,10 @@ class Visuals extends Options
 
     createImageViewer(container,datasource,options)
     {
-        datasource.addDelegate(this);
+        if (datasource != null)
+        {
+            datasource.addDelegate(this);
+        }
         var chart = new ImageViewer(this,container,datasource,options);
         this._visuals.push(chart);
         return(chart);
@@ -648,7 +652,7 @@ class Visuals extends Options
         return({width:this._span.offsetWidth,height:this._span.offsetHeight});
     }
 
-    addImageText(image)
+    addObjects(image,options,delegate)
     {
         var data = image._data;
 
@@ -657,48 +661,175 @@ class Visuals extends Options
             return;
         }
 
+        var opts = new Options(options);
         var canvas = image._canvas;
         var div = image._div;
+        var searchtext = null;
+
+        if (opts.getOpt("search",false))
+        {
+            s = opts.getOpt("searchtext","");
+
+            if (Array.isArray(s))
+            {
+                searchtext = s;
+            }
+            else if (s.length > 0)
+            {
+                searchtext = [s];
+            }
+        }
+
+        var lineWidth = image._opts.getOpt("line_width",4);
 
         image._context.fillStyle = image._opts.getOpt("image_text_color","black");
+        image._context.strokeStyle = image._opts.getOpt("image_rect_color","green");
+        image._context.lineWidth = image._opts.getOpt("line_width",4);
         /*
         image._context.textAlign = "right";
         image._context.textBaseline = "bottom";
         */
         image._context.font = image._font;
+        image._context.textAlign = "center";
+        image._context.textBaseline = "middle";
 
         if (data.hasOwnProperty("_nObjects_"))
         {
-            var numObjects = parseInt(data["_nObjects_"]);
+            var rects = opts.getOpt("rects",true);
+            var nobjects = parseInt(data["_nObjects_"]);
             var text;
             var x;
             var y;
-            var s;
+            var w;
+            var h;
 
-            for (var i = 0; i < numObjects; i++)
+            for (var i = 0; i < nobjects; i++)
             {
                 s = "_Object" + i + "_";
-                text = data[s];
+
+                if ((text = data[s]) == null)
+                {
+                    continue;
+                }
+
                 text = text.trim();
+
+                if (searchtext != null)
+                {
+                    for (var j = 0; j < searchtext.length; j++)
+                    {
+                        if (text.indexOf(searchtext[j]) != -1)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (j == searchtext.length)
+                    {
+                        continue;
+                    }
+                }
+
                 s = "_Object" + i + "_x";
                 x = parseInt(image.offsetWidth * parseFloat(data[s]));
                 s = "_Object" + i + "_y";
                 y = parseInt(image.offsetHeight * parseFloat(data[s]));
-                image._context.moveTo(0,0);
-                image._context.fillText(text,x,y);
+                s = "_Object" + i + "_width";
+                w = parseInt(image.offsetWidth * parseFloat(data[s])) - (lineWidth * 2);
+                s = "_Object" + i + "_height";
+                h = parseInt(image.offsetHeight * parseFloat(data[s])) - (lineWidth * 2);
+
+                x = x - (w / 2);
+                y = y - (h / 2);
+
+                if (rects)
+                {
+                    image._context.strokeRect(x,y,w,h);
+                }
+
+                image._context.fillText(text,x + (w / 2),y + (h / 2));
+
+                if (delegate != null)
+                {
+                    delegate.objectFound({name:text,x:x,y:y,width:w,height:h});
+                }
+            }
+        }
+        else if (data.hasOwnProperty("n_objects"))
+        {
+            var nobjects = parseInt(data["n_objects"]);
+
+            if (nobjects == 0)
+            {
+                return;
+            }
+
+            var rects = opts.getOpt("rects",true);
+            var coords = data["coords"];
+            var scores = data["scores"];
+            var labels = data["labels"].split(",");
+            var index = 0;
+            var text;
+            var x;
+            var y;
+            var w;
+            var h;
+
+            for (var i = 0; i < nobjects; i++)
+            {
+                text = labels[i];
+
+                text = text.trim();
+
+                if (searchtext != null)
+                {
+                    for (var j = 0; j < searchtext.length; j++)
+                    {
+                        if (text.indexOf(searchtext[j]) != -1)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (j == searchtext.length)
+                    {
+                        continue;
+                    }
+                }
+
+                text += " " + parseInt(scores[i] * 100) + "%";
+
+                x = coords[index++];
+                y = coords[index++];
+                w = coords[index++];
+                h = coords[index++];
+
+                x = parseInt(image.offsetWidth * x);
+                y = parseInt(image.offsetHeight * y);
+                w = parseInt(image.offsetWidth * w);
+                h = parseInt(image.offsetHeight * h);
+
+                x = x - (w / 2);
+                y = y - (h / 2);
+                if (rects)
+                {
+                    image._context.strokeRect(x,y,w,h);
+                }
+
+                image._context.fillText(text,x + (w / 2),y + (h / 2));
             }
         }
         else if (data.hasOwnProperty("objCount"))
         {
             var ratioX = image.width / image.naturalWidth;
             var ratioY = image.height / image.naturalHeight;
-            var numObjects = parseInt(data["objCount"]);
+            var nobjects = parseInt(data["objCount"]);
             var text;
             var x;
             var y;
             var s;
 
-            for (var i = 0; i < numObjects; i++)
+            for (var i = 0; i < nobjects; i++)
             {
                 s = "Object" + i + "_label";
                 text = data[s];
@@ -2447,7 +2578,7 @@ class Table extends Chart
                     img._context = canvas.getContext("2d");
                     img._opts = this;
                     img._font = this.getOpt("imagefont","18px " + this._visuals.fontFamily);
-                    img.onload = this.addImageText;
+                    img.onload = this.addObjects;
 
                     div.style.position = "relative";
                     div.style.margin = "auto";
@@ -2526,9 +2657,9 @@ class Table extends Chart
         }
     }
 
-    addImageText()
+    addObjects()
     {
-        this._table._visuals.addImageText(this);
+        this._table._visuals.addObjects(this);
     }
 
     clicked(e)
@@ -2971,13 +3102,43 @@ class ImageViewer extends Chart
         this._image._context = this._context;
         this._image._div = this._viewerDiv;
         this._image._opts = this;
-        this._image._font = this.getOpt("imagefont","18px " + this._visuals.fontFamily);
+        this._image._font = this.getOpt("imagefont","1rem " + this._visuals.fontFamily);
         this._image.style.position = "absolute";
         this._viewerDiv.appendChild(this._image);
         this._viewerDiv.appendChild(this._canvas);
         this._content.appendChild(this._viewerDiv);
         this._image.onload = this.loaded;
+        this._field = this.getOpt("image");
+        this._objectDelegate = null;
         this._data = null;
+
+        Object.defineProperty(this,"image",{
+            get() {
+                return(this._image);
+            },
+            set(value) {
+                this._data = value;
+
+                if (this._data != null && this._data.hasOwnProperty(this._field))
+                {
+                    this._image._data = this._data;
+                    var imagedata = this._data[this._field];
+                    this._image.src = "data:application/octet-stream;base64," + imagedata;
+                }
+            }
+        });
+        Object.defineProperty(this,"objectDelegate",{
+            get() {
+                return(this._objectDelegate);
+            },
+            set(value) {
+                if (tools.supports(value,"objectFound") == false)
+                {
+                    throw "The delegate must implement the objectFound methods";
+                }
+                this._objectDelegate = value;
+            }
+        });
         this.size();
     }
 
@@ -2995,15 +3156,7 @@ class ImageViewer extends Chart
     {
         if (data != null && data.length > 0)
         {
-            this._data = data[data.length - 1];
-            var field = this.getOpt("image");
-
-            if (this._data.hasOwnProperty(field))
-            {
-                this._image._data = this._data;
-                var imagedata = this._data[field];
-                this._image.src = "data:application/octet-stream;base64," + imagedata;
-            }
+            this.image = data[data.length - 1];
         }
     }
 
@@ -3039,9 +3192,9 @@ class ImageViewer extends Chart
 
         if (this._data != null)
         {
-            if (this.getOpt("annotations",true))
+            if (this.getOpt("objects",true))
             {
-                this._visuals.addImageText(this._image);
+                this._visuals.addObjects(this._image,this.getOpts(),this._objectDelegate);
             }
 
             this.drawn(this._data,this._context);
@@ -3110,6 +3263,12 @@ class Wrapper extends Chart
         this._content.style.justifyContent = "center";
 
         this.sizeContent();
+
+        Object.defineProperty(this,"element",{
+            get() {
+                return(this._wrapper);
+            }
+        });
     }
 
     getType()

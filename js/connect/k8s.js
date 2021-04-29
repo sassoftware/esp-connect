@@ -3,7 +3,6 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-import {ServerConnection} from "./serverconn.js";
 import {tools} from "./tools.js";
 import {ajax} from "./ajax.js";
 import {xpath} from "./xpath.js";

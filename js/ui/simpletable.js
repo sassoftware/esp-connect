@@ -6,6 +6,7 @@
 import {Options} from "../connect/options.js";
 import {Schema} from "../connect/schema.js";
 import {tools} from "../connect/tools.js";
+import {dialogs} from "./dialogs.js";
 
 class SimpleTable extends Options
 {
@@ -14,15 +15,20 @@ class SimpleTable extends Options
         super(options);
 
         this._container = container;
+
+        var container = ((typeof(this._container) == "string") ? document.getElementById(this._container) : this._container);
+
         this._delegate = delegate;
-        this._container.style.overflow = "auto";
         this._table = document.createElement("table");
         this._table.cellSpacing = 0;
         this._table.cellPadding = 0;
         this._table.style.margin = 0;
         this._table.style.position = "relative";
-        this._table.className = "visualTable";
-        this._container.appendChild(this._table);
+        this._table.className = "simpletable";
+
+        container.style.overflow = "auto";
+        container.appendChild(this._table);
+
         this._schema = new Schema();
         this._hold = 0;
         this._list = [];
@@ -30,6 +36,19 @@ class SimpleTable extends Options
         this.size();
 
         this._keyfield = this.getOpt("key");
+
+        var actions = this.getOpt("actions",null);
+
+        if (actions != null)
+        {
+            var a = [];
+
+            actions.forEach((action) => {
+                a.push(new Options(action));
+            });
+
+            this.setOpt("actions",a);
+        }
 
         if (this._keyfield == null)
         {
@@ -65,6 +84,13 @@ class SimpleTable extends Options
                 return(this._schema.getFields());
             }
         });
+
+        Object.defineProperty(this,"container", {
+            get() {
+                var container = ((typeof(this._container) == "string") ? document.getElementById(this._container) : this._container);
+                return(container);
+            }
+        });
     }
 
     getType()
@@ -89,14 +115,34 @@ class SimpleTable extends Options
         });
     }
 
-    hide(name)
+    showFields(names)
     {
-        this.setProperty(name,"hidden");
+        var fields = this._schema.getFields();
+
+        fields.forEach((f) =>
+        {
+            this.hide(f.getOpt("name"));
+        });
+
+        names.forEach((name) =>
+        {
+            this.show(name);
+        });
     }
 
-    unhide(name)
+    show(name)
     {
-        this.unsetProperty(name,"hidden");
+        this.unsetBoolProperty(name,"hidden");
+    }
+
+    hide(name)
+    {
+        this.setBoolProperty(name,"hidden");
+    }
+
+    isDisplayed(name)
+    {
+        return(this.isSet(name,"hidden") == false);
     }
 
     isHidden(name)
@@ -104,17 +150,68 @@ class SimpleTable extends Options
         return(this.isSet(name,"hidden"));
     }
 
-    setProperty(name,property)
+    showFieldDialog()
     {
-        var field = this._schema.getField(name);
-
-        if (field != null)
+        var form = [];
+        var fields = this._schema.getFields();
+        fields.forEach((f) =>
         {
-            field.setOpt(property,true);
-        }
+            var name = f.getOpt("name");
+            //form.push({name:f.getOpt("name"),label:f.getOpt("label"),type:"checkbox",value:this.isDisplayed(name)});
+            form.push({name:name,type:"checkbox",value:this.isDisplayed(name)});
+        });
+
+        var self = this;
+
+        var o = {
+            ok:function(dialog) {
+                var names = [];
+
+                fields.forEach((f) =>
+                {
+                    var name = f.getOpt("name");
+                    var value = dialog.getValue(name);
+                    if (value)
+                    {
+                        self.show(name);
+                        names.push(name);
+                    }
+                    else
+                    {
+                        self.hide(name);
+                    }
+                });
+
+                self.draw();
+
+                if (tools.supports(self._delegate,"fieldsChanged"))
+                {
+                    self._delegate.fieldsChanged(self,names);
+                }
+
+                return(true);
+            }
+        } 
+
+        dialogs.showDialog({title:"Show Fields",delegate:o,form:form,height:"90%"});
     }
 
-    unsetProperty(name,property)
+    setProperty(name,property,value)
+    {
+        var a = (Array.isArray(name)) ? name : [name];
+
+        a.forEach((f) =>
+        {
+            var field = this._schema.getField(f);
+
+            if (field != null)
+            {
+                field.setOpt(property,value);
+            }
+        });
+    }
+
+    clearProperty(name,property)
     {
         var field = this._schema.getField(name);
 
@@ -122,6 +219,16 @@ class SimpleTable extends Options
         {
             field.clearOpt(property);
         }
+    }
+
+    setBoolProperty(name,property)
+    {
+        this.setProperty(name,property,true);
+    }
+
+    unsetBoolProperty(name,property)
+    {
+        this.setProperty(name,property,false);
     }
 
     isSet(name,property)
@@ -152,6 +259,11 @@ class SimpleTable extends Options
             });
         }
         this.release();
+    }
+
+    getData()
+    {
+        return(this._list);
     }
 
     setItem(data,itemKey)
@@ -258,6 +370,21 @@ class SimpleTable extends Options
         return(this._map.hasOwnProperty(key) ? this._map[key] : null);
     }
 
+    moveToTop(data)
+    {
+        var key = (typeof data == "string") ? data : ((data.hasOwnProperty(this._keyfield)) ? data[this._keyfield] : null);
+
+        for (var i = 0; i < this._list.length; i++)
+        {
+            if (this._list[i]._key == key)
+            {
+                var item = this._list.splice(i,1);
+                this._list.unshift(item[0]);
+                break;
+            }
+        }
+    }
+
     removeItem(data)
     {
         var key = (typeof data == "string") ? data : ((data.hasOwnProperty(this._keyfield)) ? data[this._keyfield] : null);
@@ -289,6 +416,11 @@ class SimpleTable extends Options
         this.draw();
     }
 
+    setFieldValues(field,values)
+    {
+        this.setProperty(field,"values",values);
+    }
+
     draw()
     {
         while (this._table.rows.length > 0)
@@ -298,6 +430,9 @@ class SimpleTable extends Options
 
         this.size();
 
+        var fields = this._schema.getFields();
+        var actions = this.getOpt("actions",null);
+        var self = this;
         var label;
         var type;
         var tr;
@@ -305,8 +440,48 @@ class SimpleTable extends Options
 
         this._table.appendChild(tr = document.createElement("tr"));
 
-        var fields = this._schema.getFields();
         var column = 0;
+
+        if (actions != null)
+        {
+            th = document.createElement("th");
+            th.className = "first";
+            tr.appendChild(th);
+
+            var hasGlobal = false;
+            var nobr = null;
+
+            actions.forEach((action) => {
+                if (action.getOpt("global",false))
+                {
+                    if (nobr == null)
+                    {
+                        nobr = document.createElement("nobr");
+                        th.appendChild(nobr);
+                    }
+
+                    var span = document.createElement("span");
+                    var icon = document.createElement("i");
+                    span.className = "action";
+                    icon.className = "material-icons";
+                    icon.innerText = action.getOpt("icon","");
+                    span.appendChild(icon);
+                    nobr.appendChild(span);
+
+                    icon["context"] = {table:this,name:action.getOpt("name",""),item:null};
+                    icon.addEventListener("click",function(e){self.action(e);});
+
+                    hasGlobal = true;
+                }
+            });
+
+            if (hasGlobal == false)
+            {
+                th.innerHTML = "&nbsp;";
+            }
+
+            column++;
+        }
 
         for (var field of fields)
         {
@@ -335,7 +510,6 @@ class SimpleTable extends Options
             column++;
         }
 
-        var table = this;
         var ownerdraw = this.getOpt("owner_draw");
         var row = 0;
         var show = null;
@@ -368,9 +542,43 @@ class SimpleTable extends Options
             }
 
             tr["context"] = {table:this,item:item,index:row};
-            tr.addEventListener("click",function(e){table.clicked(e);});
+            tr.addEventListener("click",function(e){self.clicked(e);});
 
             column = 0;
+
+            if (actions != null)
+            {
+                var content = "";
+
+                td = document.createElement("td");
+                td.className = "first icon";
+                tr.appendChild(td);
+
+                var nobr = null;
+
+                actions.forEach((action) => {
+                    if (action.getOpt("global",false) == false)
+                    {
+                        if (nobr == null)
+                        {
+                            nobr = document.createElement("nobr");
+                            td.appendChild(nobr);
+                        }
+
+                        var span = document.createElement("span");
+                        var icon = document.createElement("i");
+                        span.className = "action";
+                        icon.className = "material-icons";
+                        icon.innerText = action.getOpt("icon","");
+                        icon["context"] = {table:this,name:action.getOpt("name",""),item:item};
+                        icon.addEventListener("click",function(e){self.action(e);});
+                        span.appendChild(icon);
+                        nobr.appendChild(span);
+                    }
+                });
+
+                column++;
+            }
 
             for (var field of fields)
             {
@@ -402,23 +610,80 @@ class SimpleTable extends Options
                 }
                 else
                 {
-                    text = null;
+                    text = (item.hasOwnProperty(name)) ? item[name] : null;
 
-                    if (item.hasOwnProperty(name))
+                    if (field.hasOpt("values"))
                     {
-                        text = item[name];
+                        var values = field.getOpt("values");
+
+                        if (values.hasOwnProperty(text))
+                        {
+                            text = values[text];
+                        }
                     }
 
-                    if (text == null)
+                    if (field.hasOpt("image"))
                     {
-                        text = "&nbsp;";
-                    }
-                    else if (field.getOpt("nobr",false))
-                    {
-                        text = "<nobr>" + text + "</nobr>";
-                    }
+                        if (text == null || text.length == 0)
+                        {
+                            td.innerHTML = "&nbsp;";
+                        }
+                        else
+                        {
+                            var i = field.getOpt("image");
+                            var img = document.createElement("img");
+                            img.src = text;
 
-                    td.innerHTML = text;
+                            if (i.hasOwnProperty("width"))
+                            {
+                                img.style.width = i["width"];
+                            }
+
+                            if (i.hasOwnProperty("height"))
+                            {
+                                img.style.height = i["height"];
+                            }
+
+                            td.style.textAlign = "center";
+
+                            td.appendChild(img);
+                        }
+                    }
+                    else
+                    {
+                        if (text == null || text.length == 0)
+                        {
+                            text = "&nbsp;";
+                        }
+                        else if (field.getOpt("dl",false))
+                        {
+                            var tmp = "";
+                            var a = text.split("\n");
+
+                            for (var i = 0; i < a.length; i++)
+                            {
+                                if (i > 0)
+                                {
+                                    tmp += "<br/>";
+                                }
+
+                                var s = a[i];
+
+                                if (s.length > 0)
+                                {
+                                    tmp += " - " + a[i];
+                                }
+                            }
+
+                            text = tmp;
+                        }
+                        else if (field.getOpt("nobr",false))
+                        {
+                            text = "<nobr>" + text + "</nobr>";
+                        }
+
+                        td.innerHTML = text;
+                    }
                 }
 
                 column++;
@@ -496,6 +761,12 @@ class SimpleTable extends Options
         }
     }
 
+    sizeIn(wait)
+    {
+        var self = this;
+        setInterval(function(){self.size()},wait);
+    }
+
     sortFunc(a,b)
     {
         return(b[b._sort.field] - a[a._sort.field]);
@@ -510,15 +781,24 @@ class SimpleTable extends Options
 
     select(key)
     {
+        var numselected = 0;
+
         if (this._map.hasOwnProperty(key))
         {
             if (this.getOpt("multi_select",false) == false)
             {
                 this.deselectAll();
+                this._map[key].selected = true;
+                numselected = 1;
             }
-
-            this._map[key].selected = true;
+            else
+            {
+                this._map[key].selected = true;
+                numselected = this.getNumSelectedItems();
+            }
         }
+
+        return(numselected);
     }
 
     deselect(key)
@@ -536,7 +816,28 @@ class SimpleTable extends Options
             var context = e.currentTarget["context"];
             if (tools.supports(this._delegate,"itemClicked"))
             {
-                this._delegate.itemClicked(context.item);
+                this._delegate.itemClicked(context.table,context.item._key,context.item,e.metaKey,e.shiftKey);
+            }
+        }
+    }
+
+    action(e)
+    {
+        if (e.currentTarget.hasOwnProperty("context"))
+        {
+            var context = e.currentTarget["context"];
+
+            if (tools.supports(this._delegate,"action"))
+            {
+                var item = context.item;
+                if (item != null)
+                {
+                    this._delegate.action(context.table,context.name,item._key,item);
+                }
+                else
+                {
+                    this._delegate.action(context.table,context.name);
+                }
             }
         }
     }
@@ -553,6 +854,20 @@ class SimpleTable extends Options
         });
 
         return(items);
+    }
+
+    getNumSelectedItems()
+    {
+        var count = 0;
+
+        this._list.forEach((item) => {
+            if (item._selected)
+            {
+                count++;
+            }
+        });
+
+        return(count);
     }
 
     getSelectedItem()
@@ -582,7 +897,7 @@ class SimpleTable extends Options
 
     addClassTo(element,c)
     {
-        var	className = element.className;
+        var className = element.className;
 
         if (className.indexOf(" " + c) == -1)
         {
@@ -593,7 +908,7 @@ class SimpleTable extends Options
 
     removeClassFrom(element,c)
     {
-        var	className = element.className;
+        var className = element.className;
 
         if (className.indexOf(" " + c) != -1)
         {
@@ -610,7 +925,6 @@ class SimpleTable extends Options
     {
         this.size();
     }
-
     /*
     toString()
     {

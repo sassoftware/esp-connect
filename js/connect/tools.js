@@ -1221,6 +1221,12 @@ function()
     return(this.split(" ").filter(function(i){return i}));
 };
 
+String.prototype.equalsIgnoreCase =
+function(s)
+{
+    return(this.toLowerCase() == s.toLowerCase());
+};
+
 String.prototype.pad =
 function(length,c)
 {

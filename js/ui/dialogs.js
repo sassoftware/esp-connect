@@ -511,6 +511,8 @@ class Form extends Options
 
         this._values = [];
 
+        const   self = this;
+
         var tr;
         var td;
 
@@ -554,7 +556,7 @@ class Form extends Options
 
                     tmp.forEach((opt) => {
                         var n = opt.name;
-                        var v = opt.hasOwnProperty("value") ? opt.value : name;
+                        var v = opt.hasOwnProperty("value") ? opt.value : n;
                         var option = document.createElement("option");
                         option.value = v;
                         option.appendChild(document.createTextNode(n));
@@ -602,8 +604,6 @@ class Form extends Options
 
                 input.type = "file";
                 input.style.display = "none";
-
-                const   self = this;
 
                 input.addEventListener("change",function(event) {
                     var files = event.target.files;
@@ -653,6 +653,26 @@ console.log(tmp.naturalHeight + " :: " + h);
                 opts.setOpt("_image",img);
                 opts.setOpt("_changed",false);
             }
+            else if (type == "boolean")
+            {
+                var div = document.createElement("div");
+                var span = document.createElement("i");
+                div.className = "boolean";
+                //span.className = "material-icons";
+                div.appendChild(span);
+                //span.innerText = value ? "check" : "clear";
+                span.innerHTML = value ? "Yes" : "No";
+                div._opts = opts;
+                td.appendChild(div);
+
+                div.addEventListener("click",function() {
+                    var current = this._opts.getOpt("value");
+                    var value = current ? false : true;
+                    span.innerHTML = value ? "Yes" : "No";
+                    //span.innerText = value ? "check" : "clear";
+                    this._opts.setOpt("value",value);
+                });
+            }
             else
             {
                 control = document.createElement("input");
@@ -667,7 +687,26 @@ console.log(tmp.naturalHeight + " :: " + h);
 
                 if (type != "select" && type != "image")
                 {
-                    if (type == "checkbox")
+                    if (type == "textarea")
+                    {
+                        if (Array.isArray(value))
+                        {
+                            var s = "";
+                            value.forEach((v) => {
+                                if (s.length > 0)
+                                {
+                                    s += "\n";
+                                }
+                                s += v;
+                            });
+                            control.value = s;
+                        }
+                        else
+                        {
+                            control.value = value;
+                        }
+                    }
+                    else if (type == "checkbox")
                     {
                         control.checked = value;
                     }
@@ -767,6 +806,10 @@ console.log(tmp.naturalHeight + " :: " + h);
             if (type == "image")
             {
                 value = control.src;
+            }
+            else if (type == "boolean")
+            {
+                value = entry.getOpt("value");
             }
             else if (control.type != null)
             {

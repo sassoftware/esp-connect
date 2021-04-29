@@ -3,7 +3,7 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-import {ServerConnection} from "./serverconn.js";
+import {serverconn} from "./serverconn.js";
 import {tools} from "./tools.js";
 import {xpath} from "./xpath.js";
 import {Options} from "./options.js";
@@ -221,7 +221,7 @@ class Router
 
         Object.keys(this._servers).forEach((name) => {
             var url = this._servers[name];
-            var conn = ServerConnection.create(url,this,{name:name});
+            var conn = serverconn.create(url,this,{name:name});
             conn.start();
         });
     }

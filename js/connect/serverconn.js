@@ -174,9 +174,11 @@ class ServerConnection extends Connection
     load(model)
     {
         return(new Promise((resolve,reject) => {
+            var options = model.hasOwnProperty("options") ? model.options : {};
+            var parms = model.hasOwnProperty("parms") ? model.parms : {};
             if (this.getOpt("force",false))
             {
-                this._impl.loadProject(model.name,model.data,this.getOpts()).then(
+                this._impl.loadProject(model.name,model.data,options,parms).then(
                     function() {
                         resolve();
                     },
@@ -203,7 +205,7 @@ class ServerConnection extends Connection
 
                         if (node == null)
                         {
-                            self._impl.loadProject(model.name,model.data,self.getOpts()).then(
+                            self._impl.loadProject(model.name,model.data,options,parms).then(
                                 function() {
                                     resolve();
                                 },
@@ -220,7 +222,7 @@ class ServerConnection extends Connection
 
                             if (model.data != s)
                             {
-                                self._impl.loadProject(model.name,model.data,self.getOpts()).then(
+                                self._impl.loadProject(model.name,model.data,options,parms).then(
                                     function() {
                                         resolve();
                                     },
@@ -244,13 +246,12 @@ class ServerConnection extends Connection
     {
         if (this._impl != null)
         {
-            for (var d of this._delegates)
-            {
+            this._delegates.forEach((d) => {
                 if (tools.supports(d,"closed"))
                 {
                     d.closed(this._impl);
                 }
-            }
+            });
 
             const   closed = this._impl.closed;
 
@@ -311,13 +312,12 @@ class ServerConnection extends Connection
             this._delegate.error(this);
         }
 
-        for (var d of this._delegates)
-        {
+        this._delegates.forEach((d) => {
             if (tools.supports(d,"error"))
             {
                 d.error(this);
             }
-        }
+        });
 
         var reconnect = this.getOpt("reconnect",1);
 
@@ -421,12 +421,15 @@ class ServerConnection extends Connection
 
         return(url);
     }
+}
 
-    static create(connect,url,delegate,options)
+var _api =
+{
+    create:function(connect,url,delegate,options)
     {
         var u = tools.createUrl(decodeURI(url));
         return(new ServerConnection(connect,u["host"],u["port"],u["path"],u["secure"],delegate,options));
     }
-}
+};
 
-export {ServerConnection}
+export {_api as serverconn}

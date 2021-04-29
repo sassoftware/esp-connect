@@ -6,7 +6,7 @@
 var _prompts = null;
 var _fs = null;
 
-import {ServerConnection} from "./serverconn.js";
+import {serverconn} from "./serverconn.js";
 import {tools} from "./tools.js";
 import {ajax} from "./ajax.js";
 import {xpath} from "./xpath.js";
@@ -131,7 +131,7 @@ var	_api =
                 credentials = opts.getOptAndClear("credentials");
             }
 
-            var connection = ServerConnection.create(this,url,delegate,opts.getOpts());
+            var connection = serverconn.create(this,url,delegate,opts.getOpts());
 
             if (token != null)
             {
