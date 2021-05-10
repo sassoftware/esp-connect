@@ -764,7 +764,7 @@ class SimpleTable extends Options
     sizeIn(wait)
     {
         var self = this;
-        setInterval(function(){self.size()},wait);
+        setTimeout(function(){self.size()},wait);
     }
 
     sortFunc(a,b)
@@ -888,6 +888,19 @@ class SimpleTable extends Options
         });
 
         return(keys);
+    }
+
+    getSelectedKey()
+    {
+        var key = null;
+        var item = this.getSelectedItem();
+
+        if (item != null)
+        {
+            key = item._key;
+        }
+
+        return(key);
     }
 
     drawCell(table,name,item,td)

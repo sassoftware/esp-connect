@@ -77,7 +77,7 @@ class Visuals extends Options
         this._titleStyle = new Options({fontsize:"14pt",font_family:this.fontFamily});
         this._font = this.getOpt("font",{family:this.fontFamily,size:14});
         this._titleFont = this.getOpt("title_font",{family:this.fontFamily,size:18});
-        this._selectedFont = this.getOpt("selected_font","font-family:" + this.fontFamily + ";font-size:12pt;font-weight:normal;font-style:italic");
+        this._selectedFont = this.getOpt("selected_font","font-family:" + this.fontFamily + ";font-size:1.2rem;font-weight:normal;font-style:italic");
 
         this._span = null;
 
@@ -665,6 +665,7 @@ class Visuals extends Options
         var canvas = image._canvas;
         var div = image._div;
         var searchtext = null;
+        var scale = opts.getOpt("scale",1);
 
         if (opts.getOpt("search",false))
         {
@@ -680,15 +681,11 @@ class Visuals extends Options
             }
         }
 
-        var lineWidth = image._opts.getOpt("line_width",4);
+        var lineWidth = image._opts.getOpt("line_width",2);
 
-        image._context.fillStyle = image._opts.getOpt("image_text_color","black");
-        image._context.strokeStyle = image._opts.getOpt("image_rect_color","green");
-        image._context.lineWidth = image._opts.getOpt("line_width",4);
-        /*
-        image._context.textAlign = "right";
-        image._context.textBaseline = "bottom";
-        */
+        image._context.fillStyle = image._opts.getOpt("text_color","black");
+        image._context.strokeStyle = image._opts.getOpt("rect_color","green");
+        image._context.lineWidth = lineWidth;
         image._context.font = image._font;
         image._context.textAlign = "center";
         image._context.textBaseline = "middle";
@@ -764,11 +761,13 @@ class Visuals extends Options
                 return;
             }
 
+            var minscore = opts.getOpt("min_score",0);
             var rects = opts.getOpt("rects",true);
             var coords = data["coords"];
             var scores = data["scores"];
             var labels = data["labels"].split(",");
             var index = 0;
+            var score;
             var text;
             var x;
             var y;
@@ -797,6 +796,13 @@ class Visuals extends Options
                     }
                 }
 
+                score = scores[i] * 100;
+
+                if (minscore > 0 && score < minscore)
+                {
+                    continue;
+                }
+
                 text += " " + parseInt(scores[i] * 100) + "%";
 
                 x = coords[index++];
@@ -804,19 +810,24 @@ class Visuals extends Options
                 w = coords[index++];
                 h = coords[index++];
 
+                var border = rects ? lineWidth : 0;
+
                 x = parseInt(image.offsetWidth * x);
                 y = parseInt(image.offsetHeight * y);
                 w = parseInt(image.offsetWidth * w);
                 h = parseInt(image.offsetHeight * h);
 
-                x = x - (w / 2);
-                y = y - (h / 2);
                 if (rects)
                 {
-                    image._context.strokeRect(x,y,w,h);
+                    image._context.strokeRect(x - (w / 2),y - (h / 2),w,h);
                 }
 
-                image._context.fillText(text,x + (w / 2),y + (h / 2));
+                image._context.fillText(text,x,y);
+
+                if (delegate != null)
+                {
+                    delegate.objectFound({name:text,x:x,y:y,width:w,height:h});
+                }
             }
         }
         else if (data.hasOwnProperty("objCount"))
@@ -839,6 +850,60 @@ class Visuals extends Options
                 s = "Object" + i + "_center_y";
                 y = parseInt(parseFloat(data[s]) * ratioY);
                 image._context.fillText(text,x,y);
+            }
+        }
+
+        if (data.hasOwnProperty("lines_coords"))
+        {
+            var color = image._opts.getOpt("line_color","white");
+            image._context.strokeStyle = color;
+
+            var coords = data["lines_coords"];
+            var x1;
+            var y1;
+            var x2;
+            var y2;
+
+            for (var i = 0; i < coords.length; i += 4)
+            {
+                /*
+                x1 = coords[i] * scale;
+                y1 = coords[i + 1] * scale;
+                x2 = coords[i + 2] * scale;
+                y2 = coords[i + 3] * scale;
+                */
+
+                x1 = coords[i] * image.offsetWidth;
+                y1 = coords[i + 1] * image.offsetHeight;
+                x2 = coords[i + 2] * image.offsetWidth;
+                y2 = coords[i + 3] * image.offsetHeight;
+
+                image._context.beginPath();
+                image._context.moveTo(x1,y1);
+                image._context.lineTo(x2,y2);
+                image._context.closePath();
+                image._context.stroke();
+            }
+        }
+
+        if (data.hasOwnProperty("points_coords"))
+        {
+            var color = image._opts.getOpt("point_color","white");
+            image._context.strokeStyle = color;
+
+            var radius = image._opts.getOpt("radius",10);
+            var coords = data["points_coords"];
+            var x;
+            var y;
+
+            for (var i = 0; i < coords.length; i += 2)
+            {
+                x = coords[i] * image.offsetWidth;
+                y = coords[i + 1] * image.offsetHeight;
+                image._context.beginPath();
+                image._context.ellipse(x,y,radius,radius,Math.PI / 4,0,2 * Math.PI);
+                image._context.closePath();
+                image._context.stroke();
             }
         }
     }

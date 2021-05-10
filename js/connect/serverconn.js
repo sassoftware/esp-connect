@@ -174,11 +174,13 @@ class ServerConnection extends Connection
     load(model)
     {
         return(new Promise((resolve,reject) => {
+            var opts = new Options(model);
             var options = model.hasOwnProperty("options") ? model.options : {};
             var parms = model.hasOwnProperty("parms") ? model.parms : {};
-            if (this.getOpt("force",false))
+            var env = model.hasOwnProperty("env") ? model.env : {};
+            if (opts.getOpt("force",false))
             {
-                this._impl.loadProject(model.name,model.data,options,parms).then(
+                this._impl.loadProject(model.name,model.data,options,parms,env).then(
                     function() {
                         resolve();
                     },
@@ -205,7 +207,7 @@ class ServerConnection extends Connection
 
                         if (node == null)
                         {
-                            self._impl.loadProject(model.name,model.data,options,parms).then(
+                            self._impl.loadProject(model.name,model.data,options,parms,env).then(
                                 function() {
                                     resolve();
                                 },
@@ -222,7 +224,7 @@ class ServerConnection extends Connection
 
                             if (model.data != s)
                             {
-                                self._impl.loadProject(model.name,model.data,options,parms).then(
+                                self._impl.loadProject(model.name,model.data,options,parms,env).then(
                                     function() {
                                         resolve();
                                     },

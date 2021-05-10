@@ -6,6 +6,7 @@
 import {Options} from "../connect/options.js";
 import {tools} from "../connect/tools.js";
 import {uitools} from "./uitools.js";
+import {SimpleTable} from "./simpletable.js";
 
 class Dialog extends Options
 {
@@ -84,14 +85,18 @@ class Dialog extends Options
         this._div.style.height = this.getOpt("height","auto");
         this._div.className = "dialog";
 
-        this._header = document.createElement("div");
-        this._header.className = "header";
-        this._header.style.position = "absolute";
-        this._div.appendChild(this._header);
+        if (this.getOpt("show_header",true))
+        {
+            this._header = document.createElement("div");
+            this._header.className = "header";
+            this._header.style.position = "absolute";
+            this._div.appendChild(this._header);
 
-        this._title = document.createElement("div");
-        this._title.className = "title";
-        this._header.appendChild(this._title);
+            this._title = document.createElement("div");
+            this._title.className = "title";
+            this._title.innerHTML = this.getOpt("title","");
+            this._header.appendChild(this._title);
+        }
 
         this._content = document.createElement("div");
         this._content.style.position = "absolute";
@@ -106,11 +111,6 @@ class Dialog extends Options
         this._footer.style.paddingRight = "10px";
         this._footer.style.paddingBottom = 0;
         this._div.appendChild(this._footer);
-
-        if (this.hasOpt("title"))
-        {
-            this._title.innerHTML = this.getOpt("title");
-        }
 
         if (this.hasOpt("form"))
         {
@@ -157,10 +157,13 @@ class Dialog extends Options
         var	top = margin;
 
         var	headerBorders = uitools.getBorders(this._header,true);
-        this._header.style.left = margin + "px";
-        this._header.style.top = margin + "px";
-        this._header.style.width = (width - headerBorders.hsize - margin) + "px";
-        top = this._header.offsetTop + this._header.offsetHeight;
+        if (this._header != null)
+        {
+            this._header.style.left = margin + "px";
+            this._header.style.top = margin + "px";
+            this._header.style.width = (width - headerBorders.hsize - margin) + "px";
+            top = this._header.offsetTop + this._header.offsetHeight;
+        }
 
         var	contentBorders = uitools.getBorders(this._content,true);
 
@@ -179,6 +182,13 @@ class Dialog extends Options
         h -= this._footer.offsetHeight;
 
         this._content.style.height = h + "px";
+
+        if (this._form != null)
+        {
+            this._form.sizeTables();
+        }
+
+        //return((this._form != null) ? this._form.getValues() : null);
     }
 
     show()
@@ -381,6 +391,7 @@ class Dialog extends Options
         this._form = new Form(this,values,this.getOpts());
         this._content.innerHTML = "";
         this._content.appendChild(this._form.table);
+        this._form.focus();
     }
 
     getData()
@@ -406,6 +417,48 @@ class Dialog extends Options
     getControl(name)
     {
         return((this._form != null) ? this._form.getControl(name) : null);
+    }
+
+    getButton(name)
+    {
+        return((this._form != null) ? this._form.getButton(name) : null);
+    }
+
+    getTable(name)
+    {
+        return((this._form != null) ? this._form.getTable(name) : null);
+    }
+
+    showControl(name)
+    {
+        if (this._form != null)
+        {
+            this._form.show(name);
+        }
+    }
+
+    hideControl(name)
+    {
+        if (this._form != null)
+        {
+            this._form.hide(name);
+        }
+    }
+
+    enable(name)
+    {
+        if (this._form != null)
+        {
+            this._form.enable(name);
+        }
+    }
+
+    disable(name)
+    {
+        if (this._form != null)
+        {
+            this._form.disable(name);
+        }
     }
 
     ok()
@@ -532,17 +585,36 @@ class Form extends Options
 
             opts.setOpt("current",value);
 
+            var rows = [];
+
             this._table.appendChild(tr = document.createElement("tr"));
             tr.appendChild(td = document.createElement("td"));
             td.className = "label";
+            if (this._dialog.hasOpt("label_width"))
+            {
+                td.style.width = this._dialog.getOpt("label_width");
+            }
             td.innerHTML = label;
+
+            rows.push(tr);
+
+            opts.setOpt("_rows",rows);
 
             if (oneline == false)
             {
                 this._table.appendChild(tr = document.createElement("tr"));
+                rows.push(tr);
             }
+
             tr.appendChild(td = document.createElement("td"));
-            td.className = classname;
+            if (opts.hasOpt("button"))
+            {
+                td.className = classname + " buttoncontrol";
+            }
+            else
+            {
+                td.className = classname;
+            }
 
             var control = null;
 
@@ -567,6 +639,10 @@ class Form extends Options
                         control.add(option);
                     });
                 }
+            }
+            else if (type == "table")
+            {
+                control = document.createElement("div");
             }
             else if (type == "textarea")
             {
@@ -620,9 +696,6 @@ class Form extends Options
                                 var ratio = w / h;
                                 h = 200;
                                 w = 200 * ratio;
-console.log("ratio is: " + ratio);
-console.log(tmp.naturalWidth + " :: " + w);
-console.log(tmp.naturalHeight + " :: " + h);
                                 _api.context.drawImage(tmp,0,0,w,h);
                                 var quality = .5;
                                 data = _api.canvas.toDataURL("image/jpeg",quality);
@@ -665,6 +738,8 @@ console.log(tmp.naturalHeight + " :: " + h);
                 div._opts = opts;
                 td.appendChild(div);
 
+                opts.setOpt("value",value ? true : false);
+
                 div.addEventListener("click",function() {
                     var current = this._opts.getOpt("value");
                     var value = current ? false : true;
@@ -685,7 +760,16 @@ console.log(tmp.naturalHeight + " :: " + h);
 
                 control.id = id;
 
-                if (type != "select" && type != "image")
+                if (type == "table")
+                {
+                    var st = new SimpleTable(control,opts.getOpts(),this.getOpt("delegate"));
+                    st.setFields(opts.getOpt("fields",[]));
+                    st.size();
+                    st.draw();
+
+                    opts.setOpt("_table",st);
+                }
+                else if (type != "select" && type != "image")
                 {
                     if (type == "textarea")
                     {
@@ -718,7 +802,14 @@ console.log(tmp.naturalHeight + " :: " + h);
 
                 if (style != null)
                 {
-                    control.style = style;
+                    for (var x in style)
+                    {
+                        control.style[x] = style[x];
+                    }
+                }
+                else if (type == "table")
+                {
+                    control.style.border = "1px solid #d8d8d8";
                 }
 
                 if (opts.hasOpt("onchange"))
@@ -729,11 +820,43 @@ console.log(tmp.naturalHeight + " :: " + h);
                 td.appendChild(control);
 
                 opts.setOpt("control",control);
+
+                if (opts.hasOpt("button"))
+                {
+                    var bopts = new Options(opts.getOpt("button"));
+                    var button = document.createElement("button");
+                    button.innerText = bopts.getOpt("text","Button");
+                    if (bopts.hasOpt("click"))
+                    {
+                        button.addEventListener("click",bopts.getOpt("click"));
+                    }
+                    button.disabled = bopts.getOpt("disabled",false);
+
+                    var span = document.createElement("span");
+                    span.innerHTML = "&nbsp;&nbsp;";
+
+                    td.appendChild(span);
+                    td.appendChild(button);
+
+                    opts.setOpt("_button",button);
+                }
             }
 
             this._opts.push(opts);
             this._optsmap[name] = opts;
         });
+    }
+
+    focus()
+    {
+        for (var opt of this._opts)
+        {
+            if (opt.getOpt("focus",false))
+            {
+                opt.getOpt("control").focus();
+                break;
+            }
+        }
     }
 
     getValues()
@@ -846,6 +969,78 @@ console.log(tmp.naturalHeight + " :: " + h);
         return(control);
     }
 
+    getButton(name)
+    {
+        var button = null;
+        var entry = this.getEntry(name);
+
+        if (entry != null)
+        {
+            button = entry.getOpt("_button");
+        }
+
+        return(button);
+    }
+
+    getTable(name)
+    {
+        var table = null;
+        var entry = this.getEntry(name);
+
+        if (entry != null)
+        {
+            table = entry.getOpt("_table");
+        }
+
+        return(table);
+    }
+
+    show(name)
+    {
+        var entry = this.getEntry(name);
+
+        if (entry != null)
+        {
+            var rows = entry.getOpt("_rows");
+            rows.forEach((row) => {
+                row.style.display = "table-row";
+            });
+        }
+    }
+
+    hide(name)
+    {
+        var entry = this.getEntry(name);
+
+        if (entry != null)
+        {
+            var rows = entry.getOpt("_rows");
+            rows.forEach((row) => {
+                row.style.display = "none";
+            });
+        }
+    }
+
+    enable(name)
+    {
+        var entry = this.getEntry(name);
+
+        if (entry != null)
+        {
+            entry.getOpt("control").disabled = false;
+        }
+    }
+
+    disable(name)
+    {
+        var entry = this.getEntry(name);
+
+        if (entry != null)
+        {
+            entry.getOpt("control").disabled = true;
+        }
+    }
+
     getEntry(name)
     {
         var entry = null;
@@ -856,6 +1051,20 @@ console.log(tmp.naturalHeight + " :: " + h);
         }
 
         return(entry);
+    }
+
+    sizeTables()
+    {
+        for (var x in this._optsmap)
+        {
+            var entry = this._optsmap[x];
+            if (entry.hasOpt("_table"))
+            {
+                var table = entry.getOpt("_table");
+                table.size();
+                table.draw();
+            }
+        }
     }
 }
 
@@ -976,13 +1185,57 @@ var	_api =
         return(dialog);
     },
 
-    message:function(title,text)
+    status:function(options)
     {
-        var options = {};
+        if (options == null)
+        {
+            options = {};
+        }
+
+        if (options.hasOwnProperty("buttons") == false)
+        {
+            options.buttons = "none";
+        }
+
+        if (options.hasOwnProperty("width") == false)
+        {
+            options["width"] = "50%";
+        }
+
+        if (options.hasOwnProperty("height") == false)
+        {
+            options["height"] = "200px";
+        }
+
+        var table = document.createElement("table");
+        var tr = document.createElement("tr");
+        var td = document.createElement("td");
+        var div = document.createElement("div");
+        table.appendChild(tr);
+        tr.appendChild(td);
+        td.appendChild(div);
+        var opts = new Options(options);
+        div.className = "status";
+        div.innerHTML = opts.getOpt("text","");
+        var dialog = new Dialog(options);
+        dialog.content = table;
+        dialog.push();
+        return(dialog);
+    },
+
+    message:function(title,text,options)
+    {
+        if (options == null)
+        {
+            options = {};
+        }
         options.title = title;
-        options.buttons = "ok";
+        if (options.hasOwnProperty("buttons") == false)
+        {
+            options.buttons = "ok";
+        }
         var dialog = this.create(options);
-        dialog.htmlcontent = "<div>" + text + "</div>";
+        dialog.htmlcontent = "<div class='message'>" + text + "</div>";
         dialog.push();
         return(dialog);
     },

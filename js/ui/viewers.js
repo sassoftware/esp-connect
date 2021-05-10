@@ -1243,66 +1243,58 @@ class LogViewer extends ViewerBase
 
     showContexts()
     {
-        if (this._loggerTable == null)
-        {
-            this._showContextsId = tools.guid();
-            this._contextDialog = document.createElement("div");
-            this._contextDialog.innerHTML = this.getContextHtml(this._showContextsId);
-            document.body.appendChild(this._contextDialog);
+        var o = {
+            ok:function(dialog) {
+                return(true);
+            },
+            itemClicked:function(table,key,item) {
+                table.deselectAll();
+                table.select(key);
+                dialog.getControl("level").value = item["@level"].toLowerCase();
+                dialog.getButton("level").disabled = false;
+            }
+        };
 
-            var fields = new Array();
-            fields.push({name:"@name",type:"string",label:"Logging Context"});
-            fields.push({name:"@level",type:"string",label:"Level"});
+        var fields = new Array();
+        fields.push({name:"@name",type:"string",label:"Logging Context"});
+        fields.push({name:"@level",type:"string",label:"Level"});
 
-            const   tableDiv = document.getElementById(this._showContextsId + "-table");
-            tableDiv.style.border = "1px solid #d8d8d8";
-            tableDiv.style.height = "300px";
+        var options = [
+            {name:"Trace",value:"trace"},
+            {name:"Debug",value:"debug"},
+            {name:"Info",value:"info"},
+            {name:"Warn",value:"warn"},
+            {name:"Error",value:"error"},
+            {name:"Fatal",value:"fatal"},
+            {name:"Off",value:"off"}
+        ];
 
-            const   select = document.getElementById(this._showContextsId + "-loglevel");
-            const   button = document.getElementById(this._showContextsId + "-loglevel");
-            select.style.font = "14pt " + this._visuals.fontFamily;
-            button.style.font = "14pt " + this._visuals.fontFamily;
+        const   self =  this;
 
-            const   self = this;
+        var setLevel = function(e) {
+            var item = dialog.getTable("contexts").getSelectedItem();
+            if (item != null)
+            {
+                var level = dialog.getControl("level").value;
 
-            const    delegate = {
-                itemClicked:function(item) {
-
-                    self._loggerTable.deselectAll();
-                    item.selected = true;
-
-                    document.getElementById(self._showContextsId + "-loglevel").value = item["@level"].toLowerCase();
-                    document.getElementById(self._showContextsId + "-setLevel").disabled = false;
-                }
-            };
-
-            this._loggerTable = this._visuals.createSimpleTable(tableDiv,{name:"loggers",key:"@name"},delegate);
-            this._loggerTable.setFields(fields);
-            this._loggerTable.draw();
-
-            const   click = function() {
-                var item = self._loggerTable.getSelectedItem();
-                if (item != null)
-                {
-                    const   value = document.getElementById(self._showContextsId + "-loglevel").value;
-                    self._connection.setLogger(item["@name"],value,{response:function(connection,data){
-                        if (Array.isArray(data))
+                self._connection.setLogger(item["@name"],level).then(
+                    function(result) {
+                        if (Array.isArray(result))
                         {
-                            table.setData(data);
+                            table.setData(result);
                         }
                     }
-                    });
-                }
-            };
+                );
+            }
+        };
 
-            document.getElementById(self._showContextsId + "-setLevel").addEventListener("click",click);
-        }
+        var form = [];
+        form.push({name:"contexts",label:"Logging Contexts",type:"table",key:"@name",fields:fields});
+        form.push({name:"level",label:"Level",type:"select",options:options,button:{text:"Set",click:setLevel,disabled:true}});
 
-        dialogs.pushModal(this._showContextsId);
+        var dialog = dialogs.showDialog({title:"Log Levels",delegate:o,form:form,width:"50%",height:"90%",buttons:"done",oneline:false});
 
-        const   table = this._loggerTable;
-
-        table.deselectAll();
+        var table = dialog.getTable("contexts");
 
         this._connection.getLoggers().then(
             function(result) {
@@ -1454,63 +1446,6 @@ class LogViewer extends ViewerBase
         this._table.release();
 
         this.draw();
-    }
-
-    getContextHtml(id)
-    {
-        var s = "";
-
-        s += "    <div id=\"" + id + "\" class=\"dialog\" style=\"width:50%\">\n";
-        s += "\n";
-        s += "        <table class=\"dialogClose\" style=\"width:100%\" cellspacing=\"0\" cellpadding=\"0\">\n";
-        s += "            <tr><td class=\"icon\"><a class=\"icon dialogTitle\" href=\"javascript:_esp.getDialogs().popModal('" + id + "')\">&#xf10c;</a></td></tr>\n";
-        s += "        </table>\n";
-        s += "\n";
-        s += "        <div class=\"dialogTop\">\n";
-        s += "\n";
-        s += "            <div  class=\"dialogHeader\">\n";
-        s += "                <div class=\"dialogTitle\">\n";
-        s += "                    <table style=\"width:100%;border:0\" cellspacing=\"0\" cellpadding=\"0\">\n";
-        s += "                        <tr>\n";
-        s += "                            <td><div class=\"dialogTitle\">Log Levels</div></td>\n";
-        s += "                        </tr>\n";
-        s += "                    </table>\n";
-        s += "                </div>\n";
-        s += "            </div>\n";
-        s += "\n";
-        s += "            <div class=\"dialogContent\">\n";
-        s += "                <div id=\"" + id + "-table\"></div>\n";
-        s += "                <table border=\"0\" style=\"width:100%;height:100%\" cellspacing=\"0\" cellpadding=\"0\">\n";
-        s += "                    <tr>\n";
-        s += "                        <td class=\"dialogLabel\">Level:</td>\n";
-        s += "                    </tr>\n";
-        s += "                    <tr>\n";
-        s += "                        <td class=\"dialogValue\">\n";
-        s += "                            <select id=\"" + id + "-loglevel\">\n";
-        s += "                                <option value=\"trace\">Trace</option>\n";
-        s += "                                <option value=\"debug\">Debug</option>\n";
-        s += "                                <option value=\"info\">Info</option>\n";
-        s += "                                <option value=\"warn\">Warn</option>\n";
-        s += "                                <option value=\"error\">Error</option>\n";
-        s += "                                <option value=\"fatal\">Fatal</option>\n";
-        s += "                                <option value=\"off\">None</option>\n";
-        s += "                            </select>\n";
-        s += "                        </td>\n";
-        s += "                    </tr>\n";
-        s += "                    <tr>\n";
-        s += "                        <td style=\"padding-top:10px\">\n";
-        s += "                        <div class=\"dialogButtons\" style=\"padding:0\">\n";
-        s += "                            <button id=\"" + id + "-setLevel\" style=\"font-size:12pt\" disabled=\"true\">Set Level</button>\n";
-        s += "                        </div>\n";
-        s += "                        </td>\n";
-        s += "                    </tr>\n";
-        s += "                </table>\n";
-        s += "            </div>\n";
-        s += "        </div>\n";
-        s += "    </div>\n";
-        s += "\n";
-
-        return(s);
     }
 }
 

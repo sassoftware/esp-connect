@@ -40,13 +40,13 @@ var _visuals = null;
 
 var _xml = "<project threads='4' pubsub='auto'>\
                <contqueries>\
-                 <contquery name='cq' trace='clicks'>\
+                 <contquery name='cq'>\
                    <windows>\
                      <window-source name='clicks' insert-only='true' index='pi_EMPTY'>\
                         <schema-string>id*:string,element:string,x:int32,y:int32</schema-string>\
                      </window-source>\
                      <window-copy name='copy'>\
-                        <retention type='bytime_sliding'>30 seconds</retention>\
+                        <retention type='bytime_sliding'>@thetime@</retention>\
                      </window-copy>\
                      <window-aggregate name='clicksAggr'>\
                         <schema-string>element*:string,count:int32</schema-string>\
@@ -93,7 +93,7 @@ connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.showStatus("Loading project...");
-    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_xml},overwrite:true,force:_esp.getParm("force",false)});
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_xml,options:{overwrite:true},env:{thetime:"30 seconds"}},force:_esp.getParm("force",true)});
     _esp.handleLayout();
 }
 

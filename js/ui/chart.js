@@ -542,6 +542,14 @@ class Chart extends Options
         this._content = document.createElement("div");
         this._content._chart = this;
         this._content.className = "visualContent"; 
+        if (this.hasOpt("content_style"))
+        {
+            var css = this.getOpt("content_style");
+            for (var x in css)
+            {
+                this._content.style[x] = css[x];
+            }
+        }
         this._content.style.overflow = "auto";
         this._content.id = this._id;
         this._div.appendChild(this._header);
@@ -761,7 +769,17 @@ class Chart extends Options
         }
 
         this.addOpts(opts.getOpts());
-        opts.setOpt("_ui",ui + "/eventStreamProcessing/v1/connect-ui");
+        if (this._visuals.hasOpt("connect-ui"))
+        {
+            opts.setOpt("_ui",this._visuals.getOpt("connect-ui"));
+        }
+        else
+        {
+            opts.setOpt("_ui",ui + "/eventStreamProcessing/v1/connect-ui");
+        }
+        opts.setOpt("show_header",false);
+        opts.setOpt("enable_share",false);
+        opts.setOpt("content_style",{border:"0"});
         if (conn.hasOpt("k8s"))
         {
             var k8s = conn.getOpt("k8s");

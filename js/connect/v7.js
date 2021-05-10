@@ -816,7 +816,7 @@ class Api extends Options
         }));
     }
 
-    loadProjectFrom(name,url,options)
+    loadProjectFrom(name,url,options,parms,env)
     {
         return(new Promise((resolve,reject) => {
 
@@ -824,7 +824,7 @@ class Api extends Options
 
             ajax.create(url).get().then(
                 function(response) {
-                    self.loadProject(name,response.text,options).then(
+                    self.loadProject(name,response.text,options,parms,env).then(
                         function() {
                             resolve();
                         },
@@ -864,7 +864,7 @@ class Api extends Options
         }));
     }
 
-    loadProject(name,data,options,parms)
+    loadProject(name,data,options,parms,env)
     {
         return(new Promise((resolve,reject) => {
             if (this.k8s != null)
@@ -903,6 +903,16 @@ class Api extends Options
                         p[x] = parms[x];
                     }
                     o["parms"] = p;
+                }
+
+                if (env != null && Object.keys(env).length > 0)
+                {
+                    var v = {};
+                    for (var x in env)
+                    {
+                        v[x] = env[x];
+                    }
+                    o["env"] = v;
                 }
 
                 o["data"] = tools.b64Encode(data);
@@ -3023,10 +3033,12 @@ class Stats extends Options
     }
 }
 
-class Log
+class Log extends Options
 {
-    constructor(api)
+    constructor(api,options)
     {
+        super(options);
+
         this._api = api;
         this._delegates = [];
 
@@ -3049,9 +3061,11 @@ class Log
     process(xml)
     {
         var message = xpath.nodeText(xml.documentElement);
+        var o;
 
         for (var i = 0; i < this._delegates.length; i++)
         {
+            o = this.createObject(message);
             this._delegates[i].handleLog(this,this.createObject(message));
         }
     }
@@ -3136,7 +3150,6 @@ class Log
     {
         var request = {"logs":{}};
         var o = request["logs"];
-        o["capture"] = true;
         o["capture"] = false;
         this._api.sendObject(request);
     }
@@ -3350,7 +3363,6 @@ class Publisher extends Options
             }
             else if (this._csv.options.getOpt("close",false))
             {
-console.log("ALL DONE");
                 this.close();
             }
         }
