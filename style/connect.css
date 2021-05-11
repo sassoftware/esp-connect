@@ -213,17 +213,17 @@ div.dialog td.value label
     padding:4px;
 }
 
+div.dialog td.value select
+{
+    width:100%;
+}
+
 div.dialog td.buttoncontrol input,
 div.dialog td.buttoncontrol select,
 div.dialog td.buttoncontrol textarea,
 div.dialog td.buttoncontrol label
 {
     width:80%;
-}
-
-div.dialog td.value select
-{
-    width:100%;
 }
 
 div.dialog td.value div.boolean

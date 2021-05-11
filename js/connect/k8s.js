@@ -1242,6 +1242,7 @@ class K8SProject extends K8S
     {
         var opts = new Options(options);
         var modelconfig = opts.getOpt("model");
+        var modelopts = (modelconfig != null) ? new Options(modelconfig) : null;
         var self = this;
 
         this.loadConfig().then(
@@ -1265,13 +1266,13 @@ class K8SProject extends K8S
                 {
                     self.getModel(modelconfig).then(
                         function(result) {
-                            return(self.preload(result,opts.getOpts()));
+                            return(self.preload(result,modelopts.getOpt("options")));
                         }
                     ).then(
                         function(result) {
                             if (result.load)
                             {
-                                return(self.load(result.xml,opts.getOpts()));
+                                return(self.load(result.xml,modelopts.getOpt("options")));
                             }
                             else
                             {
@@ -1307,11 +1308,11 @@ class K8SProject extends K8S
                 {
                     self.getModel(modelconfig).then(
                         function(result) {
-                            return(self.preload(result,opts.getOpts()));
+                            return(self.preload(result,modelopts.getOpt("options")));
                         }
                     ).then(
                         function(result) {
-                            return(self.load(result.xml,opts.getOpts()).then(
+                            return(self.load(result.xml,modelopts.getOpt("options")).then(
                                 function(result) {
                                 },
                                 function(result) {

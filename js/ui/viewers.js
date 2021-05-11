@@ -1289,7 +1289,7 @@ class LogViewer extends ViewerBase
         };
 
         var form = [];
-        form.push({name:"contexts",label:"Logging Contexts",type:"table",key:"@name",fields:fields});
+        form.push({name:"contexts",label:"Logging Contexts",type:"table",key:"@name",fields:fields,style:{overflow:"auto",height:"300px",border:"1px solid #d8d8d8"}});
         form.push({name:"level",label:"Level",type:"select",options:options,button:{text:"Set",click:setLevel,disabled:true}});
 
         var dialog = dialogs.showDialog({title:"Log Levels",delegate:o,form:form,width:"50%",height:"90%",buttons:"done",oneline:false});
