@@ -146,8 +146,8 @@ var _esp = null;
 
 <link rel="stylesheet" href="../../style/connect.css" />
 <script type="module">
-import {api} from "../../js/ui/main.js";
-_esp = api;
+import {esp} from "../../js/ui/api.js";
+_esp = esp;
 </script>
 ```
 
@@ -380,8 +380,8 @@ var _esp = null;
 <!-- Run from an esp-connect install -->
 <link rel="stylesheet" href="../../style/connect.css" />
 <script type="module">
-import {api} from "../../js/ui/main.js";
-_esp = api;
+import {esp} from "../../js/ui/api.js";
+_esp = esp;
 </script>
 ```
 
