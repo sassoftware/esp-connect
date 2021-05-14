@@ -9,13 +9,16 @@ body
     height:100%;
     overflow:hidden;
     margin:0;
-    font-family:Arial, Helvetica, sans-serif;
 }
 
-body.help
+body,
+input,
+select,
+textarea
 {
-    overflow:auto;
-    padding:10px;
+    font-family:Papyrus;
+    font-family:Arial, Helvetica, sans-serif;
+    font-size:1.1rem;
 }
 
 div.container
@@ -25,8 +28,9 @@ div.container
     justify-content:start;
     justify-content:space-between;
     justify-content:space-around;
-    font-family:Arial, Helvetica, sans-serif;
-    font-size:1.2rem;
+    /*
+    font-size:1rem;
+    */
 }
 
 div#banner,
@@ -40,7 +44,7 @@ div#footer
 div#banner
 {
     background:#3b99fc;
-    font-size:1.5rem;
+    font-size:1.2rem;
     padding:.5rem;
     color:white;
     z-index:10;
@@ -61,7 +65,6 @@ div#footer
 {
     background:#3b99fc;
     padding:5px;
-    font-size:1rem;
     color:white;
 }
 
@@ -74,6 +77,9 @@ div.obscure
 }
 
 /* Icons */
+div.hsplitter,
+div.vsplitter,
+.mapicon,
 .icon
 {
     font-family:sasicons;
@@ -114,15 +120,16 @@ td.icon
 
 div.Images
 {
-    font-family:Arial, Helvetica, sans-serif;
-    font-weight:regular;
+    /*
     font-size:.875rem;
+    font-weight:regular;
+    */
     border:1px solid #d8d8d8;
 }
 
 div.Images div.ObjectText
 {
-    font-size:1rem;
+    //font-size:1rem;
 }
 
 /* End Images */
@@ -131,7 +138,6 @@ div.Images div.ObjectText
 
 div.dialog
 {
-	font-family:Arial, Helvetica, sans-serif;
 	position:absolute;
 	display:none;
 	background:white;
@@ -151,8 +157,7 @@ div.dialog div.header
 
 div.dialog div.title
 {
-	font-family:Arial, Helvetica, sans-serif;
-	font-size:1.5rem;
+	font-size:1.2rem;
     width:100%;
     text-align:center;
     background:#3b99fc;
@@ -172,8 +177,9 @@ div.dialog div.title a
 
 div.dialog div.content
 {
-	font-family:Arial, Helvetica, sans-serif;
+    /*
 	font-size:1.2rem;
+    */
     width:90%;
     margin:auto;
     padding:20px;
@@ -185,8 +191,7 @@ div.dialog div.content input,
 div.dialog div.content select,
 div.dialog div.content textarea
 {
-	font-family:Arial, Helvetica, sans-serif;
-	font-size:1.2rem;
+	font-size:1.1rem;
 }
 
 div.dialog div.content textarea
@@ -197,8 +202,22 @@ div.dialog div.content textarea
 
 div.dialog div.content td
 {
-	font-family:Arial, Helvetica, sans-serif;
-	font-size:1.2rem;
+    /*
+	font-size:1rem;
+    */
+}
+
+div.dialog div.content td.value,
+div.dialog div.content td.label
+{
+    padding-top:5px;
+}
+
+div.dialog div.content td.label
+{
+    width:auto;
+    white-space:nowrap;
+    padding-right:20px;
 }
 
 div.dialog td.value input,
@@ -207,7 +226,6 @@ div.dialog td.value textarea,
 div.dialog td.value label
 {
     width:98%;
-    font-family:Arial, Helvetica, sans-serif;
     font-weight:regular;
     border:1px solid #c0c0c0;
     padding:4px;
@@ -240,15 +258,6 @@ div.dialog td.value input[type=checkbox]
     height:20px;
 }
 
-div.dialog td.label
-{
-    padding-top:10px;
-	font-size:1.2rem;
-    width:auto;
-    white-space:nowrap;
-    padding-right:20px;
-}
-
 div.dialog table.buttons
 {
     padding:6px;
@@ -265,23 +274,10 @@ div.dialog table.buttons td.button
 	text-align:right;
 }
 
-/*
-div.dialog table.buttons button
-{
-	font-family:Arial, Helvetica, sans-serif;
-    border:1px solid black;
-	height:2.0rem;
-	border-radius:4px;
-	padding-left:1rem;
-	padding-right:1rem;
-	font-size:1.2rem;
-}
-*/
-
 div.dialog td.buttoncontrol button,
 div.dialog table.buttons button
 {
-    font-size:1.2rem;
+    font-size:1rem;
 }
 
 /*
@@ -299,7 +295,7 @@ div.dialog td.buttoncontrol button
 
 div.dialog div.status
 {
-    font-size:1.5rem;
+    font-size:1.2rem;
     margin:auto;
     text-align:center;
 }
@@ -314,14 +310,17 @@ div.dialog div.message
 
 div.box
 {
-    font-family:Arial, Helvetica, sans-serif;
+    /*
     font-size:1.2rem;
+    */
 }
 
 div.visualHeader
 {
     padding-top:10px;
+    /*
     font-size:1.3rem;
+    */
 }
 
 div.visual
@@ -337,7 +336,9 @@ div.visualHeader td.icons a
 {
     padding-left:5px;
     padding-right:5px;
+    /*
     font-size:1.5rem;
+    */
     color:black;
     text-decoration:none;
     color:#808080;
@@ -402,7 +403,9 @@ div.visualControlPanel
 
 div.visualControlPanel a.icon
 {
+    /*
     font-size:1.5rem;
+    */
 }
 
 td.visualControlPanelNav
@@ -423,13 +426,16 @@ td.visualControlPanelFilter
 
 td.visualControlPanelFilter a.icon
 {
+    /*
     font-size:1.3rem;
+    */
 }
 
 td.visualControlPanelFilter input
 {
-	font-family:Arial, Helvetica, sans-serif;
+    /*
     font-size:1.5rem;
+    */
     width:70%;
 }
 
@@ -440,7 +446,9 @@ div.modelViewerHeader
 
 div.modelViewerHeader td.action a
 {
+    /*
     font-size:1.5rem;
+    */
 }
 
 table.modelViewerHeader table.controls td.display
@@ -452,8 +460,9 @@ div.modelViewerHeader td,
 div.modelViewerFooter td,
 div.modelViewerHeader select
 {
-	font-family:Arial, Helvetica, sans-serif;
+    /*
     font-size:1.5rem;
+    */
 }
 
 div.modelViewerHeader select
@@ -533,20 +542,24 @@ div.logcontrols
 
 div.logcontrols input
 {
-	font-family:Arial, Helvetica, sans-serif;
+    /*
     font-size:1rem;
+    */
 }
 
 div.logcontrols a.icon
 {
+    /*
     font-size:1.5rem;
+    */
 }
 
 pre.model,
 pre.dialogCode
 {
-	font-family:Arial, Helvetica, sans-serif;
+    /*
     font-size:1rem;
+    */
     width:100%;
     height:100%;
     border:1px solid #d8d8d8;
@@ -577,7 +590,9 @@ span.custom
 {
     border-right:2px solid #d8d8d8;
     padding-right:10px;
+    /*
     font-size:2.5rem;
+    */
 }
 
 span.playPause
@@ -596,12 +611,9 @@ div.visualHeader td.close
 div.visualHeader td.close a
 {
     padding:0;
+    /*
     font-size:1rem;
-}
-
-.mapicon
-{
-	font-family:sasicons;
+    */
 }
 
 select
@@ -612,7 +624,6 @@ select
 div.hsplitter,
 div.vsplitter
 {
-	font-family:sasicons;
 	font-weight:regular;
 	font-size:1rem;
 	color:#4e4e4e;
@@ -650,7 +661,9 @@ table.tabs
 table.tabs td.tabAfter
 {
 	border:0;
+    /*
     font-size:1rem;
+    */
 	padding-left:10px;
 	font-style:italic;
 }
@@ -664,9 +677,10 @@ table.tabs td.tabs button
 	vertical-align:middle;
 	border:0;
 	cursor:pointer;
-	font-family:Arial, Helvetica, sans-serif;
 	font-weight:normal;
+    /*
     font-size:1rem;
+    */
 	padding:2px;
 	padding-left:5px;
 	padding-right:5px;
@@ -738,12 +752,6 @@ div.layout
     padding-left:20px;
 }
 
-pre.help
-{
-	font-family:Arial, Helvetica, sans-serif;
-    font-size:1rem;
-}
-
 @font-face
 {
    font-family:sasicons;
@@ -756,19 +764,22 @@ table.simpletable
 {
 	border:1px solid #cecece;
 	border:0;
+    /*
 	font-size:1rem;
+    */
     width:100%;
 }
 
 table.simpletable th,
 table.simpletable td
 {
-	font-family:tahoma;
     border:1px solid #d8d8d8;
     border-right:0;
     border-bottom:0;
     padding:4px;
-    font-size:1.2rem;
+    /*
+    font-size:1rem;
+    */
 }
 
 table.simpletable th

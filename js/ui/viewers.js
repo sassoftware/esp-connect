@@ -6,6 +6,7 @@
 import {Options} from "../connect/options.js";
 import {Model} from "../connect/model.js";
 import {tools} from "../connect/tools.js";
+import {uitools} from "./uitools.js";
 import {Chart} from "./chart.js";
 import {SimpleTable} from "./simpletable.js";
 import {dialogs} from "./dialogs.js";
@@ -426,17 +427,20 @@ class ModelViewer extends ViewerBase
         var options = {
             autoResize: true,
             nodes: {
+                borderWidth:1,
                 font: {
                     color: "black",
                     align: "center",
                     multi: true
                 },
+                shape: "ellipse",
                 shape: "box",
                 chosen: {
                     label: function(values, id, selected, hovering) {
                         values.color = "black";
                     }
                 },
+                margin:10,
                 color: {
                     border: "black",
                     background: "white"
@@ -445,6 +449,7 @@ class ModelViewer extends ViewerBase
                     enabled: true
                 },
                 shapeProperties: {
+                    borderRadius:2
                 }
             },
             edges: {
@@ -483,6 +488,13 @@ class ModelViewer extends ViewerBase
             height:"100%",
             clickToUse: false
         };
+
+        var fontname = uitools.css(document.body,"font-family");
+
+        if (fontname != null)
+        {
+            options.nodes.font.face = fontname;
+        }
 
         this._network = new vis.Network(this._modelDiv,{nodes:this._nodes,edges:this._edges},options);
 

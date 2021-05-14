@@ -208,7 +208,7 @@ var	_api =
                 server = "";
             }
             form.push({name:"server",label:"ESP Server",value:server});
-            dialogs.showDialog({title:"Connect to ESP Server",delegate:o,form:form});
+            dialogs.showDialog({title:"Connect to ESP Server",label_width:"40px",delegate:o,form:form});
         }
         else
         {

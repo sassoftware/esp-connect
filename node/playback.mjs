@@ -1,11 +1,7 @@
-/*
-    Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
-    SPDX-License-Identifier: Apache-2.0
-*/
-
 import {connect as esp} from "@sassoftware/esp-connect";
 import {default as fs} from "fs";
 import {default as url} from "url";
+import {default as ws} from "websocket";
 
 var opts = esp.getArgs();
 var server = opts.getOpt("server");
@@ -17,527 +13,642 @@ if (server == null || logfile == null)
     process.exit(0);
 }
 
-var _websockets = {};
+const   start = opts.getOpt("start",-1);
+const   end = opts.getOpt("end",-1);
+const   restResponses = opts.getOpt("rest-responses",false);
+const   restErrors = opts.getOpt("rest-errors",false);
+const   wsResponses = opts.getOpt("ws-responses",false);
+const   connectordir = opts.getOpt("connector-dir");
+const   debug = opts.getOpt("debug",false);
 
-import {default as ws} from "websocket";
-
-function
-SendRequestMgr(server,logfile)
+class Playback
 {
-    this._server = url.parse(server);
-    this._logfile = logfile;
-
-    this._wsId = new RegExp(".*: .* \\((.*)\\*(.*)\\*.*\\)");
-    this._wsData = new RegExp(".*: \\((.*)\\*(.*)\\*.*\\*(ascii|binary)\\)");
-    this._header = new RegExp("(.*): (.*)");
-
-    this._request = null;
-    this._ws = null;
-    this._wsdata = null;
-
-    this._timestamp = 0;
-
-    this._fd = null;
-    this._index = 0;
-    this._buffer = Buffer.alloc(256);
-
-    var mgr = this;
-
-    this._fd = fs.openSync(this._logfile);
-    this._line = "";
-    this._lineNumber = 1;
-
-    this._bytes = fs.readSync(this._fd,this._buffer,0,this._buffer.length,this._offset);
-    this._offset = this._bytes;
-    this._index = 0;
-
-    if (opts.hasOpt("start"))
+    constructor(server,logfile)
     {
-        var start = opts.getOpt("start");
+        this.NO_SECTION      = 1;
+        this.HEADER_SECTION  = 2;
+        this.REQUEST_SECTION = 3;
+        this.DATA_SECTION    = 4;
 
-        for (var i = 0; i < start; i++)
-        {
-            this.getline();
-        }
-    }
-}
+        this._server = (server != null) ? url.parse(server) : null;
+        this._logfile = logfile;
 
-SendRequestMgr.prototype.getline =
-function()
-{
-    var c;
+        this._fd = fs.openSync(this._logfile);
+        this._buffer = Buffer.alloc(4096);
+        this._offset = 0;
 
-    for (;;)
-    {
-        if (this._index < this._bytes)
-        {
-            c = this._buffer[this._index];
-            if (c == 10)
-            {
-                this._index++;
-                break;
-            }
-            else if (c == 13)
-            {
-                this._index++;
-                continue;
-            }
-            this._line += String.fromCharCode(c);
-            this._index++;
-        }
-        else
-        {
-            if ((this._bytes = fs.readSync(this._fd,this._buffer,0,this._buffer.length,this._offset)) == 0)
-            {
-                break;
-            }
-            this._offset += this._bytes;
-            this._index = 0;
-        }
+        this._bytes = fs.readSync(this._fd,this._buffer,0,this._buffer.length,this._offset);
+        this._offset = this._bytes;
+        this._index = 0;
+
+        this._request = null;
+        this._current = 0;
+
+        this._linenumber = 0;
+
+        this._wsid = new RegExp(".*: .* \\((.*)\\*(.*)\\*.*\\)");
+        this._wsbegin = new RegExp(".*: \\((.*)\\*(.*)\\*.*\\*(ascii|binary)\\)");
+        this._wsend = new RegExp("\\((.*)\\)");
+
+        this._wsthreads = {};
+        this._websockets = {};
     }
 
-    if (this._bytes == 0)
+    run()
     {
-        return(null);
-    }
+        var request = this._request;
 
-    this._lineNumber++;
+        this._request = null;
 
-    var line = this._line;
-    this._line = "";
-    return(line);
-}
-
-SendRequestMgr.prototype.run =
-function()
-{
-    var request = this._request;
-
-    this._request = null;
-
-    if (request != null)
-    {
-        if (request._isWebSocket)
+        if (request != null)
         {
-            const   self = this;
-            request.createWebSocket().then(
-                function(result) {
-                    self._ws = result;
-                    setTimeout(function(){mgr.run()},100);
-                },
-                function(result) {
+            this._current = request.timestamp;
+
+            if (request.isWebSocket)
+            {
+                if (this._wsthreads.hasOwnProperty(request.thread))
+                {
+                    const   entry = this._wsthreads[request.thread];
+                    const   self = this;
+
+                    delete this._wsthreads[request.thread];
+
+                    esp.createWebSocket(entry.url,entry).then(
+                        function(result) {
+                            request._wsdata.setOpt("websocket",result);
+                            result._entry = entry;
+                            self._websockets[request.websocketId] = request;
+                            setTimeout(function(){self.run()},500);
+                        },
+                        function(error) {
+                            console.log("create websocket error: " + error);
+                        }
+                    );
+
+                    return;
                 }
-            );
+            }
+            else
+            {
+                request.send();
+            }
         }
-        else
-        {
-            request.send();
-        }
-    }
 
-    var line;
-    var ws = null;
+        var line;
+        var o;
 
-    while ((line = this.getline()) != null)
-    {
-//console.log(this._lineNumber + ": " + line);
-        if (line == "-- start request --")
+        while ((line = this.getline()) != null)
         {
-            var request = new SendRequest(this);
             try
             {
-                request.init();
+                o = JSON.parse(line);
             }
-            catch (e)
+            catch(e)
             {
                 continue;
             }
-            this._request = request;
-            break;
-        }
-        else if (line.indexOf("websocket start:") == 0)
-        {
-            if (this._ws != null)
-            {
-                var results = this._wsId.exec(line);
-                if (results != null && results.length == 3)
-                {
-                    var id = results[1];
-                    _websockets[id] = this._ws;
-                    this._ws = null;
-                }
-            }
-        }
-        else if (line.indexOf("websocket end:") == 0)
-        {
-            var results = this._wsId.exec(line);
-            if (results != null && results.length == 3)
-            {
-                var id = results[1];
-                if (_websockets.hasOwnProperty(id))
-                {
-                    var ws = _websockets[id];
-                    ws.close();
-                    delete _websockets[id];
-                }
-            }
-        }
-        else if (line.indexOf("begin websocket data:") == 0)
-        {
-            var results = this._wsData.exec(line);
-            if (results != null && results.length == 4)
-            {
-                var id = results[1];
 
-                if (_websockets.hasOwnProperty(id))
-                {
-                    this._wsdata = {_websocket:_websockets[id],_timestamp:parseInt(results[2]),_type:results[3],_lineNumber:this._lineNumber,_data:""};
-                    break;
-                }
-            }
-        }
-        else if (line.indexOf("end websocket data:") == 0)
-        {
-            if (this._wsdata != null)
+            if (o.logger == "common.http" || o.logger == "common.websocket")
             {
-                if (opts.getOpt("debug",false))
+                var entry = new LogEntry(this,o);
+
+                if (entry.init() == false)
                 {
-                    console.log("sending: " + this._wsdata._data);
+                    continue;
                 }
 
-                if (this._wsdata._type == "binary")
+                this._request = entry;
+
+                const   self = this;
+
+                if (this._current == 0)
                 {
-                    var data = esp.getTools().b64Decode(this._wsdata._data);
-                    this._wsdata._websocket.send(data);
+                    setTimeout(function(){self.run()},100);
                 }
                 else
                 {
-                    this._wsdata._websocket.send(this._wsdata._data);
+                    var maxwait = opts.getOpt("maxwait",-1);
+                    var diff = this._request.timestamp - this._current;
+
+                    if (maxwait > 0 && diff > maxwait)
+                    {
+                        diff = maxwait;
+                    }
+
+                    setTimeout(function(){self.run()},diff);
                 }
 
-                this._wsdata = null;
-            }
-        }
-        else if (this._wsdata != null)
-        {
-            this._wsdata._data += line;
-        }
-    }
-
-    if (this._request != null || this._wsdata != null)
-    {
-        var diff = 0;
-        var lineNumber = 0;
-
-        if (this._request != null)
-        {
-            diff = (this._timestamp > 0) ? (this._request._timestamp - this._timestamp) : 500;
-            this._timestamp = this._request._timestamp;
-            lineNumber = this._request._lineNumber;
-        }
-        else
-        {
-            diff = (this._timestamp > 0) ? (this._wsdata._timestamp - this._timestamp) : 500;
-            this._timestamp = this._wsdata._timestamp;
-            lineNumber = this._wsdata._lineNumber;
-        }
-
-        if (diff == 0)
-        {
-            diff = 1;
-        }
-
-        var maxwait = opts.getOpt("maxwait",-1);
-
-        if (maxwait > 0 && diff > maxwait)
-        {
-            console.log("changing wait " + diff + " to " + maxwait);
-            diff = maxwait;
-        }
-
-        console.log("waiting for " + diff + " milliseconds");
-
-        var mgr = this;
-        setTimeout(function(){mgr.run()},diff);
-    }
-}
-
-function
-SendRequest(mgr)
-{
-    this._mgr = mgr;
-    this._headers = {method:"method: ",request:"request: ",timestamp:"timestamp: "};
-
-    this._lineNumber = this._mgr._lineNumber;
-
-    this._method = null;
-    this._timestamp = null;
-    this._request = null;
-
-    this._headers = {};
-    this._data = null;
-
-    this._url = null;
-
-    this._isWebSocket = false;
-}
-
-SendRequest.prototype.init =
-function()
-{
-    var s = this._mgr.getline();
-    var result = this._mgr._header.exec(s);
-
-    if (result != null && result.length == 3)
-    {
-        this._method = result[2].toLowerCase();
-    }
-
-    s = this._mgr.getline();
-
-    result = this._mgr._header.exec(s);
-
-    if (result != null && result.length == 3)
-    {
-        this._request = result[2];
-    }
-
-    s = this._mgr.getline();
-
-    result = this._mgr._header.exec(s);
-
-    if (result != null && result.length == 3)
-    {
-        var a = result[2].split(" ");
-        if (a.length > 0)
-        {
-            this._timestamp = parseInt(a[0]);
-        }
-    }
-
-    if (this._method == null || this._request == null || this._timestamp == null)
-    {
-        throw("bad request: " + this._lineNumber);
-        return(null);
-    }
-
-    this._url = new URL(this._request);
-    this._url.hostname = this._mgr._server.hostname;
-    this._url.port = this._mgr._server.port;
-
-    if (this._url.protocol == "ws:" || this._url.protocol == "wss:")
-    {
-        this._isWebSocket = true;
-    }
-    else
-    {
-        var headers = {};
-        var inHeaders = false;
-        var s;
-
-        while ((s = this._mgr.getline()) != null)
-        {
-            if (s == "-- start headers --")
-            {
-                inHeaders = true;
-            }
-            else if (s == "-- end headers --")
-            {
                 break;
             }
-            else if (inHeaders)
-            {
-                var result = this._mgr._header.exec(s);
-                if (result != null && result.length == 3)
-                {
-                    headers[result[1]] = result[2];
-                }
-            }
         }
+    }
 
-        if (this._method == "put" || this._method == "post")
+    getline()
+    {
+        var line = "";
+        var c;
+
+        for (;;)
         {
-            while ((s = this._mgr.getline()) != null)
+            if (this._index < this._bytes)
             {
-                if (s == "-- start data --")
+                c = this._buffer[this._index];
+                if (c == 10)
                 {
-                    inData = true;
+                    this._index++;
+                    this._linenumber++;
+
+                    if (start > 0 && this._linenumber < start)
+                    {
+                        line = "";
+                        continue;
+                    }
+
+                    break;
                 }
-                else if (s == "-- end data --")
+                else if (c == 13)
+                {
+                    this._index++;
+                    continue;
+                }
+                line += String.fromCharCode(c);
+                this._index++;
+            }
+            else
+            {
+                if ((this._bytes = fs.readSync(this._fd,this._buffer,0,this._buffer.length,this._offset)) == 0)
                 {
                     break;
                 }
-                else if (inData)
+                this._offset += this._bytes;
+                this._index = 0;
+            }
+        }
+
+        if (this._bytes == 0)
+        {
+            return(null);
+        }
+
+        if (end > 0 && this._linenumber > end)
+        {
+            return(null);
+        }
+
+        return(line);
+    }
+}
+
+class LogEntry
+{
+    constructor(playback,o)
+    {
+        this._playback = playback;
+        this._o = o;
+        this._linenumber = this._playback._linenumber;
+        this._opts = esp.createOptions();
+        this._info = esp.createOptions();
+        this._headers = esp.createOptions();
+        this._wsdata = null;
+        this._websocket = null;
+
+        if (o.hasOwnProperty("thread"))
+        {
+            this._opts.setOpt("thread",o["thread"]);
+        }
+
+        Object.defineProperty(this,"url",{
+            get() {
+                return(this._opts.getOpt("url").toString());
+            }
+        });
+
+        Object.defineProperty(this,"data",{
+            get() {
+                return(this._opts.getOpt("data"));
+            }
+        });
+
+        Object.defineProperty(this,"timestamp",{
+            get() {
+                var ts = null;
+
+                if (this._websocket != null)
                 {
-                    if (this._data == null)
+                    ts = this._websocket._wsdata.getOpt("timestamp");
+                }
+                else
+                {
+                    ts = this._opts.getOpt("timestamp");
+                }
+                return(ts);
+            }
+        });
+
+        Object.defineProperty(this,"date",{
+            get() {
+                var date = new Date();
+                var ts = this.timestamp;
+                if (ts != null)
+                {
+                    date.setTime(ts);
+                }
+                return(date);
+            }
+        });
+
+        Object.defineProperty(this,"isWebSocket",{
+            get() {
+                //return(this._opts.getOpt("isWebSocket",false));
+                return(this._wsdata != null);
+            }
+        });
+
+        Object.defineProperty(this,"websocketId",{
+            get() {
+                var id = (this._wsdata != null) ? this._wsdata.getOpt("id") : null;
+                return(id);
+            }
+        });
+
+        Object.defineProperty(this,"thread",{
+            get() {
+                return(this._opts.getOpt("thread",0));
+            }
+        });
+    }
+
+    init()
+    {
+        var lines = this._o.messageContent.split("\n");
+        var a = [];
+
+        lines.forEach((line) => {
+            a.push(line);
+        });
+        this._o.messageContent = a;
+
+        var section = this._playback.NO_SECTION;
+        var wsdata = null;
+        var value;
+        var index;
+        var name;
+        var tmp;
+
+        for (var line of a)
+        {
+            if (line == "-- start headers --")
+            {
+                section = this._playback.HEADER_SECTION;
+            }
+            else if (line == "-- start request --")
+            {
+                section = this._playback.REQUEST_SECTION;
+                this._opts.setOpt("isrequest",true);
+            }
+            else if (line == "-- start data --")
+            {
+                section = this._playback.DATA_SECTION;
+            }
+            else if (line == "-- end data --")
+            {
+                section = this._playback.NO_SECTION;
+            }
+            else if (line.indexOf("websocket start:") == 0)
+            {
+                var results = this._playback._wsid.exec(line);
+
+                if (results != null && results.length == 3)
+                {
+                    var id = results[1];
+                    this._wsdata = esp.createOptions({id:id});
+                }
+            }
+            else if (line.indexOf("websocket end:") == 0)
+            {
+                var results = this._playback._wsid.exec(line);
+                if (results != null && results.length == 3)
+                {
+                    var id = results[1];
+                    if (this._playback._websockets.hasOwnProperty(id))
                     {
-                        this._data = s;
+                        this._websocket = this._playback._websockets[id];
+                        this._websocket._wsdata.setOpt("close",true);
+                    }
+                    /*
+                    if (this._playback._websockets.hasOwnProperty(id))
+                    {
+                        var ws = this._playback._websockets[id];
+                        ws.close();
+                        delete this._playback._websockets[id];
+                    }
+                    */
+                }
+            }
+            else if (line.indexOf("begin websocket data:") == 0)
+            {
+                var results = this._playback._wsbegin.exec(line);
+
+                if (results != null && results.length == 4)
+                {
+                    var id = results[1];
+
+                    if (this._playback._websockets.hasOwnProperty(id))
+                    {
+                        this._websocket = this._playback._websockets[id];
+                        wsdata = this._websocket._wsdata; 
+                        wsdata.setOpt("timestamp",parseInt(results[2]));
+                        wsdata.setOpt("type",results[3]);
+                        //wsdata.setOpt("line",results[3]);
+                        wsdata.setOpt("data","");
+                    }
+                }
+            }
+            else if (line.indexOf("end websocket data:") == 0)
+            {
+                wsdata = null;
+            }
+            else if (wsdata != null)
+            {
+                var data = wsdata.getOpt("data");
+                data += line;
+                wsdata.setOpt("data",data);
+            }
+            else if (section == this._playback.DATA_SECTION)
+            {
+                if (this._data == null)
+                {
+                    this._data = line;
+                }
+                else
+                {
+                    this._data += line;
+                }
+            }
+            else if (section == this._playback.HEADER_SECTION || section == this._playback.REQUEST_SECTION)
+            {
+                if ((index = line.indexOf(":")) != -1)
+                {
+                    name = line.substr(0,index);
+                    value = line.substr(index + 2);
+
+                    if (section == this._playback.REQUEST_SECTION)
+                    {
+                        if (name == "timestamp")
+                        {
+                            tmp = value.split(" ");
+                            value = tmp[0];
+                            this._opts.setOpt("timestamp",new Number(value));
+                        }
+
+                        this._info.setOpt(name,value);
                     }
                     else
                     {
-                        this._data += s;
+                        this._headers.setOpt(name,value);
                     }
                 }
             }
         }
-    }
-}
 
-SendRequest.prototype.send =
-function()
-{
-    if (this._url == null)
-    {
-        console.log("invalid request: " + this._request + " (" + this._lineNumber + ")");
-        return;
-    }
-
-    var request = esp.getAjax().create("request",this._url.toString(),this);
-
-    request.setRequestHeaders(this._headers);
-
-    console.log("sending request " + this._url.toString());
-
-    if (this._method == "put" || this._method == "post")
-    {
-        if (this._data != null)
+        if (this.isWebSocket || this._websocket != null)
         {
-            request.setData(this._data);
+            return(true);
         }
 
-        if (this._method == "put")
+        if (this._opts.getOpt("isrequest",false) == false)
         {
-            request.put();
+            return(false);
         }
-        else
+
+        var url = new URL(this._info.getOpt("request"));
+        url.hostname = this._playback._server.hostname;
+        url.port = this._playback._server.port;
+        this._opts.setOpt("url",url);
+
+        if (url.protocol == "ws:" || url.protocol == "wss:")
         {
-            request.post();
+            this._playback._wsthreads[this.thread] = this;
+            //this._opts.setOpt("isWebSocket",true);
+            return(false);
         }
+
+        return(true);
     }
-    else if (this._method == "delete")
+
+    send()
     {
-        request.del();
-    }
-    else
-    {
-        request.get();
-    }
-}
-
-SendRequest.prototype.createWebSocket =
-function()
-{
-    return(new Promise((resolve,reject) => {
-        const   self = this;
-        const   delegate = {open:wsOpen,close:wsClose,error:wsError,message:wsText};
-        esp.createWebSocket(this._url.toString(),delegate).then(
-            function(result) {
-                result._handler = new WebsocketHandler(self);
-                resolve(result);
-            },
-            function(result) {
-                reject(result);
-            }
-        );
-    }));
-}
-
-SendRequest.prototype.response =
-function(request,content)
-{
-    if (opts.getOpt("responses",false))
-    {
-        console.log(content);
-    }
-    else
-    {
-        console.log(this._url.toString() + " : " + request.getStatus());
-    }
-}
-
-SendRequest.prototype.error =
-function(request,error)
-{
-    console.log(error);
-}
-
-function
-WebsocketHandler(request)
-{
-    this._request = request;
-    this._handshakeComplete = false;
-}
-
-WebsocketHandler.prototype.open =
-function()
-{
-    console.log("open: " + this._request._url.toString());
-}
-
-WebsocketHandler.prototype.close =
-function()
-{
-    console.log("close: " + this._request._url.toString());
-}
-
-WebsocketHandler.prototype.error =
-function()
-{
-    console.log("error: " + this._request._url.toString());
-}
-
-WebsocketHandler.prototype.message =
-function(message)
-{
-    if (opts.getOpt("responses",false))
-    {
-        console.log("message: " + this._request._url.toString());
-
-        if (typeof(message) == "string")
+        if (this._websocket != null)
         {
-            console.log(message);
-        }
-        else
-        {
-            var buffer = new ArrayBuffer(message.length);
-            var view = new Uint8Array(buffer);
-            for (var i = 0; i < message.length; ++i)
+            var wsdata = this._websocket._wsdata;
+            var ws = wsdata.getOpt("websocket");
+            var id = wsdata.getOpt("id");
+            var close = wsdata.getOpt("close",false);
+
+            if (close)
             {
-               view[i] = message[i];
+                ws.close();
+                delete this._playback._websockets[id];
             }
+            else
+            {
+                var data = wsdata.getOpt("data");
 
-            var o = esp.decode(buffer);
-            console.log(esp.getTools().stringify(o));
+                if (wsdata.getOpt("type","") == "binary")
+                {
+                    data = esp.getTools().b64Decode(data);
+                }
+
+                wsdata.getOpt("websocket").send(data);
+            }
+        }
+        else
+        {
+            var request = esp.getAjax().create(this.url);
+            var method = this._info.getOpt("method","get").toLowerCase();
+
+            if (method == "get")
+            {
+                request.get().then(
+                    function(response) {
+
+                        if (response.status == 0)
+                        {
+                            process.exit(0);
+                        }
+
+                        if (response.status >= 400 && restErrors)
+                        {
+                            console.log(response.status + ": " + response.text);
+                        }
+                        else if (restResponses)
+                        {
+                            console.log(response.text);
+                        }
+                    },
+                    function(error) {
+                        console.log("got error: " + error);
+                        //process.exit(0);
+                    }
+                );
+            }
+            else if (method == "put")
+            {
+                if (this._data != null)
+                {
+                    if (connectordir != null)
+                    {
+                        var url = this._opts.getOpt("url");
+                        var a = url.pathname.split("/");
+
+                        if (a.length > 2)
+                        {
+                            var s = a[a.length - 2];
+
+                            if (s == "projects")
+                            {
+                                var xp = esp.getXPath();
+                                var xml = xp.createXml(this._data);
+                                var files = xp.getNodes("//property[@name='fsname']",xml);
+                                var path;
+                                var base;
+
+                                files.forEach((file) => {
+                                    path = xp.nodeText(file);
+                                    a = path.split("/");
+                                    base = a[a.length - 1];
+                                    path = connectordir + "/" + base;
+                                    xp.setNodeText(file,path);
+                                });
+
+                                this._data = xp.xmlString(xml);
+                            }
+                        }
+                    }
+
+                    request.setData(this._data);
+                }
+
+                request.put().then(
+                    function(response) {
+
+                        if (response.status == 0)
+                        {
+                            process.exit(0);
+                        }
+
+                        if (response.status >= 400 && restErrors)
+                        {
+                            console.log(response.status + ": " + response.text);
+                        }
+                        else if (restResponses)
+                        {
+                            console.log(response.text);
+                        }
+                    },
+                    function(error) {
+                        console.log("got error: " + error);
+                        //process.exit(0);
+                    }
+                );
+            }
+            else if (method == "post")
+            {
+                if (this._data != null)
+                {
+                    request.setData(this._data);
+                }
+
+                request.post().then(
+                    function(response) {
+
+                        if (response.status == 0)
+                        {
+                            process.exit(0);
+                        }
+
+                        if (response.status >= 400 && restErrors)
+                        {
+                            console.log(response.status + ": " + response.text);
+                        }
+                        else if (restResponses)
+                        {
+                            console.log(response.text);
+                        }
+                    },
+                    function(error) {
+                        console.log("got error: " + error);
+                        //process.exit(0);
+                    }
+                );
+            }
+            else if (method == "delete")
+            {
+                request.del().then(
+                    function(response) {
+
+                        if (response.status == 0)
+                        {
+                            process.exit(0);
+                        }
+
+                        if (response.status >= 400 && restErrors)
+                        {
+                            console.log(response.status + ": " + response.text);
+                        }
+                        else if (restResponses)
+                        {
+                            console.log(response.text);
+                        }
+                    },
+                    function(error) {
+                        console.log("got error: " + error);
+                        //process.exit(0);
+                    }
+                );
+            }
+        }
+    }
+
+    open()
+    {
+        if (debug)
+        {
+            console.log("websocket " + this._entry.url + " open, line: " + this._entry._linenumber);
+        }
+    }
+
+    close()
+    {
+        if (debug)
+        {
+            console.log("websocket " + this._entry.url + " closed, line: " + this._entry._linenumber);
+        }
+    }
+
+    error(message)
+    {
+    }
+
+    message(message)
+    {
+        if (wsResponses)
+        {
+            if (typeof(message.data) == "string")
+            {
+                console.log(message.data);
+            }
+            else
+            {
+                var o = esp.decode(message.data);
+                console.log(esp.getTools().stringify(o));
+            }
         }
     }
 }
 
-var mgr = new SendRequestMgr(server,logfile);
-mgr.run();
-
-function
-wsOpen()
-{
-    this._handler.open();
-}
-
-function
-wsClose()
-{
-    this._handler.close();
-}
-
-function
-wsError()
-{
-    this._handler.error();
-}
-
-function
-wsText(message)
-{
-    this._handler.message(message);
-}
+var playback = new Playback(server,logfile);
+playback.run();
 
 function
 showUsage()
@@ -549,8 +660,10 @@ showUsage()
         options:[
             {name:"server",arg:"ESP server",description:"ESP Server to which to connect in the form http://espserver:7777",required:true},
             {name:"logfile",arg:"filename",description:"file containing ESP server log",required:true},
-            {name:"start",arg:"line number",description:"name of the ESP router"},
-            {name:"responses",arg:"true | false",description:"output the responses to the console"},
+            {name:"start",arg:"line number",description:"Line number of the log at which to start"},
+            {name:"end",arg:"line number",description:"The last line number of the log to process"},
+            {name:"rest-responses",arg:"true | false",description:"output the responses to HTTP requests to the console"},
+            {name:"ws-responses",arg:"true | false",description:"output the responses to websocket requests to the console"},
             {name:"maxwait",arg:"milliseconds",description:"the maximum number of milliseconds to wait before sending requests"}
         ],
         show_auth:false,

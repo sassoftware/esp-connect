@@ -915,16 +915,17 @@ class Visuals extends Options
             throw "The delegate must implement the getFilter and setFilter methods";
         }
 
-        var form = [];
-        form.push({name:"filter",label:"Filter",value:delegate.getFilter()});
-        dialogs.showDialog({title:"Set Filter",delegate:{
-            ok:function(dialog)
-            {
+        var o = {
+            ok:function(dialog) {
                 var value = dialog.getValue("filter","");
                 delegate.setFilter(value);
                 dialog.pop();
             }
-        },form:form});
+        };
+
+        var form = [];
+        form.push({name:"filter",label:"Filter",value:delegate.getFilter()});
+        dialogs.showDialog({title:"Set Filter",delegate:o,label_width:"50px",form:form});
     }
 }
 
@@ -3358,38 +3359,6 @@ class Wrapper extends Chart
 
     draw()
     {
-    }
-}
-
-var _filterDelegate = null;
-
-if (typeof window !== "undefined")
-{
-    window._setFilter_ = 
-    function()
-    {
-        if (_filterDelegate != null)
-        {
-            _filterDelegate.setFilter(document.getElementById("_filtertext_").value);
-        }
-
-        dialogs.popModal("_editfilter_");
-
-        _filterDelegate = null;
-    }
-
-    window._cancelFilterEdit_ = 
-    function()
-    {
-        dialogs.popModal("_editfilter_");
-        _filterDelegate = null;
-    }
-
-    window._clearFilter_ = 
-    function()
-    {
-        document.getElementById("_filtertext_").value = "";
-        document.getElementById("_filtertext_").focus();
     }
 }
 

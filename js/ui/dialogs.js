@@ -676,6 +676,7 @@ class Form extends Options
                 img.style.border = "1px solid #d8d8d8";
                 img.style.height = opts.getOpt("height","200px");
                 img.style.cursor = "pointer";
+                img.style.float = "left";
                 img._form = this;
 
                 input.type = "file";
@@ -716,10 +717,27 @@ class Form extends Options
                     };
                     reader.readAsDataURL(file);
                 },false);
-                img.addEventListener("click",function(e) {
+                td.style.verticalAlign = "top";
+                td.addEventListener("click",function(e) {
                     input.click();
                 });
+                var clear = document.createElement("span");
+                clear.className = "material-icons";
+                clear.style.cursor = "pointer";
+                clear.innerText = "clear";
+                clear.addEventListener("click",function(e) {
+                    img.src = "";
+                    opts.setOpt("_data","");
+                    opts.setOpt("_changed",true);
+                    e.cancelBubble = true;
+                });
+
+                var spacer = document.createElement("span");
+                spacer.innerHTML = "&nbsp;&nbsp;";
+
                 td.appendChild(img);
+                td.appendChild(spacer);
+                td.appendChild(clear);
                 td.appendChild(input);
 
                 opts.setOpt("control",img);

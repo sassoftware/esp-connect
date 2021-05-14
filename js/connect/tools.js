@@ -480,7 +480,6 @@ var _api =
         return(new Promise((resolve,reject) => {
             var ws = null;
 
-console.log("create: " + url + " :: " + _isNode);
             if (_isNode)
             {
                 const   self = this;

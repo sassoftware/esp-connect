@@ -14,8 +14,8 @@ var _esp = null;
 
 <link rel="stylesheet" href="../style/connect.css" />
 <script type="module">
-import {api} from "../js/ui/main.js";
-_esp = api;
+import {esp} from "../js/ui/api.js";
+_esp = esp;
 </script>
 
 <script type="text/javascript">
@@ -106,7 +106,7 @@ a
 
 ul.examples
 {
-    font-size:1.5rem;
+    font-size:1.2rem;
 }
 
 ul.examples a
@@ -125,9 +125,6 @@ ul.examples a
         <table style="width:100%" cellspacing="0" cellpadding="0">
             <tr>
                 <td id="bannerTitle">ESP Connect Examples</td>
-                <td class="icon">
-                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('connect')">&#xf137;</a>
-                </td>
             </tr>
         </table>
     </div>

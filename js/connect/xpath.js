@@ -35,7 +35,7 @@ var _api =
 {
     getNodes:function(expression,context)
     {
-        var	nodes = new Array();
+        var nodes = new Array();
 
         if (tools.isNode)
         {
@@ -62,7 +62,7 @@ var _api =
                 d = (context.ownerDocument != null) ? context.ownerDocument : context;
             }
 
-            var	node;
+            var node;
             var results = d.evaluate(expression,context,null,XPathResult.ORDERED_NODE_ITERATOR_TYPE,null);
 
             while ((node = results.iterateNext()) != null)
@@ -100,8 +100,8 @@ var _api =
 
     getNode:function(expression,context)
     {
-        var	node = null;
-        var	nodes = this.getNodes(expression,context);
+        var node = null;
+        var nodes = this.getNodes(expression,context);
 
         if (nodes.length > 0)
         {
@@ -113,7 +113,7 @@ var _api =
 
     getString:function(expression,context)
     {
-        var	s = "";
+        var s = "";
 
         this.getNodes(expression,context).forEach((node) => {
             s += (node.textContent != null) ? node.textContent : node.nodeValue;
@@ -124,7 +124,7 @@ var _api =
 
     nodeText:function(node)
     {
-        var	text = "";
+        var text = "";
         var n = node;
 
         if (node.firstChild != null)
@@ -159,7 +159,7 @@ var _api =
 
     format:function(xml,indent)
     {
-        var	result = new Object();
+        var result = new Object();
         result._s = "";
 
         if (indent == null)
@@ -185,7 +185,7 @@ var _api =
 
             if (node.attributes.length > 0)
             {
-                var	attr;
+                var attr;
 
                 for (var i = 0; i < node.attributes.length; i++)
                 {
@@ -198,10 +198,10 @@ var _api =
             {
                 result._s += ">";
 
-                var	isText = false;
-                var	isCData = false;
-                var	hasChildElements = false;
-                var	n;
+                var isText = false;
+                var isCData = false;
+                var hasChildElements = false;
+                var n;
 
                 for (var i = 0; i < node.childNodes.length; i++)
                 {

@@ -274,6 +274,11 @@ var _uitools =
         }
 
         return(enabled);
+    },
+
+    css(element,name)
+    {
+        return(window.getComputedStyle(element,null)).getPropertyValue(name);
     }
 };
 

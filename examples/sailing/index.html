@@ -22,8 +22,8 @@ var _esp = null;
 <!-- Run from an esp-connect install -->
 <link rel="stylesheet" href="../../style/connect.css" />
 <script type="module">
-import {api} from "../../js/ui/main.js";
-_esp = api;
+import {esp} from "../../js/ui/api.js";
+_esp = esp;
 </script>
 
 <!-- Run from an esp-connect webpack bundle (you can put the bundle anywhere) -->
@@ -73,7 +73,7 @@ connect(server)
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.showStatus("Loading project...");
     var url = new URL("model.xml",document.URL).toString();
-    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url},overwrite:true,force:_esp.getParm("force",false),parms:{config:new URL("config.xml",document.URL).toString()}});
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url,options:{overwrite:true,force:_esp.getParm("force",false)}}});
     _esp.handleLayout();
 }
 
@@ -146,7 +146,7 @@ ready(connection)
 }
 
 function
-error(message)
+error(conn,message)
 {
     console.log(message);
 }
