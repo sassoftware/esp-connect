@@ -194,7 +194,10 @@ div.dialog div.content textarea
 	font-size:1.1rem;
 }
 
+/*
 div.dialog div.content textarea
+*/
+table.form div.content textarea
 {
 	height:100px;
 	resize:none;
@@ -207,23 +210,29 @@ div.dialog div.content td
     */
 }
 
-div.dialog div.content td.value,
-div.dialog div.content td.label
+table.form td.value,
+table.form td.label
 {
     padding-top:5px;
 }
 
-div.dialog div.content td.label
+table.form td.label
 {
     width:auto;
     white-space:nowrap;
     padding-right:20px;
 }
 
+/*
 div.dialog td.value input,
 div.dialog td.value select,
 div.dialog td.value textarea,
 div.dialog td.value label
+*/
+table.form td.value input,
+table.form td.value select,
+table.form td.value textarea,
+table.form td.value label
 {
     width:98%;
     font-weight:regular;
@@ -244,7 +253,7 @@ div.dialog td.buttoncontrol label
     width:80%;
 }
 
-div.dialog td.value div.boolean
+table.form td.value div.boolean
 {
     cursor:pointer;
     padding:4px;
@@ -252,7 +261,7 @@ div.dialog td.value div.boolean
     width:98%;
 }
 
-div.dialog td.value input[type=checkbox]
+table.form td.value input[type=checkbox]
 {
     width:20px;
     height:20px;
@@ -829,4 +838,145 @@ table.simpletable span.action
 
 /* End Tables */
 
+/* App */
+table.app
+{
+}
 
+table.app td
+{
+    padding:0;
+}
+
+table.app tr.banner td
+{
+    background:#a5d6d9;
+}
+
+table.app tr.header table.header
+{
+    background:#f0f0f0;
+}
+
+table.app tr.header table.header td
+{
+    padding:4px;
+}
+
+table.app tr.header td
+{
+}
+
+table.app tr.header td
+{
+}
+
+table.app tr.item td
+{
+    border-bottom:1px solid #c0c0c0;
+    padding:4px;
+    padding:0;
+    vertical-align:middle;
+    cursor:pointer;
+}
+
+table.app tr.item img
+{
+    float:none;
+    vertical-align:middle;
+}
+
+table.app tr.item span
+{
+    vertical-align:middle;
+    padding-left:20px;
+}
+
+/* End App */
+
+/*
+@media only screen 
+    and (orientation: landscape)
+{
+    body,
+    input,
+    select,
+    textarea,
+    button,
+    table.tabs button
+    {
+        font-family:Arial, Helvetica, sans-serif;
+        font-family:Papyrus;
+        font-size:1.5rem;
+    }
+
+    span.action
+    {
+        font-size:1.5rem;
+    }
+}
+
+@media only screen 
+    and (min-device-width: 375px) 
+    and (max-device-width: 812px) 
+    and (orientation: portrait)
+{
+    div#banner
+    {
+        display:none;
+    }
+
+    body
+    {
+        margin:0;
+    }
+
+    body,
+    input,
+    select,
+    textarea,
+    button,
+    table.tabs button
+    {
+        font-family:Arial, Helvetica, sans-serif;
+        font-family:Papyrus;
+        font-size:3rem;
+        font-size:1.5rem;
+    }
+
+    span.action
+    {
+        font-size:3rem;
+        font-size:1.5rem;
+    }
+}
+
+@media only screen 
+    and (min-device-width: 375px) 
+    and (max-device-width: 812px) 
+    and (orientation: landscape)
+{
+    div#banner
+    {
+        display:none;
+    }
+
+    body,
+    input,
+    select,
+    textarea,
+    button,
+    table.tabs button
+    {
+        font-family:Arial, Helvetica, sans-serif;
+        font-family:Papyrus;
+        font-size:2rem;
+        font-size:1.5rem;
+    }
+
+    span.action
+    {
+        font-size:2rem;
+    }
+}
+*/

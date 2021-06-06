@@ -11,6 +11,8 @@ import {Storage as StoredData} from "./storage.js";
 import {splitter} from "./splitter.js";
 import {Tabs} from "./tabs.js";
 import {Visuals} from "./visuals.js";
+import {menu} from "./menu.js";
+import {app} from "./app.js";
 
 var	_api =
 {
@@ -116,7 +118,7 @@ var	_api =
     },
     */
 
-    error:function(connection)
+    error:function(connection,error)
     {
         if (Connection.established(connection.getUrl()) == false)
         {
@@ -688,6 +690,21 @@ var	_api =
     getDialogs:function()
     {
         return(dialogs);
+    },
+
+    createMenu:function(options,delegate)
+    {
+        return(menu.create(options,delegate));
+    },
+
+    hideMenus:function()
+    {
+        menu.hideAll();
+    },
+
+    createApp:function(options,delegate)
+    {
+        return(app.create(options,delegate));
     }
 };
 

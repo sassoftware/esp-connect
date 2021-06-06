@@ -46,7 +46,7 @@ var _xml = "<project threads='4' pubsub='auto'>\
                         <schema-string>id*:string,element:string,x:int32,y:int32</schema-string>\
                      </window-source>\
                      <window-copy name='copy'>\
-                        <retention type='bytime_sliding'>30 seconds</retention>\
+                        <retention type='bytime_sliding'>@retention@</retention>\
                      </window-copy>\
                      <window-aggregate name='clicksAggr'>\
                         <schema-string>element*:string,count:int32</schema-string>\
@@ -93,7 +93,7 @@ connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.showStatus("Loading project...");
-    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_xml,options:{overwrite:true},env:{thetime:"30 seconds"}},force:_esp.getParm("force",true)});
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_xml,options:{overwrite:true},parms:{retention:"30 seconds"}},force:_esp.getParm("force",true)});
     _esp.handleLayout();
 }
 

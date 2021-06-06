@@ -1,8 +1,3 @@
-/*
-    Copyright © 2020, SAS Institute Inc., Cary, NC, USA.  All Rights Reserved.
-    SPDX-License-Identifier: Apache-2.0
-*/
-
 import {Options} from "../connect/options.js";
 import {tools} from "../connect/tools.js";
 import {uitools} from "./uitools.js";
@@ -31,6 +26,12 @@ class Dialog extends Options
         this._form = null;
         this._zFactor = 10000;
         this._delegate = null;
+
+        Object.defineProperty(this,"div", {
+            get() {
+                return(this._div);
+            }
+        });
 
         Object.defineProperty(this,"content", {
             get() {
@@ -114,7 +115,10 @@ class Dialog extends Options
 
         if (this.hasOpt("form"))
         {
-            this.createForm(this.getOpt("form"));
+            this._form = this.createForm(this.getOpt("form"));
+            this._content.innerHTML = "";
+            this._content.appendChild(this._form.table);
+            this._form.focus();
         }
         else if (this.hasOpt("content"))
         {
@@ -388,10 +392,8 @@ class Dialog extends Options
 
     createForm(values)
     {
-        this._form = new Form(this,values,this.getOpts());
-        this._content.innerHTML = "";
-        this._content.appendChild(this._form.table);
-        this._form.focus();
+        var form = new Form(this,values,this.getOpts());
+        return(form);
     }
 
     getData()
@@ -554,6 +556,7 @@ class Form extends Options
         this._opts = [];
         this._optsmap = {};
         this._table = document.createElement("table");
+        this._table.className = "form";
         this._table.style.width = "80%";
         this._table.style.margin = "auto";
 
@@ -593,6 +596,10 @@ class Form extends Options
             if (this._dialog.hasOpt("label_width"))
             {
                 td.style.width = this._dialog.getOpt("label_width");
+            }
+            if (this._dialog.hasOpt("wrap_labels",false) == false)
+            {
+                td.style.whiteSpace = "nowrap";
             }
             td.innerHTML = label;
 
@@ -674,7 +681,14 @@ class Form extends Options
                 var input = document.createElement("input");
                 img.src = value;
                 img.style.border = "1px solid #d8d8d8";
-                img.style.height = opts.getOpt("height","200px");
+                if (uitools.isMobile())
+                {
+                    img.style.height = opts.getOpt("height","100px");
+                }
+                else
+                {
+                    img.style.height = opts.getOpt("height","200px");
+                }
                 img.style.cursor = "pointer";
                 img.style.float = "left";
                 img._form = this;
@@ -899,6 +913,11 @@ class Form extends Options
         return(values);
     }
 
+    hasChangedValues()
+    {
+        return(this.getChangedValues() != null);
+    }
+
     getChangedValues()
     {
         var values = null;
@@ -1095,6 +1114,12 @@ var	_api =
     _opts:new Options(),
     _canvas:null,
     _context:null,
+
+    createDialog:function(options)
+    {
+        var dialog = new Dialog(options);
+        return(dialog);
+    },
 
     showDialog:function(options)
     {

@@ -1211,6 +1211,16 @@ var _api =
                 }
             );
         }));
+    },
+
+    tokens:function(s,values)
+    {
+        for (var x in values)
+        {
+            s = s.replaceAll("@" + x + "@",values[x]);
+        }
+        
+        return(s);
     }
 };
 

@@ -3066,7 +3066,7 @@ class Log extends Options
         for (var i = 0; i < this._delegates.length; i++)
         {
             o = this.createObject(message);
-            this._delegates[i].handleLog(this,this.createObject(message));
+            this._delegates[i].handleLog(this,o);
         }
     }
 

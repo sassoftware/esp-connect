@@ -144,7 +144,21 @@ var	_api =
 
             if (start == null || start)
             {
-                connection.start();
+                try
+                {
+                    connection.start();
+                }
+                catch(e)
+                {
+                    if (tools.supports(delegate,"error"))
+                    {
+                        delegate.error(e);
+                    }
+                    else
+                    {
+                        alert(e);
+                    }
+                }
             }
         }
     },

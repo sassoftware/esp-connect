@@ -276,9 +276,67 @@ var _uitools =
         return(enabled);
     },
 
+    createList(text)
+    {
+        var tmp = "";
+        var a = text.split("\n");
+
+        for (var i = 0; i < a.length; i++)
+        {
+            if (i > 0)
+            {
+                tmp += "<br/>";
+            }
+
+            var s = a[i];
+
+            if (s.length > 0)
+            {
+                tmp += " - " + a[i];
+            }
+        }
+
+        return(tmp);
+    },
+
+    clearElement(e)
+    {
+        while (e.firstChild != null)
+        {
+            e.removeChild(e.firstChild);
+        }
+    },
+
+    climb:function(element,tag,inclusive)
+    {
+        var e = (inclusive) ? element : element.parentNode;
+        var s = tag.toLowerCase();
+
+        while (e != null)
+        {
+            if (e.tagName.toLowerCase() == s)
+            {
+                return(e);
+            }
+
+            e = e.parentNode;
+        }
+    },
+
     css(element,name)
     {
         return(window.getComputedStyle(element,null)).getPropertyValue(name);
+    },
+
+    isMobile()
+    {
+        var code = false;
+        var platform = navigator.platform.toLowerCase();
+        if (platform == "iphone")
+        {
+            code = true;
+        }
+        return(code);
     }
 };
 
