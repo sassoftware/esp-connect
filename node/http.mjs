@@ -29,6 +29,7 @@ var handler = function(request,response)
     fileserver.serve(request,response);
 }
 
+/*
 if (opts.getOpt("secure",false))
 {
     var key = opts.getOpt("key","server.key");
@@ -40,6 +41,21 @@ if (opts.getOpt("secure",false))
     };
 
     server = https.createServer(options,handler);
+    console.log("https server running on " + port);
+}
+*/
+if (opts.getOpt("secure",false))
+{
+    var cert = opts.getOpt("cert","server.pem");
+    var key = opts.getOpt("key",cert);
+
+    const options = {
+      key:fs.readFileSync(key),
+      cert:fs.readFileSync(cert)
+    };
+
+    server = https.createServer(options,handler);
+
     console.log("https server running on " + port);
 }
 else

@@ -672,6 +672,13 @@ var	_api =
         return(connect.stringify(o));
     },
 
+    checkCertificate:function(connection)
+    {
+        var url = connection.httpurlBase;
+        url += "/eventStreamProcessing/v1/";
+        window.location = url;
+    },
+
     getStorage:function(name)
     {
         return(new StoredData(name));

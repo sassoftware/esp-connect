@@ -589,9 +589,21 @@ class JsonDecoder
         return(value);
     }
 
+    /*
     getI64()
     {
-        var value = this._data.getBigInt64(this._index);
+        var value = 0;
+
+        if (_api._supportsGetBigInt)
+        {
+            value = this._data.getBigInt64(this._index);
+        }
+        else
+        {
+            const left =  this._data.getUint32(this._index,_api._littleEndian);
+            const right = this._data.getUint32(this._index + 4,_api._littleEndian);
+            value = _api._littleEndian ? left + 2**32*right : 2**32*left + right;
+        }
 
         if (this._debug)
         {
@@ -601,6 +613,36 @@ class JsonDecoder
         this._index += 8;
         return(value);
     }
+    */
+
+    getI64()
+    {
+        var value = 0;
+
+        if (_api._supportsGetBigInt)
+        {
+            value = this._data.getBigInt64(this._index);
+        }
+        else
+        {
+            const bigThirtyTwo = BigInt(32);
+            const bigZero = BigInt(0);
+            const left = BigInt(this._data.getUint32(this._index|0, !!_api._littleEndian)>>>0);
+            const right = BigInt(this._data.getUint32((this._index|0) + 4|0, !!_api._littleEndian)>>>0);
+
+            value = _api._littleEndian ? (right<<bigThirtyTwo)|left : (left<<bigThirtyTwo)|right;
+        }
+
+        if (this._debug)
+        {
+            console.log("index: " + this._index + " get i64: " + value);
+        }
+
+        this._index += 8;
+
+        return(value);
+    }
+
 
     getDouble()
     {
@@ -619,8 +661,24 @@ class JsonDecoder
 
 var _api =
 {
+    _littleEndian:false,
+    _supportsGetBigInt:false,
+
+    init:function()
+    {
+        var buf = new ArrayBuffer(2);
+        var dv = new DataView(buf);
+        dv.setInt16(0,256,true);
+        this._littleEndian = (new Int16Array(buf)[0] === 256);
+        this._supportsGetBigInt = tools.supports(dv,"getBigInt64");
+    },
+
     encode:function(o)
     {
+        if (this._littleEndian == null)
+        {
+            this.littleEndian();
+        }
         var encoder = new JsonEncoder(o);
         return(encoder.data);
     },
@@ -631,5 +689,7 @@ var _api =
         return(data._o);
     }
 };
+
+_api.init();
 
 export {_api as codec};

@@ -328,6 +328,28 @@ var _uitools =
         return(window.getComputedStyle(element,null)).getPropertyValue(name);
     },
 
+    addClassTo(element,c)
+    {
+        var className = element.className;
+
+        if (className.indexOf(" " + c) == -1)
+        {
+            className += (" " + c);
+            element.className = className;
+        }
+    },
+
+    removeClassFrom(element,c)
+    {
+        var className = element.className;
+
+        if (className.indexOf(" " + c) != -1)
+        {
+            className = className.replace(" " + c,"");
+            element.className = className;
+        }
+    },
+
     isMobile()
     {
         var code = false;

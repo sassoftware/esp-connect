@@ -439,12 +439,45 @@ class Dialog extends Options
         }
     }
 
+    showControls(names)
+    {
+        names.forEach((name) => {
+            this.showControl(name);
+        });
+    }
+
     hideControl(name)
     {
         if (this._form != null)
         {
             this._form.hide(name);
         }
+    }
+
+    hideControls(names)
+    {
+        names.forEach((name) => {
+            this.hideControl(name);
+        });
+    }
+
+    setVisibility(name,on)
+    {
+        if (on)
+        {
+            this.showControl(name);
+        }
+        else
+        {
+            this.hideControl(name);
+        }
+    }
+
+    setVisibilities(names,on)
+    {
+        names.forEach((name) => {
+            this.setVisibility(name,on);
+        });
     }
 
     enable(name)
@@ -588,294 +621,323 @@ class Form extends Options
 
             opts.setOpt("current",value);
 
-            var rows = [];
-
             this._table.appendChild(tr = document.createElement("tr"));
             tr.appendChild(td = document.createElement("td"));
-            td.className = "label";
-            if (this._dialog.hasOpt("label_width"))
-            {
-                td.style.width = this._dialog.getOpt("label_width");
-            }
-            if (this._dialog.hasOpt("wrap_labels",false) == false)
-            {
-                td.style.whiteSpace = "nowrap";
-            }
-            td.innerHTML = label;
 
-            rows.push(tr);
-
-            opts.setOpt("_rows",rows);
-
-            if (oneline == false)
+            if (type == "button")
             {
-                this._table.appendChild(tr = document.createElement("tr"));
-                rows.push(tr);
-            }
-
-            tr.appendChild(td = document.createElement("td"));
-            if (opts.hasOpt("button"))
-            {
-                td.className = classname + " buttoncontrol";
+                var button = document.createElement("button");
+                var name = opts.getOpt("name","");
+                var dialog = this._dialog;
+                button.innerHTML = opts.getOpt("text",name);
+                button.onclick = function(e) {
+                    var delegate = dialog.getOpt("delegate");
+                    if (tools.supports(delegate,"handleButton"))
+                    {
+                        delegate.handleButton(name);
+                    }
+                };
+                td.className = "value";
+                td.appendChild(button);
             }
             else
             {
-                td.className = classname;
-            }
+                var rows = [];
 
-            var control = null;
-
-            if (type == "select")
-            {
-                control = document.createElement("select");
-
-                if (opts.hasOpt("options"))
+                td.className = "label";
+                if (this._dialog.hasOpt("label_width"))
                 {
-                    var tmp = opts.getOpt("options");
-
-                    tmp.forEach((opt) => {
-                        var n = opt.name;
-                        var v = opt.hasOwnProperty("value") ? opt.value : n;
-                        var option = document.createElement("option");
-                        option.value = v;
-                        option.appendChild(document.createTextNode(n));
-                        if (n == value || v == value)
-                        {
-                            option.selected = true;
-                        }
-                        control.add(option);
-                    });
+                    td.style.width = this._dialog.getOpt("label_width");
                 }
-            }
-            else if (type == "table")
-            {
-                control = document.createElement("div");
-            }
-            else if (type == "textarea")
-            {
-                control = document.createElement("textarea");
-            }
-            else if (type == "code")
-            {
-                control = document.createElement("pre");
-                control.style.overflow = "auto";
-
-                control.id = id;
-                control.innerText = value;
-
-                if (style != null)
+                if (this._dialog.hasOpt("wrap_labels",false) == false)
                 {
-                    control.style = style;
+                    td.style.whiteSpace = "nowrap";
+                }
+                td.innerHTML = label;
+
+                rows.push(tr);
+
+                opts.setOpt("_rows",rows);
+
+                if (oneline == false)
+                {
+                    this._table.appendChild(tr = document.createElement("tr"));
+                    rows.push(tr);
                 }
 
-                td.appendChild(control);
-
-                control = null;
-            }
-            else if (type == "image")
-            {
-                var img = document.createElement("img");
-                img.onload = function() {
-                    //console.log("image is loaded: " + this.naturalWidth + " :: " + this.naturalHeight);
-                };
-                var input = document.createElement("input");
-                img.src = value;
-                img.style.border = "1px solid #d8d8d8";
-                if (uitools.isMobile())
+                tr.appendChild(td = document.createElement("td"));
+                if (opts.hasOpt("button"))
                 {
-                    img.style.height = opts.getOpt("height","100px");
+                    td.className = classname + " buttoncontrol";
                 }
                 else
                 {
-                    img.style.height = opts.getOpt("height","200px");
+                    td.className = classname;
                 }
-                img.style.cursor = "pointer";
-                img.style.float = "left";
-                img._form = this;
 
-                input.type = "file";
-                input.style.display = "none";
+                var control = null;
 
-                input.addEventListener("change",function(event) {
-                    var files = event.target.files;
-                    var file = files[0];
-                    var reader = new FileReader();
-                    reader.onload = function() {
-                        var data = reader.result;
-                        if (self.hasOpt("maximagesize") && data.length > self.getOpt("maximagesize"))
-                        {
-                            var tmp = document.createElement("img");
-                            tmp.onload = function() {
-                                var w = tmp.naturalWidth;
-                                var h = tmp.naturalHeight;
-                                var ratio = w / h;
-                                h = 200;
-                                w = 200 * ratio;
-                                _api.context.drawImage(tmp,0,0,w,h);
-                                var quality = .5;
-                                data = _api.canvas.toDataURL("image/jpeg",quality);
-                                img.style.width = w + "px";
-                                img.style.height = h + "px";
+                if (type == "select")
+                {
+                    control = document.createElement("select");
+
+                    if (opts.hasOpt("options"))
+                    {
+                        var tmp = opts.getOpt("options");
+
+                        tmp.forEach((opt) => {
+                            var n = opt.name;
+                            var v = opt.hasOwnProperty("value") ? opt.value : n;
+                            var option = document.createElement("option");
+                            option.value = v;
+                            option.appendChild(document.createTextNode(n));
+                            if (n == value || v == value)
+                            {
+                                option.selected = true;
+                            }
+                            control.add(option);
+                        });
+                    }
+                }
+                else if (type == "table")
+                {
+                    control = document.createElement("div");
+                }
+                else if (type == "textarea")
+                {
+                    control = document.createElement("textarea");
+                }
+                else if (type == "code")
+                {
+                    control = document.createElement("pre");
+                    control.style.overflow = "auto";
+
+                    control.id = id;
+                    control.innerText = value;
+
+                    if (style != null)
+                    {
+                        control.style = style;
+                    }
+
+                    td.appendChild(control);
+
+                    control = null;
+                }
+                else if (type == "image")
+                {
+                    var img = document.createElement("img");
+                    img.onload = function() {
+                        //console.log("image is loaded: " + this.naturalWidth + " :: " + this.naturalHeight);
+                    };
+                    var input = document.createElement("input");
+                    img.src = value;
+                    img.style.border = "1px solid #d8d8d8";
+                    if (uitools.isMobile())
+                    {
+                        img.style.height = opts.getOpt("height","100px");
+                    }
+                    else
+                    {
+                        img.style.height = opts.getOpt("height","200px");
+                    }
+                    img.style.cursor = "pointer";
+                    img.style.float = "left";
+                    img._form = this;
+
+                    input.type = "file";
+                    input.style.display = "none";
+
+                    input.addEventListener("change",function(event) {
+                        var files = event.target.files;
+                        var file = files[0];
+                        var reader = new FileReader();
+                        reader.onload = function() {
+                            var data = reader.result;
+                            if (self.hasOpt("maximagesize") && data.length > self.getOpt("maximagesize"))
+                            {
+                                var tmp = document.createElement("img");
+                                tmp.onload = function() {
+                                    var w = tmp.naturalWidth;
+                                    var h = tmp.naturalHeight;
+                                    var ratio = w / h;
+                                    h = 200;
+                                    w = 200 * ratio;
+                                    _api.context.drawImage(tmp,0,0,w,h);
+                                    var quality = .5;
+                                    data = _api.canvas.toDataURL("image/jpeg",quality);
+                                    img.style.width = w + "px";
+                                    img.style.height = h + "px";
+                                    img.src = data;
+                                    opts.setOpt("_data",data);
+                                    opts.setOpt("_changed",true);
+                                };
+                                tmp.src = data;
+                            }
+                            else
+                            {
                                 img.src = data;
                                 opts.setOpt("_data",data);
                                 opts.setOpt("_changed",true);
-                            };
-                            tmp.src = data;
-                        }
-                        else
-                        {
-                            img.src = data;
-                            opts.setOpt("_data",data);
-                            opts.setOpt("_changed",true);
-                        }
-                    };
-                    reader.readAsDataURL(file);
-                },false);
-                td.style.verticalAlign = "top";
-                td.addEventListener("click",function(e) {
-                    input.click();
-                });
-                var clear = document.createElement("span");
-                clear.className = "material-icons";
-                clear.style.cursor = "pointer";
-                clear.innerText = "clear";
-                clear.addEventListener("click",function(e) {
-                    img.src = "";
-                    opts.setOpt("_data","");
-                    opts.setOpt("_changed",true);
-                    e.cancelBubble = true;
-                });
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    },false);
+                    td.style.verticalAlign = "top";
+                    td.addEventListener("click",function(e) {
+                        input.click();
+                    });
+                    var clear = document.createElement("span");
+                    clear.className = "material-icons";
+                    clear.style.cursor = "pointer";
+                    clear.innerText = "clear";
+                    clear.addEventListener("click",function(e) {
+                        img.src = "";
+                        opts.setOpt("_data","");
+                        opts.setOpt("_changed",true);
+                        e.cancelBubble = true;
+                    });
 
-                var spacer = document.createElement("span");
-                spacer.innerHTML = "&nbsp;&nbsp;";
+                    var spacer = document.createElement("span");
+                    spacer.innerHTML = "&nbsp;&nbsp;";
 
-                td.appendChild(img);
-                td.appendChild(spacer);
-                td.appendChild(clear);
-                td.appendChild(input);
+                    td.appendChild(img);
+                    td.appendChild(spacer);
+                    td.appendChild(clear);
+                    td.appendChild(input);
 
-                opts.setOpt("control",img);
-                opts.setOpt("_image",img);
-                opts.setOpt("_changed",false);
-            }
-            else if (type == "boolean")
-            {
-                var div = document.createElement("div");
-                var span = document.createElement("i");
-                div.className = "boolean";
-                //span.className = "material-icons";
-                div.appendChild(span);
-                //span.innerText = value ? "check" : "clear";
-                span.innerHTML = value ? "Yes" : "No";
-                div._opts = opts;
-                td.appendChild(div);
-
-                opts.setOpt("value",value ? true : false);
-
-                div.addEventListener("click",function() {
-                    var current = this._opts.getOpt("value");
-                    var value = current ? false : true;
-                    span.innerHTML = value ? "Yes" : "No";
-                    //span.innerText = value ? "check" : "clear";
-                    this._opts.setOpt("value",value);
-                });
-            }
-            else
-            {
-                control = document.createElement("input");
-                control.type = opts.getOpt("type","text");
-            }
-
-            if (control != null)
-            {
-                control.dialog = this._dialog;
-
-                control.id = id;
-
-                if (type == "table")
-                {
-                    var st = new SimpleTable(control,opts.getOpts(),this.getOpt("delegate"));
-                    st.setFields(opts.getOpt("fields",[]));
-                    st.size();
-                    st.draw();
-
-                    opts.setOpt("_table",st);
+                    opts.setOpt("control",img);
+                    opts.setOpt("_image",img);
+                    opts.setOpt("_changed",false);
                 }
-                else if (type != "select" && type != "image")
+                else if (type == "boolean")
                 {
-                    if (type == "textarea")
-                    {
-                        if (Array.isArray(value))
+                    var div = document.createElement("div");
+                    var span = document.createElement("i");
+                    div.className = "boolean";
+                    //span.className = "material-icons";
+                    div.appendChild(span);
+                    //span.innerText = value ? "check" : "clear";
+                    span.innerHTML = value ? "Yes" : "No";
+                    div._opts = opts;
+                    td.appendChild(div);
+
+                    opts.setOpt("value",value ? true : false);
+
+                    div.addEventListener("click",function(e) {
+                        var current = this._opts.getOpt("value");
+                        var value = current ? false : true;
+                        span.innerHTML = value ? "Yes" : "No";
+                        //span.innerText = value ? "check" : "clear";
+                        this._opts.setOpt("value",value);
+                        if (this._opts.hasOpt("onchange"))
                         {
-                            var s = "";
-                            value.forEach((v) => {
-                                if (s.length > 0)
-                                {
-                                    s += "\n";
-                                }
-                                s += v;
-                            });
-                            control.value = s;
+                            var o = {onchange:this._opts.getOpt("onchange")};
+                            if (tools.supports(o,"onchange"))
+                            {
+                                e.on = value;
+                                o.onchange(e);
+                            }
+                        }
+                    });
+                }
+                else
+                {
+                    control = document.createElement("input");
+                    control.type = opts.getOpt("type","text");
+                }
+
+                if (control != null)
+                {
+                    control.dialog = this._dialog;
+
+                    control.id = id;
+
+                    if (type == "table")
+                    {
+                        var st = new SimpleTable(control,opts.getOpts(),this.getOpt("delegate"));
+                        st.setFields(opts.getOpt("fields",[]));
+                        st.size();
+                        st.draw();
+
+                        opts.setOpt("_table",st);
+                    }
+                    else if (type != "select" && type != "image")
+                    {
+                        if (type == "textarea")
+                        {
+                            if (Array.isArray(value))
+                            {
+                                var s = "";
+                                value.forEach((v) => {
+                                    if (s.length > 0)
+                                    {
+                                        s += "\n";
+                                    }
+                                    s += v;
+                                });
+                                control.value = s;
+                            }
+                            else
+                            {
+                                control.value = value;
+                            }
+                        }
+                        else if (type == "checkbox")
+                        {
+                            control.checked = value;
                         }
                         else
                         {
                             control.value = value;
                         }
                     }
-                    else if (type == "checkbox")
+
+                    if (style != null)
                     {
-                        control.checked = value;
+                        for (var x in style)
+                        {
+                            control.style[x] = style[x];
+                        }
                     }
-                    else
+                    else if (type == "table")
                     {
-                        control.value = value;
+                        control.style.border = "1px solid #d8d8d8";
                     }
-                }
 
-                if (style != null)
-                {
-                    for (var x in style)
+                    if (opts.hasOpt("onchange"))
                     {
-                        control.style[x] = style[x];
+                        control.addEventListener("change",opts.getOpt("onchange"));
                     }
-                }
-                else if (type == "table")
-                {
-                    control.style.border = "1px solid #d8d8d8";
-                }
 
-                if (opts.hasOpt("onchange"))
-                {
-                    control.addEventListener("change",opts.getOpt("onchange"));
-                }
+                    td.appendChild(control);
 
-                td.appendChild(control);
+                    opts.setOpt("control",control);
 
-                opts.setOpt("control",control);
-
-                if (opts.hasOpt("button"))
-                {
-                    var bopts = new Options(opts.getOpt("button"));
-                    var button = document.createElement("button");
-                    button.innerText = bopts.getOpt("text","Button");
-                    if (bopts.hasOpt("click"))
+                    if (opts.hasOpt("button"))
                     {
-                        button.addEventListener("click",bopts.getOpt("click"));
+                        var bopts = new Options(opts.getOpt("button"));
+                        var button = document.createElement("button");
+                        button.innerText = bopts.getOpt("text","Button");
+                        if (bopts.hasOpt("click"))
+                        {
+                            button.addEventListener("click",bopts.getOpt("click"));
+                        }
+                        button.disabled = bopts.getOpt("disabled",false);
+
+                        var span = document.createElement("span");
+                        span.innerHTML = "&nbsp;&nbsp;";
+
+                        td.appendChild(span);
+                        td.appendChild(button);
+
+                        opts.setOpt("_button",button);
                     }
-                    button.disabled = bopts.getOpt("disabled",false);
-
-                    var span = document.createElement("span");
-                    span.innerHTML = "&nbsp;&nbsp;";
-
-                    td.appendChild(span);
-                    td.appendChild(button);
-
-                    opts.setOpt("_button",button);
                 }
+
+                this._opts.push(opts);
+                this._optsmap[name] = opts;
             }
-
-            this._opts.push(opts);
-            this._optsmap[name] = opts;
         });
     }
 

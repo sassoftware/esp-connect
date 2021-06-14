@@ -70,9 +70,9 @@ div#footer
 
 div.obscure
 {
-    background:#3b99fc;
-    background:white;
     background:black;
+    background:#3b99fc;
+    background:#c0c0c0;
 	opacity:.3;
 }
 
@@ -146,8 +146,8 @@ div.dialog
     padding:0;
 	box-shadow:0px 20px 20px 0px rgba(0,0,0,0.50);
     width:80%;
-    border:1px solid #c0c0c0;
-    border-radius:8px;
+    border:1px solid #a0a0a0;
+	border-radius:4px;
 }
 
 div.dialog div.header
@@ -258,6 +258,7 @@ table.form td.value div.boolean
     cursor:pointer;
     padding:4px;
     border:1px solid #c0c0c0;
+    background:white;
     width:98%;
 }
 
@@ -839,6 +840,31 @@ table.simpletable span.action
 /* End Tables */
 
 /* App */
+div.appheader
+{
+    padding:20px;
+    border-bottom:1px solid #c0c0c0;
+}
+
+div.appcontent
+{
+}
+
+div.appfooter
+{
+}
+
+div.appfooter td.apptab
+{
+    border:0;
+    border-top:1px solid #c0c0c0;
+}
+
+div.appfooter td.selected
+{
+    color:blue;
+}
+
 table.app
 {
 }
@@ -874,22 +900,16 @@ table.app tr.header td
 table.app tr.item td
 {
     border-bottom:1px solid #c0c0c0;
-    padding:4px;
     padding:0;
+    padding:4px;
     vertical-align:middle;
     cursor:pointer;
 }
 
-table.app tr.item img
-{
-    float:none;
-    vertical-align:middle;
-}
-
-table.app tr.item span
+table.app tr.item span.material-icons
 {
     vertical-align:middle;
-    padding-left:20px;
+    font-size:2rem;
 }
 
 /* End App */

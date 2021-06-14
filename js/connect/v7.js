@@ -380,6 +380,17 @@ class Api extends Options
             {
                 var o = json["project-loaded"];
                 var name = o["name"];
+                var ds;
+
+                for (var x in this._datasources)
+                {
+                    ds = this._datasources[x];
+                    if (ds.p == name)
+                    {
+                        ds.open();
+                        ds.deliverProjectLoaded();
+                    }
+                }
 
                 this._projectUpdateDelegates.forEach((d) =>
                 {
@@ -390,6 +401,16 @@ class Api extends Options
             {
                 var o = json["project-removed"];
                 var name = o["name"];
+                var ds;
+
+                for (var x in this._datasources)
+                {
+                    ds = this._datasources[x];
+                    if (ds.p == name)
+                    {
+                        ds.deliverProjectRemoved();
+                    }
+                }
 
                 this._projectUpdateDelegates.forEach((d) =>
                 {
@@ -927,6 +948,7 @@ class Api extends Options
                         }
                         else
                         {
+console.log(JSON.stringify(result,null,"\t"));
                             var message = "";
 
                             if (result.hasOwnProperty("text"))
@@ -937,10 +959,17 @@ class Api extends Options
                             if (result.hasOwnProperty("details"))
                             {
                                 var details = result["details"];
-                                for (var detail of details)
+                                if (Array.isArray(details))
                                 {
-                                    message += "\n";
-                                    message += detail["detail"];
+                                    for (var detail of details)
+                                    {
+                                        message += "\n";
+                                        message += detail["detail"];
+                                    }
+                                }
+                                else
+                                {
+                                    message += details["detail"];
                                 }
                             }
 
@@ -1254,72 +1283,97 @@ class Datasource extends Options
     constructor(api,options)
     {
         super(options);
+
         this._api = api;
         this._id = this.getOpt("id",tools.guid());
         this._path = this.getOpt("window");
         this._schema = new Schema();
 
-        Object.defineProperty(this,"id", {
-            get() {
-                return(this._id);
-            }
-        });
+        var a = this._path.split("/");
 
-        Object.defineProperty(this,"api", {
-            get() {
-                return(this._api);
-            }
-        });
+        if (a.length != 3)
+        {
+            throw("The window must be in the form project/contquery/window");
+        }
 
-        Object.defineProperty(this,"connection", {
-            get() {
-                return(this._api.connection);
-            }
-        });
-
-        Object.defineProperty(this,"schema", {
-            get() {
-                return(this._schema);
-            }
-        });
-
-        Object.defineProperty(this,"name", {
-            get() {
-                var s = this.getOpt("name","");
-                if (s.length == 0)
-                {
-                    s = this.getOpt("window");
-                }
-                return(s);
-            },
-            set(value) {
-                this.setOpt("name",value);
-            }
-        });
-
-        Object.defineProperty(this,"size", {
-            get() {
-                var size = 0;
-                if (this._data != null)
-                {
-                    if (Array.isArray(this._data))
-                    {
-                        size = this._data.length;
-                    }
-                    else
-                    {
-                        size = Object.keys(this._data).length;
-                    }
-                }
-                return(size);
-            }
-        });
+        this._p = a[0];
+        this._cq = a[1];
+        this._w = a[2];
 
         this._data = null;
         this._list = null;
         this._delegates = [];
 
         this._paused = false;
+    }
+
+    get id()
+    {
+        return(this._id);
+    }
+
+    get p()
+    {
+        return(this._p);
+    }
+
+    get cq()
+    {
+        return(this._cq);
+    }
+
+    get w()
+    {
+        return(this._w);
+    }
+
+    get api()
+    {
+        return(this._api);
+    }
+
+    get connection()
+    {
+        return(this._api.connection);
+    }
+
+    get schema()
+    {
+        return(this._schema);
+    }
+
+    get name()
+    {
+        var s = this.getOpt("name","");
+        if (s.length == 0)
+        {
+            s = this.getOpt("window");
+        }
+        return(s);
+    }
+
+    set name(value)
+    {
+        this.setOpt("name",value);
+    }
+
+    get size()
+    {
+        var size = 0;
+
+        if (this._data != null)
+        {
+            if (Array.isArray(this._data))
+            {
+                size = this._data.length;
+            }
+            else
+            {
+                size = Object.keys(this._data).length;
+            }
+        }
+
+        return(size);
     }
 
     isArray()
@@ -2032,6 +2086,28 @@ class Datasource extends Options
         });
     }
 
+    deliverProjectLoaded()
+    {
+        this._delegates.forEach(d =>
+        {
+            if (tools.supports(d,"projectLoaded"))
+            {
+                d.projectLoaded(this);
+            }
+        });
+    }
+
+    deliverProjectRemoved()
+    {
+        this._delegates.forEach(d =>
+        {
+            if (tools.supports(d,"projectRemoved"))
+            {
+                d.projectRemoved(this);
+            }
+        });
+    }
+
     getDataByKey(key)
     {
         var data = null;
@@ -2506,6 +2582,7 @@ class EventStream extends Datasource
                     resolve(self);
                 },
                 error:function(result) {
+                    console.log("got error");
                     reject(result);
                 }
             });

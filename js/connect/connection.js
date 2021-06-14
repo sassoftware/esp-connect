@@ -47,7 +47,7 @@ if (tools.isNode)
             if (conn != null)
             {
                 conn.clear();
-                conn.closed();
+                conn.closed(e);
             }
         },
 
@@ -95,7 +95,7 @@ var	_websockets =
             _websockets._established[conn.getUrl()] = true;
             conn._websocket = this;
             conn._ready = true;
-            conn.ready();
+            conn.ready(e);
         }
     },
 
@@ -106,7 +106,7 @@ var	_websockets =
         if (conn != null)
         {
             conn.clear();
-            conn.closed();
+            conn.closed(e);
         }
     },
 
@@ -117,7 +117,7 @@ var	_websockets =
         if (conn != null)
         {
             conn.clear();
-            conn.error();
+            conn.error(e);
         }
     },
 
@@ -330,7 +330,7 @@ class Connection extends Options
 	{
 	}
 
-	closed()
+	closed(e)
 	{
 	}
 

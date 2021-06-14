@@ -42,7 +42,7 @@ class ServerConnection extends Connection
         }
 
         var certConfirm = this.httpurlBase;
-        certConfirm  += "/eventStreamProcessing/v1/server";
+        certConfirm  += "/eventStreamProcessing/v1/";
         this.setOpt("cert-confirm-url",certConfirm);
 
         this._impl = null;
@@ -245,7 +245,7 @@ class ServerConnection extends Connection
         }));
     }
 
-    closed(conn)
+    closed(e)
     {
         if (this._impl != null)
         {
@@ -275,7 +275,7 @@ class ServerConnection extends Connection
         }
     }
 
-    error()
+    error(e)
     {
         if (this._impl != null && this._impl.closed)
         {
@@ -303,7 +303,7 @@ class ServerConnection extends Connection
                         if (_prompted.hasOwnProperty(url) == false)
                         {
                             _prompted[url] = true;
-                            window.open(url,"espconnect","width=800,height=800");
+                            //window.location = url;
                         }
                     }
                 }

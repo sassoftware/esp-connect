@@ -70,29 +70,40 @@ go(example)
 
     if (example == "../html/modelviewer.html" || example == "../html/logviewer.html")
     {
-        s += "?server=" + _server;
+        s += "server=" + _server;
     }
     else if (_k8s != null)
     {
-        s += "?namespace=" + _k8s.namespace;
+        s += "namespace=" + _k8s.namespace;
     }
     else if (_server != null)
     {
-        s += "?server=" + _server;
+        s += "server=" + _server;
     }
 
     var parms = _esp.getParms();
 
     for (var x in parms)
     {
-        s += ((s.length > 0) ? "&" : "?");
+        if (s.length > 0)
+        {
+            s += "&";
+        }
+
         s += (x + "=" + parms[x]);
     }
 
     var url = example;
-    url += s;
 
-    window.open(url);
+    if (s.length > 0)
+    {
+        url += "?";
+        url += encodeURIComponent(s);
+    }
+
+    s = new URL(url,document.URL).toString();
+
+    window.open(s);
 }
 
 </script>

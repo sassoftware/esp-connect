@@ -22,45 +22,41 @@ class Ajax extends Options
 		this._method = "GET";
 		this._request = null;
 		this._data = null;
-
-        Object.defineProperty(this,"url", {
-            get() {
-		        return(this._url);
-            }
-        });
-
-        Object.defineProperty(this,"status", {
-            get() {
-		        return((this._request != null) ? this._request.status : 0);
-            }
-        });
-
-        Object.defineProperty(this,"text", {
-            get() {
-		        return((this._request != null) ? this._request.responseText : "");
-            }
-        });
-
-        Object.defineProperty(this,"xml", {
-            get() {
-                var xml = null;
-
-                if (this._request != null)
-                {
-                    if ((xml = this._request.responseXML) == null)
-                    {
-                        var	type = this.getResponseHeader("content-type");
-                        if (type.indexOf("text/xml") != -1 || type.indexOf("application/xml") != -1)
-                        {
-                            xml = xpath.createXml(this._request.responseText);
-                        }
-                    }
-                }
-
-                return(xml);
-            }
-        });
 	}
+
+    get url()
+    {
+        return(this._url);
+    }
+
+    get status()
+    {
+        return((this._request != null) ? this._request.status : 0);
+    }
+
+    get text()
+    {
+        return((this._request != null) ? this._request.responseText : "");
+    }
+
+    get xml()
+    {
+        var xml = null;
+
+        if (this._request != null)
+        {
+            if ((xml = this._request.responseXML) == null)
+            {
+                var	type = this.getResponseHeader("content-type");
+                if (type.indexOf("text/xml") != -1 || type.indexOf("application/xml") != -1)
+                {
+                    xml = xpath.createXml(this._request.responseText);
+                }
+            }
+        }
+
+        return(xml);
+    }
 
 	send(method)
     {
@@ -119,7 +115,7 @@ class Ajax extends Options
                         if (protocol == "https:")
                         {
                             var url = self.hasOpt("cert-confirm-url") ? self.getOpt("cert-confirm-url") : self._url;
-                            window.open(url,url,"");
+                            //window.location = url;
                             reject(self);
                         }
                         else
@@ -276,37 +272,33 @@ class NodeAjax extends Options
         this._text = "";
         this._data = null;
         this._xml = null;
+    }
 
-        Object.defineProperty(this,"url", {
-            get() {
-		        return(this._url);
-            }
-        });
+    get url()
+    {
+		return(this._url);
+    }
 
-        Object.defineProperty(this,"status", {
-            get() {
-                return((this._response != null) ? this._response.statusCode : 0);
-            }
-        });
+    get status()
+    {
+        return((this._response != null) ? this._response.statusCode : 0);
+    }
 
-        Object.defineProperty(this,"text", {
-            get() {
-		        return(this._text);
-            }
-        });
+    get text()
+    {
+		return(this._text);
+    }
 
-        Object.defineProperty(this,"xml", {
-            get() {
-                var xml = null;
+    get xml()
+    {
+        var xml = null;
 
-                if (this._text != null)
-                {
-                    xml = xpath.createXml(this._text);
-                }
+        if (this._text != null)
+        {
+            xml = xpath.createXml(this._text);
+        }
 
-                return(xml);
-            }
-        });
+        return(xml);
     }
 
     send(method)

@@ -1763,7 +1763,7 @@ class K8SProject extends K8S
                 url += "/internal/ready";
                 var request = ajax.create(url);
                 var certConfirm  = self.espUrl;
-                certConfirm  += "/eventStreamProcessing/v1/server";
+                certConfirm  += "/eventStreamProcessing/v1/";
                 request.setOpt("cert-confirm-url",certConfirm);
                 request.head().then(
                     function(result) {
