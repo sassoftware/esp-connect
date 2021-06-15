@@ -11,8 +11,6 @@ import {tools} from "./tools.js";
 import {ajax} from "./ajax.js";
 import {xpath} from "./xpath.js";
 
-var _prompted = {};
-
 class ServerConnection extends Connection
 {
     constructor(connect,host,port,path,secure,delegate,options)
@@ -40,10 +38,6 @@ class ServerConnection extends Connection
                 tools.addTo(this._delegates,delegate);
             }
         }
-
-        var certConfirm = this.httpurlBase;
-        certConfirm  += "/eventStreamProcessing/v1/";
-        this.setOpt("cert-confirm-url",certConfirm);
 
         this._impl = null;
     }
@@ -150,10 +144,9 @@ class ServerConnection extends Connection
                         },
                         function(result) {
                             self._delegates.forEach((d) => {
-                                if (tools.supports(d,"error"))
+                                if (tools.supports(d,"projectLoadError"))
                                 {
-                                    //d.error(self._impl,result);
-                                    d.error(self,result);
+                                    d.projectLoadError(self,result);
                                 }
                             });
                         }
@@ -292,33 +285,12 @@ class ServerConnection extends Connection
                     throw new Error(msg);
                 }
             }
-            else
-            {
-                if (this.isSecure)
-                {
-                    if (this.hasOpt("cert-confirm-url"))
-                    {
-                        var url = this.getOpt("cert-confirm-url");
-
-                        if (_prompted.hasOwnProperty(url) == false)
-                        {
-                            _prompted[url] = true;
-                            //window.location = url;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (tools.supports(this._delegate,"error"))
-        {
-            this._delegate.error(this);
         }
 
         this._delegates.forEach((d) => {
-            if (tools.supports(d,"error"))
+            if (tools.supports(d,"connectionError"))
             {
-                d.error(this);
+                d.connectionError(this);
             }
         });
 

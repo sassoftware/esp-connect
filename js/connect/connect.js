@@ -27,7 +27,7 @@ var	_api =
         return(tools.isNode);
     },
 
-    connect:function(url,delegate,options,start)
+    connect:function(url,delegates,options,start)
     {
         var u = tools.createUrl(decodeURI(url));
 
@@ -43,14 +43,14 @@ var	_api =
             options["k8s"] = project;
 
             function auth() {
-                project.authenticate(self,delegate).then(
+                project.authenticate(self,delegates).then(
                     function() {
                         if (project.hasOpt("access_token"))
                         {
                             options["access_token"] = project.getOpt("access_token");
                         }
 
-                        project.connect(self,delegate,options,start);
+                        project.connect(self,delegates,options,start);
                     },
                     function() {
                         if (project.getOpt("saslogon-error",false))
@@ -58,17 +58,17 @@ var	_api =
                             if (project.hasOpt("access_token"))
                             {
                                 options["access_token"] = project.getOpt("access_token");
-                                project.connect(self,delegate,options,start);
+                                project.connect(self,delegates,options,start);
                             }
                             else
                             {
-                                const   d = tools.anySupports(delegate,"getToken");
+                                const   d = tools.anySupports(delegates,"getToken");
                                 if (d != null)
                                 {
                                     d.getToken().then(
                                         function(result) {
                                             options["access_token"] = result;
-                                            project.connect(self,delegate,options,start);
+                                            project.connect(self,delegates,options,start);
                                         },
                                         function(result) {
                                         }
@@ -78,7 +78,7 @@ var	_api =
                         }
                         else if (project.getOpt("uaa-error",false))
                         {
-                             const   d = tools.anySupports(delegate,"getCredentials");
+                             const   d = tools.anySupports(delegates,"getCredentials");
 
                              if (d != null)
                              {
@@ -131,7 +131,7 @@ var	_api =
                 credentials = opts.getOptAndClear("credentials");
             }
 
-            var connection = serverconn.create(this,url,delegate,opts.getOpts());
+            var connection = serverconn.create(this,url,delegates,opts.getOpts());
 
             if (token != null)
             {
@@ -150,9 +150,14 @@ var	_api =
                 }
                 catch(e)
                 {
-                    if (tools.supports(delegate,"error"))
+                    if (tools.anySupports(delegates,"connectionError") != null)
                     {
-                        delegate.error(e);
+                        delegates.forEach((d) => {
+                            if (tools.supports(d,"connectionError"))
+                            {
+                                d.connectionError(connection,e);
+                            }
+                        });
                     }
                     else
                     {

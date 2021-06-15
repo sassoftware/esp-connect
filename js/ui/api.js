@@ -679,6 +679,32 @@ var	_api =
         window.location = url;
     },
 
+    showConnectionError:function(connection,error)
+    {
+        var message = "";
+
+        message += "Failed to connect to ESP server " + connection.httpurlBase + ".";
+
+        if (error != null)
+        {
+            if (error.length < 1024)
+            {
+                message += "<br/><br/>";
+                message += error;
+            }
+        }
+        if (connection.isSecure)
+        {
+            var url = connection.httpurlBase;
+            url += "/eventStreamProcessing/v1/";
+
+            message += "<br/><br/> If this is a certificate issue you may need to go ";
+            message += "<a href='" + url + "' target='_blank'>here</a> and accept the certificate.";
+        }
+
+        dialogs.message("Connect Failed",message);
+    },
+
     getStorage:function(name)
     {
         return(new StoredData(name));

@@ -590,8 +590,6 @@ class Form extends Options
         this._optsmap = {};
         this._table = document.createElement("table");
         this._table.className = "form";
-        this._table.style.width = "80%";
-        this._table.style.margin = "auto";
 
         if (values == null)
         {
@@ -630,13 +628,10 @@ class Form extends Options
                 var name = opts.getOpt("name","");
                 var dialog = this._dialog;
                 button.innerHTML = opts.getOpt("text",name);
-                button.onclick = function(e) {
-                    var delegate = dialog.getOpt("delegate");
-                    if (tools.supports(delegate,"handleButton"))
-                    {
-                        delegate.handleButton(name);
-                    }
-                };
+                if (opts.hasOpt("onclick"))
+                {
+                    button.onclick = opts.getOpt("onclick");
+                }
                 td.className = "value";
                 td.appendChild(button);
             }
@@ -813,12 +808,8 @@ class Form extends Options
                 else if (type == "boolean")
                 {
                     var div = document.createElement("div");
-                    var span = document.createElement("i");
                     div.className = "boolean";
-                    //span.className = "material-icons";
-                    div.appendChild(span);
-                    //span.innerText = value ? "check" : "clear";
-                    span.innerHTML = value ? "Yes" : "No";
+                    div.innerHTML = value ? "Yes" : "No";
                     div._opts = opts;
                     td.appendChild(div);
 
@@ -827,8 +818,7 @@ class Form extends Options
                     div.addEventListener("click",function(e) {
                         var current = this._opts.getOpt("value");
                         var value = current ? false : true;
-                        span.innerHTML = value ? "Yes" : "No";
-                        //span.innerText = value ? "check" : "clear";
+                        this.innerHTML = value ? "Yes" : "No";
                         this._opts.setOpt("value",value);
                         if (this._opts.hasOpt("onchange"))
                         {
@@ -1339,9 +1329,37 @@ var	_api =
         {
             options.buttons = "ok";
         }
+
         var dialog = this.create(options);
-        dialog.htmlcontent = "<div class='message'>" + text + "</div>";
+
+        var html = "";
+
+        html += "<div class='message'";
+
+        if (options.hasOwnProperty("css"))
+        {
+            var css = options["css"];
+            var s = "";
+            for (var x in css)
+            {
+                if (s.length > 0)
+                {
+                    s += ";";
+                }
+
+                s += x;
+                s += ":";
+                s += css[x];
+            }
+            html += " style='" + s + "'";
+        }
+
+        html += ">" + text + "</div>";
+
+        dialog.htmlcontent = html;
+
         dialog.push();
+
         return(dialog);
     },
 

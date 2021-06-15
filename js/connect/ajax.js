@@ -112,16 +112,7 @@ class Ajax extends Options
                     }
                     else if (received == false)
                     {
-                        if (protocol == "https:")
-                        {
-                            var url = self.hasOpt("cert-confirm-url") ? self.getOpt("cert-confirm-url") : self._url;
-                            //window.location = url;
-                            reject(self);
-                        }
-                        else
-                        {
-                            reject(self);
-                        }
+                        reject(self);
                     }
                     else
                     {

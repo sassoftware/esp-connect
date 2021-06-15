@@ -92,9 +92,11 @@ class NavigatorItem extends Options
         td.innerHTML = html;
 
         tr.appendChild(td = document.createElement("td"));
+        td.style.textAlign = "right";
+        td.style.paddingRight = "10px";
         td._item = this;
 
-        if (this.hasChildren)
+        //if (this.hasChildren)
         {
             td.innerHTML = ">";
         }
@@ -186,30 +188,9 @@ class Navigator extends Options
 
     display()
     {
-        var table = document.createElement("table");
-        table.className = "app";
-        table.style.width = "100%";
-        table.cellSpacing = 0;
-        table.cellPadding = 0;
-
-        var tr;
-        var td;
-
-        /*
         if (this._current._parent != null)
         {
-            this._app.navigation = "<&nbsp;&nbsp;" + this._current._parent.text;
-            this._app.title = this._current.text;
-        }
-        else
-        {
-            this._app.navigation = "&nbsp;";
-            this._app.title = this.getOpt("text",this.getOpt("name",""));
-        }
-        */
-        if (this._current._parent != null)
-        {
-            this._app.navigation = "<&nbsp;&nbsp;" + this._current._parent.text;
+            this._app.navigation = "<&nbsp;" + this._current._parent.text;
         }
         else
         {
@@ -217,43 +198,49 @@ class Navigator extends Options
         }
         this._app.title = this._current.text;
 
-        if (this._current.hasChildren)
+        if (this._current.hasChildren || this._current.getOpt("dynamic",false))
         {
-            this._current._items.forEach((item) =>
-            {
-                table.appendChild(item.build());
-            });
-        }
-        else if (this._current.getOpt("dynamic",false))
-        {
-            var items = null;
+            var table = document.createElement("table");
+            table.className = "app";
+            table.style.width = "100%";
+            table.cellSpacing = 0;
+            table.cellPadding = 0;
 
-            if (tools.supports(this._delegate,"getitems"))
-            {
-                items = this._delegate.getitems(this._current);
-            }
+            var tr;
+            var td;
 
-            if (items != null)
+            if (this._current.hasChildren)
             {
-                items.forEach((i) =>
+                this._current._items.forEach((item) =>
                 {
-                    table.appendChild(new NavigatorItem(this,i,this._current).build());
+                    table.appendChild(item.build());
                 });
             }
+            else
+            {
+                var items = null;
+
+                if (tools.supports(this._delegate,"getitems"))
+                {
+                    items = this._delegate.getitems(this,this._current);
+                }
+
+                if (items != null)
+                {
+                    items.forEach((i) =>
+                    {
+                        table.appendChild(new NavigatorItem(this,i,this._current).build());
+                    });
+                }
+            }
+
+            uitools.clearElement(this._app._content);
+            this._app._content.appendChild(table);
         }
         else
         {
-            var tr = document.createElement("tr");
-            var td = document.createElement("td");
-            tr.appendChild(td);
-            table.appendChild(tr);
-
-            //this._app._delegate.content(this._current,td,title);
-            this._app._delegate.content(this._current,td);
+            this._app._delegate.content(this._app,this._current);
         }
-
-        uitools.clearElement(this._app._content);
-        this._app._content.appendChild(table);
     }
 
     back()
@@ -510,7 +497,7 @@ class App extends Options
             uitools.clearElement(this._content);
         }
         this.title = opts.getOpt("title","");
-        this.navigator = null;
+        this.layout();
     }
 
     set tab(value)
@@ -539,7 +526,8 @@ class App extends Options
             }
             else if (tools.supports(this._delegate,"tabSelected"))
             {
-                this._delegate.tabSelected(t);
+                this._delegate.tabSelected(this,t);
+                this.navigator = null;
             }
         }
     }
@@ -572,6 +560,13 @@ class App extends Options
         }
     }
 
+    enableTabs(names)
+    {
+        names.forEach((name) => {
+            this.enableTab(name);
+        });
+    }
+
     disableTab(name)
     {
         var tab = this.getTab(name);
@@ -579,6 +574,13 @@ class App extends Options
         {
             tab.disable();
         }
+    }
+
+    disableTabs(names)
+    {
+        names.forEach((name) => {
+            this.disableTab(name);
+        });
     }
 
     getTab(name)
@@ -644,6 +646,12 @@ class App extends Options
         this._content.style.height = h + "px";
 
         dialogs.placeModals();
+
+        this.size();
+    }
+
+    size()
+    {
     }
 }
 

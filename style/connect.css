@@ -197,6 +197,12 @@ div.dialog div.content textarea
 /*
 div.dialog div.content textarea
 */
+table.form
+{
+    width:80%;
+    margin:auto;
+}
+
 table.form div.content textarea
 {
 	height:100px;
@@ -259,6 +265,8 @@ table.form td.value div.boolean
     padding:4px;
     border:1px solid #c0c0c0;
     background:white;
+    font-style:italic;
+    color:black;
     width:98%;
 }
 
@@ -314,6 +322,8 @@ div.dialog div.message
 {
     margin:auto;
     text-align:center;
+    padding:10px;
+    color:black;
 }
 
 /* End Dialogs */
@@ -852,12 +862,12 @@ div.appcontent
 
 div.appfooter
 {
+    border-top:1px solid #c0c0c0;
 }
 
 div.appfooter td.apptab
 {
     border:0;
-    border-top:1px solid #c0c0c0;
 }
 
 div.appfooter td.selected
