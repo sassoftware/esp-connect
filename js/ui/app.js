@@ -73,27 +73,29 @@ class NavigatorItem extends Options
 
         if (this.hasOpt("icon"))
         {
-            html += "<span class='material-icons' style='padding:0;padding-right:10px'>";
+            html += "<span class='" + this._navigator._app.getOpt("icons","material-icons") + "' style='padding:0;padding-right:10px'>";
             html += this.getOpt("icon");
             html += "</span>";
         }
         else
         {
-            html += "<span class='material-icons' style='padding:0;padding-right:20px'>";
+            html += "<span class='" + this._navigator._app.getOpt("icons","material-icons") + "' style='padding:0;padding-right:10px'>";
             html += "&nbsp;";
             html += "</span>";
         }
 
         if (this.hasOpt("text"))
         {
+            html += "<span class='label'>";
             html += this.getOpt("text");
+            html += "</span>";
         }
 
         td.innerHTML = html;
 
         tr.appendChild(td = document.createElement("td"));
+        td.className = "forward";
         td.style.textAlign = "right";
-        td.style.paddingRight = "10px";
         td._item = this;
 
         //if (this.hasChildren)
@@ -154,10 +156,22 @@ class Navigator extends Options
         this._app = app;
         this._items = {};
 
-        this._root = new NavigatorItem(this,options);
+        this._root = new NavigatorItem(this,options,null);
         this._root.build();
 
+        this._tab = null;
+
         this._current = this._root;
+    }
+
+    get tab()
+    {
+        return(this._tab);
+    }
+
+    set tab(value)
+    {
+        this._tab = value;
     }
 
     get name()
@@ -167,7 +181,7 @@ class Navigator extends Options
 
     get current()
     {
-        return(_this._current);
+        return(this._current);
     }
 
     set current(value)
@@ -177,7 +191,12 @@ class Navigator extends Options
         if (item != null)
         {
             this._current = item;
-            this.display();
+
+            if (this._tab != null)
+            {
+                this._tab.navigator = (this._current._parent != null) ? this : null;
+                this._tab.display();
+            }
         }
     }
 
@@ -190,31 +209,60 @@ class Navigator extends Options
     {
         if (this._current._parent != null)
         {
-            this._app.navigation = "<&nbsp;" + this._current._parent.text;
+            var text = this._current._parent.text;
+            if (text.length == 0)
+            {
+                if (this._tab != null)
+                {
+                    text = this._tab.text;
+                }
+            }
+            this._app.navigation = "<&nbsp;" + text;
         }
         else
         {
             this._app.navigation = "&nbsp;";
         }
-        this._app.title = this._current.text;
+
+        this._app.title = (this._tab != null) ? this._tab.text : this._current.text;
 
         if (this._current.hasChildren || this._current.getOpt("dynamic",false))
         {
             var table = document.createElement("table");
             table.className = "app";
-            table.style.width = "100%";
             table.cellSpacing = 0;
             table.cellPadding = 0;
 
             var tr;
             var td;
 
+            if (this.hasOpt("text"))
+            {
+                table.appendChild(tr = document.createElement("tr"));
+                tr.appendChild(td = document.createElement("td"));
+                tr.className = "navigatorTitle";
+                td.colSpan = 2;
+                td.innerHTML = this.getOpt("text");
+            }
+
             if (this._current.hasChildren)
             {
-                this._current._items.forEach((item) =>
+                var item;
+
+                for (var i = 0; i < this._current._items.length; i++)
                 {
-                    table.appendChild(item.build());
-                });
+                    item = this._current._items[i];
+                    tr = item.build();
+                    if (i == 0)
+                    {
+                        uitools.addClassTo(tr,"first");
+                    }
+                    if (i == this._current._items.length - 1)
+                    {
+                        uitools.addClassTo(tr,"last");
+                    }
+                    table.appendChild(tr);
+                }
             }
             else
             {
@@ -234,7 +282,9 @@ class Navigator extends Options
                 }
             }
 
+            /*
             uitools.clearElement(this._app._content);
+            */
             this._app._content.appendChild(table);
         }
         else
@@ -246,6 +296,15 @@ class Navigator extends Options
     back()
     {
         this.current = this._current._parent;
+        /*
+        if (this.current._parent == null)
+        {
+            if (this.tab != null)
+            {
+                this.tab.display();
+            }
+        }
+        */
     }
 
     clear()
@@ -255,10 +314,33 @@ class Navigator extends Options
 
 class Tab extends Options
 {
-    constructor(app,options)
+    constructor(options)
     {
         super(options);
+        this._navigators = null;
+        this._navigator = null;
+    }
+
+    init(app)
+    {
         this._app = app;
+
+        if (this.hasOpt("navigators"))
+        {
+            var navigator;
+
+            this.getOpt("navigators").forEach((o) => {
+                navigator = new Navigator(this._app,o);
+                navigator.tab = this;
+
+                if (this._navigators == null)
+                {
+                    this._navigators = [];
+                }
+
+                this._navigators.push(navigator);
+            });
+        }
 
         if (this.getOpt("disabled",false))
         {
@@ -271,9 +353,72 @@ class Tab extends Options
         return(this.getOpt("name",""));
     }
 
+    get text()
+    {
+        return(this.getOpt("text",""));
+    }
+
+    get navigator()
+    {
+        return(this._navigator);
+    }
+
+    set navigator(value)
+    {
+        var navigator = (typeof(value) == "string") ? this.getNavigator(value) : value;
+
+        //if (navigator != null)
+        {
+            this._navigator = navigator;
+            this._app._navigator = navigator;
+        }
+    }
+
+    getNavigator(name)
+    {
+        return(this._app.findNavigator(name,this._navigators));
+    }
+
+    findNavigator(name,list)
+    {
+        var navigator = null;
+
+        for (var n of list)
+        {
+            if (n.name == name)
+            {
+                navigator = n;
+                break;
+            }
+        }
+
+        return(navigator);
+    }
+
     get disabled()
     {
         return(this.getOpt("enabled",true) == false);
+    }
+    
+    display()
+    {
+        if (this._navigator != null)
+        {
+            uitools.clearElement(this._app._content);
+            this._navigator.display();
+        }
+        else if (this._navigators != null)
+        {
+            uitools.clearElement(this._app._content);
+            this._navigators.forEach((navigator) => {
+                navigator.display();
+            });
+        }
+        else if (tools.supports(this._app._delegate,"tabSelected"))
+        {
+            this._app._delegate.tabSelected(this._app,this);
+            this._app.navigator = null;
+        }
     }
 
     enable()
@@ -297,11 +442,13 @@ class Tab extends Options
     }
 }
 
-class App extends Options
+class App extends Tab
 {
     constructor(options,delegate)
     {
         super(options);
+
+        this.init(this);
 
         this._delegate = delegate;
 
@@ -310,24 +457,13 @@ class App extends Options
             throw "The delegate must implement the content method";
         }
 
-        this._navigators = {};
-
-        if (this.hasOpt("navigators"))
-        {
-            this.getOpt("navigators").forEach((o) => {
-                var nav = new Navigator(this,o);
-                this._navigators[nav.name] = nav;
-            });
-        }
-
-        this._navigator = null;
-
         this._tabs = [];
 
         if (this.hasOpt("tabs"))
         {
             this.getOpt("tabs").forEach((o) => {
-                var tab = new Tab(this,o);
+                var tab = new Tab(o);
+                tab.init(this);
                 this._tabs.push(tab);
             });
         }
@@ -336,15 +472,6 @@ class App extends Options
 
         const   self = this;
         window.addEventListener("resize",function(){self.layout()});
-        /*
-        document.addEventListener("touchmove",
-            function(e)
-            {
-                alert('doit');
-                e.preventDefault();
-                return(false);
-            });
-        */
 
         /*
         uitools.clearElement(document.body);
@@ -354,6 +481,7 @@ class App extends Options
         this._header.className = "appheader";
 
         var table = document.createElement("table");
+        table.className = "appheader";
         table.style.width = "100%";
         table.cellSpacing = 0;
         table.cellPadding = 0;
@@ -362,8 +490,10 @@ class App extends Options
         var td;
 
         table.appendChild(tr = document.createElement("tr"));
+        tr.className = "actions";
 
         this._navigation = document.createElement("td");
+        this._navigation.className = "navigation";
         this._navigation.style.cursor = "pointer";
         this._navigation._app = this;
 
@@ -382,16 +512,21 @@ class App extends Options
             }
         };
 
-        this._title = document.createElement("td");
-
+        /*
         this._navigation.style.position = "absolute";
         this._title.style.textAlign = "center";
+        */
 
         this.navigation = "&nbsp;";
-        this.title = "&nbsp;";
 
         tr.appendChild(this._navigation);
+
+        this._title = document.createElement("td");
+        table.appendChild(tr = document.createElement("tr"));
+        tr.className = "title";
         tr.appendChild(this._title);
+
+        this.title = "&nbsp;";
 
         this._header.appendChild(table);
 
@@ -431,7 +566,7 @@ class App extends Options
                 var html = "";
                 if (tab.hasOpt("icon"))
                 {
-                    html += "<span class='material-icons'>";
+                    html += "<span class='" + this.getOpt("icons","material-icons") + "'>";
                     html += tab.getOpt("icon");
                     html += "</span>";
                     html += "<br/>";
@@ -461,11 +596,6 @@ class App extends Options
         this.title = this.getOpt("name","App");
 
         this.layout();
-    }
-
-    get name()
-    {
-        return(this.getOpt("name",""));
     }
 
     set navigation(value)
@@ -519,7 +649,10 @@ class App extends Options
         if (t != null)
         {
             uitools.addClassTo(t._td,"selected");
+            this._navigator = t._navigator;
+            t.display();
 
+            /*
             if (t.hasOpt("navigator"))
             {
                 this.navigator = t.getOpt("navigator");
@@ -529,25 +662,36 @@ class App extends Options
                 this._delegate.tabSelected(this,t);
                 this.navigator = null;
             }
+            */
         }
     }
 
-    get navigator()
-    {
-        return(this._navigator);
-    }
-
+    /*
     set navigator(value)
     {
-        if (value == null)
+        var navigator = (typeof(value) == "string") ? this.getNavigator(value) : value;
+
+        if (navigator == null)
         {
             this.navigation = "";
         }
-        else if (this._navigators.hasOwnProperty(value))
+        else
         {
-            this._navigator = this._navigators[value];
+            this._navigator = navigator;
             this.title = this._navigator.getOpt("text",this._navigator.getOpt("name",""));
             this._navigator.display();
+        }
+    }
+    */
+
+    show(navigator,item,tab)
+    {
+        var t = (tab != null) ? this.getTab(tab) : this;
+        this.tab = t.name;
+        var nav = t.getNavigator(navigator);
+        if (nav != null)
+        {
+            nav.current = item;
         }
     }
 

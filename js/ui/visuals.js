@@ -374,7 +374,10 @@ class Visuals extends Options
 
     closed(connection)
     {
-        this.clear(connection);
+        if (this.getOpt("clear_on_close",true))
+        {
+            this.clear(connection);
+        }
     }
 
     clear(connection)

@@ -18,6 +18,7 @@ textarea
 {
     font-family:Papyrus;
     font-family:Arial, Helvetica, sans-serif;
+    font-family:SF Mono, Arial, Helvetica, sans-serif;
     font-size:1.1rem;
 }
 
@@ -211,15 +212,18 @@ table.form div.content textarea
 
 div.dialog div.content td
 {
-    /*
-	font-size:1rem;
-    */
 }
 
 table.form td.value,
 table.form td.label
 {
     padding-top:5px;
+    padding:0;
+}
+
+table.form td.value
+{
+    padding-bottom:10px;
 }
 
 table.form td.label
@@ -229,12 +233,6 @@ table.form td.label
     padding-right:20px;
 }
 
-/*
-div.dialog td.value input,
-div.dialog td.value select,
-div.dialog td.value textarea,
-div.dialog td.value label
-*/
 table.form td.value input,
 table.form td.value select,
 table.form td.value textarea,
@@ -243,7 +241,7 @@ table.form td.value label
     width:98%;
     font-weight:regular;
     border:1px solid #c0c0c0;
-    padding:4px;
+    padding:5px;
 }
 
 div.dialog td.value select
@@ -274,6 +272,12 @@ table.form td.value input[type=checkbox]
 {
     width:20px;
     height:20px;
+}
+
+table.form button
+{
+    font-size:1rem;
+    padding:8px;
 }
 
 div.dialog table.buttons
@@ -850,115 +854,146 @@ table.simpletable span.action
 /* End Tables */
 
 /* App */
+
+div.appheader,
+div.appcontent,
+table.app
+{
+    background:#f0f0f0;
+    padding:10px;
+}
+
+div.appheader table.appheader tr.actions td
+{
+    padding-bottom:10px;
+}
+
 div.appheader
 {
-    padding:20px;
-    border-bottom:1px solid #c0c0c0;
+}
+
+div.appheader table.appheader
+{
+}
+
+div.appheader tr.title td
+{
+    font-size:1.5rem;
+}
+
+div.appheader td.navigation
+{
+    font-size:1rem;
 }
 
 div.appcontent
 {
+    overflow:auto;
 }
 
 div.appfooter
 {
-    border-top:1px solid #c0c0c0;
+    border-top:1px solid #d8d8d8;
+    background:#f8f8f8;
 }
 
 div.appfooter td.apptab
 {
+    padding:10px;
     border:0;
-}
-
-div.appfooter td.selected
-{
-    color:blue;
+    text-align:center;
+    font-size:.8rem;
 }
 
 table.app
 {
+    width:96%;
+    width:100%;
+    margin:auto;
+    border:0;
+    color:black;
 }
 
 table.app td
 {
     padding:0;
+    border:0;
+    font-size:1rem;
+    background:white;
 }
 
-table.app tr.banner td
+table.app tr.navigatorTitle td
 {
-    background:#a5d6d9;
-}
-
-table.app tr.header table.header
-{
-    background:#f0f0f0;
-}
-
-table.app tr.header table.header td
-{
-    padding:4px;
-}
-
-table.app tr.header td
-{
-}
-
-table.app tr.header td
-{
+    background:inherit;
+    font-size:1rem;
+    padding-left:10px;
+    color:#909090;
 }
 
 table.app tr.item td
 {
-    border-bottom:1px solid #c0c0c0;
-    padding:0;
-    padding:4px;
+    border-bottom:1px solid #d8d8d8;
+    padding:8px;
     vertical-align:middle;
     cursor:pointer;
 }
 
-table.app tr.item span.material-icons
+table.app tr.first td
+{
+    border-top:1px solid #d8d8d8;
+	border-top-left-radius:12px;
+	border-top-right-radius:12px;
+}
+
+table.app tr.last td
+{
+	border-bottom-left-radius:12px;
+	border-bottom-right-radius:12px;
+}
+
+table.app tr.item td.forward
+{
+    color:#c0c0c0;
+    font-size:1rem;
+    padding-right:40px;
+    text-align:right;
+}
+
+table.app tr.item span
 {
     vertical-align:middle;
-    font-size:2rem;
+}
+
+table.app tr.item span.label
+{
+}
+
+table.app tr.item span.material-icons-outlined
+{
+    font-size:1.5rem;
+    color:#00bfff;
+    padding:0;
+}
+
+table.app tr.item span.material-icons-outlined,
+div.appheader td.navigation,
+div.appfooter td.selected
+{
+    color:#5cacee;
 }
 
 /* End App */
 
-/*
-@media only screen 
-    and (orientation: landscape)
-{
-    body,
-    input,
-    select,
-    textarea,
-    button,
-    table.tabs button
-    {
-        font-family:Arial, Helvetica, sans-serif;
-        font-family:Papyrus;
-        font-size:1.5rem;
-    }
-
-    span.action
-    {
-        font-size:1.5rem;
-    }
-}
-
 @media only screen 
     and (min-device-width: 375px) 
     and (max-device-width: 812px) 
-    and (orientation: portrait)
 {
-    div#banner
+    div.appheader,
+    div.appcontent,
+    table.app
     {
-        display:none;
-    }
-
-    body
-    {
-        margin:0;
+        background:#f0f0f0;
+        padding:20px;
     }
 
     body,
@@ -968,45 +1003,77 @@ table.app tr.item span.material-icons
     button,
     table.tabs button
     {
-        font-family:Arial, Helvetica, sans-serif;
-        font-family:Papyrus;
-        font-size:3rem;
-        font-size:1.5rem;
+        font-family:SF Mono, Arial, Helvetica, sans-serif;
+        font-size:2.5rem;
     }
 
-    span.action
+    table.app tr.item td
     {
         font-size:3rem;
-        font-size:1.5rem;
+        font-size:2.5rem;
+        padding:20px;
+    }
+
+    table.app tr.item td span.material-icons-outlined
+    {
+        font-size:3rem;
+    }
+
+    div.appheader tr.title td
+    {
+        font-size:3rem;
+    }
+
+    div.appheader table.appheader tr.actions td
+    {
+        font-size:3.0rem;
+        font-weight:bold;
+	    padding-bottom:30px;
+    }
+
+    div.appfooter td span.material-icons-outlined
+    {
+        font-size:3.0rem;
+    }
+
+    div.appfooter td
+    {
+        font-size:1.0rem;
+    }
+
+    div.appfooter td.apptab
+    {
+        font-size:2.5rem;
+        padding-bottom:10px;
+    }
+
+    table.app tr.navigatorTitle td
+    {
+        background:inherit;
+        font-size:3rem;
+        padding-left:20px;
+        color:#5cacee;
+    }
+
+    table.app tr.item td.forward
+    {
+        font-size:3rem;
+    }
+
+    div.appfooter td.selected
+    {
+    }
+
+    table.form td.value input,
+    table.form td.value select,
+    table.form td.value div.boolean
+    {
+        padding:10px;
+    }
+
+    table.form button
+    {
+        font-size:2.5rem;
+        padding:8px;
     }
 }
-
-@media only screen 
-    and (min-device-width: 375px) 
-    and (max-device-width: 812px) 
-    and (orientation: landscape)
-{
-    div#banner
-    {
-        display:none;
-    }
-
-    body,
-    input,
-    select,
-    textarea,
-    button,
-    table.tabs button
-    {
-        font-family:Arial, Helvetica, sans-serif;
-        font-family:Papyrus;
-        font-size:2rem;
-        font-size:1.5rem;
-    }
-
-    span.action
-    {
-        font-size:2rem;
-    }
-}
-*/

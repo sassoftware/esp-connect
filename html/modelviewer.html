@@ -82,6 +82,8 @@ init()
         document.getElementById("theme").value = _parms["theme"];
     }
 
+    _parms["clear_on_close"] = false;
+
     _visuals = _esp.createVisuals(_parms);
 
     ["cpu","counts","type","indices","memory"].forEach((s) =>
@@ -452,6 +454,7 @@ gotFileContent()
 function
 loadModel(xml)
 {
+console.log("load model: " + _viewer);
     if (_viewer == null)
     {
         _viewer = _visuals.createModelViewer("viewer",null,_parms);

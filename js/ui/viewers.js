@@ -643,7 +643,7 @@ class ModelViewer extends ViewerBase
         var option;
         var name;
 
-        if (connection.k8s != null)
+        if (connection != null && connection.k8s != null)
         {
             this._project = "*";
 
