@@ -699,7 +699,8 @@ var	_api =
             url += "/eventStreamProcessing/v1/";
 
             message += "<br/><br/> If this is a certificate issue you may need to go ";
-            message += "<a href='" + url + "' target='_blank'>here</a> and accept the certificate.";
+            //message += "<a href='" + url + "' target='_blank'>here</a> and accept the certificate.";
+            message += "<a href='" + url + "'>here</a> and accept the certificate.";
         }
 
         dialogs.message("Connect Failed",message);

@@ -588,6 +588,12 @@ class Chart extends Options
         }
     }
 
+    set container(value)
+    {
+        var container = ((typeof(value) == "string") ? document.getElementById(value) : value);
+        this._container = container;
+    }
+
     getType()
     {
         return("");

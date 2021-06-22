@@ -1445,42 +1445,54 @@ var	_api =
         var	x;
         var	y;
 
-        this._modals.forEach((dialog) => {
+        if (uitools.isMobile())
+        {
+            this._modals.forEach((dialog) => {
+                dialog._div.style.left = bodyLeft + "px";
+                dialog._div.style.top = bodyLeft + "px";
+                dialog._div.style.width = bodyWidth + "px";
+                dialog._div.style.height = bodyHeight + "px";
+            });
+        }
+        else
+        {
+            this._modals.forEach((dialog) => {
 
-            dialog.layout();
+                dialog.layout();
 
-            width = dialog._div.offsetWidth;
-            height = dialog._div.offsetHeight;
+                width = dialog._div.offsetWidth;
+                height = dialog._div.offsetHeight;
 
-            xalign = this._opts.getOpt("xalign","center");
-            yalign = this._opts.getOpt("yalign","center");
+                xalign = this._opts.getOpt("xalign","center");
+                yalign = this._opts.getOpt("yalign","center");
 
-            if (xalign == "left")
-            {
-                dialog._div.style.left = bodyLeft + this._dialogInset + "px";
-            }
-            else if (yalign == "right")
-            {
-                dialog._div.style.left = (bodyLeft + bodyWidth - width - this._dialogInset) + "px";
-            }
-            else
-            {
-                dialog._div.style.left = parseInt((bodyLeft + bodyWidth / 2) - (width / 2)) + "px";
-            }
+                if (xalign == "left")
+                {
+                    dialog._div.style.left = bodyLeft + this._dialogInset + "px";
+                }
+                else if (yalign == "right")
+                {
+                    dialog._div.style.left = (bodyLeft + bodyWidth - width - this._dialogInset) + "px";
+                }
+                else
+                {
+                    dialog._div.style.left = parseInt((bodyLeft + bodyWidth / 2) - (width / 2)) + "px";
+                }
 
-            if (yalign == "top")
-            {
-                dialog._div.style.top = bodyTop + this._dialogInset + "px";
-            }
-            else if (yalign == "bottom")
-            {
-                dialog._div.style.top = (bodyTop + bodyHeight - height - this._dialogInset) + "px";
-            }
-            else
-            {
-                dialog._div.style.top = parseInt(bodyTop + (bodyHeight / 2) - (height / 2)) + "px";
-            }
-        });
+                if (yalign == "top")
+                {
+                    dialog._div.style.top = bodyTop + this._dialogInset + "px";
+                }
+                else if (yalign == "bottom")
+                {
+                    dialog._div.style.top = (bodyTop + bodyHeight - height - this._dialogInset) + "px";
+                }
+                else
+                {
+                    dialog._div.style.top = parseInt(bodyTop + (bodyHeight / 2) - (height / 2)) + "px";
+                }
+            });
+        }
 
         this._cover.style.width = bodyWidth + "px";
         this._cover.style.height = bodyHeight + "px";

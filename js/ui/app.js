@@ -416,6 +416,7 @@ class Tab extends Options
         }
         else if (tools.supports(this._app._delegate,"tabSelected"))
         {
+            this._app.navigation = "&nbsp;";
             this._app._delegate.tabSelected(this._app,this);
             this._app.navigator = null;
         }
@@ -450,12 +451,23 @@ class App extends Tab
 
         this.init(this);
 
+        if (this.hasOpt("container"))
+        {
+            var o = this.getOpt("container");
+            this._container = (typeof(o) == "string") ? document.getElementById(o) : o;
+        }
+        else
+        {
+            this._container = document.body;
+        }
         this._delegate = delegate;
 
         if (tools.supports(this._delegate,"content") == false)
         {
             throw "The delegate must implement the content method";
         }
+
+        this._splash = null;
 
         this._tabs = [];
 
@@ -473,9 +485,7 @@ class App extends Tab
         const   self = this;
         window.addEventListener("resize",function(){self.layout()});
 
-        /*
-        uitools.clearElement(document.body);
-        */
+        uitools.clearElement(this._container);
 
         this._header = document.createElement("div");
         this._header.className = "appheader";
@@ -533,9 +543,6 @@ class App extends Tab
         this._content = document.createElement("div");
         this._content.className = "appcontent";
 
-        document.body.appendChild(this._header);
-        document.body.appendChild(this._content);
-
         this._footer = null;
 
         if (this._tabs.length > 0)
@@ -589,8 +596,6 @@ class App extends Tab
             });
 
             this._footer.appendChild(table);
-
-            document.body.appendChild(this._footer);
         }
 
         this.title = this.getOpt("name","App");
@@ -615,18 +620,22 @@ class App extends Tab
 
     set content(value)
     {
-        var opts = new Options(value);
         uitools.clearElement(this._content);
-        var element = opts.getOpt("element");
-        if (element != null)
+
+        if (value != null)
         {
-            this._content.appendChild(opts.getOpt("element"));
+            var opts = new Options(value);
+            var element = opts.getOpt("element");
+            if (element != null)
+            {
+                this._content.appendChild(opts.getOpt("element"));
+            }
+            else
+            {
+                uitools.clearElement(this._content);
+            }
+            this.title = opts.getOpt("title","");
         }
-        else
-        {
-            uitools.clearElement(this._content);
-        }
-        this.title = opts.getOpt("title","");
         this.layout();
     }
 
@@ -684,8 +693,40 @@ class App extends Tab
     }
     */
 
+    set splash(value)
+    {
+        uitools.clearElement(this._container);
+        this._splash = value;
+        this._splash.style.display = "block";
+        this._container.appendChild(value);
+        this.layout();
+    }
+
+    addComponents()
+    {
+        uitools.clearElement(this._container);
+        this._container.appendChild(this._header);
+        this._container.appendChild(this._content);
+        if (this._footer != null)
+        {
+            this._container.appendChild(this._footer);
+        }
+        this.layout();
+    }
+
     show(navigator,item,tab)
     {
+        if (this._splash != null)
+        {
+            uitools.clearElement(this._content);
+            this._splash = null;
+        }
+
+        if (this._content.firstChild == null)
+        {
+            this.addComponents();
+        }
+
         var t = (tab != null) ? this.getTab(tab) : this;
         this.tab = t.name;
         var nav = t.getNavigator(navigator);
@@ -743,55 +784,87 @@ class App extends Tab
         return(t);
     }
 
+    start()
+    {
+        this._splash = null;
+
+        this.addComponents();
+
+        for (var i = 0; i < this._tabs.length; i++)
+        {
+            if (this._tabs[i].getOpt("start",false))
+            {
+                this.tab = this._tabs[i].name;
+                break;
+            }
+        }
+    }
+
     layout()
     {
-        var margins = uitools.getMargins(document.body);
-        var	bodyMargin = 0;
+        var landscape = false;
 
-        if (margins.hasOwnProperty("left"))
+        if (window.hasOwnProperty("orientation"))
         {
-            bodyMargin = margins.left * 2;
+            landscape = (window.orientation == 90 || window.orientation == -90);
         }
 
-        var	width = document.body.clientWidth - (bodyMargin * 2);
-        var	height = document.body.clientHeight - (bodyMargin * 2);
+        var margins = uitools.getMargins(this._container);
+        var	width = this._container.clientWidth - (margins.left + margins.right);
+        var	height = this._container.clientHeight - (margins.top + margins.bottom);
 
-        var	spacing = 5;
-        var	top = bodyMargin;
-
-        if (this._header != null)
+        if (this._splash != null)
         {
-            var	bannerBorders = uitools.getBorders(this._header,true);
-            this._header.style.left = bodyMargin + "px";
-            this._header.style.top = bodyMargin + "px";
-            this._header.style.width = (width - bannerBorders.hsize - bodyMargin) + "px";
-            top = this._header.offsetTop + this._header.offsetHeight;
+            this._splash.style.left = margins.left + "px";
+            this._splash.style.top = margins.top + "px";
+            this._splash.style.width = width + "px";
+            this._splash.style.height = height + "px";
         }
-
-        var	contentBorders = uitools.getBorders(this._content,true);
-
-        this._content.style.left = bodyMargin + "px";
-        this._content.style.top = top + "px";
-        this._content.style.width = (width - contentBorders.hsize - bodyMargin) + "px";
-
-        var h = height - this._content.offsetTop - contentBorders.vsize;
-
-        if (this._footer != null)
+        else
         {
-            var	tabBorders = uitools.getBorders(this._footer,true);
+            var	top = margins.top;
 
-            this._footer.style.left = bodyMargin + "px";
-            this._footer.style.top = (height - this._footer.offsetHeight) + "px";
-            this._footer.style.width = (width - tabBorders.hsize - bodyMargin) + "px";
+            if (this._header != null)
+            {
+                var	bannerBorders = uitools.getBorders(this._header,true);
+                this._header.style.left = margins.left + "px";
+                this._header.style.top = margins.left + "px";
+                this._header.style.width = (width - bannerBorders.hsize - margins.width) + "px";
+                top = this._header.offsetTop + this._header.offsetHeight;
+            }
 
-            h -= this._footer.offsetHeight;
+            var	contentBorders = uitools.getBorders(this._content,true);
+
+            this._content.style.left = margins.left + "px";
+            this._content.style.top = top + "px";
+            this._content.style.width = (width - contentBorders.hsize - margins.width) + "px";
+
+            var h = height - this._content.offsetTop - contentBorders.vsize;
+
+            if (this._footer != null)
+            {
+                if (landscape)
+                {
+                    this._footer.style.display = "none";
+                }
+                else
+                {
+                    this._footer.style.display = "block";
+                    var	tabBorders = uitools.getBorders(this._footer,true);
+
+                    this._footer.style.left = margins.left + "px";
+                    this._footer.style.top = (height - this._footer.offsetHeight) + "px";
+                    this._footer.style.width = (width - tabBorders.hsize - margins.width) + "px";
+                    h -= this._footer.offsetHeight;
+                }
+            }
+
+            this._content.style.height = h + "px";
+
+            dialogs.placeModals();
+
+            this.size();
         }
-
-        this._content.style.height = h + "px";
-
-        dialogs.placeModals();
-
-        this.size();
     }
 
     size()

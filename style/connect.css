@@ -178,9 +178,6 @@ div.dialog div.title a
 
 div.dialog div.content
 {
-    /*
-	font-size:1.2rem;
-    */
     width:90%;
     margin:auto;
     padding:20px;
@@ -1044,7 +1041,7 @@ div.appfooter td.selected
     div.appfooter td.apptab
     {
         font-size:2.5rem;
-        padding-bottom:10px;
+        padding-bottom:30px;
     }
 
     table.app tr.navigatorTitle td
@@ -1075,5 +1072,115 @@ div.appfooter td.selected
     {
         font-size:2.5rem;
         padding:8px;
+    }
+
+    div.dialog div.status,
+    div.dialog div.title,
+    div.dialog
+    {
+        font-size:4rem;
+    }
+
+    div.dialog td.buttoncontrol button,
+    div.dialog table.buttons button
+    {
+        font-size:4rem;
+    }
+
+}
+
+@media only screen 
+    and (min-device-width: 375px) 
+    and (max-device-width: 812px) 
+    and (orientation: landscape)
+{
+    div.appheader,
+    div.appcontent,
+    table.app
+    {
+        background:#f0f0f0;
+        padding:20px;
+    }
+
+    body,
+    input,
+    select,
+    textarea,
+    button,
+    table.tabs button
+    {
+        font-family:SF Mono, Arial, Helvetica, sans-serif;
+        font-size:1.5rem;
+    }
+
+    table.app tr.item td
+    {
+        font-size:1.5rem;
+        padding:20px;
+    }
+
+    table.app tr.item td span.material-icons-outlined
+    {
+        font-size:2rem;
+    }
+
+    div.appheader tr.title td
+    {
+        font-size:2rem;
+    }
+
+    div.appheader table.appheader tr.actions td
+    {
+        font-size:2.0rem;
+        font-weight:bold;
+	    padding-bottom:10px;
+    }
+
+    div.appfooter td span.material-icons-outlined
+    {
+        font-size:2.0rem;
+    }
+
+    div.appfooter td
+    {
+        font-size:1.0rem;
+    }
+
+    div.appfooter td.apptab
+    {
+        font-size:1.5rem;
+        padding-bottom:20px;
+    }
+
+    table.app tr.navigatorTitle td
+    {
+        background:inherit;
+        font-size:2rem;
+        padding-left:20px;
+        color:#5cacee;
+    }
+
+    table.app tr.item td.forward
+    {
+        font-size:2rem;
+    }
+
+    table.form button
+    {
+        font-size:1.5rem;
+        padding:8px;
+    }
+
+    div.dialog div.status,
+    div.dialog div.title,
+    div.dialog
+    {
+        font-size:2rem;
+    }
+
+    div.dialog td.buttoncontrol button,
+    div.dialog table.buttons button
+    {
+        font-size:2rem;
     }
 }

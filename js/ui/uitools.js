@@ -98,6 +98,9 @@ var _uitools =
             margins.bottom = 0;
         }
 
+        margins.width = margins.left + margins.right;
+        margins.height = margins.top + margins.bottom;
+
         return(margins);
     },
 
