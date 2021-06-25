@@ -5,6 +5,7 @@
 
 import {Options} from "../connect/options.js";
 import {tools} from "../connect/tools.js";
+import {Touches} from "./touches.js";
 
 var _windows = (navigator.platform.toLowerCase().indexOf("win") != -1);
 var _input = null;
@@ -124,6 +125,11 @@ copy()
 function
 over()
 {
+    if (this._chart._mobile)
+    {
+        return;
+    }
+
     this._chart._visuals.hideToolbars();
 
     if (this._chart._datasource != null)
@@ -211,6 +217,7 @@ class Chart extends Options
     {
         super(options);
 
+        this._mobile = visuals.isMobile();
         this._visuals = visuals;
         this._datasource = datasource;
         this._container = container;
@@ -218,8 +225,8 @@ class Chart extends Options
         this._layout = {};
         this._layout["autosize"] = true;
         this._layout["font"] = this._visuals.font;
-        this._layout["xaxis"] = {automargin:true,showline:true};
-        this._layout["yaxis"] = {automargin:true,showline:true};
+        this._layout["xaxis"] = {automargin:true,showline:true,fixedrange:true};
+        this._layout["yaxis"] = {automargin:true,showline:true,fixedrange:true};
         this._keyfilter = null;
         this._parent = null;
         this._children = null;
@@ -586,6 +593,13 @@ class Chart extends Options
         {
             this._header.style.display = "none";
         }
+
+        this._touches = null;
+
+        if (this._mobile)
+        {
+            this._touches = new Touches(this.container,{delegate:this});
+        }
     }
 
     set container(value)
@@ -606,6 +620,24 @@ class Chart extends Options
 
     init(schema)
     {
+    }
+
+    swipeLeft(distance)
+    {
+        if (this._datasource != null)
+        {
+            this._datasource.next();
+            this.info();
+        }
+    }
+
+    swipeRight(distance)
+    {
+        if (this._datasource != null)
+        {
+            this._datasource.prev();
+            this.info();
+        }
     }
 
     getToolbarItem(name)

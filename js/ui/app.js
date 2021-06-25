@@ -2,6 +2,7 @@ import {Options} from "../connect/options.js";
 import {tools} from "../connect/tools.js";
 import {dialogs} from "./dialogs.js";
 import {uitools} from "./uitools.js";
+import {Touches} from "./touches.js";
 
 class NavigatorItem extends Options
 {
@@ -371,6 +372,8 @@ class Tab extends Options
         {
             this._navigator = navigator;
             this._app._navigator = navigator;
+
+            uitools.clearElement(this._app._actions);
         }
     }
 
@@ -449,6 +452,8 @@ class App extends Tab
     {
         super(options);
 
+        this._mobile = uitools.isMobile();
+
         this.init(this);
 
         if (this.hasOpt("container"))
@@ -505,11 +510,15 @@ class App extends Tab
         this._navigation = document.createElement("td");
         this._navigation.className = "navigation";
         this._navigation.style.cursor = "pointer";
+        this._navigation.style.width = "10%";
+        this._navigation.style.textAlign = "left";
         this._navigation._app = this;
 
         this._navigation.onclick = function(e) {
-            var td = e.srcElement;
-            var app = td._app;
+            var element = e.srcElement;
+            var app = element._app;
+
+            e.cancelBubble = true;
 
             if (app._navigator != null)
             {
@@ -522,16 +531,19 @@ class App extends Tab
             }
         };
 
-        /*
-        this._navigation.style.position = "absolute";
-        this._title.style.textAlign = "center";
-        */
-
         this.navigation = "&nbsp;";
 
         tr.appendChild(this._navigation);
 
+        this._actions = document.createElement("td");
+        this._actions.className = "actions";
+        this._actions.style.width = "90%";
+        this._actions.style.textAlign = "right";
+        this._actions.style.paddingRight = "20px";
+        tr.appendChild(this._actions);
+
         this._title = document.createElement("td");
+        this._title.colSpan = 2;
         table.appendChild(tr = document.createElement("tr"));
         tr.className = "title";
         tr.appendChild(this._title);
@@ -542,6 +554,18 @@ class App extends Tab
 
         this._content = document.createElement("div");
         this._content.className = "appcontent";
+
+        this._header.onclick = function(e) {
+            if (self.getOpt("show_footer",true))
+            {
+                self.setOpt("show_footer",false);
+            }
+            else
+            {
+                self.setOpt("show_footer",true);
+            }
+            self.layout();
+        };
 
         this._footer = null;
 
@@ -598,6 +622,8 @@ class App extends Tab
             this._footer.appendChild(table);
         }
 
+        this._contentOpts = new Options();
+
         this.title = this.getOpt("name","App");
 
         this.layout();
@@ -613,6 +639,11 @@ class App extends Tab
         this._title.innerHTML = value;
     }
 
+    get contentOpts()
+    {
+        return(this._contentOpts);
+    }
+
     get content()
     {
         return(this._content);
@@ -624,18 +655,65 @@ class App extends Tab
 
         if (value != null)
         {
-            var opts = new Options(value);
-            var element = opts.getOpt("element");
+            this._contentOpts = new Options(value);
+            var element = this._contentOpts.getOpt("element");
             if (element != null)
             {
-                this._content.appendChild(opts.getOpt("element"));
+                this._content.appendChild(this._contentOpts.getOpt("element"));
             }
             else
             {
                 uitools.clearElement(this._content);
             }
-            this.title = opts.getOpt("title","");
+
+            this.title = this._contentOpts.getOpt("title","");
+
+            uitools.clearElement(this._actions);
+
+            if (this._contentOpts.hasOpt("actions"))
+            {
+                var actions = this._contentOpts.getOpt("actions");
+                var count = 0;
+                var span;
+                actions.forEach((action) => {
+                    var opts = new Options(action);
+
+                    if (count > 0)
+                    {
+                        span = document.createElement("span");
+                        span.innerHTML = "&nbsp;&nbsp;&nbsp;";
+                        this._actions.appendChild(span);
+                    }
+
+                    span = document.createElement("span");
+                    span.className = this.getOpt("icons","material-icons");
+                    span.style.cursor = "pointer";
+                    span.innerHTML = opts.getOpt("icon");
+                    span._app = this;
+                    span._opts = opts;
+                    this._actions.appendChild(span);
+
+                    span.onclick = function(e) {
+                        var span = e.srcElement;
+                        var app = span._app;
+
+                        e.cancelBubble = true;
+
+                        if (tools.supports(app._delegate,"action"))
+                        {
+                            app._delegate.action(app,span._opts);
+                        }
+                    };
+
+                    count++;
+                });
+            }
         }
+        else
+        {
+            this._contentOpts = new Options();
+        }
+
         this.layout();
     }
 
@@ -675,24 +753,6 @@ class App extends Tab
         }
     }
 
-    /*
-    set navigator(value)
-    {
-        var navigator = (typeof(value) == "string") ? this.getNavigator(value) : value;
-
-        if (navigator == null)
-        {
-            this.navigation = "";
-        }
-        else
-        {
-            this._navigator = navigator;
-            this.title = this._navigator.getOpt("text",this._navigator.getOpt("name",""));
-            this._navigator.display();
-        }
-    }
-    */
-
     set splash(value)
     {
         uitools.clearElement(this._container);
@@ -700,6 +760,11 @@ class App extends Tab
         this._splash.style.display = "block";
         this._container.appendChild(value);
         this.layout();
+    }
+
+    get isMobile()
+    {
+        return(this._mobile);
     }
 
     addComponents()
@@ -812,6 +877,7 @@ class App extends Tab
         var margins = uitools.getMargins(this._container);
         var	width = this._container.clientWidth - (margins.left + margins.right);
         var	height = this._container.clientHeight - (margins.top + margins.bottom);
+        var showFooter = this.getOpt("show_footer",true);
 
         if (this._splash != null)
         {
@@ -843,7 +909,7 @@ class App extends Tab
 
             if (this._footer != null)
             {
-                if (landscape)
+                if (showFooter == false)
                 {
                     this._footer.style.display = "none";
                 }

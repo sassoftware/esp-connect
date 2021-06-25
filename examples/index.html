@@ -98,7 +98,8 @@ go(example)
     if (s.length > 0)
     {
         url += "?";
-        url += encodeURIComponent(s);
+        //url += encodeURIComponent(s);
+        url += s;
     }
 
     s = new URL(url,document.URL).toString();

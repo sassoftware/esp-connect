@@ -191,6 +191,32 @@ class ModelViewer extends ViewerBase
         return("modelviewer");
     }
 
+    edit()
+    {
+        const   self = this;
+
+        var o = {
+            ok:function(dialog) {
+                var values = dialog.getValues();
+                for (var x in values)
+                {
+                    self.setOpt(x,values[x]);
+                }
+                self.draw();
+                return(true);
+            }
+        }
+
+        var form = [];
+        form.push({name:"cpu",label:"Show CPU",type:"boolean",value:this.getOpt("cpu",false)});
+        form.push({name:"counts",label:"Show Counts",type:"boolean",value:this.getOpt("counts",false)});
+        form.push({name:"type",label:"Show Type",type:"boolean",value:this.getOpt("type",false)});
+        form.push({name:"index",label:"Show Indices",type:"boolean",value:this.getOpt("index",false)});
+        form.push({name:"memory",label:"Show Memory",type:"boolean",value:this.getOpt("memory",false)});
+
+        dialogs.showDialog({title:"Model Viewer Properties",delegate:o,form:form,label_width:"50px"});
+    }
+
     loadK8S(server)
     {
         const   self = this;
@@ -343,6 +369,7 @@ class ModelViewer extends ViewerBase
         }
 
         this._memoryTable = document.createElement("table");
+        this._memoryTable.className = "memory";
         this._memoryTable.appendChild(tr = document.createElement("tr"));
 
         /*
@@ -482,7 +509,8 @@ class ModelViewer extends ViewerBase
             },
             interaction: {
                 dragNodes: false,
-                zoomView: false
+                zoomView: false,
+                zoomView: true
             },
             width:"100%",
             height:"100%",

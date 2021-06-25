@@ -5,6 +5,7 @@
 
 import {Options} from "../connect/options.js";
 import {tools} from "../connect/tools.js";
+import {uitools} from "./uitools.js";
 import {Chart} from "./chart.js";
 import {Viewers} from "./viewers.js";
 import {Maps} from "./maps.js";
@@ -19,6 +20,7 @@ class Visuals extends Options
     constructor(api,options)
     {
         super(options);
+        this._mobile = uitools.isMobile();
         this._api = api;
         this._viewers = new Viewers();
         this._maps = new Maps();
@@ -75,7 +77,7 @@ class Visuals extends Options
         });
 
         this._titleStyle = new Options({fontsize:"14pt",font_family:this.fontFamily});
-        this._font = this.getOpt("font",{family:this.fontFamily,size:14});
+        this._font = this.getOpt("font",{family:this.fontFamily,size:(this._mobile ? 30 : 14)});
         this._titleFont = this.getOpt("title_font",{family:this.fontFamily,size:18});
         this._selectedFont = this.getOpt("selected_font","font-family:" + this.fontFamily + ";font-size:1.2rem;font-weight:normal;font-style:italic");
 
@@ -130,6 +132,11 @@ class Visuals extends Options
         });
 
         this._types = ["bar","line","timeseries","pie","radar","polar","bubble","gauge","compass","map","table","imageviewer"];
+    }
+
+    isMobile()
+    {
+        return(this._mobile);
     }
 
     isChartType(type)
@@ -957,8 +964,15 @@ class BarChart extends Chart
     {
         if (this.isInitialized == false)
         {
-            Plotly.newPlot(this._id,[],this._layout,this._defaults);
-            this.isInitialized = true;
+            try
+            {
+                Plotly.newPlot(this._id,[],this._layout,this._defaults);
+                this.isInitialized = true;
+            }
+            catch(e)
+            {
+                return;
+            }
         }
 
         var xValues = this.getValues("x");

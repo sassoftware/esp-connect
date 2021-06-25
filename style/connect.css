@@ -1021,7 +1021,8 @@ div.appfooter td.selected
         font-size:3rem;
     }
 
-    div.appheader table.appheader tr.actions td
+    div.appheader table.appheader tr.actions td,
+    div.appheader table.appheader tr.actions span
     {
         font-size:3.0rem;
         font-weight:bold;
@@ -1086,7 +1087,6 @@ div.appfooter td.selected
     {
         font-size:4rem;
     }
-
 }
 
 @media only screen 
