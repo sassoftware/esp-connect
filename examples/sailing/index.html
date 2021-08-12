@@ -73,7 +73,7 @@ connect(server)
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.showStatus("Loading project...");
     var url = new URL("model.xml",document.URL).toString();
-    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url,options:{overwrite:true,force:_esp.getParm("force",false)}}});
+    _esp.connect(server,{ready:ready,connectionError:error},{model:{name:_project,url:url,options:{overwrite:true,force:_esp.getParm("force",false)}}});
     _esp.handleLayout();
 }
 
@@ -146,9 +146,9 @@ ready(connection)
 }
 
 function
-error(conn,message)
+error(conn)
 {
-    console.log(message);
+    console.log("connection error");
 }
 
 function

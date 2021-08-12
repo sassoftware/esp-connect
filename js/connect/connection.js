@@ -53,7 +53,6 @@ if (tools.isNode)
 
         error:function(e)
         {
-console.log("IN ERROR 2");
             var	conn = this._conn;
 
             if (conn != null)
@@ -773,7 +772,6 @@ class DelegateConnection extends Connection
 
 	error()
 	{
-console.log("IN ERROR");
         if (tools.supports(this._delegate,"error"))
         {
             this._delegate.error();

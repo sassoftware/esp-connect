@@ -285,6 +285,12 @@ class ServerConnection extends Connection
                     throw new Error(msg);
                 }
             }
+            else if (this.isSecure)
+            {
+                var url = this.httpurlBase;
+                url += "/eventStreamProcessing/v1/server";
+                window.open(url);
+            }
         }
 
         this._delegates.forEach((d) => {
@@ -294,7 +300,7 @@ class ServerConnection extends Connection
             }
         });
 
-        var reconnect = this.getOpt("reconnect",1);
+        var reconnect = this.getOpt("reconnect",5);
 
         if (reconnect > 0)
         {

@@ -700,7 +700,94 @@ class Visuals extends Options
         image._context.textAlign = "center";
         image._context.textBaseline = "middle";
 
-        if (data.hasOwnProperty("_nObjects_"))
+        var coordsType = data.hasOwnProperty("coords_type") ? data["coords_type"] : "";
+
+        if (coordsType == "coco")
+        {
+            var nobjects = parseInt(data["n_objects"]);
+
+            if (nobjects == 0)
+            {
+                return;
+            }
+
+            var minscore = opts.getOpt("min_score",0);
+            var rects = opts.getOpt("rects",true);
+            var coords = data["coords"];
+            var scores = data["scores"];
+            var labels = data["labels"].split(",");
+            var index = 0;
+            var score;
+            var text;
+            var x1;
+            var y1;
+            var x2;
+            var y2;
+
+            for (var i = 0; i < nobjects; i++)
+            {
+                text = labels[i];
+
+                text = text.trim();
+
+                if (searchtext != null)
+                {
+                    for (var j = 0; j < searchtext.length; j++)
+                    {
+                        if (text.indexOf(searchtext[j]) != -1)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (j == searchtext.length)
+                    {
+                        continue;
+                    }
+                }
+
+                score = scores[i] * 100;
+
+                if (minscore > 0 && score < minscore)
+                {
+                    continue;
+                }
+
+                text += " " + parseInt(scores[i] * 100) + "%";
+
+                x1 = coords[index++];
+                y1 = coords[index++];
+                x2 = coords[index++];
+                y2 = coords[index++];
+
+                var border = rects ? lineWidth : 0;
+
+                x1 = parseInt(image.offsetWidth * x1);
+                y1 = parseInt(image.offsetHeight * y1);
+                x2 = parseInt(image.offsetWidth * x2);
+                y2 = parseInt(image.offsetHeight * y2);
+
+                if (rects)
+                {
+                    image._context.beginPath();
+                    image._context.moveTo(x1,y1);
+                    image._context.lineTo(x2,y1);
+                    image._context.lineTo(x2,y2);
+                    image._context.lineTo(x1,y2);
+                    image._context.lineTo(x1,y1);
+                    image._context.closePath();
+                    image._context.stroke();
+                }
+
+                image._context.fillText(text,x1,y1);
+
+                if (delegate != null)
+                {
+                    delegate.objectFound({name:text,x:x1,y:y1,width:x2 - x1,height:y2 - y1});
+                }
+            }
+        }
+        else if (data.hasOwnProperty("_nObjects_"))
         {
             var rects = opts.getOpt("rects",true);
             var nobjects = parseInt(data["_nObjects_"]);

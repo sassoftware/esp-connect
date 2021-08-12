@@ -46,7 +46,7 @@ var _xml = "<project threads='4' pubsub='auto'>\
                         <schema-string>id*:string,element:string,x:int32,y:int32</schema-string>\
                      </window-source>\
                      <window-copy name='copy'>\
-                        <retention type='bytime_sliding'>@retention@</retention>\
+                        <retention type='bytime_sliding'>30 seconds</retention>\
                      </window-copy>\
                      <window-aggregate name='clicksAggr'>\
                         <schema-string>element*:string,count:int32</schema-string>\
