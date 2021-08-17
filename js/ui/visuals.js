@@ -702,305 +702,312 @@ class Visuals extends Options
 
         var coordsType = data.hasOwnProperty("coords_type") ? data["coords_type"] : "";
 
-        if (coordsType == "coco")
+        if (tools.supports(delegate,"handler"))
         {
-            var nobjects = parseInt(data["n_objects"]);
-
-            if (nobjects == 0)
+            delegate.handler(data,image,image._context,opts);
+        }
+        else
+        {
+            if (coordsType == "coco")
             {
-                return;
-            }
+                var nobjects = parseInt(data["n_objects"]);
 
-            var minscore = opts.getOpt("min_score",0);
-            var rects = opts.getOpt("rects",true);
-            var coords = data["coords"];
-            var scores = data["scores"];
-            var labels = data["labels"].split(",");
-            var index = 0;
-            var score;
-            var text;
-            var x1;
-            var y1;
-            var x2;
-            var y2;
-
-            for (var i = 0; i < nobjects; i++)
-            {
-                text = labels[i];
-
-                text = text.trim();
-
-                if (searchtext != null)
+                if (nobjects == 0)
                 {
-                    for (var j = 0; j < searchtext.length; j++)
+                    return;
+                }
+
+                var minscore = opts.getOpt("min_score",0);
+                var rects = opts.getOpt("rects",true);
+                var coords = data["coords"];
+                var scores = data["scores"];
+                var labels = data["labels"].split(",");
+                var index = 0;
+                var score;
+                var text;
+                var x1;
+                var y1;
+                var x2;
+                var y2;
+
+                for (var i = 0; i < nobjects; i++)
+                {
+                    text = labels[i];
+
+                    text = text.trim();
+
+                    if (searchtext != null)
                     {
-                        if (text.indexOf(searchtext[j]) != -1)
+                        for (var j = 0; j < searchtext.length; j++)
                         {
-                            break;
+                            if (text.indexOf(searchtext[j]) != -1)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (j == searchtext.length)
+                        {
+                            continue;
                         }
                     }
 
-                    if (j == searchtext.length)
+                    score = scores[i] * 100;
+
+                    if (minscore > 0 && score < minscore)
                     {
                         continue;
                     }
+
+                    text += " " + parseInt(scores[i] * 100) + "%";
+
+                    x1 = coords[index++];
+                    y1 = coords[index++];
+                    x2 = coords[index++];
+                    y2 = coords[index++];
+
+                    var border = rects ? lineWidth : 0;
+
+                    x1 = parseInt(image.offsetWidth * x1);
+                    y1 = parseInt(image.offsetHeight * y1);
+                    x2 = parseInt(image.offsetWidth * x2);
+                    y2 = parseInt(image.offsetHeight * y2);
+
+                    if (rects)
+                    {
+                        image._context.beginPath();
+                        image._context.moveTo(x1,y1);
+                        image._context.lineTo(x2,y1);
+                        image._context.lineTo(x2,y2);
+                        image._context.lineTo(x1,y2);
+                        image._context.lineTo(x1,y1);
+                        image._context.closePath();
+                        image._context.stroke();
+                    }
+
+                    image._context.fillText(text,x1 + ((x2 - x1) / 2),y1 + ((y2 - y1) / 2));
+
+                    if (tools.supports(delegate,"objectFound"))
+                    {
+                        delegate.objectFound({name:text,x:x1,y:y1,width:x2 - x1,height:y2 - y1});
+                    }
+                }
+            }
+            else if (data.hasOwnProperty("_nObjects_"))
+            {
+                var rects = opts.getOpt("rects",true);
+                var nobjects = parseInt(data["_nObjects_"]);
+                var text;
+                var x;
+                var y;
+                var w;
+                var h;
+
+                for (var i = 0; i < nobjects; i++)
+                {
+                    s = "_Object" + i + "_";
+
+                    if ((text = data[s]) == null)
+                    {
+                        continue;
+                    }
+
+                    text = text.trim();
+
+                    if (searchtext != null)
+                    {
+                        for (var j = 0; j < searchtext.length; j++)
+                        {
+                            if (text.indexOf(searchtext[j]) != -1)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (j == searchtext.length)
+                        {
+                            continue;
+                        }
+                    }
+
+                    s = "_Object" + i + "_x";
+                    x = parseInt(image.offsetWidth * parseFloat(data[s]));
+                    s = "_Object" + i + "_y";
+                    y = parseInt(image.offsetHeight * parseFloat(data[s]));
+                    s = "_Object" + i + "_width";
+                    w = parseInt(image.offsetWidth * parseFloat(data[s])) - (lineWidth * 2);
+                    s = "_Object" + i + "_height";
+                    h = parseInt(image.offsetHeight * parseFloat(data[s])) - (lineWidth * 2);
+
+                    x = x - (w / 2);
+                    y = y - (h / 2);
+
+                    if (rects)
+                    {
+                        image._context.strokeRect(x,y,w,h);
+                    }
+
+                    image._context.fillText(text,x + (w / 2),y + (h / 2));
+
+                    if (tools.supports(delegate,"objectFound"))
+                    {
+                        delegate.objectFound({name:text,x:x,y:y,width:w,height:h});
+                    }
+                }
+            }
+            else if (data.hasOwnProperty("n_objects"))
+            {
+                var nobjects = parseInt(data["n_objects"]);
+
+                if (nobjects == 0)
+                {
+                    return;
                 }
 
-                score = scores[i] * 100;
+                var minscore = opts.getOpt("min_score",0);
+                var rects = opts.getOpt("rects",true);
+                var coords = data["coords"];
+                var scores = data["scores"];
+                var labels = data["labels"].split(",");
+                var index = 0;
+                var score;
+                var text;
+                var x;
+                var y;
+                var w;
+                var h;
 
-                if (minscore > 0 && score < minscore)
+                for (var i = 0; i < nobjects; i++)
                 {
-                    continue;
+                    text = labels[i];
+
+                    text = text.trim();
+
+                    if (searchtext != null)
+                    {
+                        for (var j = 0; j < searchtext.length; j++)
+                        {
+                            if (text.indexOf(searchtext[j]) != -1)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (j == searchtext.length)
+                        {
+                            continue;
+                        }
+                    }
+
+                    score = scores[i] * 100;
+
+                    if (minscore > 0 && score < minscore)
+                    {
+                        continue;
+                    }
+
+                    text += " " + parseInt(scores[i] * 100) + "%";
+
+                    x = coords[index++];
+                    y = coords[index++];
+                    w = coords[index++];
+                    h = coords[index++];
+
+                    var border = rects ? lineWidth : 0;
+
+                    x = parseInt(image.offsetWidth * x);
+                    y = parseInt(image.offsetHeight * y);
+                    w = parseInt(image.offsetWidth * w);
+                    h = parseInt(image.offsetHeight * h);
+
+                    if (rects)
+                    {
+                        image._context.strokeRect(x - (w / 2),y - (h / 2),w,h);
+                    }
+
+                    image._context.fillText(text,x,y);
+
+                    if (tools.supports(delegate,"objectFound"))
+                    {
+                        delegate.objectFound({name:text,x:x,y:y,width:w,height:h});
+                    }
                 }
+            }
+            else if (data.hasOwnProperty("objCount"))
+            {
+                var ratioX = image.width / image.naturalWidth;
+                var ratioY = image.height / image.naturalHeight;
+                var nobjects = parseInt(data["objCount"]);
+                var text;
+                var x;
+                var y;
+                var s;
 
-                text += " " + parseInt(scores[i] * 100) + "%";
-
-                x1 = coords[index++];
-                y1 = coords[index++];
-                x2 = coords[index++];
-                y2 = coords[index++];
-
-                var border = rects ? lineWidth : 0;
-
-                x1 = parseInt(image.offsetWidth * x1);
-                y1 = parseInt(image.offsetHeight * y1);
-                x2 = parseInt(image.offsetWidth * x2);
-                y2 = parseInt(image.offsetHeight * y2);
-
-                if (rects)
+                for (var i = 0; i < nobjects; i++)
                 {
+                    s = "Object" + i + "_label";
+                    text = data[s];
+                    text = text.trim();
+                    s = "Object" + i + "_center_x";
+                    x = parseInt(parseFloat(data[s]) * ratioX);
+                    s = "Object" + i + "_center_y";
+                    y = parseInt(parseFloat(data[s]) * ratioY);
+                    image._context.fillText(text,x,y);
+                }
+            }
+
+            if (data.hasOwnProperty("lines_coords"))
+            {
+                var color = image._opts.getOpt("line_color","white");
+                image._context.strokeStyle = color;
+
+                var coords = data["lines_coords"];
+                var x1;
+                var y1;
+                var x2;
+                var y2;
+
+                for (var i = 0; i < coords.length; i += 4)
+                {
+                    /*
+                    x1 = coords[i] * scale;
+                    y1 = coords[i + 1] * scale;
+                    x2 = coords[i + 2] * scale;
+                    y2 = coords[i + 3] * scale;
+                    */
+
+                    x1 = coords[i] * image.offsetWidth;
+                    y1 = coords[i + 1] * image.offsetHeight;
+                    x2 = coords[i + 2] * image.offsetWidth;
+                    y2 = coords[i + 3] * image.offsetHeight;
+
                     image._context.beginPath();
                     image._context.moveTo(x1,y1);
-                    image._context.lineTo(x2,y1);
                     image._context.lineTo(x2,y2);
-                    image._context.lineTo(x1,y2);
-                    image._context.lineTo(x1,y1);
                     image._context.closePath();
                     image._context.stroke();
                 }
-
-                image._context.fillText(text,x1,y1);
-
-                if (delegate != null)
-                {
-                    delegate.objectFound({name:text,x:x1,y:y1,width:x2 - x1,height:y2 - y1});
-                }
-            }
-        }
-        else if (data.hasOwnProperty("_nObjects_"))
-        {
-            var rects = opts.getOpt("rects",true);
-            var nobjects = parseInt(data["_nObjects_"]);
-            var text;
-            var x;
-            var y;
-            var w;
-            var h;
-
-            for (var i = 0; i < nobjects; i++)
-            {
-                s = "_Object" + i + "_";
-
-                if ((text = data[s]) == null)
-                {
-                    continue;
-                }
-
-                text = text.trim();
-
-                if (searchtext != null)
-                {
-                    for (var j = 0; j < searchtext.length; j++)
-                    {
-                        if (text.indexOf(searchtext[j]) != -1)
-                        {
-                            break;
-                        }
-                    }
-
-                    if (j == searchtext.length)
-                    {
-                        continue;
-                    }
-                }
-
-                s = "_Object" + i + "_x";
-                x = parseInt(image.offsetWidth * parseFloat(data[s]));
-                s = "_Object" + i + "_y";
-                y = parseInt(image.offsetHeight * parseFloat(data[s]));
-                s = "_Object" + i + "_width";
-                w = parseInt(image.offsetWidth * parseFloat(data[s])) - (lineWidth * 2);
-                s = "_Object" + i + "_height";
-                h = parseInt(image.offsetHeight * parseFloat(data[s])) - (lineWidth * 2);
-
-                x = x - (w / 2);
-                y = y - (h / 2);
-
-                if (rects)
-                {
-                    image._context.strokeRect(x,y,w,h);
-                }
-
-                image._context.fillText(text,x + (w / 2),y + (h / 2));
-
-                if (delegate != null)
-                {
-                    delegate.objectFound({name:text,x:x,y:y,width:w,height:h});
-                }
-            }
-        }
-        else if (data.hasOwnProperty("n_objects"))
-        {
-            var nobjects = parseInt(data["n_objects"]);
-
-            if (nobjects == 0)
-            {
-                return;
             }
 
-            var minscore = opts.getOpt("min_score",0);
-            var rects = opts.getOpt("rects",true);
-            var coords = data["coords"];
-            var scores = data["scores"];
-            var labels = data["labels"].split(",");
-            var index = 0;
-            var score;
-            var text;
-            var x;
-            var y;
-            var w;
-            var h;
-
-            for (var i = 0; i < nobjects; i++)
+            if (data.hasOwnProperty("points_coords"))
             {
-                text = labels[i];
+                var color = image._opts.getOpt("point_color","white");
+                image._context.strokeStyle = color;
 
-                text = text.trim();
+                var radius = image._opts.getOpt("radius",5);
+                var coords = data["points_coords"];
+                var x;
+                var y;
 
-                if (searchtext != null)
+                for (var i = 0; i < coords.length; i += 2)
                 {
-                    for (var j = 0; j < searchtext.length; j++)
-                    {
-                        if (text.indexOf(searchtext[j]) != -1)
-                        {
-                            break;
-                        }
-                    }
-
-                    if (j == searchtext.length)
-                    {
-                        continue;
-                    }
+                    x = coords[i] * image.offsetWidth;
+                    y = coords[i + 1] * image.offsetHeight;
+                    image._context.beginPath();
+                    image._context.ellipse(x,y,radius,radius,Math.PI / 4,0,2 * Math.PI);
+                    image._context.closePath();
+                    image._context.stroke();
                 }
-
-                score = scores[i] * 100;
-
-                if (minscore > 0 && score < minscore)
-                {
-                    continue;
-                }
-
-                text += " " + parseInt(scores[i] * 100) + "%";
-
-                x = coords[index++];
-                y = coords[index++];
-                w = coords[index++];
-                h = coords[index++];
-
-                var border = rects ? lineWidth : 0;
-
-                x = parseInt(image.offsetWidth * x);
-                y = parseInt(image.offsetHeight * y);
-                w = parseInt(image.offsetWidth * w);
-                h = parseInt(image.offsetHeight * h);
-
-                if (rects)
-                {
-                    image._context.strokeRect(x - (w / 2),y - (h / 2),w,h);
-                }
-
-                image._context.fillText(text,x,y);
-
-                if (delegate != null)
-                {
-                    delegate.objectFound({name:text,x:x,y:y,width:w,height:h});
-                }
-            }
-        }
-        else if (data.hasOwnProperty("objCount"))
-        {
-            var ratioX = image.width / image.naturalWidth;
-            var ratioY = image.height / image.naturalHeight;
-            var nobjects = parseInt(data["objCount"]);
-            var text;
-            var x;
-            var y;
-            var s;
-
-            for (var i = 0; i < nobjects; i++)
-            {
-                s = "Object" + i + "_label";
-                text = data[s];
-                text = text.trim();
-                s = "Object" + i + "_center_x";
-                x = parseInt(parseFloat(data[s]) * ratioX);
-                s = "Object" + i + "_center_y";
-                y = parseInt(parseFloat(data[s]) * ratioY);
-                image._context.fillText(text,x,y);
-            }
-        }
-
-        if (data.hasOwnProperty("lines_coords"))
-        {
-            var color = image._opts.getOpt("line_color","white");
-            image._context.strokeStyle = color;
-
-            var coords = data["lines_coords"];
-            var x1;
-            var y1;
-            var x2;
-            var y2;
-
-            for (var i = 0; i < coords.length; i += 4)
-            {
-                /*
-                x1 = coords[i] * scale;
-                y1 = coords[i + 1] * scale;
-                x2 = coords[i + 2] * scale;
-                y2 = coords[i + 3] * scale;
-                */
-
-                x1 = coords[i] * image.offsetWidth;
-                y1 = coords[i + 1] * image.offsetHeight;
-                x2 = coords[i + 2] * image.offsetWidth;
-                y2 = coords[i + 3] * image.offsetHeight;
-
-                image._context.beginPath();
-                image._context.moveTo(x1,y1);
-                image._context.lineTo(x2,y2);
-                image._context.closePath();
-                image._context.stroke();
-            }
-        }
-
-        if (data.hasOwnProperty("points_coords"))
-        {
-            var color = image._opts.getOpt("point_color","white");
-            image._context.strokeStyle = color;
-
-            var radius = image._opts.getOpt("radius",10);
-            var coords = data["points_coords"];
-            var x;
-            var y;
-
-            for (var i = 0; i < coords.length; i += 2)
-            {
-                x = coords[i] * image.offsetWidth;
-                y = coords[i + 1] * image.offsetHeight;
-                image._context.beginPath();
-                image._context.ellipse(x,y,radius,radius,Math.PI / 4,0,2 * Math.PI);
-                image._context.closePath();
-                image._context.stroke();
             }
         }
     }
@@ -3302,10 +3309,6 @@ class ImageViewer extends Chart
                 return(this._objectDelegate);
             },
             set(value) {
-                if (tools.supports(value,"objectFound") == false)
-                {
-                    throw "The delegate must implement the objectFound methods";
-                }
                 this._objectDelegate = value;
             }
         });
