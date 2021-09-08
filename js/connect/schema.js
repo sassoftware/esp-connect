@@ -210,7 +210,19 @@ class Schema extends Options
         var type;
         var o;
 
-        json.fields.forEach((f) =>
+        var fields = json.fields;
+
+        if (fields == null || fields.length == 0)
+        {
+            fields = json.field_array;
+        }
+
+        if (fields == null)
+        {
+            fields = [];
+        }
+
+        fields.forEach((f) =>
         {
             o = new Options();
 

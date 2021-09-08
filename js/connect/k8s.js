@@ -491,8 +491,9 @@ class K8S extends Options
             var request = ajax.create(url);
             request.get().then(
                 function(result) {
-                    if (result.status == 404)
+                    if (result.status >= 400)
                     {
+console.log("rejecting");
                         reject(result);
                     }
                     else

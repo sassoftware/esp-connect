@@ -697,7 +697,7 @@ else
                 }
             );
         }
-        else if (opts.getOpt("model",false))
+        else if (opts.getOpt("espmodel",false))
         {
             connection.getModel(opts.getOpts()).then(
                 function(result){
