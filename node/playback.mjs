@@ -16,10 +16,10 @@ if (server == null || logfile == null)
 const   start = opts.getOpt("start",-1);
 const   end = opts.getOpt("end",-1);
 const   restResponses = opts.getOpt("rest-responses",false);
-const   restErrors = opts.getOpt("rest-errors",false);
 const   wsResponses = opts.getOpt("ws-responses",false);
 const   connectordir = opts.getOpt("connector-dir");
 const   debug = opts.getOpt("debug",false);
+const   verbose = opts.getOpt("verbose",false);
 
 class Playback
 {
@@ -52,6 +52,8 @@ class Playback
 
         this._wsthreads = {};
         this._websockets = {};
+
+        this._done = false;
     }
 
     run()
@@ -97,8 +99,16 @@ class Playback
         var line;
         var o;
 
-        while ((line = this.getline()) != null)
+        for (;;)
         {
+            if ((line = this.getline()) == null)
+            {
+                console.log("\ndone reading log...\n");
+                this._done = true;
+                //setTimeout(function(){process.exit()},5000);
+                break;
+            }
+
             try
             {
                 o = JSON.parse(line);
@@ -133,6 +143,11 @@ class Playback
                     if (maxwait > 0 && diff > maxwait)
                     {
                         diff = maxwait;
+                    }
+
+                    if (verbose)
+                    {
+                        console.log("waiting for " + diff + " milliseconds...");
                     }
 
                     setTimeout(function(){self.run()},diff);
@@ -466,6 +481,7 @@ class LogEntry
         {
             var request = esp.getAjax().create(this.url);
             var method = this._info.getOpt("method","get").toLowerCase();
+            var self = this;
 
             if (method == "get")
             {
@@ -477,7 +493,12 @@ class LogEntry
                             process.exit(0);
                         }
 
-                        if (response.status >= 400 && restErrors)
+                        if (restResponses)
+                        {
+                            console.log("GET " + self.url + " (" + self._linenumber + ")");
+                        }
+
+                        if (response.status >= 400 && restResponses)
                         {
                             console.log(response.status + ": " + response.text);
                         }
@@ -487,6 +508,10 @@ class LogEntry
                         }
                     },
                     function(error) {
+                        if (restResponses)
+                        {
+                            console.log("GET " + self.url + " (" + self._linenumber + ")");
+                        }
                         console.log("got error: " + error);
                         //process.exit(0);
                     }
@@ -498,31 +523,36 @@ class LogEntry
                 {
                     if (connectordir != null)
                     {
+                        var isproject = false;
                         var url = this._opts.getOpt("url");
                         var a = url.pathname.split("/");
 
-                        if (a.length > 2)
+                        for (var i = 0; i < a.length; i++)
                         {
-                            var s = a[a.length - 2];
-
-                            if (s == "projects")
+                            if (a[i] == "projects")
                             {
-                                var xp = esp.getXPath();
-                                var xml = xp.createXml(this._data);
-                                var files = xp.getNodes("//property[@name='fsname']",xml);
-                                var path;
-                                var base;
-
-                                files.forEach((file) => {
-                                    path = xp.nodeText(file);
-                                    a = path.split("/");
-                                    base = a[a.length - 1];
-                                    path = connectordir + "/" + base;
-                                    xp.setNodeText(file,path);
-                                });
-
-                                this._data = xp.xmlString(xml);
+                                isproject = true;
+                                break;
                             }
+                        }
+
+                        if (isproject)
+                        {
+                            var xp = esp.getXPath();
+                            var xml = xp.createXml(this._data);
+                            var files = xp.getNodes("//property[@name='fsname']",xml);
+                            var path;
+                            var base;
+
+                            files.forEach((file) => {
+                                path = xp.nodeText(file);
+                                a = path.split("/");
+                                base = a[a.length - 1];
+                                path = connectordir + "/" + base;
+                                xp.setNodeText(file,path);
+                            });
+
+                            this._data = xp.xmlString(xml);
                         }
                     }
 
@@ -537,7 +567,12 @@ class LogEntry
                             process.exit(0);
                         }
 
-                        if (response.status >= 400 && restErrors)
+                        if (restResponses)
+                        {
+                            console.log("PUT " + self.url + " (" + self._linenumber + ")");
+                        }
+
+                        if (response.status >= 400 && restResponses)
                         {
                             console.log(response.status + ": " + response.text);
                         }
@@ -547,6 +582,10 @@ class LogEntry
                         }
                     },
                     function(error) {
+                        if (restResponses)
+                        {
+                            console.log("PUT " + self.url + " (" + self._linenumber + ")");
+                        }
                         console.log("got error: " + error);
                         //process.exit(0);
                     }
@@ -567,7 +606,12 @@ class LogEntry
                             process.exit(0);
                         }
 
-                        if (response.status >= 400 && restErrors)
+                        if (restResponses)
+                        {
+                            console.log("POST " + self.url + " (" + self._linenumber + ")");
+                        }
+
+                        if (response.status >= 400 && restResponses)
                         {
                             console.log(response.status + ": " + response.text);
                         }
@@ -577,6 +621,10 @@ class LogEntry
                         }
                     },
                     function(error) {
+                        if (restResponses)
+                        {
+                            console.log("POST " + self.url + " (" + self._linenumber + ")");
+                        }
                         console.log("got error: " + error);
                         //process.exit(0);
                     }
@@ -592,7 +640,12 @@ class LogEntry
                             process.exit(0);
                         }
 
-                        if (response.status >= 400 && restErrors)
+                        if (restResponses)
+                        {
+                            console.log("DELETE " + self.url + " (" + self._linenumber + ")");
+                        }
+
+                        if (response.status >= 400 && restResponses)
                         {
                             console.log(response.status + ": " + response.text);
                         }
@@ -602,6 +655,10 @@ class LogEntry
                         }
                     },
                     function(error) {
+                        if (restResponses)
+                        {
+                            console.log("DELETE " + self.url + " (" + self._linenumber + ")");
+                        }
                         console.log("got error: " + error);
                         //process.exit(0);
                     }
@@ -634,6 +691,8 @@ class LogEntry
     {
         if (wsResponses)
         {
+            console.log("\n" + this.url);
+
             if (typeof(message.data) == "string")
             {
                 console.log(message.data);
