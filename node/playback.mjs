@@ -1,7 +1,7 @@
 import {connect as esp} from "@sassoftware/esp-connect";
-import {default as fs} from "fs";
 import {default as url} from "url";
 import {default as ws} from "websocket";
+import {FileSource} from "./filesource.mjs";
 
 var opts = esp.getArgs();
 var server = opts.getOpt("server");
@@ -31,20 +31,7 @@ class Playback
         this.DATA_SECTION    = 4;
 
         this._server = (server != null) ? url.parse(server) : null;
-        this._logfile = logfile;
-
-        this._fd = fs.openSync(this._logfile);
-        this._buffer = Buffer.alloc(4096);
-        this._offset = 0;
-
-        this._bytes = fs.readSync(this._fd,this._buffer,0,this._buffer.length,this._offset);
-        this._offset = this._bytes;
-        this._index = 0;
-
-        this._request = null;
-        this._current = 0;
-
-        this._linenumber = 0;
+        this._fs = new FileSource(logfile);
 
         this._wsid = new RegExp(".*: .* \\((.*)\\*(.*)\\*.*\\)");
         this._wsbegin = new RegExp(".*: \\((.*)\\*(.*)\\*.*\\*(ascii|binary)\\)");
@@ -53,14 +40,269 @@ class Playback
         this._wsthreads = {};
         this._websockets = {};
 
+        this._entry = null;
+        this._current = 0;
+
         this._done = false;
+    }
+
+    get linenumber()
+    {
+        return(this._fs.linenumber);
+    }
+}
+
+class Playback6 extends Playback
+{
+    constructor(server,logfile)
+    {
+        super(server,logfile);
     }
 
     run()
     {
-        var request = this._request;
+        var request = this._entry;
 
-        this._request = null;
+        this._entry = null;
+
+        if (request != null)
+        {
+            this._current = request.timestamp;
+
+            if (request.isWebSocket)
+            {
+                if (this._wsthreads.hasOwnProperty(request.thread))
+                {
+                    const   entry = this._wsthreads[request.thread];
+                    const   self = this;
+
+                    delete this._wsthreads[request.thread];
+
+                    esp.createWebSocket(entry.url,entry).then(
+                        function(result) {
+                            request._wsdata.setOpt("websocket",result);
+                            result._entry = entry;
+                            self._websockets[request.websocketId] = request;
+                            setTimeout(function(){self.run()},500);
+                        },
+                        function(error) {
+                            console.log("create websocket error: " + error);
+                        }
+                    );
+
+                    return;
+                }
+            }
+            else
+            {
+                request.send();
+            }
+        }
+
+        var content = null;
+        var line = null;
+        var fileinfo;
+        var logger;
+        var a;
+
+        for (;;)
+        {
+//console.log("start loop: " + line);
+            if (line == null)
+            {
+                if ((line = this._fs.getline()) == null)
+                {
+                    console.log("\ndone reading log...\n");
+                    this._done = true;
+                    break;
+                }
+            }
+
+            a = line.split(";");
+
+            logger = (a.length >= 4) ? a[3].trim() : "";
+            fileinfo = (a.length >= 5) ? a[4].trim() : "";
+
+            content = null;
+
+            if (logger == "common.http")
+            {
+                if ((line = this._fs.getline()) == null)
+                {
+                    console.log("\ndone reading log...\n");
+                    this._done = true;
+                    break;
+                }
+
+                if (line == "-- start request --" ||
+                    line.indexOf("websocket start:") == 0 ||
+                    line.indexOf("websocket end:") == 0)
+                {
+                    content = a[a.length - 1].trim();
+                    content += "\n";
+                    content += line;
+
+                    if (line == "-- start request --")
+                    {
+                        content += this.collect("-- end request --");
+                    }
+                    else if (line.indexOf("websocket start:") == 0)
+                    {
+                    }
+                    else if (line.indexOf("websocket end:") == 0)
+                    {
+                    }
+                    line = null;
+                }
+                /*
+                else
+                {
+                    line = null;
+                }
+                */
+            }
+            else if (logger == "common.websocket")
+            {
+                if ((line = this._fs.getline()) == null)
+                {
+                    console.log("\ndone reading log...\n");
+                    this._done = true;
+                    break;
+                }
+
+                if (line.indexOf("begin websocket data:") == 0)
+                {
+                    content = a[a.length - 1].trim();
+                    content += "\n";
+                    content += line;
+                    content += this.collect("end websocket data:",0);
+
+                    line = null;
+                }
+                /*
+                else
+                {
+                    line = null;
+                }
+                */
+            }
+            else
+            {
+                line = null;
+            }
+
+            if (content != null)
+            {
+                var o = {};
+                o._timestamp = a[0];
+                o.logger = logger;
+                o.loggerLevel = a[1].trim();
+
+                content += "\n";
+                o.messageContent = content;
+                if (fileinfo.length >= 2)
+                {
+                    fileinfo = fileinfo.substr(1,fileinfo.length - 2);
+                    var fileline = fileinfo.split(":");
+                    if (fileline.length == 2)
+                    {
+                        o.messageFile = fileline[0];
+                        o.messageLine = fileline[1];
+                    }
+                }
+
+                o.thread = a[2].trim();
+
+                var entry = new LogEntry(this,o);
+
+                if (entry.init() == false)
+                {
+                    continue;
+                }
+
+                this._entry = entry;
+
+                const   self = this;
+
+                if (this._current == 0)
+                {
+                    setTimeout(function(){self.run()},100);
+                }
+                else
+                {
+                    var maxwait = opts.getOpt("maxwait",-1);
+                    var diff = this._entry.timestamp - this._current;
+
+                    if (maxwait > 0 && diff > maxwait)
+                    {
+                        diff = maxwait;
+                    }
+
+                    if (verbose)
+                    {
+                        console.log("waiting for " + diff + " milliseconds...");
+                    }
+
+                    setTimeout(function(){self.run()},diff);
+                }
+
+                break;
+            }
+            /*
+            else
+            {
+                line = null;
+            }
+            */
+        }
+    }
+
+    collect(end,index)
+    {
+        var s = "";
+        var line;
+
+        for (;;)
+        {
+            if ((line = this._fs.getline()) == null)
+            {
+                console.log("\ndone reading log...\n");
+                this._done = true;
+                break;
+            }
+
+            s += "\n";
+            s += line;
+
+            if (index != null)
+            {
+                if (line.indexOf(end) == index)
+                {
+                    break;
+                }
+            }
+            else if (line == end)
+            {
+                break;
+            }
+        }
+
+        return(s);
+    }
+}
+
+class Playback7 extends Playback
+{
+    constructor(server,logfile)
+    {
+        super(server,logfile);
+    }
+
+    run()
+    {
+        var request = this._entry;
+
+        this._entry = null;
 
         if (request != null)
         {
@@ -101,7 +343,7 @@ class Playback
 
         for (;;)
         {
-            if ((line = this.getline()) == null)
+            if ((line = this._fs.getline()) == null)
             {
                 console.log("\ndone reading log...\n");
                 this._done = true;
@@ -127,7 +369,7 @@ class Playback
                     continue;
                 }
 
-                this._request = entry;
+                this._entry = entry;
 
                 const   self = this;
 
@@ -138,7 +380,7 @@ class Playback
                 else
                 {
                     var maxwait = opts.getOpt("maxwait",-1);
-                    var diff = this._request.timestamp - this._current;
+                    var diff = this._entry.timestamp - this._current;
 
                     if (maxwait > 0 && diff > maxwait)
                     {
@@ -157,61 +399,6 @@ class Playback
             }
         }
     }
-
-    getline()
-    {
-        var line = "";
-        var c;
-
-        for (;;)
-        {
-            if (this._index < this._bytes)
-            {
-                c = this._buffer[this._index];
-                if (c == 10)
-                {
-                    this._index++;
-                    this._linenumber++;
-
-                    if (start > 0 && this._linenumber < start)
-                    {
-                        line = "";
-                        continue;
-                    }
-
-                    break;
-                }
-                else if (c == 13)
-                {
-                    this._index++;
-                    continue;
-                }
-                line += String.fromCharCode(c);
-                this._index++;
-            }
-            else
-            {
-                if ((this._bytes = fs.readSync(this._fd,this._buffer,0,this._buffer.length,this._offset)) == 0)
-                {
-                    break;
-                }
-                this._offset += this._bytes;
-                this._index = 0;
-            }
-        }
-
-        if (this._bytes == 0)
-        {
-            return(null);
-        }
-
-        if (end > 0 && this._linenumber > end)
-        {
-            return(null);
-        }
-
-        return(line);
-    }
 }
 
 class LogEntry
@@ -220,7 +407,7 @@ class LogEntry
     {
         this._playback = playback;
         this._o = o;
-        this._linenumber = this._playback._linenumber;
+        this._linenumber = this._playback.linenumber;
         this._opts = esp.createOptions();
         this._info = esp.createOptions();
         this._headers = esp.createOptions();
@@ -295,6 +482,9 @@ class LogEntry
 
     init()
     {
+/*
+console.log(JSON.stringify(this._o,null,"\t"));
+*/
         var lines = this._o.messageContent.split("\n");
         var a = [];
 
@@ -706,7 +896,75 @@ class LogEntry
     }
 }
 
-var playback = new Playback(server,logfile);
+//var version = new RegExp("esp engine started, version (.*),");
+var versionExp = new RegExp("esp engine started, version ([^,]*),");
+var extractExp = new RegExp("\\((.*)\\)");
+
+//2021-10-05T12:33:17,552; INFO ; 00000005; esp.server; (Esp.cpp:641); {551f981c-3ec8-4a3f-a8c7-5769ecd68be5}[XMLServer0001] esp engine started, version 6.2, pubsub: 2223
+
+function
+createPlayback(server,logfile)
+{
+    var playback = null;
+    var fs = new FileSource(logfile);
+    var version = null;
+    var s;
+
+    while ((s = fs.getline()) != null)
+    {
+        if (s.indexOf("esp engine started") != -1)
+        {
+            var results = versionExp.exec(s);
+            if (results != null && results.length == 2)
+            {
+                s = results[1];
+
+                if (s.indexOf("(") != -1)
+                {
+                    results = extractExp.exec(s);
+                    if (results != null && results.length == 2)
+                    {
+                        version = results[1];
+                        break;
+                    }
+                }
+                else
+                {
+                    version = results[1];
+                    break;
+                }
+            }
+
+        }
+    }
+
+    var major = null;
+    var minor = null;
+
+    if (version != null)
+    {
+        var a = version.split("\.");
+
+        if (a.length == 2)
+        {
+            major = new Number(a[0]);
+            minor = new Number(a[1]);
+        }
+    }
+
+    if (major >= 7)
+    {
+        playback = new Playback7(server,logfile);
+    }
+    else
+    {
+        playback = new Playback6(server,logfile);
+    }
+
+    return(playback);
+}
+
+var playback = createPlayback(server,logfile);
 playback.run();
 
 function
