@@ -5,19 +5,18 @@
     SPDX-License-Identifier: Apache-2.0
 -->
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 
-<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-<meta content="utf-8" http-equiv="encoding">
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
 
 <title>ESP Model Viewer</title>
 
 <link rel="stylesheet" href="../style/connect.css" />
 
-<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js" ></script>
 
-<script type="text/javascript">
+<script>
 var _esp = null;
 </script>
 
@@ -27,7 +26,7 @@ import {esp} from "../js/ui/api.js"
 _esp = esp;
 </script>
 
-<script type="text/javascript">
+<script>
 
 var _windowXmlCode = null;
 var _schemaTable = null;
@@ -1162,7 +1161,7 @@ setTheme(value)
 
 </script>
 
-<style type="text/css">
+<style>
 
 div.visual
 {
@@ -1333,7 +1332,7 @@ div#schema td
 select,
 code
 {
-	font-weight:regular;
+	font-weight:normal;
 	font-size:11pt;
 }
 
@@ -1429,7 +1428,6 @@ div#banner select#theme
 
 td.bannerControls
 {
-    horizontal-align:right;
     text-align:right;
     color:white;
     width:300px;
@@ -1445,11 +1443,11 @@ td.bannerControls
 <body onload="init()">
 
     <div id="banner">
-        <table style="width:100%" cellspacing="0" cellpadding="0">
+        <table style="width:100%">
             <tr>
                 <td id="bannerTitle">ESP Model Viewer</td>
                 <td class="bannerControls">
-                    <table class="bannerControls" cellspacing="0" cellpadding="0">
+                    <table class="bannerControls">
                         <tr>
                             <td class="theme">
                                 <span>Theme:</span>
@@ -1473,7 +1471,6 @@ td.bannerControls
                                 <a id="connect" class="icon" href="javascript:_esp.showConnectDialog({connect:connect},_server)">&#xf137;</a>
                             </td>
                         </tr>
-                        </tr>
                     </table>
                 </td>
             </tr>
@@ -1487,10 +1484,10 @@ td.bannerControls
     </div>
 
     <div id="footer">
-        <table class="footer" cellspacing="0" cellpadding="0">
+        <table class="footer">
             <tr>
                 <td>
-                    <table class="footerButtons" cellspacing="0" cellpadding="0">
+                    <table class="footerButtons">
                         <tr>
                             <td><label id="detailCb"><input type="checkbox" onchange="javascript:detail(this.checked)"/><span>Detail</span></label></td>
                             <td><label id="windowXmlCb"><input type="checkbox" onchange="javascript:xml(this.checked)"/><span>XML</span></label></td>
@@ -1502,7 +1499,7 @@ td.bannerControls
                     </table>
                 </td>
                 <td>
-                    <table class="footerIcons" cellspacing="0" cellpadding="0">
+                    <table class="footerIcons">
                         <tr>
                             <td class="icon"><a id="loadCollection" title="Load Event Collection" class="icon" href="javascript:loadEventCollection()">&#xf219;</a></td>
                             <td class="icon"><a id="loadStream" title="Load Event Stream" class="icon" href="javascript:loadEventStream()">&#xf09d;</a></td>
@@ -1515,7 +1512,7 @@ td.bannerControls
     </div>
 
     <div id="detailContent" style="display:none">
-        <table border="0" cellspacing="0" cellpadding="0">
+        <table>
             <tr><td class="label">Window:</td><td id="detailName" class="value"></td></tr>
             <tr><td class="label">Type:</td><td id="detailType" class="value"></td></tr>
             <tr><td class="label">Index:</td><td id="detailIndex" class="value"></td></tr>
@@ -1527,7 +1524,7 @@ td.bannerControls
     <div id="publish" style="display:none">
 
     <div style="padding-bottom:10px">
-        <table cellspacing="0" cellpadding="0">
+        <table>
             <tr>
                 <td class="publishWindow">
                     <select id="publishUrlWindow" onchange="javascript:loadPublishWindow(this.value)"></select>
@@ -1541,7 +1538,7 @@ td.bannerControls
     <div id="tabs"></div>
 
     <div id="urlPublisher" class="publisher">
-        <table cellspacing="0" cellpadding="0" style="width:100%">
+        <table style="width:100%">
             <tr>
                 <td class="label">Publish URL:</td>
                 <td class="value"><input id="publishUrl" type="text"/></td>
@@ -1561,10 +1558,14 @@ td.bannerControls
     </div>
 
     <div id="csvPublisher" class="publisher">
-        <table cellspacing="0" cellpadding="0" style="width:100%;height:100%">
-            <tr><td class="value eventCsv" style="height:95%"><textarea id="eventCsv" spellcheck="false"></textarea></td></tr>
+        <table style="width:100%;height:100%">
             <tr>
-                <td class="button" colspan="2">
+                <td class="value eventCsv" style="height:95%">
+                    <textarea id="eventCsv" spellcheck="false"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td class="button">
                     <button onclick="publishData()">Publish</button>
                     <span>&nbsp;</span>
                     <button onclick="clearCsv()">Clear</button>
@@ -1574,7 +1575,7 @@ td.bannerControls
     </div>
 
     <div id="fieldPublisher" class="publisher">
-        <table id="publishFieldTable" cellspacing="0" cellpadding="0" style="width:100%">
+        <table id="publishFieldTable" style="width:100%">
         </table>
     </div>
 

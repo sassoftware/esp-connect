@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 
 <head>
 
-<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-<meta content="utf-8" http-equiv="encoding">
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
 
 <title>ESP Trades Demo</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="anonymous" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.js" integrity="sha512-SeiQaaDh73yrb56sTW/RgVdi/mMqNeM2oBwubFHagc5BkixSpP1fvqF47mKzPGWYSSy4RwbBunrJBQ4Co8fRWA==" crossorigin="anonymous"></script>
 
-<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
-<script type="text/javascript">
+<script>
 var _esp = null;
 </script>
 
@@ -28,13 +27,13 @@ _esp = esp;
 
 <!-- Run from an esp-connect webpack bundle (you can put the bundle anywhere) -->
 <!--
-<script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
-<script type="text/javascript">
+<script src="../../dist/esp-connect-ui.js"></script>
+<script>
 _esp = esp_connect_ui.api;
 </script>
 -->
 
-<script type="text/javascript">
+<script>
 
 var _project = "trades";
 
@@ -180,7 +179,7 @@ createVisuals()
 <body onload="init()">
 
     <div id="banner">
-        <table style="width:100%" cellspacing="0" cellpadding="0">
+        <table style="width:100%">
             <tr>
                 <td id="bannerTitle"></td>
                 <td class="icon">

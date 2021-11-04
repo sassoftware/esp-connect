@@ -321,6 +321,7 @@ class K8S extends Options
 
     getProject(namespace,name)
     {
+console.log("======== get project: " + namespace + " :: " + name);
         return(new Promise((resolve,reject) => {
             if (namespace == null || name == null)
             {
@@ -480,7 +481,8 @@ class K8S extends Options
     {
         return(new Promise((resolve,reject) => {
             var url = this.baseUrl;
-            url += "apis/networking.k8s.io/v1beta1";
+            //url += "apis/networking.k8s.io/v1beta1";
+            url += "networking.k8s.io/v1";
 
             if (this.namespace != null)
             {
@@ -493,7 +495,7 @@ class K8S extends Options
                 function(result) {
                     if (result.status >= 400)
                     {
-console.log("rejecting");
+                        console.log("failure: " + url + ", status is " + result.status);
                         reject(result);
                     }
                     else

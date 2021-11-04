@@ -70,6 +70,7 @@ class EventSources
 
     configure(config,parms)
     {
+console.log("config 1");
         this._config = config;
 
         var content = config.hasOwnProperty("nodeType") ? xpath.xmlString(config) : config;
@@ -83,16 +84,16 @@ class EventSources
         var xml = xpath.createXml(content).documentElement;
 
         xpath.getNodes("./event-sources/*",xml).forEach((node) => {
-            var name = node.hasAttribute("name") ? node.getAttribute("name") : "";
-            var w = node.hasAttribute("window") ? node.getAttribute("window") : "";
-
-            if (name.length == 0 || w.length == 0)
-            {
-                tools.exception("you must specify name and window for each event source");
-            }
 
             var type = node.tagName;
-            var options = {name:name,window:w};
+            var options = {};
+
+            xpath.getNodes("./options/option",node).forEach((n) => {
+                var name = n.getAttribute("name");
+                var value = xpath.nodeText(n);
+                options[name] = value;
+            });
+
             var eventsource = null;
 
             if (type == "url-event-source")
@@ -114,8 +115,6 @@ class EventSources
             }
 
             this.addEventSource(eventsource);
-
-            eventsource.configure(node);
         });
 
         xpath.getNodes("./edges/edge",xml).forEach((node) => {
@@ -128,6 +127,7 @@ class EventSources
                 });
             });
         });
+console.log("config 2");
     }
 
     configureFromUrl(url,parms,delegate)
@@ -282,6 +282,7 @@ class EventSources
 
         Object.values(this._eventsources).forEach((es) => {
 
+console.log("here: " + es.name + " :: " + es.done);
             if (es.repeat >= 0 && es.done == false)
             {
                 if (es.sending == false)
@@ -338,6 +339,10 @@ class EventSources
                 var eventsources = this;
                 setTimeout(function(){eventsources._delegate.complete(eventsources)},1000);
             }
+            else
+            {
+                setTimeout(function(){console.log("exiting");},2000);
+            }
         }
         else
         {
@@ -366,27 +371,10 @@ class EventSource extends Options
     {
         super(options);
 
-        this._window = this.getOpt("window");
-
-        if (this._window == null)
-        {
-            tools.exception("no window specified");
-        }
-
-        Object.defineProperty(this,"esp", {
-            get() {
-                return(this._eventsources.connect);
-            }
-        });
-
-        Object.defineProperty(this,"tools", {
-            get() {
-                return(tools);
-            }
-        });
-
         this._eventsources = eventsources;
         this._api = eventsources._api;
+        this._window = null;
+        this._plugin = null;
         this._ready = false;
         this._done = false;
         this._sources = [];
@@ -398,104 +386,94 @@ class EventSource extends Options
 
         this._publisher = null;
 
-        Object.defineProperty(this,"publisher", {
-            get() {
-                return(this._publisher);
-            }
-        });
-
-        Object.defineProperty(this,"repeat", {
-            get() {
-                return(this.getOpt("repeat","1"));
-            }
-        });
-
         this._interval = 30000;
 
-        Object.defineProperty(this,"interval", {
-            get() {
-                return(this._interval);
-            },
-            set(value) {
-                var a = value.split(" ");
-                var value = parseFloat(a[0]);
-                var unit = (a.length == 2) ? a[1] : "milliseconds";
-
-                if (unit == "second" || unit == "seconds")
-                {
-                    value *= 1000;
-                }
-                else if (unit == "minute" || unit == "minutes")
-                {
-                    value *= (1000 * 60);
-                }
-                else if (unit == "hour" || unit == "hours")
-                {
-                    value *= (1000 * 60 * 60);
-                }
-
-                this._interval = value;
-            }
-        });
-
-        Object.defineProperty(this,"timestamp", {
-            get() {
-                return(this._timestamp);
-            },
-            set(value) {
-                this._timestamp = value;
-            }
-        });
-
-        Object.defineProperty(this,"name", {
-            get() {
-                return(this.getOpt("name",""));
-            },
-            set(value) {
-                this.setOpt("name",value);
-            }
-        });
-
-        Object.defineProperty(this,"done", {
-            get() {
-                return(this._done && this.sending == false);
-            },
-            set(value) {
-                this._done = value;
-            }
-        });
-
-        Object.defineProperty(this,"sending", {
-            get() {
-                return(this._senders.length > 0);
-            }
-        });
+        if (this.hasOpt("interval"))
+        {
+            this.interval = this.getOpt("interval");
+        }
     }
 
-    configure(config)
+    get name()
     {
-        var xml = null;
+        return(this.getOpt("name",""));
+    }
 
-        if (("nodeType" in config) == false)
+    set name(value)
+    {
+        this.setOpt("name",value);
+    }
+
+    get esp()
+    {
+        return(this._eventsources.connect);
+    }
+
+    get publisher()
+    {
+        return(this._publisher);
+    }
+
+    get repeat()
+    {
+        return(this.getOpt("repeat","1"));
+    }
+
+    get interval()
+    {
+        return(this._interval);
+    }
+
+    set interval(value)
+    {
+        var a = value.split(" ");
+        var value = parseFloat(a[0]);
+        var unit = (a.length == 2) ? a[1] : "milliseconds";
+
+        if (unit == "second" || unit == "seconds")
         {
-            var x = xpath.createXml(config);
-            xml = x.documentElement;
+            value *= 1000;
         }
-        else
+        else if (unit == "minute" || unit == "minutes")
         {
-            xml = config;
+            value *= (1000 * 60);
+        }
+        else if (unit == "hour" || unit == "hours")
+        {
+            value *= (1000 * 60 * 60);
         }
 
-        xpath.getNodes("./options/option",xml).forEach((n) => {
-            var name = n.getAttribute("name");
-            var value = xpath.nodeText(n);
-            this.setOpt(name,value);
+        this._interval = value;
+    }
 
-            if (name == "interval")
-            {
-                this.interval = value;
-            }
-        });
+    get done()
+    {
+        return(this._done && this.sending == false);
+    }
+
+    set done(value)
+    {
+        this._done = value;
+    }
+
+    get sending()
+    {
+        return(this._senders.length > 0);
+    }
+
+    get timestamp()
+    {
+        return(this._timestamp);
+    }
+
+    set timestamp(value)
+    {
+        this._timestamp = value;
+    }
+
+    get tools()
+    {
+        return(tools);
     }
 
     init()
@@ -505,23 +483,29 @@ class EventSource extends Options
         this.done = false;
         this.checkCycles();
 
-        var opts = {window:this._window};
-        if (this.hasOpt("dateformat"))
-        {
-            opts.dateformat = this.getOpt("dateformat");
-        }
-        if (this._api.version < 7)
-        {
-            opts.format = "json";
-        }
+        this._window = this.getOpt("window");
+        this._plugin = this.getOpt("plugin");
 
-        const   self = this;
+        if (this._window != null)
+        {
+            var opts = {window:this._window};
 
-        this._api.getPublisher(opts).then(
-            function(result) {
-                self._publisher = result;
+            if (this.hasOpt("dateformat"))
+            {
+                opts.dateformat = this.getOpt("dateformat");
             }
-        );
+            if (this._api.version < 7)
+            {
+                opts.format = "json";
+            }
+            const   self = this;
+
+            this._api.getPublisher(opts).then(
+                function(result) {
+                    self._publisher = result;
+                }
+            );
+        }
 
         this._ready = true;
     }
@@ -646,31 +630,27 @@ class UrlEventSource extends EventSource
 
         this._transform = null;
 
-        Object.defineProperty(this,"transform", {
-            get() {
-                return(this._transform);
-            },
-            set(value) {
-                this._transform = value;
-            }
-        });
-    }
-
-    configure(config)
-    {
-        EventSource.prototype.configure.call(this,config);
-
         if (this.hasOpt("transform"))
         {
             this._transform = new Function("eventsource","data",this.getOpt("transform"));
         }
     }
 
+    get transform()
+    {
+        return(this._transform);
+    }
+
+    set transform(value)
+    {
+        this._transform = value;
+    }
+
     init()
     {
         super.init(this);
 
-        if (this._transform == null)
+        if (this._window != null && this._transform == null)
         {
             tools.exception("you must specify the transform value for the UrlEventSource");
         }
@@ -704,17 +684,24 @@ class UrlEventSource extends EventSource
                 url = opts.resolve(url);
             }
 
-            var eventsource = this;
+            var self = this;
 
             if (this._api.version > 7 && this.getOpt("use-connect",false))
             {
                 this._api.get(url).then(
                     function(result) {
-                        var data = eventsource._transform(eventsource,result);
-
-                        if (data != null)
+                        if (self._plugin != null)
                         {
-                            eventsource.send(data);
+                            console.log("plugin");
+                        }
+                        else
+                        {
+                            var data = self._transform(self,result);
+
+                            if (data != null)
+                            {
+                                self.send(data);
+                            }
                         }
                     },
                     function(result) {
@@ -724,13 +711,23 @@ class UrlEventSource extends EventSource
             }
             else
             {
+console.log("get RSS data");
                 ajax.create(url).get().then(
                     function(response) {
-                        var data = eventsource._transform(eventsource,response.text);
 
-                        if (data != null)
+console.log("got RSS DATA: " + response.text.length);
+                        if (self._plugin != null)
                         {
-                            eventsource.send(data);
+                            self.send(response.text);
+                        }
+                        else
+                        {
+                            var data = self._transform(self,response.text);
+
+                            if (data != null)
+                            {
+                                self.send(data);
+                            }
                         }
                     },
 
@@ -830,12 +827,8 @@ class CodeEventSource extends EventSource
     constructor(eventsources,options)
     {
         super(eventsources,options);
-        this._code = null;
-    }
 
-    configure(config)
-    {
-        super.configure(config);
+        this._code = null;
 
         if (this.hasOpt("code"))
         {
@@ -864,23 +857,58 @@ class Sender
 {
     constructor(eventsource,data)
     {
-        if (Array.isArray(data) == false)
-        {
-            tools.exception("data must be an array");
-        }
-
         this._eventsource = eventsource;
         this._data = data;
-        this._opcode = eventsource.getOpt("opcode","upsert");
-        this._delay = eventsource.getInt("delay",0);
-        this._index = eventsource.getInt("start",0);
-        this._chunksize = eventsource.getInt("chunk_size",1);
 
-        tools.addTo(this._eventsource._senders,this);
+        if (this._eventsource._publisher != null)
+        {
+            if (Array.isArray(this._data) == false)
+            {
+                tools.exception("data must be an array");
+            }
+
+            this._opcode = eventsource.getOpt("opcode","upsert");
+            this._delay = eventsource.getInt("delay",0);
+            this._index = eventsource.getInt("start",0);
+            this._chunksize = eventsource.getInt("chunk_size",1);
+
+            tools.addTo(this._eventsource._senders,this);
+        }
+        else if (this._eventsource._plugin != null)
+        {
+            tools.addTo(this._eventsource._senders,this);
+        }
     }
 
     run()
     {
+        var self = this;
+
+        if (this._eventsource._plugin != null)
+        {
+            var postdata = this._eventsource._api.httpurlBase;
+            postdata += "/eventStreamProcessing/v1/plugin/";
+            postdata += this._eventsource._plugin;
+
+console.log(postdata);
+            var request = ajax.create(postdata);
+            request.setData(this._data);
+console.log("send POST 1");
+            request.post({timeout:1000}).then(
+                function(response) {
+console.log("got POST RESPONSE: ");
+                    console.log(response.text);
+                    tools.removeFrom(self._eventsource._senders,self);
+                },
+                function(error) {
+                    console.log("error: " + error);
+                    tools.removeFrom(self._eventsource._senders,self);
+                }
+            );
+
+            return;
+        }
+
         if (this._eventsource._publisher == null)
         {
             tools.removeFrom(this._eventsource._senders,this);
@@ -907,8 +935,6 @@ class Sender
         }
         else if (this._index < target)
         {
-            var self = this;
-
             if (this._eventsource._eventsources.paused == false)
             {
                 for (var i = 0; i < this._chunksize && this._index < target; i++)

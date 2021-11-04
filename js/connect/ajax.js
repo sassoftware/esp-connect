@@ -12,17 +12,17 @@ var _http = null;
 
 class Ajax extends Options
 {
-	constructor(url)
-	{
+    constructor(url)
+    {
         super();
-		this._url = url;
-		this._requestHeaders = new Object();
-		this._responseHeaders = null;
+        this._url = url;
+        this._requestHeaders = new Object();
+        this._responseHeaders = null;
         this._response = this;
-		this._method = "GET";
-		this._request = null;
-		this._data = null;
-	}
+        this._method = "GET";
+        this._request = null;
+        this._data = null;
+    }
 
     get url()
     {
@@ -47,7 +47,7 @@ class Ajax extends Options
         {
             if ((xml = this._request.responseXML) == null)
             {
-                var	type = this.getResponseHeader("content-type");
+                var type = this.getResponseHeader("content-type");
                 if (type.indexOf("text/xml") != -1 || type.indexOf("application/xml") != -1)
                 {
                     xml = xpath.createXml(this._request.responseText);
@@ -58,7 +58,7 @@ class Ajax extends Options
         return(xml);
     }
 
-	send(method)
+    send(method)
     {
         return(new Promise((resolve,reject) => {
             if (method != null)
@@ -76,7 +76,7 @@ class Ajax extends Options
 
             this._request = new XMLHttpRequest();
 
-            var	received = false;
+            var received = false;
 
             /*
             request._url = this._url;
@@ -116,7 +116,7 @@ class Ajax extends Options
                     }
                     else
                     {
-                        var	contentType = this.getResponseHeader("content-type");
+                        var contentType = this.getResponseHeader("content-type");
 
                         if (this.status == 0)
                         {
@@ -148,7 +148,7 @@ class Ajax extends Options
             //this._request.setRequestHeader("accept","text/xml");
 
             /*
-            var	authorization = null;
+            var authorization = null;
 
             if (tools.supports(this._delegate,"authorization"))
             {
@@ -185,61 +185,61 @@ class Ajax extends Options
                 */
             }
         }));
-	}
+    }
 
-	get()
-	{
+    get()
+    {
         return(this.send("GET"));
-	}
+    }
 
-	post()
-	{
+    post()
+    {
         return(this.send("POST"));
-	}
+    }
 
-	put()
-	{
+    put()
+    {
         return(this.send("PUT"));
-	}
+    }
 
-	del()
-	{
+    del()
+    {
         return(this.send("DELETE"));
-	}
+    }
 
-	head()
-	{
+    head()
+    {
         return(this.send("HEAD"));
-	}
+    }
 
-	setRequestHeaders(o)
-	{
+    setRequestHeaders(o)
+    {
         for (var x in o)
         {
-		    this.setRequestHeader(x,o[x]);
+            this.setRequestHeader(x,o[x]);
         }
-	}
+    }
 
-	setRequestHeader(name,value)
-	{
-		this._requestHeaders[name] = value;
-	}
+    setRequestHeader(name,value)
+    {
+        this._requestHeaders[name] = value;
+    }
 
-	getResponseHeader(name)
-	{
-		var	value = this._request.getResponseHeader(name);
-		return(value);
-	}
+    getResponseHeader(name)
+    {
+        var value = this._request.getResponseHeader(name);
+        return(value);
+    }
 
-	setData(data,type)
-	{
-		this._data = data;
+    setData(data,type)
+    {
+        this._data = data;
 
-		if (type != null)
-		{
-			this.setRequestHeader("content-type",type);
-		}
-	}
+        if (type != null)
+        {
+            this.setRequestHeader("content-type",type);
+        }
+    }
 
     toString()
     {
@@ -251,13 +251,36 @@ class Ajax extends Options
     }
 }
 
+var TUNNEL = null;
+var http_proxy = null;
+var https_proxy = null;
+
+if (tools.isNode)
+{
+    if (process.env.http_proxy != null)
+    {
+        http_proxy = new URL(process.env.http_proxy);
+    }
+
+    if (process.env.https_proxy != null)
+    {
+        https_proxy = new URL(process.env.https_proxy);
+    }
+
+    import("tunnel").then(
+        function(result) {
+            TUNNEL = result.default;
+        }
+    );
+}
+
 class NodeAjax extends Options
 {
     constructor(url)
     {
         super();
         this._url = url;
-		this._requestHeaders = new Object();
+        this._requestHeaders = new Object();
         this._options = {};
         this._response = null;
         this._text = "";
@@ -267,7 +290,7 @@ class NodeAjax extends Options
 
     get url()
     {
-		return(this._url);
+        return(this._url);
     }
 
     get status()
@@ -277,7 +300,7 @@ class NodeAjax extends Options
 
     get text()
     {
-		return(this._text);
+        return(this._text);
     }
 
     get xml()
@@ -338,10 +361,14 @@ class NodeAjax extends Options
  
             var complete = function(request)
             {
-                for (var name in self._requestHeaders)
-                {
-                    request.setHeader(name,self._requestHeaders[name]);
-                }
+                request.shouldKeepAlive = false;
+
+                /*
+                request.setTimeout(1000,function() {
+                    console.log("======================== : timeout");
+                    request.abort();
+                });
+                */
 
                 request.on("response", function(response) {
 
@@ -374,7 +401,33 @@ class NodeAjax extends Options
                     reject(self);
                 });
 
-                request.end(self._data);
+                request.on("timeout", function(response) {
+                    console.log("++++++++++++++++++++++ TIME OUT");
+                    request.abort();
+                    reject(self);
+                });
+
+                for (var name in self._requestHeaders)
+                {
+                    request.setHeader(name,self._requestHeaders[name]);
+                }
+                request.setHeader("Connection","close");
+
+                if (self._data != null)
+                {
+                    request.write(self._data);
+                }
+
+                request.end();
+            }
+
+            var sendrequest = function(protocol) {
+                self.setProxy().then(
+                    function() {
+console.log(JSON.stringify(self._options,null,"\t"));
+                        complete(protocol.request(self._options));
+                    }
+                );
             }
 
             if (protocol == "https:")
@@ -384,7 +437,7 @@ class NodeAjax extends Options
                     import("https").
                         then((module) => {
                             _https = module.default;
-                            complete(_https.request(this._options));
+                            sendrequest(_https);
                         }).
                         catch((e) => {
                             console.log("import error on https: " + e);
@@ -392,7 +445,7 @@ class NodeAjax extends Options
                 }
                 else
                 {
-                    complete(_https.request(this._options));
+                    sendrequest(_https);
                 }
             }
             else
@@ -402,7 +455,7 @@ class NodeAjax extends Options
                     import("http").
                         then((module) => {
                             _http = module.default;
-                            complete(_http.request(this._options));
+                            sendrequest(_http);
                         }).
                         catch((e) => {
                             console.log("import error on http: " + e);
@@ -410,7 +463,7 @@ class NodeAjax extends Options
                 }
                 else
                 {
-                    complete(_http.request(this._options));
+                    sendrequest(_http);
                 }
             }
         }));
@@ -447,6 +500,7 @@ class NodeAjax extends Options
 
     setOptions(options)
     {
+console.log("================ SET OPTS");
         if (options != null)
         {
             for (var name in options)
@@ -454,6 +508,7 @@ class NodeAjax extends Options
                 this._options[name] = options[name];
             }
         }
+console.log(JSON.stringify(this._options,null,"\t"));
     }
 
     setAccept(value)
@@ -482,6 +537,63 @@ class NodeAjax extends Options
         {
             this.setRequestHeader("content-type",type);
         }
+    }
+
+    setProxy()
+    {
+        return(new Promise((resolve,reject) => {
+            var u = new URL(this._url);
+            var secure = (u.protocol.toLowerCase() == "https:");
+
+            var proxyHost = null;
+            var proxyPort = 80;
+
+            if (secure)
+            {
+                if (https_proxy != null)
+                {
+                    proxyHost = https_proxy.hostname;
+                    proxyPort = https_proxy.port;
+                }
+            }
+            else if (http_proxy != null)
+            {
+                proxyHost = http_proxy.hostname;
+                proxyPort = new Number(http_proxy.port);
+                if (proxyPort == 0)
+                {
+                    proxyPort = 80;
+                }
+            }
+
+            if (proxyHost != null)
+            {
+                var agent = null;
+
+                if (secure)
+                {
+                    agent = TUNNEL.httpsOverHttp({
+                      proxy: {
+                        host: proxyHost,
+                        port: proxyPort
+                      }
+                    });
+                }
+                else
+                {
+                    agent = TUNNEL.httpOverHttp({
+                      proxy: {
+                        host: proxyHost,
+                        port: proxyPort
+                      }
+                    });
+                }
+
+                this._options.agent = agent;
+
+                resolve();
+            }
+        }));
     }
 
     toString()

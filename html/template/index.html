@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 
 <head>
 
-<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-<meta content="utf-8" http-equiv="encoding">
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
 
 <title>ESP Template</title>
 
-<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
 <!--
@@ -17,7 +16,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.6.0/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
 -->
 
-<script type="text/javascript">
+<script>
 var _esp = null;
 </script>
 
@@ -30,13 +29,13 @@ _esp = esp;
 
 <!-- Run from an esp-connect webpack bundle (you can put the bundle anywhere) -->
 <!--
-<script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
-<script type="text/javascript">
+<script src="../../dist/esp-connect-ui.js"></script>
+<script>
 _esp = esp_connect_ui.api;
 </script>
 -->
 
-<script type="text/javascript">
+<script>
 
 var _project = "myproject";
 
@@ -78,7 +77,7 @@ connect(server)
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.showStatus("Loading project...");
     var url = new URL("model.xml",document.URL).toString();
-    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url},overwrite:true,force:_esp.getParm("force",false)});
+    _esp.connect(server,{ready:ready,connectionError:error},{model:{name:_project,url:url,options:{overwrite:true,force:_esp.getParm("force",false)}}});
     _esp.handleLayout();
 }
 
@@ -122,7 +121,7 @@ error(message)
 <body onload="init()">
 
     <div id="banner">
-        <table style="width:100%" cellspacing="0" cellpadding="0">
+        <table style="width:100%">
             <tr>
                 <td id="bannerTitle"></td>
                 <td class="icon">

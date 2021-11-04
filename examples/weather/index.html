@@ -1,16 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 
-<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-<meta content="utf-8" http-equiv="encoding">
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
 
 <title>ESP Weather Demo</title>
 
-<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
-<script type="text/javascript">
+<script>
 var _esp = null;
 </script>
 
@@ -23,13 +22,13 @@ _esp = esp;
 
 <!-- Run from an esp-connect webpack bundle (you can put the bundle anywhere) -->
 <!--
-<script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
-<script type="text/javascript">
+<script src="../../dist/esp-connect-ui.js"></script>
+<script>
 _esp = esp_connect_ui.api;
 </script>
 -->
 
-<script type="text/javascript">
+<script>
 
 var _project = "weather";
 
@@ -181,7 +180,7 @@ done()
 <body onload="init()">
 
     <div id="banner">
-        <table style="width:100%" cellspacing="0" cellpadding="0">
+        <table style="width:100%">
             <tr>
                 <td id="bannerTitle"></td>
                 <td class="icon">
@@ -205,7 +204,7 @@ done()
     <div id="footer">&nbsp;</div>
 
     <div id="help" class="dialog" style="width:60%">
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+        <table class="dialogClose" style="width:100%">
             <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
         </table>
 
@@ -213,7 +212,7 @@ done()
 
             <div  class="dialogHeader">
                 <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                    <table style="width:100%;border:0">
                         <tr>
                             <td><div class="dialogTitle">ESP Weather Demo</div></td>
                         </tr>
@@ -247,7 +246,7 @@ done()
 
     <div id="espModel" class="dialog" style="width:90%;height:90%">
 
-        <table class="dialogClose" style="width:100%" cellspacing="0" cellpadding="0">
+        <table class="dialogClose" style="width:100%">
             <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
         </table>
 
@@ -255,7 +254,7 @@ done()
 
             <div  class="dialogHeader">
                 <div class="dialogTitle">
-                    <table style="width:100%;border:0" cellspacing="0" cellpadding="0">
+                    <table style="width:100%;border:0">
                         <tr>
                             <td><div class="dialogTitle">ESP Model</div></td>
                         </tr>

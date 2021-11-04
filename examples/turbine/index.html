@@ -1,18 +1,17 @@
 <!DOCTYPE html>
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 
 <head>
 
-<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-<meta content="utf-8" http-equiv="encoding">
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
 
 <title>ESP Wind Turbine Example</title>
 
-<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
 
-<script type="text/javascript">
+<script>
 var _esp = null;
 </script>
 
@@ -25,13 +24,13 @@ _esp = esp;
 
 <!-- Run from an esp-connect webpack bundle (you can put the bundle anywhere) -->
 <!--
-<script type="text/javascript" src="../../dist/esp-connect-ui.js"></script>
-<script type="text/javascript">
+<script src="../../dist/esp-connect-ui.js"></script>
+<script>
 _esp = esp_connect_ui.api;
 </script>
 -->
 
-<script type="text/javascript">
+<script>
 
 var _project = "turbines";
 
@@ -434,7 +433,7 @@ complete(eventsources)
 
 </script>
 
-<style type="text/css">
+<style>
 
 div.alerts
 {
@@ -481,7 +480,7 @@ canvas.turbine
 <body onload="init()">
 
     <div id="banner">
-        <table style="width:100%" cellspacing="0" cellpadding="0">
+        <table style="width:100%">
             <tr>
                 <td id="bannerTitle"></td>
                 <td style="width:40%;text-align:left">

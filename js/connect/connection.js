@@ -12,25 +12,25 @@ var TUNNEL = null;
 
 var _nodeWS = null;
 
-var	http_proxy = null;
-var	https_proxy = null;
+var http_proxy = null;
+var https_proxy = null;
 
 if (tools.isNode)
 {
-	if (process.env.http_proxy != null)
-	{
-		http_proxy = new URL(process.env.http_proxy);
-	}
+    if (process.env.http_proxy != null)
+    {
+        http_proxy = new URL(process.env.http_proxy);
+    }
 
-	if (process.env.https_proxy != null)
-	{
-		https_proxy = new URL(process.env.https_proxy);
-	}
+    if (process.env.https_proxy != null)
+    {
+        https_proxy = new URL(process.env.https_proxy);
+    }
 
     _nodeWS = {
         open:function()
         {
-            var	conn = this._conn;
+            var conn = this._conn;
 
             if (conn != null)
             {
@@ -42,7 +42,7 @@ if (tools.isNode)
 
         close:function(e)
         {
-            var	conn = this._conn;
+            var conn = this._conn;
 
             if (conn != null)
             {
@@ -53,7 +53,7 @@ if (tools.isNode)
 
         error:function(e)
         {
-            var	conn = this._conn;
+            var conn = this._conn;
 
             if (conn != null)
             {
@@ -64,7 +64,7 @@ if (tools.isNode)
 
         message:function(e)
         {
-            var	conn = this._conn;
+            var conn = this._conn;
 
             if (conn != null)
             {
@@ -82,13 +82,13 @@ if (tools.isNode)
     };
 }
 
-var	_websockets =
+var _websockets =
 {
     _established:new Object(),
 
     open:function(e)
     {
-        var	conn = this._connection;
+        var conn = this._connection;
 
         if (conn != null)
         {
@@ -101,7 +101,7 @@ var	_websockets =
 
     close:function(e)
     {
-        var	conn = this._connection;
+        var conn = this._connection;
 
         if (conn != null)
         {
@@ -112,7 +112,7 @@ var	_websockets =
 
     error:function(e)
     {
-        var	conn = this._connection;
+        var conn = this._connection;
 
         if (conn != null)
         {
@@ -123,7 +123,7 @@ var	_websockets =
 
     message:function(e)
     {
-        var	conn = this._connection;
+        var conn = this._connection;
 
         if (conn != null)
         {
@@ -151,8 +151,8 @@ var	_websockets =
 class Connection extends Options
 {
     constructor(host,port,path,secure,options,config)
-	{
-		super(options);
+    {
+        super(options);
         this._host = host;
         this._port = new Number(port);
         this._path = path;
@@ -164,24 +164,24 @@ class Connection extends Options
             this._port = this._secure ? 443 : 80;
         }
 
-		this._reconnect = {"interval":5,"attempts":0,"timestamp":0,"timer":null};
-		this._websocket = null;
+        this._reconnect = {"interval":5,"attempts":0,"timestamp":0,"timer":null};
+        this._websocket = null;
 
         Object.defineProperty(this,"websocket", {
             get() {
-		        return(this._websocket);
+                return(this._websocket);
             }
         });
 
         Object.defineProperty(this,"protocol", {
             get() {
-		        return(this._secure ? "wss" : "ws");
+                return(this._secure ? "wss" : "ws");
             }
         });
 
         Object.defineProperty(this,"httpProtocol", {
             get() {
-		        return(this._secure ? "https" : "http");
+                return(this._secure ? "https" : "http");
             }
         });
 
@@ -229,7 +229,7 @@ class Connection extends Options
 
         Object.defineProperty(this,"urlBase", {
             get() {
-                var	base = "";
+                var base = "";
                 base += this.protocol;
                 base += "://";
                 base += this.host;
@@ -241,7 +241,7 @@ class Connection extends Options
 
         Object.defineProperty(this,"url", {
             get() {
-                var	url = this.urlBase;
+                var url = this.urlBase;
                 if (this._path != null && this._path.length > 0)
                 {
                     url += this._path;
@@ -253,13 +253,13 @@ class Connection extends Options
                     url += this.parms;
                 }
 
-		        return(url);
+                return(url);
             }
         });
 
         Object.defineProperty(this,"httpurlBase", {
             get() {
-                var	base = "";
+                var base = "";
 
                 if (this.hasOpt("k8s"))
                 {
@@ -281,7 +281,7 @@ class Connection extends Options
 
         Object.defineProperty(this,"httpurl", {
             get() {
-                var	url = this.httpurlBase;
+                var url = this.httpurlBase;
                 if (this._path != null && this._path.length > 0)
                 {
                     url += this._path;
@@ -293,7 +293,7 @@ class Connection extends Options
                     url += this.parms;
                 }
 
-		        return(url);
+                return(url);
             }
         });
 
@@ -319,48 +319,48 @@ class Connection extends Options
                 }
             }
         });
-	}
+    }
 
-	getType()
-	{
-		return(this.constructor.name);
-	}
+    getType()
+    {
+        return(this.constructor.name);
+    }
 
-	ready()
-	{
-	}
+    ready()
+    {
+    }
 
-	closed(e)
-	{
-	}
+    closed(e)
+    {
+    }
 
-	error()
-	{
-	}
+    error()
+    {
+    }
 
-	handshakeComplete()
-	{
-	}
+    handshakeComplete()
+    {
+    }
 
-	start()
-	{
-		this._reconnect.timer = null;
+    start()
+    {
+        this._reconnect.timer = null;
 
-		if (this.isConnected())
-		{
-			return;
-		}
+        if (this.isConnected())
+        {
+            return;
+        }
 
-		this.clear();
+        this.clear();
 
-		var	url = this.getUrl();
+        var url = this.getUrl();
 
-		if (url == null)
-		{
+        if (url == null)
+        {
             throw "invalid url";
-		}
+        }
 
-		this._ready = false;
+        this._ready = false;
 
         if (tools.isNode)
         {
@@ -376,11 +376,11 @@ class Connection extends Options
                     var config = {};
                     config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
 
-		            var u = new URL(url);
+                    var u = new URL(url);
                     var secure = (u.protocol.toLowerCase() == "wss:");
 
-					var proxyHost = null;
-					var proxyPort = 80;
+                    var proxyHost = null;
+                    var proxyPort = 80;
 
                     if (secure)
                     {
@@ -392,15 +392,15 @@ class Connection extends Options
                     }
                     else if (http_proxy != null)
                     {
-						proxyHost = http_proxy.hostname;
-						proxyPort = http_proxy.port;
-					}
+                        proxyHost = http_proxy.hostname;
+                        proxyPort = http_proxy.port;
+                    }
 
                     var options = null;
 
-					if (proxyHost != null)
-					{
-						var agent = null;
+                    if (proxyHost != null)
+                    {
+                        var agent = null;
 
                         if (secure)
                         {
@@ -421,9 +421,9 @@ class Connection extends Options
                             });
                         }
 
-						options = {};
-						options.agent = agent;
-					}
+                        options = {};
+                        options.agent = agent;
+                    }
 
                     W3CWS.call(this,url,null,null,null,options,config);
                 }
@@ -486,119 +486,119 @@ class Connection extends Options
             ws.onerror = _websockets.error;
             ws.onmessage = _websockets.message;
         }
-	}
+    }
 
-	stop()
-	{
-		if (this.isConnected())
-		{
-			this.clear();
-			return(true);
-		}
+    stop()
+    {
+        if (this.isConnected())
+        {
+            this.clear();
+            return(true);
+        }
 
-		return(false);
-	}
+        return(false);
+    }
 
-	restart()
-	{
-		this.clear();
+    restart()
+    {
+        this.clear();
         this.start();
-	}
+    }
 
-	reconnect(interval)
-	{
-		if (this._reconnect.timer != null)
-		{
-			return;
-		}
+    reconnect(interval)
+    {
+        if (this._reconnect.timer != null)
+        {
+            return;
+        }
 
         if (Connection.established(this.getUrl()) == false)
         {
-			this._reconnect.interval = 5;
+            this._reconnect.interval = 5;
         }
-		else
-		{
-			this._reconnect.interval = interval;
-		}
+        else
+        {
+            this._reconnect.interval = interval;
+        }
 
-		if (this.isConnected() == false)
-		{
-			var	self = this;
-			this._reconnect.timer = setTimeout(function(){self.start();},self._reconnect.interval * 1000);
-		}
-	}
+        if (this.isConnected() == false)
+        {
+            var self = this;
+            this._reconnect.timer = setTimeout(function(){self.start();},self._reconnect.interval * 1000);
+        }
+    }
 
-	message(data)
-	{
-		if (this._handshakeComplete)
-		{
-			return;
-		}
+    message(data)
+    {
+        if (this._handshakeComplete)
+        {
+            return;
+        }
 
-		var	name = "";
-		var	value = null;
-		var	c;
+        var name = "";
+        var value = null;
+        var c;
 
-		for (var i = 0; i < data.length; i++)
-		{
-			c = data.charAt(i);
+        for (var i = 0; i < data.length; i++)
+        {
+            c = data.charAt(i);
 
-			if (c == '\n')
-			{
-				if (name.length == 0)
-				{
-					break;
-				}
+            if (c == '\n')
+            {
+                if (name.length == 0)
+                {
+                    break;
+                }
 
-				if (this._headers == null)
-				{
-					this._headers = new Object();
-				}
+                if (this._headers == null)
+                {
+                    this._headers = new Object();
+                }
 
-				if (value != null)
-				{
-					this._headers[name] = value.trim();
-				}
-				else
-				{
-					this._headers[name] = "";
-				}
-
-				name = "";
-				value = null;
-			}
-			else if (value != null)
-			{
-				value += c;
-			}
-			else if (c == ':')
-			{
-				value = "";
-			}
-			else
-			{
-				name += c;
-			}
-		}
-
-		var	status = this.getHeader("status");
-
-		if (status != null)
-		{
-			if (status == 200)
-			{
-				this._handshakeComplete = true;
-				this.handshakeComplete();
-			}
-			else if (status == 401)
-			{
-				if (this._authorization != null)
-				{
-					this._websocket.send(this._authorization);
-				}
+                if (value != null)
+                {
+                    this._headers[name] = value.trim();
+                }
                 else
                 {
-                    var	scheme = this.getHeader("www-authenticate","").toLowerCase();
+                    this._headers[name] = "";
+                }
+
+                name = "";
+                value = null;
+            }
+            else if (value != null)
+            {
+                value += c;
+            }
+            else if (c == ':')
+            {
+                value = "";
+            }
+            else
+            {
+                name += c;
+            }
+        }
+
+        var status = this.getHeader("status");
+
+        if (status != null)
+        {
+            if (status == 200)
+            {
+                this._handshakeComplete = true;
+                this.handshakeComplete();
+            }
+            else if (status == 401)
+            {
+                if (this._authorization != null)
+                {
+                    this._websocket.send(this._authorization);
+                }
+                else
+                {
+                    var scheme = this.getHeader("www-authenticate","").toLowerCase();
                     var a = scheme.split(" ");
                     if (a.length > 1)
                     {
@@ -631,71 +631,71 @@ class Connection extends Options
                         }
                     }
                 }
-			}
-		}
-	}
+            }
+        }
+    }
 
-	setBearer(token)
+    setBearer(token)
     {
         this.authorization = "Bearer " + token;
     }
 
-	setBasic(credentials)
+    setBasic(credentials)
     {
         this.authorization = "Basic " + credentials;
     }
 
-	data(data)
+    data(data)
     {
     }
 
-	clear()
-	{
-		if (this._websocket != null)
-		{
-			this._websocket._connection = null;
-			this._websocket.close();
-			this._websocket = null;
-		}
+    clear()
+    {
+        if (this._websocket != null)
+        {
+            this._websocket._connection = null;
+            this._websocket.close();
+            this._websocket = null;
+        }
 
-		this._ready = false;
-		this._handshakeComplete = false;
-		this._headers = null;
-	}
+        this._ready = false;
+        this._handshakeComplete = false;
+        this._headers = null;
+    }
 
-	getHeader(name,dv)
-	{
-		var	value = dv;
+    getHeader(name,dv)
+    {
+        var value = dv;
 
-		if (this._headers != null)
-		{
-			if (this._headers.hasOwnProperty(name))
-			{
-				value = this._headers[name];
-			}
-		}
+        if (this._headers != null)
+        {
+            if (this._headers.hasOwnProperty(name))
+            {
+                value = this._headers[name];
+            }
+        }
 
-		return(value);
-	}
+        return(value);
+    }
 
-	isHandshakeComplete()
-	{
-		return(this._handshakeComplete);
-	}
+    isHandshakeComplete()
+    {
+        return(this._handshakeComplete);
+    }
 
-	send(data)
-	{
-		if (this._websocket == null)
+    send(data)
+    {
+        if (this._websocket == null)
         {
             //throw "The web socket is not connected";
             return;
         }
 
-		this._websocket.send(data);
-	}
+        this._websocket.send(data);
+    }
 
-	sendObject(o)
-	{
+    sendObject(o)
+    {
         if (this.getOpt("debug_send",false))
         {
             console.log(JSON.stringify(o,null,"\t"));
@@ -704,23 +704,23 @@ class Connection extends Options
         this.send(tools.stringify(o));
     }
 
-	sendBinary(o)
-	{
+    sendBinary(o)
+    {
         var data = codec.encode(o);
         this.send(data);
     }
 
-	isConnected()
-	{
-		return(this._websocket != null);
-	}
+    isConnected()
+    {
+        return(this._websocket != null);
+    }
 
-	getUrl()
+    getUrl()
     {
         return(this.url);
     }
 
-	established()
+    established()
     {
         var url = this.getUrl();
         return(_websockets.established(url));
@@ -750,63 +750,63 @@ class DelegateConnection extends Connection
 {
     constructor(delegate,host,port,path,secure,options,config)
     {
-		super(host,port,path,secure,options,config);
+        super(host,port,path,secure,options,config);
         this._delegate = delegate;
     }
 
-	ready()
-	{
+    ready()
+    {
         if (tools.supports(this._delegate,"ready"))
         {
             this._delegate.ready();
         }
-	}
+    }
 
-	closed()
-	{
+    closed()
+    {
         if (tools.supports(this._delegate,"closed"))
         {
             this._delegate.closed();
         }
-	}
+    }
 
-	error()
-	{
+    error()
+    {
         if (tools.supports(this._delegate,"error"))
         {
             this._delegate.error();
         }
-	}
+    }
 
-	handshakeComplete()
-	{
+    handshakeComplete()
+    {
         if (tools.supports(this._delegate,"handshakeComplete"))
         {
             this._delegate.handshakeComplete();
         }
-	}
+    }
 
-	message(data)
-	{
-		if (this.isHandshakeComplete() == false)
-		{
-			super.message(data);
-			return;
-		}
+    message(data)
+    {
+        if (this.isHandshakeComplete() == false)
+        {
+            super.message(data);
+            return;
+        }
 
         if (tools.supports(this._delegate,"message"))
         {
             this._delegate.message(data);
         }
-	}
+    }
 
-	data(o)
-	{
+    data(o)
+    {
         if (tools.supports(this._delegate,"data"))
         {
             this._delegate.data(o);
         }     
-	}
+    }
 }
 
 export {Connection};
