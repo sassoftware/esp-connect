@@ -5,7 +5,6 @@
 
 import {Connection} from "./connection.js";
 import {Options} from "./options.js";
-import {v6} from "./v6.js";
 import {v7} from "./v7.js";
 import {tools} from "./tools.js";
 import {ajax} from "./ajax.js";
@@ -18,12 +17,6 @@ class ServerConnection extends Connection
         super(host,port,path,secure,options,connect.config);
         this._connect = connect;
         this._delegates = [];
-
-        Object.defineProperty(this,"connect", {
-            get() {
-                return(this._connect);
-            }
-        });
 
         if (delegate != null)
         {
@@ -42,15 +35,16 @@ class ServerConnection extends Connection
         this._impl = null;
     }
 
+    get connect() 
+    {
+        return(this._connect);
+    }
+
     handshakeComplete()
     {
         var version = this.getHeader("version");
 
-        if (version == null)
-        {
-            this._impl = new v6(this,this.getOpts());
-        }
-        else
+        if (version != null)
         {
             this._impl = new v7(this,this.getOpts());
         }

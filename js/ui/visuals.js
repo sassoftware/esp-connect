@@ -41,16 +41,6 @@ class Visuals extends Options
         }
 
         this._dateformat = null;
-
-        Object.defineProperty(this,"dateformat", {
-            get() {
-                return(this._dateformat);
-            },
-            set(value) {
-                this._dateformat = value;
-            }
-        });
-
         if (this.hasOpt("theme"))
         {
             this._colors = new Colors({theme:this.getOpt("theme")});
@@ -66,16 +56,10 @@ class Visuals extends Options
 
         var style = window.getComputedStyle(document.body);
         var font = style.getPropertyValue("font-family");
+        var fontsize = style.getPropertyValue("font-size");
 
         //this._fontFamily = (font != null) ? font : "Verdana";
         this._fontFamily = (font != null) ? font : "Arial, Helvetica, sans-serif";
-
-        Object.defineProperty(this,"fontFamily", {
-            get() {
-                return(this._fontFamily);
-            }
-        });
-
         this._titleStyle = new Options({fontsize:"14pt",font_family:this.fontFamily});
         this._font = this.getOpt("font",{family:this.fontFamily,size:(this._mobile ? 30 : 14)});
         this._titleFont = this.getOpt("title_font",{family:this.fontFamily,size:18});
@@ -83,55 +67,65 @@ class Visuals extends Options
 
         this._span = null;
 
-        Object.defineProperty(this,"languages", {
-            get() {
-                return(this._languages);
-            }
-        });
-
-        Object.defineProperty(this,"colors", {
-            get() {
-                return(this._colors);
-            }
-        });
-
-        Object.defineProperty(this,"font", {
-            get() {
-                return(this._font);
-            }
-        });
-
-        Object.defineProperty(this,"titleFont", {
-            get() {
-                return(this._titleFont);
-            }
-        });
-
-        Object.defineProperty(this,"selectedFont", {
-            get() {
-                return(this._selectedFont);
-            }
-        });
-
-        Object.defineProperty(this,"selectedBorder", {
-            get() {
-                var color = this._colors.getColor(this.getOpt("selected_border_color","black"));
-                var width = this.getOpt("selected_border_color","3");
-                return({color:color,width:width});
-            }
-        });
-
-        Object.defineProperty(this,"theme", {
-            get() {
-                return(this._colors);
-            },
-            set(value) {
-                this._colors = new Colors({theme:value});
-                this.refresh();
-            }
-        });
-
         this._types = ["bar","line","timeseries","pie","radar","polar","bubble","gauge","compass","map","table","imageviewer"];
+    }
+
+    get dateformat() 
+    {
+        return(this._dateformat);
+
+    }
+    set dateformat(value) 
+    {
+        this._dateformat = value;
+    }
+
+    get fontFamily() 
+    {
+        return(this._fontFamily);
+    }
+
+    get languages() 
+    {
+        return(this._languages);
+    }
+
+    get colors() 
+    {
+        return(this._colors);
+    }
+
+    get font() 
+    {
+        return(this._font);
+    }
+
+    get titleFont() 
+    {
+        return(this._titleFont);
+    }
+
+    get selectedFont() 
+    {
+        return(this._selectedFont);
+    }
+
+    get selectedBorder() 
+    {
+        var color = this._colors.getColor(this.getOpt("selected_border_color","black"));
+        var width = this.getOpt("selected_border_color","3");
+        return({color:color,width:width});
+    }
+
+    get theme() 
+    {
+        return(this._colors);
+    }
+
+    set theme(value) 
+    {
+        this._colors = new Colors({theme:value});
+        this.refresh();
     }
 
     isMobile()
@@ -2892,20 +2886,21 @@ class Gauge extends Chart
         this._colors = null;
         this._segments = 0;
         this._entries = {};
-        Object.defineProperty(this,"range", {
-            get() {
-                return(this._range);
-            },
-            set(value) {
-                if (value[1] > value[0])
-                {
-                    this._range = value;
-                    this.create();
-                }
-            }
-        });
-
         this._range = this.getOpt("range",[0,100]);
+    }
+
+    get range() 
+    {
+        return(this._range);
+    }
+
+    set range(value) 
+    {
+        if (value[1] > value[0])
+        {
+            this._range = value;
+            this.create();
+        }
     }
 
     getType()
@@ -3092,32 +3087,33 @@ class GaugeEntry extends Options
         //var margin = this._gauge.getOpt("margin",30);
         var margin = this._gauge.getOpt("margin",5);
         this._layout["margin"] = {l:margin,r:margin,b:margin,t:margin};
-
-        Object.defineProperty(this,"value",{
-            get() {return(this._value);},
-            set(value)
-            {
-                var num;
-
-                if (this._gauge.getOpt("integer",false))
-                {
-                    num = parseInt(value);
-                }
-                else
-                {
-                    num = parseFloat(value);
-                }
-
-                if (this._data != null)
-                {
-                    this._data.delta = {reference:this._value};
-                }
-
-                this._value = num;
-            }
-        });
-
         this._initialized = false;
+    }
+
+    get value()
+    {
+        return(this._value);
+    }
+
+    set value(value)
+    {
+        var num;
+
+        if (this._gauge.getOpt("integer",false))
+        {
+            num = parseInt(value);
+        }
+        else
+        {
+            num = parseFloat(value);
+        }
+
+        if (this._data != null)
+        {
+            this._data.delta = {reference:this._value};
+        }
+
+        this._value = num;
     }
 
     init()
@@ -3288,31 +3284,34 @@ class ImageViewer extends Chart
         this._field = this.getOpt("image");
         this._objectDelegate = null;
         this._data = null;
-
-        Object.defineProperty(this,"image",{
-            get() {
-                return(this._image);
-            },
-            set(value) {
-                this._data = value;
-
-                if (this._data != null && this._data.hasOwnProperty(this._field))
-                {
-                    this._image._data = this._data;
-                    var imagedata = this._data[this._field];
-                    this._image.src = "data:application/octet-stream;base64," + imagedata;
-                }
-            }
-        });
-        Object.defineProperty(this,"objectDelegate",{
-            get() {
-                return(this._objectDelegate);
-            },
-            set(value) {
-                this._objectDelegate = value;
-            }
-        });
         this.size();
+    }
+
+    get image() 
+    {
+        return(this._image);
+    }
+
+    set image(value) 
+    {
+        this._data = value;
+
+        if (this._data != null && this._data.hasOwnProperty(this._field))
+        {
+            this._image._data = this._data;
+            var imagedata = this._data[this._field];
+            this._image.src = "data:application/octet-stream;base64," + imagedata;
+        }
+    }
+
+    get objectDelegate() 
+    {
+        return(this._objectDelegate);
+    }
+
+    set objectDelegate(value) 
+    {
+        this._objectDelegate = value;
     }
 
     getType()
@@ -3436,12 +3435,11 @@ class Wrapper extends Chart
         this._content.style.justifyContent = "center";
 
         this.sizeContent();
+    }
 
-        Object.defineProperty(this,"element",{
-            get() {
-                return(this._wrapper);
-            }
-        });
+    get element() 
+    {
+        return(this._wrapper);
     }
 
     getType()

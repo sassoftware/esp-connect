@@ -85,89 +85,6 @@ class ModelViewer extends ViewerBase
         this._k8s = null;
 
         this._project = null;
-
-        Object.defineProperty(this,"connection", {
-            get() {
-                return(this._connection);
-            },
-
-            set(value) {
-
-                //this._project = "*";
-                this._data = null;
-
-                if (this._modelDiv != null)
-                {
-                    this._system.innerText = "";
-                    this._virtual.innerText = "";
-                    this._resident.innerText = "";
-                }
-
-                if (this._connection != null)
-                {
-                    this._connection.getStats().removeDelegate(this);
-                }
-
-                this._connection = value;
-                this._model = null;
-                this._k8s = null;
-                this.draw();
-
-                if (this._connection != null)
-                {
-                    this._stats = this._connection.getStats();
-                    this.setStats();
-
-                    this._k8s = this._connection.k8s;
-
-                    const   self = this;
-
-                    this._connection.getModel({schema:true,index:true,xml:true}).then(
-                        function(result) {
-                            self.modelLoaded(result,self._connection);
-                        }
-                    );
-                }
-            }
-        });
-
-        Object.defineProperty(this,"project", {
-            get() {
-                return(this._project);
-            },
-
-            set(value) {
-                this._project = value;
-
-                if (this._nodes != null)
-                {
-                    this._nodes.clear();
-                    this._edges.clear();
-                }
-
-                this.draw();
-
-                if (this._projectSelect != null)
-                {
-                    this._projectSelect.value = this._project;
-                }
-
-                this._delegates.forEach((d) =>
-                {
-                    if (tools.supports(d,"projectLoaded"))
-                    {
-                        d.projectLoaded(this);
-                    }
-                });
-            }
-        });
-
-        Object.defineProperty(this,"model", {
-            get() {
-                return(this._model);
-            }
-        });
-
         this._data = null;
         this._model = null;
         this._projects = null;
@@ -184,6 +101,86 @@ class ModelViewer extends ViewerBase
         {
             this.connection = connection;
         }
+    }
+
+    get connection() 
+    {
+        return(this._connection);
+    }
+
+    set connection(value) 
+    {
+        //this._project = "*";
+        this._data = null;
+
+        if (this._modelDiv != null)
+        {
+            this._system.innerText = "";
+            this._virtual.innerText = "";
+            this._resident.innerText = "";
+        }
+
+        if (this._connection != null)
+        {
+            this._connection.getStats().removeDelegate(this);
+        }
+
+        this._connection = value;
+        this._model = null;
+        this._k8s = null;
+        this.draw();
+
+        if (this._connection != null)
+        {
+            this._stats = this._connection.getStats();
+            this.setStats();
+
+            this._k8s = this._connection.k8s;
+
+            const   self = this;
+
+            this._connection.getModel({schema:true,index:true,xml:true}).then(
+                function(result) {
+                    self.modelLoaded(result,self._connection);
+                }
+            );
+        }
+    }
+
+    get project() 
+    {
+        return(this._project);
+    }
+
+    set project(value) 
+    {
+        this._project = value;
+
+        if (this._nodes != null)
+        {
+            this._nodes.clear();
+            this._edges.clear();
+        }
+
+        this.draw();
+
+        if (this._projectSelect != null)
+        {
+            this._projectSelect.value = this._project;
+        }
+
+        this._delegates.forEach((d) =>
+        {
+            if (tools.supports(d,"projectLoaded"))
+            {
+                d.projectLoaded(this);
+            }
+        });
+    }
+
+    get model() 
+    {
+        return(this._model);
     }
 
     getType()
@@ -1188,39 +1185,38 @@ class LogViewer extends ViewerBase
 
         this._newlines = /\n/gi;
         this._spaces = / /gi;
-
-        Object.defineProperty(this,"connection", {
-            get() {
-                return(this._connection);
-            },
-
-            set(value) {
-                this.clear();
-
-                if (this._connection != null)
-                {
-                    this._connection.getLog().removeDelegate(this);
-                }
-
-                this._connection = value;
-
-                if (this._connection != null)
-                {
-                    if (this.hasOpt("filter"))
-                    {
-                        this._connection.getLog().filter = this.getOpt("filter");
-                    }
-
-                    this._connection.getLog().addDelegate(this);
-
-                    this._jsonformat = this._connection.versionGreaterThan(7.4);
-                }
-
-                this.draw();
-            }
-        });
-
         this.connection = connection;
+    }
+
+    get connection() 
+    {
+        return(this._connection);
+    }
+
+    set connection(value) 
+    {
+        this.clear();
+
+        if (this._connection != null)
+        {
+            this._connection.getLog().removeDelegate(this);
+        }
+
+        this._connection = value;
+
+        if (this._connection != null)
+        {
+            if (this.hasOpt("filter"))
+            {
+                this._connection.getLog().filter = this.getOpt("filter");
+            }
+
+            this._connection.getLog().addDelegate(this);
+
+            this._jsonformat = this._connection.versionGreaterThan(7.4);
+        }
+
+        this.draw();
     }
 
     getType()
@@ -1245,8 +1241,8 @@ class LogViewer extends ViewerBase
         fields.push({name:"messageContent",type:"string",label:"Text"});
         fields.push({name:"messageFile",type:"string",label:"File"});
         fields.push({name:"messageLine",type:"int",label:"Line"});
-        fields.push({name:"logName",type:"string",label:"Logger"});
-        fields.push({name:"logLevel",type:"string",label:"Level"});
+        fields.push({name:"logger",type:"string",label:"Logger"});
+        fields.push({name:"loggerLevel",type:"string",label:"Level"});
 
         var options = {key:"id",tail:true};
 

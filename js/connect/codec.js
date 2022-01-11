@@ -16,11 +16,12 @@ class JsonEncoder
 
         this._debug = false;
 
-        Object.defineProperty(this,"data", {
-            get() {return(this._data);}
-        });
-
         this.encode(o);
+    }
+
+    get data()
+    {
+        return(this._data);
     }
 
     encode(o,name)

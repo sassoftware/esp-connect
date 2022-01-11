@@ -54,43 +54,37 @@ class SimpleTable extends Options
         {
             throw "You must specify a key field";
         }
+    }
 
-        Object.defineProperty(this,"name", {
-            get() {
-                return(this.getOpt("name",""));
-            }
-        });
+    get name() 
+    {
+        return(this.getOpt("name",""));
+    }
 
-        Object.defineProperty(this,"items", {
-            get() {
-                return(this._list);
-            }
-        });
+    get items() 
+    {
+        return(this._list);
+    }
 
-        Object.defineProperty(this,"map", {
-            get() {
-                return(this._map);
-            }
-        });
+    get map() 
+    {
+        return(this._map);
+    }
 
-        Object.defineProperty(this,"length", {
-            get() {
-                return(this._list.length);
-            }
-        });
+    get length() 
+    {
+        return(this._list.length);
+    }
 
-        Object.defineProperty(this,"fields", {
-            get() {
-                return(this._schema.getFields());
-            }
-        });
+    get fields() 
+    {
+        return(this._schema.getFields());
+    }
 
-        Object.defineProperty(this,"container", {
-            get() {
-                var container = ((typeof(this._container) == "string") ? document.getElementById(this._container) : this._container);
-                return(container);
-            }
-        });
+    get container() 
+    {
+        var container = ((typeof(this._container) == "string") ? document.getElementById(this._container) : this._container);
+        return(container);
     }
 
     getType()

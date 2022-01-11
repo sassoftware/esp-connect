@@ -24,100 +24,89 @@ class Api extends Options
 
         this._connection = connection;
         this._version = this.createVersion(7.1);
-
-        Object.defineProperty(this,"connection", {
-            get() {
-                return(this._connection);
-            }
-        });
-
-        Object.defineProperty(this,"connect", {
-            get() {
-                return(this._connection.connect);
-            }
-        });
-
-        Object.defineProperty(this,"version", {
-            get() {
-                return(this._version);
-            },
-            set(value) {
-                this._version = this.createVersion(value);
-            }
-        });
-
-        Object.defineProperty(this,"protocol", {
-            get() {
-                return(this._connection.protocol);
-            }
-        });
-
-        Object.defineProperty(this,"httpProtocol", {
-            get() {
-                return(this._connection.httpProtocol);
-            }
-        });
-
-        Object.defineProperty(this,"host", {
-            get() {
-                return(this._connection.host);
-            }
-        });
-
-        Object.defineProperty(this,"port", {
-            get() {
-                return(this._connection.port);
-            }
-        });
-
-        Object.defineProperty(this,"isSecure", {
-            get() {
-                return(this._connection.isSecure);
-            }
-        });
-
-        Object.defineProperty(this,"urlBase", {
-            get() {
-                return(this._connection.urlBase);
-            }
-        });
-
-        Object.defineProperty(this,"url", {
-            get() {
-                return(this._connection.url);
-            }
-        });
-
-        Object.defineProperty(this,"httpurlBase", {
-            get() {
-                return(this._connection.httpurlBase);
-            }
-        });
-
-        Object.defineProperty(this,"httpurl", {
-            get() {
-                return(this._connection.httpurl);
-            }
-        });
-
-        Object.defineProperty(this,"k8s", {
-            get() {
-                return(this.getOpt("k8s"));
-            }
-        });
-
         this._closed = false;
 
-        Object.defineProperty(this,"closed", {
-            get() {
-                return(this._closed);
-            },
-            set(value) {
-                this._closed = value;
-            }
-        });
-
         this.init();
+    }
+
+    get connection()
+    {
+        return(this._connection);
+    }
+
+    get connect()
+    {
+        return(this._connection.connect);
+    }
+
+    get version()
+    {
+            return(this._version);
+    }
+
+    set version(value)
+    {
+        this._version = this.createVersion(value);
+    }
+
+    get protocol()
+    {
+        return(this._connection.protocol);
+    }
+
+    get httpProtocol()
+    {
+        return(this._connection.httpProtocol);
+    }
+
+    get host()
+    {
+        return(this._connection.host);
+    }
+
+    get port()
+    {
+        return(this._connection.port);
+    }
+
+    get isSecure()
+    {
+        return(this._connection.isSecure);
+    }
+
+    get urlBase()
+    {
+        return(this._connection.urlBase);
+    }
+
+    get url()
+    {
+        return(this._connection.url);
+    }
+
+    get httpurlBase()
+    {
+        return(this._connection.httpurlBase);
+    }
+
+    get httpurl()
+    {
+        return(this._connection.httpurl);
+    }
+
+    get k8s()
+    {
+        return(this.getOpt("k8s"));
+    }
+
+    get closed()
+    {
+        return(this._closed);
+    }
+
+    set closed(value)
+    {
+        this._closed = value;
     }
 
     init()
@@ -2838,34 +2827,30 @@ class Stats extends Options
         fields.push({"name":"interval","label":intervalLabel,"type":"int"});
         fields.push({"name":"count","label":countLabel,"type":"int"});
 
-        Object.defineProperty(this,"api", {
-            get() {
-                return(this._api);
-            }
-        });
-
-        Object.defineProperty(this,"windows", {
-            get() {
-                return(this._windows);
-            }
-        });
-
-        Object.defineProperty(this,"memory", {
-            get() {
-                return(this._memory);
-            }
-        });
-
-        Object.defineProperty(this,"config", {
-            get() {
-                return(this._config);
-            }
-        });
-
         this._windows = [];
         this._memory = {};
         this._config = {};
         this._delegates = [];
+    }
+
+    get api()
+    {
+        return(this._api);
+    }
+
+    get windows()
+    {
+        return(this._windows);
+    }
+
+    get memory()
+    {
+        return(this._memory);
+    }
+
+    get config()
+    {
+        return(this._config);
     }
 
     process(o)
@@ -3120,19 +3105,20 @@ class Log extends Options
         this._delegates = [];
 
         this._filter = null;
+    }
 
-        Object.defineProperty(this,"filter", {
-            get() {
-                return(this._filter);
-            },
-            set(value) {
-                this._filter = value;
-                var request = {"logs":{}};
-                var o = request["logs"];
-                o["filter"] = this._filter;
-                this._api.sendObject(request);
-            }
-        });
+    get filter()
+    {
+        return(this._filter);
+    }
+
+    set filter(value) 
+    {
+        this._filter = value;
+        var request = {"logs":{}};
+        var o = request["logs"];
+        o["filter"] = this._filter;
+        this._api.sendObject(request);
     }
 
     process(xml)
@@ -3273,24 +3259,21 @@ class Publisher extends Options
         this._schema = new Schema();
         this._total = 0;
         this._csv = null;
+    }
 
-        Object.defineProperty(this,"schema", {
-            get() {
-                return(this._schema);
-            }
-        });
+    get schema()
+    {
+        return(this._schema);
+    }
 
-        Object.defineProperty(this,"size", {
-            get() {
-                return(this._data.length);
-            }
-        });
+    get size()
+    {
+        return(this._data.length);
+    }
 
-        Object.defineProperty(this,"total", {
-            get() {
-                return(this._total);
-            }
-        });
+    get total()
+    {
+        return(this._total);
     }
 
     open()

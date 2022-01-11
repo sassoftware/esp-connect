@@ -69,7 +69,7 @@ connect(server)
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.showStatus("Loading project...");
     var url = new URL("model.xml",document.URL).toString();
-    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url},overwrite:true,force:_esp.getParm("force",false)});
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url,options:{overwrite:true},parms:{retention:"30 seconds"}},force:_esp.getParm("force",true)});
     _esp.handleLayout();
 }
 
@@ -241,6 +241,7 @@ Turbine(id)
 Turbine.prototype.draw =
 function()
 {
+console.log("draw");
     var w = this._canvas.width;
     var h = this._canvas.height;
     var center = {x:w / 2,y:h / 2};

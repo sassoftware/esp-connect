@@ -18,17 +18,16 @@ class Schema extends Options
         this._keyFields = [];
         this._columns = [];
 
-        Object.defineProperty(this,"size", {
-            get() {
-                return(this._fields.length);
-            }
-        });
+    }
 
-        Object.defineProperty(this,"numkeys",{
-            get() {
-                return(this._keyFields.length);
-            }
-        });
+    get size() 
+    {
+        return(this._fields.length);
+    }
+
+    get numkeys() 
+    {
+        return(this._keyFields.length);
     }
 
     setFields(fields)

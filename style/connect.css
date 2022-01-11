@@ -3,23 +3,20 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
+*
+{
+    font-size:1rem;
+    font-size:.9rem;
+    outline:none;
+}
+
 html,
 body
 {
+    font-family:Verdana, Arial, Helvetica, sans-serif;
     height:100%;
     overflow:hidden;
     margin:0;
-}
-
-body,
-input,
-select,
-textarea
-{
-    font-family:Papyrus;
-    font-family:Arial, Helvetica, sans-serif;
-    font-family:SF Mono, Arial, Helvetica, sans-serif;
-    font-size:1.1rem;
 }
 
 div.container
@@ -29,9 +26,6 @@ div.container
     justify-content:start;
     justify-content:space-between;
     justify-content:space-around;
-    /*
-    font-size:1rem;
-    */
 }
 
 div#banner,
@@ -45,7 +39,6 @@ div#footer
 div#banner
 {
     background:#3b99fc;
-    font-size:1.2rem;
     padding:.5rem;
     color:white;
     z-index:10;
@@ -121,16 +114,11 @@ td.icon
 
 div.Images
 {
-    /*
-    font-size:.875rem;
-    font-weight:regular;
-    */
     border:1px solid #d8d8d8;
 }
 
 div.Images div.ObjectText
 {
-    //font-size:1rem;
 }
 
 /* End Images */
@@ -158,7 +146,6 @@ div.dialog div.header
 
 div.dialog div.title
 {
-	font-size:1.2rem;
     width:100%;
     text-align:center;
     background:#3b99fc;
@@ -189,12 +176,8 @@ div.dialog div.content input,
 div.dialog div.content select,
 div.dialog div.content textarea
 {
-	font-size:1.1rem;
 }
 
-/*
-div.dialog div.content textarea
-*/
 table.form
 {
     width:80%;
@@ -273,7 +256,6 @@ table.form td.value input[type=checkbox]
 
 table.form button
 {
-    font-size:1rem;
     padding:8px;
 }
 
@@ -296,7 +278,6 @@ div.dialog table.buttons td.button
 div.dialog td.buttoncontrol button,
 div.dialog table.buttons button
 {
-    font-size:1rem;
 }
 
 /*
@@ -314,7 +295,6 @@ div.dialog td.buttoncontrol button
 
 div.dialog div.status
 {
-    font-size:1.2rem;
     margin:auto;
     text-align:center;
 }
@@ -331,17 +311,11 @@ div.dialog div.message
 
 div.box
 {
-    /*
-    font-size:1.2rem;
-    */
 }
 
 div.visualHeader
 {
     padding-top:10px;
-    /*
-    font-size:1.3rem;
-    */
 }
 
 div.visual
@@ -357,9 +331,6 @@ div.visualHeader td.icons a
 {
     padding-left:5px;
     padding-right:5px;
-    /*
-    font-size:1.5rem;
-    */
     color:black;
     text-decoration:none;
     color:#808080;
@@ -424,9 +395,6 @@ div.visualControlPanel
 
 div.visualControlPanel a.icon
 {
-    /*
-    font-size:1.5rem;
-    */
 }
 
 td.visualControlPanelNav
@@ -447,16 +415,10 @@ td.visualControlPanelFilter
 
 td.visualControlPanelFilter a.icon
 {
-    /*
-    font-size:1.3rem;
-    */
 }
 
 td.visualControlPanelFilter input
 {
-    /*
-    font-size:1.5rem;
-    */
     width:70%;
 }
 
@@ -467,9 +429,7 @@ div.modelViewerHeader
 
 div.modelViewerHeader td.action a
 {
-    /*
-    font-size:1.5rem;
-    */
+    font-size:1.2rem;
 }
 
 table.modelViewerHeader table.controls td.display
@@ -481,9 +441,6 @@ div.modelViewerHeader td,
 div.modelViewerFooter td,
 div.modelViewerHeader select
 {
-    /*
-    font-size:1.5rem;
-    */
 }
 
 div.modelViewerHeader select
@@ -563,24 +520,15 @@ div.logcontrols
 
 div.logcontrols input
 {
-    /*
-    font-size:1rem;
-    */
 }
 
 div.logcontrols a.icon
 {
-    /*
-    font-size:1.5rem;
-    */
 }
 
 pre.model,
 pre.dialogCode
 {
-    /*
-    font-size:1rem;
-    */
     width:100%;
     height:100%;
     border:1px solid #d8d8d8;
@@ -611,9 +559,6 @@ span.custom
 {
     border-right:2px solid #d8d8d8;
     padding-right:10px;
-    /*
-    font-size:2.5rem;
-    */
 }
 
 span.playPause
@@ -632,9 +577,6 @@ div.visualHeader td.close
 div.visualHeader td.close a
 {
     padding:0;
-    /*
-    font-size:1rem;
-    */
 }
 
 select
@@ -646,7 +588,6 @@ div.hsplitter,
 div.vsplitter
 {
 	font-weight:regular;
-	font-size:1rem;
 	color:#4e4e4e;
 	padding:0;
 	border:0;
@@ -668,11 +609,6 @@ tr.selected td
     color:white;
 }
 
-*
-{
-    outline:none;
-}
-
 table.tabs
 {
     width:100%;
@@ -682,9 +618,6 @@ table.tabs
 table.tabs td.tabAfter
 {
 	border:0;
-    /*
-    font-size:1rem;
-    */
 	padding-left:10px;
 	font-style:italic;
 }
@@ -699,9 +632,6 @@ table.tabs td.tabs button
 	border:0;
 	cursor:pointer;
 	font-weight:normal;
-    /*
-    font-size:1rem;
-    */
 	padding:2px;
 	padding-left:5px;
 	padding-right:5px;
@@ -745,11 +675,6 @@ table.tabs td.tabSelected button
     background:#f8f8f8;
 }
 
-table.tabs button:focus
-{
-	outline:none;
-}
-
 hr
 {
     border:0;
@@ -785,9 +710,6 @@ table.simpletable
 {
 	border:1px solid #cecece;
 	border:0;
-    /*
-	font-size:1rem;
-    */
     width:100%;
 }
 
@@ -798,9 +720,6 @@ table.simpletable td
     border-right:0;
     border-bottom:0;
     padding:4px;
-    /*
-    font-size:1rem;
-    */
 }
 
 table.simpletable th
@@ -875,12 +794,11 @@ div.appheader table.appheader
 
 div.appheader tr.title td
 {
-    font-size:1.5rem;
 }
 
 div.appheader td.navigation
 {
-    font-size:1rem;
+    /*font-size:1rem;*/
 }
 
 div.appcontent
@@ -899,7 +817,7 @@ div.appfooter td.apptab
     padding:10px;
     border:0;
     text-align:center;
-    font-size:.8rem;
+    /*font-size:.8rem;*/
 }
 
 table.app
@@ -915,14 +833,14 @@ table.app td
 {
     padding:0;
     border:0;
-    font-size:1rem;
+    /*font-size:1rem;*/
     background:white;
 }
 
 table.app tr.navigatorTitle td
 {
     background:inherit;
-    font-size:1rem;
+    /*font-size:1rem;*/
     padding-left:10px;
     color:#909090;
 }
@@ -951,7 +869,7 @@ table.app tr.last td
 table.app tr.item td.forward
 {
     color:#c0c0c0;
-    font-size:1rem;
+    /*font-size:1rem;*/
     padding-right:40px;
     text-align:right;
 }
@@ -967,7 +885,7 @@ table.app tr.item span.label
 
 table.app tr.item span.material-icons-outlined
 {
-    font-size:1.5rem;
+    /*font-size:1.5rem;*/
     color:#00bfff;
     padding:0;
 }
@@ -1000,62 +918,61 @@ div.appfooter td.selected
     button,
     table.tabs button
     {
-        font-family:SF Mono, Arial, Helvetica, sans-serif;
-        font-size:2.5rem;
+        font-family:Verdana, Arial, Helvetica, sans-serif;
+        /*font-size:2.5rem;*/
     }
 
     table.app tr.item td
     {
-        font-size:3rem;
-        font-size:2.5rem;
+        /*font-size:2.5rem;*/
         padding:20px;
     }
 
     table.app tr.item td span.material-icons-outlined
     {
-        font-size:3rem;
+        /*font-size:3rem;*/
     }
 
     div.appheader tr.title td
     {
-        font-size:3rem;
+        /*font-size:3rem;*/
     }
 
     div.appheader table.appheader tr.actions td,
     div.appheader table.appheader tr.actions span
     {
-        font-size:3.0rem;
+        /*font-size:3.0rem;*/
         font-weight:bold;
 	    padding-bottom:30px;
     }
 
     div.appfooter td span.material-icons-outlined
     {
-        font-size:3.0rem;
+        /*font-size:3.0rem;*/
     }
 
     div.appfooter td
     {
-        font-size:1.0rem;
+        /*font-size:1.0rem;*/
     }
 
     div.appfooter td.apptab
     {
-        font-size:2.5rem;
+        /*font-size:2.5rem;*/
         padding-bottom:30px;
     }
 
     table.app tr.navigatorTitle td
     {
         background:inherit;
-        font-size:3rem;
+        /*font-size:3rem;*/
         padding-left:20px;
         color:#5cacee;
     }
 
     table.app tr.item td.forward
     {
-        font-size:3rem;
+        /*font-size:3rem;*/
     }
 
     div.appfooter td.selected
@@ -1071,7 +988,7 @@ div.appfooter td.selected
 
     table.form button
     {
-        font-size:2.5rem;
+        /*font-size:2.5rem;*/
         padding:8px;
     }
 
@@ -1079,13 +996,13 @@ div.appfooter td.selected
     div.dialog div.title,
     div.dialog
     {
-        font-size:4rem;
+        /*font-size:4rem;*/
     }
 
     div.dialog td.buttoncontrol button,
     div.dialog table.buttons button
     {
-        font-size:4rem;
+        /*font-size:4rem;*/
     }
 }
 
@@ -1109,65 +1026,65 @@ div.appfooter td.selected
     button,
     table.tabs button
     {
-        font-family:SF Mono, Arial, Helvetica, sans-serif;
-        font-size:1.5rem;
+        font-family:Verdana, Arial, Helvetica, sans-serif;
+        /*font-size:1.5rem;*/
     }
 
     table.app tr.item td
     {
-        font-size:1.5rem;
+        /*font-size:1.5rem;*/
         padding:20px;
     }
 
     table.app tr.item td span.material-icons-outlined
     {
-        font-size:2rem;
+        /*font-size:2rem;*/
     }
 
     div.appheader tr.title td
     {
-        font-size:2rem;
+        /*font-size:2rem;*/
     }
 
     div.appheader table.appheader tr.actions td
     {
-        font-size:2.0rem;
+        /*font-size:2.0rem;*/
         font-weight:bold;
 	    padding-bottom:10px;
     }
 
     div.appfooter td span.material-icons-outlined
     {
-        font-size:2.0rem;
+        /*font-size:2.0rem;*/
     }
 
     div.appfooter td
     {
-        font-size:1.0rem;
+        /*font-size:1.0rem;*/
     }
 
     div.appfooter td.apptab
     {
-        font-size:1.5rem;
+        /*font-size:1.5rem;*/
         padding-bottom:20px;
     }
 
     table.app tr.navigatorTitle td
     {
         background:inherit;
-        font-size:2rem;
+        /*font-size:2rem;*/
         padding-left:20px;
         color:#5cacee;
     }
 
     table.app tr.item td.forward
     {
-        font-size:2rem;
+        /*font-size:2rem;*/
     }
 
     table.form button
     {
-        font-size:1.5rem;
+        /*font-size:1.5rem;*/
         padding:8px;
     }
 
@@ -1175,12 +1092,12 @@ div.appfooter td.selected
     div.dialog div.title,
     div.dialog
     {
-        font-size:2rem;
+        /*font-size:2rem;*/
     }
 
     div.dialog td.buttoncontrol button,
     div.dialog table.buttons button
     {
-        font-size:2rem;
+        /*font-size:2rem;*/
     }
 }

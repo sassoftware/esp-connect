@@ -166,159 +166,147 @@ class Connection extends Options
 
         this._reconnect = {"interval":5,"attempts":0,"timestamp":0,"timer":null};
         this._websocket = null;
+    }
 
-        Object.defineProperty(this,"websocket", {
-            get() {
-                return(this._websocket);
+    get websocket()
+    {
+        return(this._websocket);
+    }
+
+    get protocol()
+    {
+        return(this._secure ? "wss" : "ws");
+    }
+
+    get httpProtocol()
+    {
+        return(this._secure ? "https" : "http");
+    }
+
+    get host()
+    {
+        return(this._host);
+    }
+
+    get port()
+    {
+        return(this._port);
+    }
+
+    get path()
+    {
+        return(this._path);
+    }
+
+    get isSecure()
+    {
+        return(this._secure);
+    }
+
+    get parms()
+    {
+        var parms = "";
+        var opts = this.getOpts();
+
+        for (var x in opts)
+        {
+            if (parms.length > 0)
+            {
+                parms += "&";
             }
-        });
+            parms += x + "=" + opts[x];
+        }
 
-        Object.defineProperty(this,"protocol", {
-            get() {
-                return(this._secure ? "wss" : "ws");
+        return(parms);
+    }
+
+    get urlBase()
+    {
+        var base = "";
+        base += this.protocol;
+        base += "://";
+        base += this.host;
+        base += ":";
+        base += this.port;
+        return(base);
+    }
+
+    get url()
+    {
+        var url = this.urlBase;
+        if (this._path != null && this._path.length > 0)
+        {
+            url += this._path;
+        }
+
+        if (this.numOpts > 0)
+        {
+            url += "?";
+            url += this.parms;
+        }
+
+        return(url);
+    }
+
+    get httpurlBase()
+    {
+        var base = "";
+
+        if (this.hasOpt("k8s"))
+        {
+            var k8s = this.getOpt("k8s");
+            base = k8s.espUrl;
+        }
+        else
+        {
+            base += this.httpProtocol;
+            base += "://";
+            base += this.host;
+            base += ":";
+            base += this.port;
+        }
+
+        return(base);
+    }
+
+    get httpurl()
+    {
+        var url = this.httpurlBase;
+        if (this._path != null && this._path.length > 0)
+        {
+            url += this._path;
+        }
+
+        if (this.numOpts > 0)
+        {
+            url += "?";
+            url += this.parms;
+        }
+
+        return(url);
+    }
+
+    get hasAuthorization()
+    {
+        return(this._authorization != null && this._authorization.length > 0);
+    }
+
+    get authorization()
+    {
+        return(this._authorization);
+    }
+
+    set authorization(value)
+    {
+        this._authorization = value;
+
+        if (this._authorization != null)
+        {
+            if (this.isConnected() && this.isHandshakeComplete() == false)
+            {
+                this._websocket.send(this._authorization);
             }
-        });
-
-        Object.defineProperty(this,"httpProtocol", {
-            get() {
-                return(this._secure ? "https" : "http");
-            }
-        });
-
-        Object.defineProperty(this,"host", {
-            get() {
-                return(this._host);
-            }
-        });
-
-        Object.defineProperty(this,"port", {
-            get() {
-                return(this._port);
-            }
-        });
-
-        Object.defineProperty(this,"path", {
-            get() {
-                return(this._path);
-            }
-        });
-
-        Object.defineProperty(this,"isSecure", {
-            get() {
-                return(this._secure);
-            }
-        });
-
-        Object.defineProperty(this,"parms", {
-            get() {
-                var parms = "";
-                var opts = this.getOpts();
-
-                for (var x in opts)
-                {
-                    if (parms.length > 0)
-                    {
-                        parms += "&";
-                    }
-                    parms += x + "=" + opts[x];
-                }
-
-                return(parms);
-            }
-        });
-
-        Object.defineProperty(this,"urlBase", {
-            get() {
-                var base = "";
-                base += this.protocol;
-                base += "://";
-                base += this.host;
-                base += ":";
-                base += this.port;
-                return(base);
-            }
-        });
-
-        Object.defineProperty(this,"url", {
-            get() {
-                var url = this.urlBase;
-                if (this._path != null && this._path.length > 0)
-                {
-                    url += this._path;
-                }
-
-                if (this.numOpts > 0)
-                {
-                    url += "?";
-                    url += this.parms;
-                }
-
-                return(url);
-            }
-        });
-
-        Object.defineProperty(this,"httpurlBase", {
-            get() {
-                var base = "";
-
-                if (this.hasOpt("k8s"))
-                {
-                    var k8s = this.getOpt("k8s");
-                    base = k8s.espUrl;
-                }
-                else
-                {
-                    base += this.httpProtocol;
-                    base += "://";
-                    base += this.host;
-                    base += ":";
-                    base += this.port;
-                }
-
-                return(base);
-            }
-        });
-
-        Object.defineProperty(this,"httpurl", {
-            get() {
-                var url = this.httpurlBase;
-                if (this._path != null && this._path.length > 0)
-                {
-                    url += this._path;
-                }
-
-                if (this.numOpts > 0)
-                {
-                    url += "?";
-                    url += this.parms;
-                }
-
-                return(url);
-            }
-        });
-
-        Object.defineProperty(this,"hasAuthorization", {
-            get() {
-                return(this._authorization != null && this._authorization.length > 0);
-            }
-        });
-
-        Object.defineProperty(this,"authorization", {
-            get() {
-                return(this._authorization);
-            },
-            set(value) {
-                this._authorization = value;
-
-                if (this._authorization != null)
-                {
-                    if (this.isConnected() && this.isHandshakeComplete() == false)
-                    {
-                        this._websocket.send(this._authorization);
-                    }
-                }
-            }
-        });
+        }
     }
 
     getType()

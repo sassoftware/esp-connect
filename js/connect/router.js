@@ -258,15 +258,15 @@ class PublishDestination extends Destination
 
         this._publishers = {};
         this._opcode = null;
-        Object.defineProperty(this,"opcode", {
-            set(value) {
-                this._opcode = value;
-            },
+    }
 
-            get() {
-                return(this._opcode);
-            }
-        });
+    set opcode(value)
+    {
+        this._opcode = value;
+    }
+
+    get opcode() {
+        return(this._opcode);
     }
 
     init()
@@ -336,57 +336,61 @@ class Route
         this._window = null;
         this._to = null;
         this._destinations = [];
+    }
 
-        Object.defineProperty(this,"name", {
-            get:function() {
-                return(this._name);
-            }
-        });
+    get name()
+    {
+        return(this._name);
+    }
 
-        Object.defineProperty(this,"engine", {
-            set:function(value) {
-                this._engine = (value != null) ? new RegExp(value) : null;
-            },
-            get:function() {
-                return(this._engine);
-            }
-        });
+    get engine()
+    {
+        return(this._engine);
+    }
 
-        Object.defineProperty(this,"project", {
-            set:function(value) {
-                this._project = (value != null) ? new RegExp(value) : null;
-            },
-            get:function() {
-                return(this._project);
-            }
-        });
+    set engine(value)
+    {
+        this._engine = (value != null) ? new RegExp(value) : null;
+    }
 
-        Object.defineProperty(this,"contquery", {
-            set:function(value) {
-                this._contquery = (value != null) ? new RegExp(value) : null;
-            },
-            get:function() {
-                return(this._contquery);
-            }
-        });
+    get project()
+    {
+        return(this._project);
+    }
 
-        Object.defineProperty(this,"win", {
-            set:function(value) {
-                this._window = (value != null) ? new RegExp(value) : null;
-            },
-            get:function() {
-                return(this._window);
-            }
-        });
+    set project(value)
+    {
+        this._project = (value != null) ? new RegExp(value) : null;
+    }
 
-        Object.defineProperty(this,"to", {
-            set:function(value) {
-                this._to = (value != null) ? value.split(",") : null;
-            },
-            get:function() {
-                return(this._to);
-            }
-        });
+    get contquery()
+    {
+        return(this._contquery);
+    }
+
+    set contquery(value)
+    {
+        this._contquery = (value != null) ? new RegExp(value) : null;
+    }
+
+    get win()
+    {
+        return(this._window);
+    }
+
+    set win(value)
+    {
+        this._window = (value != null) ? new RegExp(value) : null;
+    }
+
+    get to()
+    {
+        return(this._to);
+    }
+
+    set to(value)
+    {
+        this._to = (value != null) ? value.split(",") : null;
     }
 
     init()

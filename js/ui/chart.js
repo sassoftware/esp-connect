@@ -233,32 +233,8 @@ class Chart extends Options
 
         this._schemaReady = (this._datasource != null && this._datasource.schema.size > 0) ? true : false;
 
-        Object.defineProperty(this,"isSchemaReady", {
-            get() {
-                return(this._schemaReady);
-            }
-        });
-
         var margin = this.getOpt("margin",20);
         this._layout["margin"] = {l:margin,r:margin,b:margin,t:margin};
-
-        Object.defineProperty(this,"layout", {
-            get() {
-                return(this._layout);
-            }
-        });
-
-        Object.defineProperty(this,"xaxis", {
-            get() {
-                return(this._layout.xaxis);
-            }
-        });
-
-        Object.defineProperty(this,"yaxis", {
-            get() {
-                return(this._layout.yaxis);
-            }
-        });
 
         var range;
 
@@ -272,72 +248,7 @@ class Chart extends Options
             this._layout["yaxis"]["range"] = range;
         }
 
-        Object.defineProperty(this,"id", {
-            get() {
-                return(this._id);
-            }
-        });
-
-        Object.defineProperty(this,"type", {
-            get() {
-                return(this.getType());
-            }
-        });
-
-        Object.defineProperty(this,"container", {
-            get() {
-                var container = ((typeof(this._container) == "string") ? document.getElementById(this._container) : this._container);
-                return(container);
-            }
-        });
-
-        Object.defineProperty(this,"content", {
-            get() {
-                return(this._content);
-            }
-        });
-
-        Object.defineProperty(this,"header",{
-            get() {
-                return(this.getOpt("header"));
-            },
-
-            set(value) {
-                this.setOpt("header",value);
-            }
-        });
-
-        Object.defineProperty(this,"keyfilter",{
-            get() {
-                return(this._keyfilter);
-            },
-
-            set(value) {
-                this._keyfilter = value;
-            }
-        });
-
-        Object.defineProperty(this,"parent",{
-            get() {
-                return(this._parent);
-            },
-
-            set(value) {
-                this._parent = value;
-            }
-        });
-
         this._keyProperty = "label";
-
-        Object.defineProperty(this,"keyProperty",{
-            get() {
-                return(this._keyProperty);
-            },
-
-            set(value) {
-                this._keyProperty = value;
-            }
-        });
 
         if (this.getType() != "wrapper")
         {
@@ -577,16 +488,6 @@ class Chart extends Options
         this._initialized = false;
         this._handlers = false;
 
-        Object.defineProperty(this,"isInitialized", {
-            get() {
-                return(this._initialized);
-            },
-
-            set(value) {
-                this._initialized = value;
-            }
-        });
-
         this._defaults = {responsive:true,displayModeBar:false};
 
         if (this.getOpt("show_header",true) == false)
@@ -602,10 +503,101 @@ class Chart extends Options
         }
     }
 
+    get isSchemaReady()
+    {
+        return(this._schemaReady);
+    }
+
+    get layout()
+    {
+        return(this._layout);
+    }
+
+    get xaxis()
+    {
+        return(this._layout.xaxis);
+    }
+
+    get yaxis()
+    {
+        return(this._layout.yaxis);
+    }
+
+    get id()
+    {
+        return(this._id);
+    }
+
+    get type()
+    {
+        return(this.getType());
+    }
+
+    get isInitialized()
+    {
+        return(this._initialized);
+    }
+
+    set isInitialized(value)
+    {
+        this._initialized = value;
+    }
+
+    get keyProperty()
+    {
+        return(this._keyProperty);
+    }
+
+    set keyProperty(value) 
+    {
+        this._keyProperty = value;
+    }
+
+    get container()
+    {
+        var container = ((typeof(this._container) == "string") ? document.getElementById(this._container) : this._container);
+        return(container);
+    }
+
     set container(value)
     {
         var container = ((typeof(value) == "string") ? document.getElementById(value) : value);
         this._container = container;
+    }
+
+    get content()
+    {
+        return(this._content);
+    }
+
+    get header()
+    {
+        return(this.getOpt("header"));
+    }
+
+    set header(value) 
+    {
+        this.setOpt("header",value);
+    }
+
+    get keyfilter()
+    {
+        return(this._keyfilter);
+    }
+
+    set keyfilter(value) 
+    {
+        this._keyfilter = value;
+    }
+
+    get parent()
+    {
+        return(this._parent);
+    }
+
+    set parent(value) 
+    {
+        this._parent = value;
     }
 
     getType()
@@ -749,10 +741,11 @@ class Chart extends Options
         }
 
         var base = "/esp-connect/html/visual.html";
-        var parms = "server=" + this._datasource._api.httpurlBase;
+        var parms = "";
 
         if (this._datasource != null)
         {
+            parms += "server=" + this._datasource._api.httpurlBase;
             parms += "&datasource=" + this._datasource;
         }
 

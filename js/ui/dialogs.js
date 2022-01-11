@@ -27,44 +27,6 @@ class Dialog extends Options
         this._zFactor = 10000;
         this._delegate = null;
 
-        Object.defineProperty(this,"div", {
-            get() {
-                return(this._div);
-            }
-        });
-
-        Object.defineProperty(this,"content", {
-            get() {
-                return(this._content);
-            },
-            set(value) {
-                value.style.position = "absolute";
-                this._div.replaceChild(value,this._content);
-                this._content = value;
-                this.layout();
-            }
-        });
-
-        Object.defineProperty(this,"title", {
-            get() {
-                return(this.getOpt("title",""));
-            },
-            set(value) {
-                this.setOpt("title",value);
-                this._title.innerHTML = value;
-            }
-        });
-
-        Object.defineProperty(this,"htmlcontent", {
-            get() {
-                return(this.getOpt("htmlcontent",""));
-            },
-            set(value) {
-                this.setOpt("htmlcontent",value);
-                this._content.innerHTML = value;
-            }
-        });
-
         if (this.hasOpt("div"))
         {
             var value = this.getOpt("div");
@@ -74,6 +36,46 @@ class Dialog extends Options
         {
             this.init();
         }
+    }
+
+    get div()
+    {
+        return(this._div);
+    }
+
+    get content()
+    {
+        return(this._content);
+    }
+
+    set content(value) 
+    {
+        value.style.position = "absolute";
+        this._div.replaceChild(value,this._content);
+        this._content = value;
+        this.layout();
+    }
+
+    get title()
+    {
+        return(this.getOpt("title",""));
+    }
+
+    set title(value) 
+    {
+        this.setOpt("title",value);
+        this._title.innerHTML = value;
+    }
+
+    get htmlcontent()
+    {
+        return(this.getOpt("htmlcontent",""));
+    }
+
+    set htmlcontent(value) 
+    {
+        this.setOpt("htmlcontent",value);
+        this._content.innerHTML = value;
     }
 
     init()
@@ -559,28 +561,26 @@ class Form extends Options
         this._opts = [];
         this._optsmap = {};
 
-        Object.defineProperty(this,"table", {
-            get() {
-                return(this._table);
-            }
-        });
-
-        Object.defineProperty(this,"data", {
-            get() {
-                var data = {};
-
-                this._opts.forEach((opts) => {
-                    if (opts.hasOpt("control"))
-                    {
-                        data[opts.getOpt("name")] = opts.getOpt("control").value;
-                    }
-                });
-
-                return(data);
-            }
-        });
-
         this.create(values);
+    }
+
+    get table()
+    {
+        return(this._table);
+    }
+
+    get data()
+    {
+        var data = {};
+
+        this._opts.forEach((opts) => {
+            if (opts.hasOpt("control"))
+            {
+                data[opts.getOpt("name")] = opts.getOpt("control").value;
+            }
+        });
+
+        return(data);
     }
 
     create(values)

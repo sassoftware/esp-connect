@@ -20,34 +20,32 @@ class EventSources
         this._restart = false;
         this._config = null;
 
-        Object.defineProperty(this,"connect", {
-            get() {
-                return(this._api.connect);
-            }
-        });
-
-        Object.defineProperty(this,"running", {
-            get() {
-                return(this._running);
-            }
-        });
-
-        Object.defineProperty(this,"configuration", {
-            get() {
-                return(this._config);
-            }
-        });
-
-        Object.defineProperty(this,"paused", {
-            get() {
-                return(this._paused);
-            },
-            set(value) {
-                this._paused = value;
-            }
-        });
-
         this._api.connection.addDelegate(this);
+    }
+
+    get connect()
+    {
+        return(this._api.connect);
+    }
+
+    get running()
+    {
+        return(this._running);
+    }
+
+    get configuration()
+    {
+        return(this._config);
+    }
+
+    get paused()
+    {
+        return(this._paused);
+    }
+
+    set paused(value)
+    {
+        this._paused = value;
     }
 
     ready(conn)

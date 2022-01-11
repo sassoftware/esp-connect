@@ -12,17 +12,15 @@
 
 <title>ESP Model Viewer</title>
 
-<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js" ></script>
+<script src="./vis-network.min.js" ></script>
 
 <script>
 var _esp = null;
 </script>
 
-<!-- Run from an esp-connect install -->
-<link rel="stylesheet" href="../style/connect.css" />
-<script type="module">
-import {esp} from "../js/ui/api.js"
-_esp = esp;
+<script src="./esp-connect-ui.js"></script>
+<script>
+_esp = esp_connect_ui.api;
 </script>
 
 <script>

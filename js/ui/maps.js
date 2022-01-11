@@ -1073,23 +1073,23 @@ class PlotlyMap extends Map
         super(visuals,container,datasource,options);
         this._type = "scattergeo";
         this._geo = new Options({scope:"usa"});
-        Object.defineProperty(this,"geo", {
-            get() {
-                return(this._geo);
-            }
-        });
-
-        Object.defineProperty(this,"center", {
-            get() {
-                var center = this._geo.getOpt("center");
-                return(center);
-            },
-            set(value) {
-                this._geo.setOpt("center",value);
-            }
-        });
-
         this.keyProperty = "location";
+    }
+
+    get geo() 
+    {
+        return(this._geo);
+    }
+
+    get center() 
+    {
+        var center = this._geo.getOpt("center");
+        return(center);
+    }
+
+    set center(value) 
+    {
+        this._geo.setOpt("center",value);
     }
 
     getType()

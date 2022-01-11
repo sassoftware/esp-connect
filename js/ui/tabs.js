@@ -34,12 +34,11 @@ class Tabs
         this._after = null;
 
         this.clear();
+    }
 
-        Object.defineProperty(this,"container", {
-            get() {
-                return(this._container);
-            }
-        });
+    get container() 
+    {
+        return(this._container);
     }
 
     setButtonClass(buttonClass)

@@ -161,24 +161,21 @@ class Model
 
         this._xml = data;
         this._xml.documentElement.removeAttribute("id");
+    }
 
-        Object.defineProperty(this,"xml", {
-            get() {
-                return(this._xml);
-            }
-        });
+    get xml()
+    {
+        return(this._xml);
+    }
 
-        Object.defineProperty(this,"xmlstring", {
-            get() {
-                return(xpath.xmlString(this._xml));
-            }
-        });
+    get xmlstring()
+    {
+        return(xpath.xmlString(this._xml));
+    }
 
-        Object.defineProperty(this,"projects", {
-            get() {
-                return(this._projects);
-            }
-        });
+    get projects()
+    {
+        return(this._projects);
     }
 
     addWindow(p,cq,w)

@@ -48,188 +48,172 @@ class K8S extends Options
                 }
             }
         }
+    }
 
-        Object.defineProperty(this,"k8sProtocol", {
-            get() {
-                var protocol = "k8s";
+    get k8sProtocol()
+    {
+        var protocol = "k8s";
 
-                if (this._proxy)
-                {
-                    protocol += "-proxy";
-                }
+        if (this._proxy)
+        {
+            protocol += "-proxy";
+        }
 
-                protocol += ":";
+        protocol += ":";
 
-                return(protocol);
+        return(protocol);
+    }
+
+    get httpProtocol()
+    {
+        var protocol = "";
+
+        if (this._proxy)
+        {
+            protocol = "http:";
+        }
+        else if (this._url.protocol == "k8s:" || this._url.protocol == "https:")
+        {
+            protocol = "https:";
+        }
+        else
+        {
+            protocol = "http:";
+        }
+
+        return(protocol);
+    }
+
+    get wsProtocol()
+    {
+        var protocol = "";
+
+        if (this._proxy)
+        {
+            protocol = "ws:";
+        }
+        else if (this._url.protocol == "k8s:" || this._url.protocol == "https:")
+        {
+            protocol = "wss:";
+        }
+        else
+        {
+            protocol = "ws:";
+        }
+
+        return(protocol);
+    }
+
+    get baseUrl()
+    {
+        var s = this.httpProtocol + "//" + this.host + ":" + this.port + "/";
+        return(s);
+    }
+
+    get baseWsUrl()
+    {
+        var s = this.wsProtocol + "//" + this.host + ":" + this.port + "/";
+        return(s);
+    }
+
+    get protocol()
+    {
+        return(this._url.protocol);
+    }
+
+    get host()
+    {
+        return(this._url.host);
+    }
+
+    get port()
+    {
+        return(this._url.port);
+    }
+
+    get path()
+    {
+        return(this._url.path);
+    }
+
+    get url()
+    {
+        var url = this.baseUrl;
+        url += "apis/iot.sas.com/v1alpha1";
+        return(url);
+    }
+
+    get httpUrl()
+    {
+        var url = "";
+
+        if (this._url.protocol == "k8s:" || this._url.protocol == "https:")
+        {
+            url += "https";
+        }
+        else
+        {
+            url += "http";
+        }
+
+        if (this._proxy)
+        {
+            url += "-proxy";
+        }
+
+        url += "://";
+        url += this.host;
+        url += ":";
+        url += this.port;
+
+        return(url);
+    }
+
+    get k8sUrl()
+    {
+        return(this.k8sProtocol + "//" + this.host + ":" + this.port);
+    }
+
+    get namespaceUrl()
+    {
+        if (this.namespace == null)
+        {
+            return(null);
+        }
+
+        return(this.k8sUrl + "/" + this.namespace);
+    }
+
+    get projectUrl()
+    {
+        var url = null;
+
+        if (this.namespace != null)
+        {
+            url = this.k8sUrl + "/" + this.namespace;
+
+            if (this.project != null)
+            {
+                url += "/" + this.project;
             }
-        });
+        }
 
-        Object.defineProperty(this,"httpProtocol", {
-            get() {
-                var protocol = "";
+        return(url);
+    }
 
-                if (this._proxy)
-                {
-                    protocol = "http:";
-                }
-                else if (this._url.protocol == "k8s:" || this._url.protocol == "https:")
-                {
-                    protocol = "https:";
-                }
-                else
-                {
-                    protocol = "http:";
-                }
+    get namespace()
+    {
+        return(this._ns);
+    }
 
-                return(protocol);
-            }
-        });
+    get project()
+    {
+        return(this._project);
+    }
 
-        Object.defineProperty(this,"wsProtocol", {
-            get() {
-                var protocol = "";
-
-                if (this._proxy)
-                {
-                    protocol = "ws:";
-                }
-                else if (this._url.protocol == "k8s:" || this._url.protocol == "https:")
-                {
-                    protocol = "wss:";
-                }
-                else
-                {
-                    protocol = "ws:";
-                }
-
-                return(protocol);
-            }
-        });
-
-        Object.defineProperty(this,"baseUrl", {
-            get() {
-                var s = this.httpProtocol + "//" + this.host + ":" + this.port + "/";
-                return(s);
-            }
-        });
-
-        Object.defineProperty(this,"baseWsUrl", {
-            get() {
-                var s = this.wsProtocol + "//" + this.host + ":" + this.port + "/";
-                return(s);
-            }
-        });
-
-        Object.defineProperty(this,"protocol", {
-            get() {
-                return(this._url.protocol);
-            }
-        });
-
-        Object.defineProperty(this,"host", {
-            get() {
-                return(this._url.host);
-            }
-        });
-
-        Object.defineProperty(this,"port", {
-            get() {
-                return(this._url.port);
-            }
-        });
-
-        Object.defineProperty(this,"path", {
-            get() {
-                return(this._url.path);
-            }
-        });
-
-        Object.defineProperty(this,"url", {
-            get() {
-                var url = this.baseUrl;
-                url += "apis/iot.sas.com/v1alpha1";
-                return(url);
-            }
-        });
-
-        Object.defineProperty(this,"httpUrl", {
-            get() {
-                var url = "";
-
-                if (this._url.protocol == "k8s:" || this._url.protocol == "https:")
-                {
-                    url += "https";
-                }
-                else
-                {
-                    url += "http";
-                }
-
-                if (this._proxy)
-                {
-                    url += "-proxy";
-                }
-
-                url += "://";
-                url += this.host;
-                url += ":";
-                url += this.port;
-
-                return(url);
-            }
-        });
-
-        Object.defineProperty(this,"k8sUrl", {
-            get() {
-                return(this.k8sProtocol + "//" + this.host + ":" + this.port);
-            }
-        });
-
-        Object.defineProperty(this,"namespaceUrl", {
-            get() {
-                if (this.namespace == null)
-                {
-                    return(null);
-                }
-                return(this.k8sUrl + "/" + this.namespace);
-            }
-        });
-
-        Object.defineProperty(this,"projectUrl", {
-            get() {
-                var url = null;
-
-                if (this.namespace != null)
-                {
-                    url = this.k8sUrl + "/" + this.namespace;
-
-                    if (this.project != null)
-                    {
-                        url += "/" + this.project;
-                    }
-                }
-
-                return(url);
-            }
-        });
-
-        Object.defineProperty(this,"namespace", {
-            get() {
-                return(this._ns);
-            }
-        });
-
-        Object.defineProperty(this,"project", {
-            get() {
-                return(this._project);
-            }
-        });
-
-        Object.defineProperty(this,"pod", {
-            get() {
-                return(this._pod);
-            }
-        });
+    get pod()
+    {
+        return(this._pod);
     }
 
     getNamespaces()
@@ -481,8 +465,7 @@ console.log("======== get project: " + namespace + " :: " + name);
     {
         return(new Promise((resolve,reject) => {
             var url = this.baseUrl;
-            //url += "apis/networking.k8s.io/v1beta1";
-            url += "networking.k8s.io/v1";
+            url += "apis/networking.k8s.io/v1";
 
             if (this.namespace != null)
             {
@@ -521,7 +504,6 @@ console.log("======== get project: " + namespace + " :: " + name);
             }
 
             const   self = this;
-
             this.getAuthToken().then(
                 function(result) {
                     const   status = result.status;
@@ -1202,43 +1184,43 @@ class K8SProject extends K8S
             tools.exception("URL must be in form protocol://server/<namespace>/<project>");
         }
 
-        Object.defineProperty(this,"espUrl", {
-            get() {
-                var url = "";
-                if (this._config != null)
-                {
-                    if (this._url.protocol == "k8s:" || this._url.protocol == "https:")
-                    {
-                        url += "https://";
-                    }
-                    else if (this._url.protocol == "k8s-proxy:" || this._url.protocol == "https-proxy:")
-                    {
-                        url += "https://";
-                    }
-                    else
-                    {
-                        url += "http://";
-                    }
-                    url += this._config.access.externalURL;
-                    url += "/SASEventStreamProcessingServer";
-                    url += "/" + this._project;
-                }
-                return(url);
-            }
-        });
-
-        Object.defineProperty(this,"modelXml", {
-            get() {
-                var xml = "";
-                if (this._config != null)
-                {
-                    xml = this._config.spec.espProperties["server.xml"];
-                }
-                return(xml);
-            }
-        });
-
         this._config = null;
+    }
+
+    get espUrl()
+    {
+        var url = "";
+
+        if (this._config != null)
+        {
+            if (this._url.protocol == "k8s:" || this._url.protocol == "https:")
+            {
+                url += "https://";
+            }
+            else if (this._url.protocol == "k8s-proxy:" || this._url.protocol == "https-proxy:")
+            {
+                url += "https://";
+            }
+            else
+            {
+                url += "http://";
+            }
+            url += this._config.access.externalURL;
+            url += "/SASEventStreamProcessingServer";
+            url += "/" + this._project;
+        }
+
+        return(url);
+    }
+
+    get modelXml() 
+    {
+        var xml = "";
+        if (this._config != null)
+        {
+            xml = this._config.spec.espProperties["server.xml"];
+        }
+        return(xml);
     }
 
     connect(connect,delegate,options,start)
@@ -1805,24 +1787,21 @@ class Tar extends Options
         this._dv = null;
 
         this._content = null;
+    }
 
-        Object.defineProperty(this,"content", {
-            get() {
-                return(this._content);
-            }
-        });
+    get content()
+    {
+        return(this._content);
+    }
 
-        Object.defineProperty(this,"dv", {
-            get() {
-                return(this._dv);
-            }
-        });
+    get dv()
+    {
+        return(this._dv);
+    }
 
-        Object.defineProperty(this,"buffer", {
-            get() {
-                return(this._dv.buffer);
-            }
-        });
+    get buffer()
+    {
+        return(this._dv.buffer);
     }
 
     create(data,options)

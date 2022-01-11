@@ -254,6 +254,7 @@ class Ajax extends Options
 var TUNNEL = null;
 var http_proxy = null;
 var https_proxy = null;
+var no_proxy = null;
 
 if (tools.isNode)
 {
@@ -265,6 +266,18 @@ if (tools.isNode)
     if (process.env.https_proxy != null)
     {
         https_proxy = new URL(process.env.https_proxy);
+    }
+
+    if (process.env.NO_PROXY != null)
+    {
+        no_proxy = [];
+
+        var tmp = process.env.NO_PROXY.split(",");
+
+        for (var s of tmp)
+        {
+            no_proxy.push(s.trim());
+        }
     }
 
     import("tunnel").then(
@@ -424,7 +437,6 @@ class NodeAjax extends Options
             var sendrequest = function(protocol) {
                 self.setProxy().then(
                     function() {
-console.log(JSON.stringify(self._options,null,"\t"));
                         complete(protocol.request(self._options));
                     }
                 );
@@ -500,7 +512,6 @@ console.log(JSON.stringify(self._options,null,"\t"));
 
     setOptions(options)
     {
-console.log("================ SET OPTS");
         if (options != null)
         {
             for (var name in options)
@@ -508,7 +519,6 @@ console.log("================ SET OPTS");
                 this._options[name] = options[name];
             }
         }
-console.log(JSON.stringify(this._options,null,"\t"));
     }
 
     setAccept(value)
@@ -543,6 +553,26 @@ console.log(JSON.stringify(this._options,null,"\t"));
     {
         return(new Promise((resolve,reject) => {
             var u = new URL(this._url);
+            var noproxy = false;
+
+            if (no_proxy != null)
+            {
+                for (var s of no_proxy)
+                {
+                    if (s == u.hostname)
+                    {
+                        noproxy = true;
+                        break;
+                    }
+                }
+            }
+
+            if (noproxy)
+            {
+                resolve();
+                return;
+            }
+
             var secure = (u.protocol.toLowerCase() == "https:");
 
             var proxyHost = null;
@@ -591,6 +621,10 @@ console.log(JSON.stringify(this._options,null,"\t"));
 
                 this._options.agent = agent;
 
+                resolve();
+            }
+            else
+            {
                 resolve();
             }
         }));

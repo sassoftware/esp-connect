@@ -25,42 +25,6 @@ class Item extends Options
             this._items.push(new Item(this._menu,item,this));
         });
 
-        Object.defineProperty(this,"name", {
-            get() {
-                return(this.getOpt("name",""));
-            }
-        });
-
-        Object.defineProperty(this,"text", {
-            get() {
-                return(this.getOpt("text",this.name));
-            }
-        });
-
-        Object.defineProperty(this,"parentName", {
-            get() {
-                return(this._parent != null ? this._parent.getOpt("name","") : "");
-            }
-        });
-
-        Object.defineProperty(this,"key", {
-            get() {
-                return(this._key);
-            }
-        });
-
-        Object.defineProperty(this,"parentKey", {
-            get() {
-                return(this._parent != null ? this._parent._key : "");
-            }
-        });
-
-        Object.defineProperty(this,"hasChildren", {
-            get() {
-                return(this._items.length > 0);
-            }
-        });
-
         this.build();
 
         this._table = (this._items.length > 0) ? document.createElement("table") : null;
@@ -80,6 +44,36 @@ class Item extends Options
                 this._table.appendChild(item.build());
             });
         }
+    }
+
+    get name() 
+    {
+        return(this.getOpt("name",""));
+    }
+
+    get text() 
+    {
+        return(this.getOpt("text",this.name));
+    }
+
+    get parentName() 
+    {
+        return(this._parent != null ? this._parent.getOpt("name","") : "");
+    }
+
+    get key() 
+    {
+        return(this._key);
+    }
+
+    get parentKey() 
+    {
+        return(this._parent != null ? this._parent._key : "");
+    }
+
+    get hasChildren() 
+    {
+        return(this._items.length > 0);
     }
 
     build()
@@ -236,12 +230,11 @@ class Menu extends Options
                 self.hide();
             });
         }
+    }
 
-        Object.defineProperty(this,"name", {
-            get() {
-                return(this.getOpt("name",""));
-            }
-        });
+    get name() 
+    {
+        return(this.getOpt("name",""));
     }
 
     show(x,y)

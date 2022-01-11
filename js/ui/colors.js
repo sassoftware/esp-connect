@@ -71,76 +71,72 @@ class Colors extends Options
         {
             this.createFromTheme("sas_corporate");
         }
+    }
 
-        Object.defineProperty(this,"colors", {
-            get() {
-                var colors = [];
+    get colors()
+    {
+        var colors = [];
 
-                for (var c of this._colors)
-                {
-                    colors.push(c.color);
-                }
-                return(colors);
+        for (var c of this._colors)
+        {
+            colors.push(c.color);
+        }
+        return(colors);
+    }
+
+    get lightest()
+    {
+        var maxLuma = 0;
+        var color = null;
+        var luma;
+
+        for (var i = 0; i < this._colors.length; i++)
+        {
+            luma = this._colors[i].luma;
+
+            if (luma > maxLuma)
+            {
+                maxLuma = luma;
+                color = this._colors[i].color;
             }
-        });
+        }
 
-        Object.defineProperty(this,"lightest", {
-            get() {
-                var maxLuma = 0;
-                var color = null;
-                var luma;
+        return(color);
+    }
 
-                for (var i = 0; i < this._colors.length; i++)
-                {
-                    luma = this._colors[i].luma;
+    get darkest()
+    {
+        var minLuma = Number.MAX_VALUE;
+        var color = null;
+        var luma;
 
-                    if (luma > maxLuma)
-                    {
-                        maxLuma = luma;
-                        color = this._colors[i].color;
-                    }
-                }
 
-                return(color);
+        for (var i = 0; i < this._colors.length; i++)
+        {
+            luma = this._colors[i].luma;
+
+            if (luma < minLuma)
+            {
+                minLuma = luma;
+                color = this._colors[i].color;
             }
-        });
+        }
 
-        Object.defineProperty(this,"darkest", {
-            get() {
-                var minLuma = Number.MAX_VALUE;
-                var color = null;
-                var luma;
+        return(color);
+    }
 
+    get middle()
+    {
+        var color = "#ffffff";
+        var a = this._colors.slice(0);
+        a.sort(this.sortLuma);
+        if (a.length > 0)
+        {
+            var index = (a.length % 2 == 0) ? (a.length / 2) : ((a.length - 1) / 2);
+            color = a[index].color;
+        }
 
-                for (var i = 0; i < this._colors.length; i++)
-                {
-                    luma = this._colors[i].luma;
-
-                    if (luma < minLuma)
-                    {
-                        minLuma = luma;
-                        color = this._colors[i].color;
-                    }
-                }
-
-                return(color);
-            }
-        });
-
-        Object.defineProperty(this,"middle", {
-            get() {
-                var color = "#ffffff";
-                var a = this._colors.slice(0);
-                a.sort(this.sortLuma);
-                if (a.length > 0)
-                {
-                    var index = (a.length % 2 == 0) ? (a.length / 2) : ((a.length - 1) / 2);
-                    color = a[index].color;
-                }
-
-                return(color);
-            }
-        });
+        return(color);
     }
 
     createFromTheme(colormap)
@@ -545,15 +541,6 @@ class Gradient extends Options
 		super(options);
         this._colors = colors;
 
-        Object.defineProperty(this,"color",{
-            get() {return(this._color);},
-            set(value)
-            {
-                this._color = createColor(value);
-                this._value = parseInt(this._color.substr(1),16);
-            }
-        });
-
         this._levels = this.getOpt("levels",100);
 
         var minv = this.getOpt("min",0);
@@ -567,6 +554,17 @@ class Gradient extends Options
         {
             this.color = this.getOpt("color");
         }
+    }
+
+    get color()
+    {
+        return(this._color);
+    }
+
+    set color(value)
+    {
+        this._color = createColor(value);
+        this._value = parseInt(this._color.substr(1),16);
     }
 
     lighten(amount)

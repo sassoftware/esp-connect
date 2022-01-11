@@ -36,18 +36,6 @@ class Range
 
         this._interval = (this._upper - this._lower) / this._num;
 
-        Object.defineProperty(this,"lower", {
-            get() {return(this._lower);}
-        });
-
-        Object.defineProperty(this,"upper", {
-            get() {return(this._upper);}
-        });
-
-        Object.defineProperty(this,"interval", {
-            get() {return(this._interval);}
-        });
-
         var value = new Number(this._lower);
 
         for (var i = 0; i < (this._num + 1); i++)
@@ -57,10 +45,26 @@ class Range
         }
 
         //this._a.push(value);
+    }
 
-        Object.defineProperty(this,"length", {
-            get() {return(this._a.length);}
-        });
+    get lower()
+    {
+        return(this._lower);
+    }
+
+    get upper()
+    {
+        return(this._upper);
+    }
+
+    get interval()
+    {
+        return(this._interval);
+    }
+
+    get length()
+    {
+        return(this._a.length);
     }
 
     index(value)
@@ -121,8 +125,6 @@ class Timer
             _api.exception("The timer entry must implement the getInterval method");
         }
 
-        item._fired = 0;
-
         Object.defineProperty(item,"fired", {
             get() {
                 return(this._fired);
@@ -131,6 +133,8 @@ class Timer
                 this._fired = value;
             }
         });
+
+        item._fired = 0;
 
         this._items.push(item);
     }
@@ -149,6 +153,7 @@ class Timer
 
     run()
     {
+console.log("timer run");
         var current = new Date();
         var items = [];
         var minInterval = 1000;
@@ -158,6 +163,7 @@ class Timer
             var diff = current.getTime() - item.fired;
             var interval = item.getInterval();
 
+console.log("DIFF: " + diff + " :: " + interval);
             if (diff > interval)
             {
                 if (interval < minInterval)
@@ -178,7 +184,9 @@ class Timer
             }
         });
 
+console.log("1");
         items.forEach((item) => {
+console.log("2");
             item.run();
         });
 

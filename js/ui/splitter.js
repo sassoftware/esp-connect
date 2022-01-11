@@ -25,38 +25,35 @@ class Splitter
         this._flags = new Object();
 
         this.clear();
+    }
 
-        Object.defineProperty(this,"rows", {
-            get() {
-                var rows = [];
-                this._rows.forEach((row) => {
-                    if (row.isRow())
-                    {
-                        rows.push(row);
-                    }
-                });
-                return(rows);
+    get rows() 
+    {
+        var rows = [];
+        this._rows.forEach((row) => {
+            if (row.isRow())
+            {
+                rows.push(row);
             }
         });
+        return(rows);
+    }
 
-        Object.defineProperty(this,"numRows", {
-            get() {
-                var count = 0;
-                this._rows.forEach((row) => {
-                    if (row.isRow())
-                    {
-                        count++;
-                    }
-                });
-                return(count);
+    get numRows() 
+    {
+        var count = 0;
+        this._rows.forEach((row) => {
+            if (row.isRow())
+            {
+                count++;
             }
         });
+        return(count);
+    }
 
-        Object.defineProperty(this,"cells", {
-            get() {
-                return(this._cells);
-            }
-        });
+    get cells() 
+    {
+        return(this._cells);
     }
 
     addRow()
@@ -459,25 +456,22 @@ class SplitterCell extends Options
     constructor(splitter,options)
     {
         super(options);
-
-        Object.defineProperty(this,"type", {
-            get() {
-                return(this.getOpt("type",""));
-            }
-        });
-
-        Object.defineProperty(this,"id", {
-            get() {
-                return(this._id);
-            }
-        });
-
         this._splitter = splitter;
         this._id = "";
         this._div = document.createElement("div");
         this._div._splitter = this._splitter;
         this._div._type = this.type;
         this._div.style.position = "absolute";
+    }
+
+    get type() 
+    {
+        return(this.getOpt("type",""));
+    }
+
+    get id() 
+    {
+        return(this._id);
     }
 
     size()
@@ -517,32 +511,30 @@ class SplitterRow extends SplitterCell
         this._div.className = "splitterRow";
         this._cells = new Array();
         this._numCells = 0;
+    }
 
-        Object.defineProperty(this,"containers", {
-            get() {
-                var containers = [];
-                this._cells.forEach((cell) => {
-                    if (cell.type == "container")
-                    {
-                        containers.push(cell);
-                    }
-                });
-                return(containers);
+    get containers() 
+    {
+        var containers = [];
+        this._cells.forEach((cell) => {
+            if (cell.type == "container")
+            {
+                containers.push(cell);
             }
         });
- 
-        Object.defineProperty(this,"numContainers", {
-            get() {
-                var count = 0;
-                this._cells.forEach((cell) => {
-                    if (cell.type == "container")
-                    {
-                        count++;
-                    }
-                });
-                return(count);
+        return(containers);
+    }
+
+    get numContainers() 
+    {
+        var count = 0;
+        this._cells.forEach((cell) => {
+            if (cell.type == "container")
+            {
+                count++;
             }
         });
+        return(count);
     }
 
     addCell(id,element,options)
