@@ -690,6 +690,16 @@ class Api extends Options
                 o["dateformat"] = opts.getOpt("dateformat");
             }
 
+            if (opts.hasOpt("opcode"))
+            {
+                o["opcode"] = opts.getOpt("opcode");
+            }
+
+            if (opts.hasOpt("flags"))
+            {
+                o["flags"] = opts.getOpt("flags");
+            }
+
             this.addHandler(id,{
                 process:function() {
                     resolve();

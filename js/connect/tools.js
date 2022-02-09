@@ -403,6 +403,7 @@ var _api =
         u["port"] = o.port;
         u["path"] = o.pathname;
         u["secure"] = (u["protocol"] == "https:" || u["protocol"] == "wss:");
+        u["searchParams"] = o.searchParams;
 
         u.toString = function()
         {

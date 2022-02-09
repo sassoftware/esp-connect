@@ -299,6 +299,7 @@ class NodeAjax extends Options
         this._text = "";
         this._data = null;
         this._xml = null;
+        this._bearer = null;
     }
 
     get url()
@@ -326,6 +327,16 @@ class NodeAjax extends Options
         }
 
         return(xml);
+    }
+
+    get bearer()
+    {
+        return(this._bearer);
+    }
+
+    set bearer(value)
+    {
+        this._bearer = value;
     }
 
     send(method)
@@ -362,7 +373,7 @@ class NodeAjax extends Options
                                 else
                                 {
                                     self._text = contents.toString();
-                                    resolve(self);
+                                   resolve(self);
                                 }
                             }
                         );
@@ -425,6 +436,11 @@ class NodeAjax extends Options
                     request.setHeader(name,self._requestHeaders[name]);
                 }
                 request.setHeader("Connection","close");
+
+                if (self._bearer != null)
+                {
+                    request.setHeader("Authorization","Bearer " + self._bearer);
+                }
 
                 if (self._data != null)
                 {

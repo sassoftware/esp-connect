@@ -16,6 +16,7 @@ class K8S extends Options
 
         this._url = tools.createUrl(decodeURI(url));
         this._proxy = false;
+        this._bearer = null;
 
         if (this._url.protocol.indexOf("-") != -1)
         {
@@ -47,6 +48,12 @@ class K8S extends Options
                     this._project = a[1];
                 }
             }
+        }
+
+        if (this._proxy == false)
+        {
+            var bearer = this._url.searchParams.get("access_token");
+            this._bearer = bearer;
         }
     }
 
@@ -216,15 +223,30 @@ class K8S extends Options
         return(this._pod);
     }
 
+    createRequest(url,headers)
+    {
+        var request = ajax.create(url);
+
+        if (headers != null)
+        {
+            for (var x in headers)
+            {
+                request.setRequestHeader(x,headers[x]);
+            }
+        }
+
+        request.bearer = this._bearer;
+
+        return(request);
+    }
+
     getNamespaces()
     {
         return(new Promise((resolve,reject) => {
             var url = this.baseUrl;
             url += "api/v1/namespaces";
 
-            var request = ajax.create(url);
-            request.setRequestHeader("accept","application/json");
-
+            var request = this.createRequest(url,{"Accept":"application/json"});
             var a = null;
 
             request.get().then(
@@ -260,8 +282,7 @@ class K8S extends Options
                 url += "/" + name;
             }
 
-            var request = ajax.create(url);
-            request.setRequestHeader("accept","application/json");
+            var request = this.createRequest(url,{"Accept":"application/json"});
 
             request.get().then(
                 function(result) {
@@ -348,8 +369,7 @@ console.log("======== get project: " + namespace + " :: " + name);
             url += "/pods";
 
             var self = this;
-            var request = ajax.create(url);
-            request.setRequestHeader("accept","application/json");
+            var request = this.createRequest(url,{"Accept":"application/json"});
 
             request.get().then(
                 function(result) {
@@ -429,7 +449,7 @@ console.log("======== get project: " + namespace + " :: " + name);
                     url += "/pods/" + pod.metadata.name;
                     url += "/log";
 
-                    ajax.create(url).get().then(
+                    self.createRequest(url).get().then(
                         function(result) {
                             var text = result.text;
                             var log = [];
@@ -473,7 +493,7 @@ console.log("======== get project: " + namespace + " :: " + name);
             }
             url += "/ingresses/" + name;
 
-            var request = ajax.create(url);
+            var request = this.createRequest(url);
             request.get().then(
                 function(result) {
                     if (result.status >= 400)
@@ -617,6 +637,8 @@ console.log("======== get project: " + namespace + " :: " + name);
 
     saslogon(data)
     {
+        var self = this;
+
         return(new Promise((resolve,reject) => {
             this.getSecret().then(
                 function(result) {
@@ -626,11 +648,13 @@ console.log("======== get project: " + namespace + " :: " + name);
                     url += "/SASLogon/oauth/clients/consul";
                     url += "?callback=false&serviceId=app";
 
-                    var request = ajax.create(url);
-                    request.setRequestHeader("X-Consul-Token",secret);
+console.log("url: " + url);
+console.log("secret: " + secret);
+                    var request = self.createRequest(url,{"X-Consul-Token":secret});
 
                     request.post().then(
                         function(result) {
+console.log("STATUS: " + result.status);
                             if (result.status >= 400)
                             {
                                 reject(result);
@@ -661,10 +685,7 @@ console.log("======== get project: " + namespace + " :: " + name);
             url += data.spec.tls[0].hosts[0];
             url += "/uaa/oauth/token";
 
-            var request = ajax.create(url);
-            request.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-            request.setRequestHeader("Accept","application/json");
-
+            var request = this.createRequest(url,{"Content-Type":"application/x-www-form-urlencoded","Content-Type":"application/x-www-form-urlencoded"});
             var user = this.getOpt("user");
             var pw = this.getOpt("pw","");
             var send ="";
@@ -710,8 +731,7 @@ console.log("======== get project: " + namespace + " :: " + name);
 
             url += "/secrets/sas-consul-client";
 
-            var request = ajax.create(url);
-            request.setRequestHeader("accept","application/json");
+            var request = this.createRequest(url,{"Accept":"application/json"});
             request.get().then(
                 function(result) {
 
@@ -981,7 +1001,7 @@ console.log("======== get project: " + namespace + " :: " + name);
 
             var self = this;
 
-            ajax.create(url).get().then(
+            this.createRequest(url).get().then(
                 function(result) {
                     return(self.put(result.text,path,opts.getOpts()));
                 }
@@ -1189,6 +1209,7 @@ class K8SProject extends K8S
 
     get espUrl()
     {
+console.log("HERE: " + this._config);
         var url = "";
 
         if (this._config != null)
@@ -1346,8 +1367,7 @@ class K8SProject extends K8S
                 url += "/espservers";
                 url += "/" + self._project;
 
-                var request = ajax.create(url);
-                request.setRequestHeader("accept","application/json");
+                var request = this.createRequest(url,{"Accept":"application/json"});
                 request.get().then(
                     function(result) {
                         if (result.status == 404)
@@ -1403,9 +1423,7 @@ class K8SProject extends K8S
 
             var self = this;
             var content = this.getYaml(modelData);
-            var request = ajax.create(url);
-            request.setRequestHeader("content-type","application/yaml");
-            request.setRequestHeader("accept","application/json");
+            var request = this.createRequest(url,{"Accept":"application/json","Content-type":"application/yaml"});
             request.setData(content);
             request.post().then(
                 function(result) {
@@ -1485,8 +1503,7 @@ class K8SProject extends K8S
 
             var self = this;
 
-            var request = ajax.create(url);
-            request.setRequestHeader("accept","application/json");
+            var request = this.createRequest(url,{"Accept":"application/json"});
             request.del().then(
                 function() {
                     self._config = null;
@@ -1517,7 +1534,7 @@ class K8SProject extends K8S
             }
             else
             {
-                ajax.create(url).get().then(
+                this.createRequest(url).get().then(
                     function(result) {
                         resolve(result.text);
                     },

@@ -780,7 +780,9 @@ else
                     {name:"window",arg:"ESP window",description:"ESP window in the form of project/contquery/window",required:true},
                     {name:"events",arg:"filename",description:"file containing the ESP events",required:true},
                     {name:"blocksize",arg:"size",description:"event block size (defaults to 1)"},
-                    {name:"dateformat",arg:"format",description:"event date format"}
+                    {name:"dateformat",arg:"format",description:"event date format"},
+                    {name:"opcode",arg:"insert | upsert | update | delete",description:"default opcode"},
+                    {name:"flags",arg:"n | p",description:"default event flags"}
                 ]
             }
 
