@@ -814,6 +814,17 @@ var _api =
         return(s);
     },
 
+    btoa:function(s)
+    {
+        var value = encodeURIComponent(s).replace(/%([0-9A-F]{2})/g,
+            function(match,p) {
+                return(String.fromCharCode("0x" + p));
+            }
+        );
+
+        return(btoa(value));
+    },
+
     b64Encode:function(s)
     {
         var value = null;
@@ -824,7 +835,7 @@ var _api =
         }
         else
         {
-            value = btoa(s);
+            value = this.btoa(s);
         }
 
         return(value);

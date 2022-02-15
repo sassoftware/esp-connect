@@ -150,6 +150,10 @@ class Visuals extends Options
         {
             chart = this.createLineChart(container,datasource,options);
         }
+        else if (type == "series")
+        {
+            chart = this.createSeries(container,datasource,options);
+        }
         else if (type == "timeseries")
         {
             chart = this.createTimeSeries(container,datasource,options);
@@ -206,6 +210,14 @@ class Visuals extends Options
     {
         datasource.addDelegate(this);
         var chart = new LineChart(this,container,datasource,options);
+        this._visuals.push(chart);
+        return(chart);
+    }
+
+    createSeries(container,datasource,options)
+    {
+        datasource.addDelegate(this);
+        var chart = new SeriesPlot(this,container,datasource,options);
         this._visuals.push(chart);
         return(chart);
     }
@@ -1323,64 +1335,23 @@ class LineChart extends Chart
     }
 }
 
-class TimeSeries extends LineChart
+class SeriesPlot extends LineChart
 {
     constructor(visuals,container,datasource,options)
     {
         super(visuals,container,datasource,options);
 
-        if (this.hasOpt("time") == false)
-        {
-            throw("must specify time field for a TimeSeries")
-        }
-
-        this._rendered = 0;
         this._value = {};
-
-        this._continuous = this.getOpt("continuous",0);
-
-        if (this._continuous > 0)
-        {
-            var ts = this;
-            setTimeout(function(){ts.fired()},this._continuous);
-        }
     }
 
     getType()
     {
-        return("timeseries");
-    }
-
-    fired()
-    {
-        var current = new Date().getTime();
-
-        if ((current - this._rendered) > this._continuous)
-        {
-            var x = this.getValues("time");
-            var y = this.getValues("y");
-            var values = this._datasource.getValuesBy(x,y);
-            var date = new Date();
-            values["keys"].push(this._value["time"]);
-            for (var n in this._value["values"])
-            {
-                values["values"][n].push(this._value["values"][n]);
-            }
-            this.render(values,y);
-        }
-
-        this._continuous = this.getOpt("continuous",0);
-
-        if (this._continuous > 0)
-        {
-            var ts = this;
-            setTimeout(function(){ts.fired()},this._continuous);
-        }
+        return("seriesplot");
     }
 
     draw()
     {
-        var x = this.getValues("time");
+        var x = this.getValues("x");
         var y = this.getValues("y");
         var values = this._datasource.getValuesBy(x,y);
         this.render(values,y);
@@ -1396,7 +1367,7 @@ class TimeSeries extends LineChart
 
         if (this._datasource.schema.size == 0)
         {
-            return;
+            return(false);
         }
 
         var width = this.getOpt("line_width",2);
@@ -1468,6 +1439,80 @@ class TimeSeries extends LineChart
 
         this.setHeader();
         this.setHandlers();
+
+        return(true);
+    }
+}
+
+class TimeSeries extends SeriesPlot
+{
+    constructor(visuals,container,datasource,options)
+    {
+        super(visuals,container,datasource,options);
+
+        if (this.hasOpt("time") == false)
+        {
+            throw("must specify time field for a TimeSeries")
+        }
+
+        this._rendered = 0;
+        this._value = {};
+
+        this._continuous = this.getOpt("continuous",0);
+
+        if (this._continuous > 0)
+        {
+            var ts = this;
+            setTimeout(function(){ts.fired()},this._continuous);
+        }
+    }
+
+    getType()
+    {
+        return("timeseries");
+    }
+
+    draw()
+    {
+        var x = this.getValues("time");
+        var y = this.getValues("y");
+        var values = this._datasource.getValuesBy(x,y);
+        this.render(values,y);
+    }
+
+    fired()
+    {
+        var current = new Date().getTime();
+
+        if ((current - this._rendered) > this._continuous)
+        {
+            var x = this.getValues("time");
+            var y = this.getValues("y");
+            var values = this._datasource.getValuesBy(x,y);
+            var date = new Date();
+            values["keys"].push(this._value["time"]);
+            for (var n in this._value["values"])
+            {
+                values["values"][n].push(this._value["values"][n]);
+            }
+            this.render(values,y);
+        }
+
+        this._continuous = this.getOpt("continuous",0);
+
+        if (this._continuous > 0)
+        {
+            var ts = this;
+            setTimeout(function(){ts.fired()},this._continuous);
+        }
+    }
+
+    render(values,y)
+    {
+        if (super.render(values,y) == false)
+        {
+            return(false);
+        }
 
         var len = values["keys"].length;
         var last = (len > 0) ? values["keys"][len - 1] : null;

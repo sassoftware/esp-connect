@@ -97,24 +97,37 @@ class ServerConnection extends Connection
                                     });
                                 },
                                 function(result) {
+                                    var delivered = false;
+
                                     self._delegates.forEach((d) => {
                                         if (tools.supports(d,"error"))
                                         {
-                                            //d.error(self._impl,result.text);
                                             d.error(self,result);
                                         }
                                     });
+
+                                    if (delivered == false)
+                                    {
+                                        console.log(result);
+                                    }
                                 }
                             );
                         },
                         function(result) {
+                            var delivered = false;
+
                             self._delegates.forEach((d) => {
                                 if (tools.supports(d,"error"))
                                 {
-                                    //d.error(self._impl,result.text);
                                     d.error(self,result);
+                                    delivered = true;
                                 }
                             });
+
+                            if (delivered == false)
+                            {
+                                console.log(result);
+                            }
                         }
                     );
                 }

@@ -491,17 +491,21 @@ class Schema extends Options
                             s == "p" || 
                             s == "d")
                         {
-                            if (s == "u")
+                            if (s == "i")
                             {
-                                o["@opcode"] = "update";
+                                o["opcode"] = "insert";
+                            }
+                            else if (s == "u")
+                            {
+                                o["opcode"] = "update";
                             }
                             else if (s == "p")
                             {
-                                o["@opcode"] = "upsert";
+                                o["opcode"] = "upsert";
                             }
                             else if (s == "d")
                             {
-                                o["@opcode"] = "delete";
+                                o["opcode"] = "delete";
                             }
                         }
 

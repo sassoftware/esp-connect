@@ -89,11 +89,11 @@ ready(connection)
     _esp.clearStatus();
     _conn = connection;
 
-    _conn.getProjectXml(_project,{
-        response:function(c,data){
-            _model = data;
+    _conn.getProjectXml(_project).then(
+        function(result) {
+            _model = _esp.getXPath().format(result);
         }
-    });
+    );
 
     _conn.getEventCollection({window:_project + "/cq/s"}).then(
         function(result) {

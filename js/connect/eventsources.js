@@ -68,7 +68,6 @@ class EventSources
 
     configure(config,parms)
     {
-console.log("config 1");
         this._config = config;
 
         var content = config.hasOwnProperty("nodeType") ? xpath.xmlString(config) : config;
@@ -125,7 +124,6 @@ console.log("config 1");
                 });
             });
         });
-console.log("config 2");
     }
 
     configureFromUrl(url,parms,delegate)
@@ -280,7 +278,6 @@ console.log("config 2");
 
         Object.values(this._eventsources).forEach((es) => {
 
-console.log("here: " + es.name + " :: " + es.done);
             if (es.repeat >= 0 && es.done == false)
             {
                 if (es.sending == false)
@@ -709,11 +706,9 @@ class UrlEventSource extends EventSource
             }
             else
             {
-console.log("get RSS data");
                 ajax.create(url).get().then(
                     function(response) {
 
-console.log("got RSS DATA: " + response.text.length);
                         if (self._plugin != null)
                         {
                             self.send(response.text);
@@ -773,7 +768,7 @@ class CsvEventSource extends EventSource
                     self._data = response.text;
                 },
                 function(error) {
-                    console.log("error: " + es.getOpt("url") + " " + error);
+                    console.log("error: " + self.getOpt("url") + " " + error);
                 }
             );
         }
@@ -888,13 +883,10 @@ class Sender
             postdata += "/eventStreamProcessing/v1/plugin/";
             postdata += this._eventsource._plugin;
 
-console.log(postdata);
             var request = ajax.create(postdata);
             request.setData(this._data);
-console.log("send POST 1");
             request.post({timeout:1000}).then(
                 function(response) {
-console.log("got POST RESPONSE: ");
                     console.log(response.text);
                     tools.removeFrom(self._eventsource._senders,self);
                 },
@@ -923,7 +915,12 @@ console.log("got POST RESPONSE: ");
         if (this._delay == 0)
         {
             this._data.forEach((o) => {
-                o.opcode = this._opcode;
+
+                if (o.hasOwnProperty("opcode") == false)
+                {
+                    o.opcode = this._opcode;
+                }
+
                 this._eventsource._publisher.add(o);
             });
 
@@ -937,7 +934,10 @@ console.log("got POST RESPONSE: ");
             {
                 for (var i = 0; i < this._chunksize && this._index < target; i++)
                 {
-                    this._data[this._index].opcode = this._opcode;
+                    if (this._data[this._index].hasOwnProperty("opcode") == false)
+                    {
+                        this._data[this._index].opcode = this._opcode;
+                    }
                     this._eventsource._publisher.add(this._data[this._index]);
                     this._index++;
                 }

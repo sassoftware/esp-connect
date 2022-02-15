@@ -947,7 +947,6 @@ class Api extends Options
                         }
                         else
                         {
-console.log(JSON.stringify(result,null,"\t"));
                             var message = "";
 
                             if (result.hasOwnProperty("text"))

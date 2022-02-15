@@ -823,7 +823,7 @@ class Chart extends Options
 
         var url = ui;
         url += "/eventStreamProcessing/v1/connect-visual?_opts=";
-        url += encodeURIComponent(btoa(opts.toString()));
+        url += tools.btoa(opts.toString());
 
         return(url);
     }
