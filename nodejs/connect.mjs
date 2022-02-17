@@ -1013,7 +1013,7 @@ showUsage(o)
     o.see_also = [
         {
             name:"ESP User Guide",
-            link:"https://go.documentation.sas.com/?cdcId=espcdc&cdcVersion=6.2&docsetId=espov&docsetTarget=home.htm&locale=en"
+            link:"https://go.documentation.sas.com/doc/en/espcdc/v_018/espwlcm/titlepage.htm"
         }
     ];
 
