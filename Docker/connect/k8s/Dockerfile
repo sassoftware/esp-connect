@@ -14,14 +14,20 @@ WORKDIR ${HOME}
 RUN mkdir -p js/connect
 RUN mkdir bin
 RUN mkdir modules
+RUN mkdir .kube
 
 ADD js/connect js/connect
 ADD nodejs/connect.mjs modules 
-ADD nodejs/http.mjs modules 
-ADD Docker/connect/profile .profile
+ADD Docker/connect/k8s/profile .profile
+ADD Docker/connect/k8s/config .kube
+
+RUN curl -sLO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+RUN chmod +x ./kubectl
+RUN mv ./kubectl bin
 
 RUN npm install js/connect/
 
 ENV ENV="${HOME}/.profile"
+ENV KUBECONFIG=${HOME}/.kube/config
 
 CMD /bin/ash

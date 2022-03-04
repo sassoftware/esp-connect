@@ -33,14 +33,14 @@ var _connection = null;
 var _statsTable = null;
 var _windowXml = null;
 var _selected = null;
-var	_splitter = null;
-var	_storage = null;
+var _splitter = null;
+var _storage = null;
 var _opcodes = null;
 var _genGuid = null;
 var _visuals = null;
 var _publish = null;
 var _viewer = null;
-var	_server = null;
+var _server = null;
 var _schema = null;
 var _detail = null;
 var _stats = null;
@@ -59,8 +59,8 @@ init()
     _storage = _esp.getStorage("modelviewer");
 
     var viewer = document.getElementById("viewer");
-	viewer.addEventListener("dragover",over,false);
-	viewer.addEventListener("drop",drop,false);
+    viewer.addEventListener("dragover",over,false);
+    viewer.addEventListener("drop",drop,false);
 
     _parms = _esp.getParms();
 
@@ -113,17 +113,17 @@ init()
     _genGuid = document.createElement("input");
     _genGuid.type = "checkbox";
 
-	_splitter = _esp.getSplitter().create();
-	_splitter.sized = sized;
+    _splitter = _esp.getSplitter().create();
+    _splitter.sized = sized;
 
-	_splitter.addCell("viewer",document.getElementById("viewer"));
+    _splitter.addCell("viewer",document.getElementById("viewer"));
 
-	_splitter.attach(document.getElementById("splitter"));
-	_splitter.create();
-	_splitter.size();
+    _splitter.attach(document.getElementById("splitter"));
+    _splitter.create();
+    _splitter.size();
 
-	_splitter.setRowHeightPercentage(0,95);
-	_splitter.size();
+    _splitter.setRowHeightPercentage(0,95);
+    _splitter.size();
 
     loadDocumentUrls();
 
@@ -295,7 +295,7 @@ loadEventCollection()
                 var div = document.createElement("div");
                 div.className = "component";
                 div.id = result.id;
-                var table = _visuals.createTable(div,result,{enable_close:true,enable_filter:true,ds:result});
+                var table = _visuals.createTable(div,result,{enable_close:true,enable_filter:true,enable_share:false,ds:result});
                 table.close = closeEvents;
                 _splitter.addCell(result.id,div,{events:true});
                 table.size();
@@ -322,7 +322,7 @@ loadEventStream()
                 var div = document.createElement("div");
                 div.className = "component";
                 div.id = result.id;
-                var table = _visuals.createTable(div,result,{enable_close:true,enable_filter:true,ds:result});
+                var table = _visuals.createTable(div,result,{enable_close:true,enable_filter:true,enable_share:false,tail:true,ds:result});
                 table.close = closeEvents;
                 _splitter.addCell(result.id,div,{events:true});
                 table.size();
@@ -419,23 +419,23 @@ close()
 function
 over(event)
 {
-	event.stopPropagation();
-	event.preventDefault();
+    event.stopPropagation();
+    event.preventDefault();
 }
 
-var	_reader = new FileReader();
+var _reader = new FileReader();
 _reader.onload = gotFileContent;
 
 function
 drop(event)
 {
-	event.stopPropagation();
-	event.preventDefault();
+    event.stopPropagation();
+    event.preventDefault();
 
-	var	files = event.dataTransfer.files;
-	var	file = files[0];
+    var files = event.dataTransfer.files;
+    var file = files[0];
 
-	_reader.readAsText(file);
+    _reader.readAsText(file);
 }
 
 var _modelXml = null;
@@ -452,7 +452,6 @@ gotFileContent()
 function
 loadModel(xml)
 {
-console.log("load model: " + _viewer);
     if (_viewer == null)
     {
         _viewer = _visuals.createModelViewer("viewer",null,_parms);
@@ -462,7 +461,7 @@ console.log("load model: " + _viewer);
     _viewer.setOpt("cpu",false);
     _viewer.setOpt("counts",false);
 
-	_modelXml = _esp.getXPath().createXml(xml);
+    _modelXml = _esp.getXPath().createXml(xml);
     _viewer.load(_modelXml);
 
     _esp.getTools().setCbState("detailCb",{enabled:true});
@@ -1165,6 +1164,7 @@ setTheme(value)
 body
 {
     font-size:.5rem;
+    background:white;
 }
 
 div.visual
@@ -1273,9 +1273,9 @@ textarea#eventCsv
 {
     width:98%;
     height:98%;
-	resize:none;
+    resize:none;
     font-family:Monaco;
-	border:1px solid #c0c0c0;
+    border:1px solid #c0c0c0;
     /*font-size:11pt;*/
 }
 
@@ -1308,15 +1308,15 @@ div.modelViewerFooter
 
 div#xml pre
 {
-	margin:0;
-	padding:0;
+    margin:0;
+    padding:0;
 }
 
 div#xml
 {
-	overflow:auto;
-	border:1px solid #c0c0c0;
-	padding:0;
+    overflow:auto;
+    border:1px solid #c0c0c0;
+    padding:0;
 }
 
 div#xml code
@@ -1329,14 +1329,14 @@ div#stats td,
 div#schema th,
 div#schema td
 {
-	/*font-size:11pt;*/
+    /*font-size:11pt;*/
 }
 
 select,
 code
 {
-	font-weight:normal;
-	/*font-size:11pt;*/
+    font-weight:normal;
+    /*font-size:11pt;*/
 }
 
 div.component
@@ -1432,10 +1432,8 @@ div#banner select#theme
 td.bannerControls
 {
     text-align:right;
-    color:white;
     width:300px;
     width:200px;
-    /*font-size:12pt;*/
     white-space:nowrap;
 }
 

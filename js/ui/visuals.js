@@ -2760,7 +2760,25 @@ class Table extends Chart
                 esptype = field.getOpt("espType");
                 type = field.getOpt("type");
 
-                if (esptype == "date" || esptype == "datetime")
+                if (esptype.indexOf("array") == 0)
+                {
+                    if (Array.isArray(text))
+                    {
+                        var tmp = "";
+
+                        for (var l = 0; l < text.length; l++)
+                        {
+                            if (l > 0)
+                            {
+                                tmp += ", ";
+                            }
+
+                            tmp += text[l];
+                        }
+                        text = tmp;
+                    }
+                }
+                else if (esptype == "date" || esptype == "datetime")
                 {
                     text = this._visuals.getDateString(text);
                 }
@@ -3026,7 +3044,7 @@ class Gauge extends Chart
         var entry;
         var key;
 
-        if (clear)
+        if (clear || this.getOpt("clear_on_draw"))
         {
             for (key in this._entries)
             {

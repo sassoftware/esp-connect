@@ -1,0 +1,84 @@
+#!bash
+
+declare -A parms
+
+KEY=""
+
+for S in "$@"
+do
+    if [ -z $KEY ]
+    then
+        KEY=`echo $S | cut -c2-`
+    else
+        if [ "`echo $S | cut -c1`" = "-" ]
+        then
+            parms[$KEY]="true"
+            KEY=`echo $S | cut -c2-`
+        else
+            parms[$KEY]=$S
+            KEY=""
+        fi
+    fi
+done
+
+if [ ! -z $KEY ]
+then
+    parms[$KEY]="true"
+fi
+
+function removeParm()
+{
+    unset "parms[$1]"
+}
+
+function removeParms()
+{
+    for i in $1
+    do
+        removeParm $i
+    done
+}
+
+function showParms()
+{
+	for i in "${!parms[@]}"
+	do
+		printf "$i=${parms[$i]}\n"
+	done
+}
+
+function usage()
+{
+	printf "\n"
+	printf "SYNOPSIS:\n"
+	printf "\t`basename $0` -name -config\n\n"
+	printf "SUMMARY:\n"
+	printf "\tCreate ESP Modelviewer docker image.\n"
+	printf "\n"
+	printf "OPTIONS:\n\n"
+	printf "\t-name\timage name\n"
+	printf "\t-config\tKubernetes configuration file\n"
+	printf "\n"
+	exit 1
+}
+
+VALUE=${parms["help"]}
+
+if [ -n "${VALUE}" ]
+then
+    usage
+    exit 1
+fi
+
+NAME=${parms["name"]}
+CONFIG=${parms["config"]}
+
+if [ -z "${NAME}" -o -z "${CONFIG}" ]
+then
+    usage
+    exit 1
+fi
+
+cp ${CONFIG} Docker/modelviewer/k8s/config
+docker build -t ${NAME} --force-rm -f Docker/modelviewer/k8s/Dockerfile .
+rm Docker/modelviewer/k8s/config

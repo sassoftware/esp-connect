@@ -94,7 +94,7 @@ in the API, you must perform an *npm install* of the ESP Connect API (the *work*
 ```
 $ npm install @work@/js/connect
 ```
-* Change directory to *@work@/node*.
+* Change directory to *@work@/nodejs*.
 * Run a test using the following command (use your own ESP server):
 ```
 $ node model.mjs --server http://espsrv01:7777

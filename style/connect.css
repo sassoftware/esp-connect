@@ -16,6 +16,7 @@ body
     font-family:Verdana, Arial, Helvetica, sans-serif;
     height:100%;
     overflow:hidden;
+    background:white;
     margin:0;
 }
 
@@ -36,17 +37,27 @@ div#footer
     width:100%;
 }
 
+div.dialog div.title,
+div.modelViewerFooter,
+div#banner,
+div#footer,
+tr.selected td
+{
+    background:#e5e5e5;
+    background:#f0f0f0;
+    color:black;
+}
+
 div#banner
 {
-    background:#3b99fc;
     padding:.5rem;
-    color:white;
     z-index:10;
+    border-bottom:1px solid #c0c0c0;
 }
 
 div#banner a
 {
-    color:white;
+    color:black;
 }
 
 div#content
@@ -57,15 +68,12 @@ div#content
 
 div#footer
 {
-    background:#3b99fc;
     padding:5px;
-    color:white;
 }
 
 div.obscure
 {
     background:black;
-    background:#3b99fc;
     background:#c0c0c0;
 	opacity:.3;
 }
@@ -148,8 +156,6 @@ div.dialog div.title
 {
     width:100%;
     text-align:center;
-    background:#3b99fc;
-    color:white;
     padding:10px;
 }
 
@@ -503,8 +509,6 @@ div.modelViewerFooter td.memoryValue
 div.modelViewerFooter
 {
     border:1px solid #d8d8d8;
-    background:#3b99fc;
-    color:white;
 }
 
 div.compassHeader
@@ -601,12 +605,6 @@ div.hsplitter
 div.vsplitter
 {
 	height:20px;
-}
-
-tr.selected td
-{
-    background:#3b99fc;
-    color:white;
 }
 
 table.tabs

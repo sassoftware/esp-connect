@@ -72,7 +72,19 @@ connect(server)
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.showStatus("Loading project...");
     var url = new URL("model.xml",document.URL).toString();
-    _esp.connect(server,{ready:ready,connectionError:error},{model:{name:_project,url:url,options:{overwrite:true,force:_esp.getParm("force",false)}}});
+    var options = {
+        model: {
+            name:_project,
+            url:url,
+            options:{
+                overwrite:true,
+                force:_esp.getParm("force",false)
+            }
+        },
+        user:"bob",
+        pw:"Esppass1*"
+    };
+    _esp.connect(server,{ready:ready,connectionError:error},options);
     _esp.handleLayout();
 }
 

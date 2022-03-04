@@ -25,6 +25,7 @@
     "xpath": "latest",
     "xmlhttprequest": "latest",
     "tunnel": "latest",
+    "node-static": "latest",
     "prompt-sync": "latest"
   }
 }

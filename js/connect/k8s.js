@@ -326,7 +326,6 @@ class K8S extends Options
 
     getProject(namespace,name)
     {
-console.log("======== get project: " + namespace + " :: " + name);
         return(new Promise((resolve,reject) => {
             if (namespace == null || name == null)
             {
@@ -498,7 +497,7 @@ console.log("======== get project: " + namespace + " :: " + name);
                 function(result) {
                     if (result.status >= 400)
                     {
-                        console.log("failure: " + url + ", status is " + result.status);
+                        console.log(url + ", status is " + result.status);
                         reject(result);
                     }
                     else
@@ -648,13 +647,10 @@ console.log("======== get project: " + namespace + " :: " + name);
                     url += "/SASLogon/oauth/clients/consul";
                     url += "?callback=false&serviceId=app";
 
-console.log("url: " + url);
-console.log("secret: " + secret);
                     var request = self.createRequest(url,{"X-Consul-Token":secret});
 
                     request.post().then(
                         function(result) {
-console.log("STATUS: " + result.status);
                             if (result.status >= 400)
                             {
                                 reject(result);
@@ -711,7 +707,7 @@ console.log("STATUS: " + result.status);
                     }
                 },
                 function(result) {
-                    console.log("got error: " + result);
+                    console.log("error: " + result);
                     reject(result);
                 }
             );
@@ -1204,12 +1200,22 @@ class K8SProject extends K8S
             tools.exception("URL must be in form protocol://server/<namespace>/<project>");
         }
 
+        this._ingress = null;
         this._config = null;
+
+        var self = this;
+
+        this.getIngress(this.project).then(
+            function(result) {
+                self._ingress = result;
+            },
+            function(result) {
+            }
+        );
     }
 
     get espUrl()
     {
-console.log("HERE: " + this._config);
         var url = "";
 
         if (this._config != null)
@@ -1226,7 +1232,25 @@ console.log("HERE: " + this._config);
             {
                 url += "http://";
             }
+
+            /*
             url += this._config.access.externalURL;
+            */
+
+            var host = this._ingress.spec.rules[0].host;
+            /*
+            var index = host.indexOf(".");
+
+            if (index != -1)
+            {
+                host = host.substr(index + 1);
+            }
+            */
+
+            url += host;
+            /*
+            url += this._ingress.status.loadBalancer.ingress[0].ip;
+            */
             url += "/SASEventStreamProcessingServer";
             url += "/" + this._project;
         }
@@ -1367,7 +1391,7 @@ console.log("HERE: " + this._config);
                 url += "/espservers";
                 url += "/" + self._project;
 
-                var request = this.createRequest(url,{"Accept":"application/json"});
+                var request = self.createRequest(url,{"Accept":"application/json"});
                 request.get().then(
                     function(result) {
                         if (result.status == 404)

@@ -12,16 +12,30 @@
 
 <title>ESP Model Viewer</title>
 
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js" ></script>
+<!--
 <script src="./vis-network.min.js" ></script>
+-->
 
 <script>
 var _esp = null;
 </script>
 
+<!-- Run from an esp-connect install -->
+<!--
+-->
+<link rel="stylesheet" href="./esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "./esp-connect/js/ui/api.js"
+_esp = esp;
+</script>
+
+<!--
 <script src="./esp-connect-ui.js"></script>
 <script>
 _esp = esp_connect_ui.api;
 </script>
+-->
 
 <script>
 
@@ -37,6 +51,7 @@ var _opcodes = null;
 var _genGuid = null;
 var _visuals = null;
 var _publish = null;
+var _k8surl = null;
 var _viewer = null;
 var _server = null;
 var _schema = null;
@@ -52,9 +67,9 @@ var _viewerSplit = "70%";
 function
 init()
 {
-    var common = _esp.getStorage("esp-connect");
-
     _storage = _esp.getStorage("modelviewer");
+
+console.log(_storage.toString());
 
     var viewer = document.getElementById("viewer");
     viewer.addEventListener("dragover",over,false);
@@ -92,6 +107,7 @@ init()
 
     _parms["config"] = true;
     _parms["show_header"] = false;
+    _parms["show_projects"] = false;
 
     _viewer = _visuals.createModelViewer("viewer",null,_parms);
     _viewer.addDelegate({nodeSelected:nodeHandler,deselected:clear,projectLoaded:projectLoaded,modelLoaded:modelLoaded,handleStats:handleStats,propertyChanged:propertyChanged});
@@ -242,12 +258,106 @@ init()
             connect(_server);
         }
     }
-    else
-    {
-        _esp.showConnectDialog({connect:connect});
-    }
 
     _esp.handleLayout({layout:layout});
+
+    var url = new URL("index.html",document.URL);
+
+    _k8surl = "k8s-proxy://";
+    _k8surl += url.hostname;
+    _k8surl += ":";
+    _k8surl += url.port;
+
+    loadNamespaces();
+}
+
+function
+loadNamespaces()
+{
+    var k8s = _esp.createK8S(_k8surl);
+    var namespaces = document.getElementById("namespaces");
+    var projects = document.getElementById("projects");
+    var current = _storage.getOpt("namespace");
+    var option;
+    var name;
+
+    while (namespaces.length > 0)
+    {
+        namespaces.remove(0);
+    }
+
+    while (projects.length > 0)
+    {
+        projects.remove(0);
+    }
+
+    k8s.getNamespaces().then(
+        function(result) {
+            result.forEach((item) => {
+                name = item.metadata.name;
+                option = document.createElement("option");
+                option.value = name;
+                option.appendChild(document.createTextNode(name));
+                option.selected = (name == current);
+                namespaces.add(option);
+            });
+
+            if (current != null)
+            {
+                setNamespace(current);
+            }
+        }
+    );
+}
+
+function
+setNamespace(value)
+{
+    _storage.setOpt("namespace",value);
+
+    var k8s = _esp.createK8S(_k8surl + "/" + value);
+    var namespaces = document.getElementById("namespaces");
+    var projects = document.getElementById("projects");
+    var option;
+    var name;
+
+    while (projects.length > 0)
+    {
+        projects.remove(0);
+    }
+
+    var current = _storage.getOpt("project");
+console.log("CURRENT: " + current); 
+
+    k8s.getMyProjects().then(
+        function(result) {
+            result.forEach((item) => {
+                name = item.metadata.name;
+console.log("project: " + name);
+                option = document.createElement("option");
+                option.value = name;
+                option.appendChild(document.createTextNode(name));
+                option.selected = (name == current);
+                projects.add(option);
+            });
+
+            if (current != null)
+            {
+                //setProject(current);
+            }
+        }
+    );
+}
+
+function
+setProject(value)
+{
+    _storage.setOpt("project",value);
+
+    var namespaces = document.getElementById("namespaces");
+    var url = _k8surl + "/" + namespaces.value + "/" + value;
+console.log("URL: " + url);
+    connect(url);
 }
 
 function
@@ -350,8 +460,6 @@ connect(server)
 
     _esp.size();
 
-    document.getElementById("bannerTitle").innerHTML = "ESP Model Viewer (" + _server + ")";
-
     _storage.setOpt("server",_server);
 
     _esp.connect(_server,{ready:ready,closed:closed});
@@ -367,8 +475,6 @@ ready(connection)
         _viewer = _visuals.createModelViewer("viewer",null,_parms);
         _viewer.addDelegate({nodeSelected:nodeHandler,deselected:clear,projectLoaded:projectLoaded,modelLoaded:modelLoaded,handleStats:handleStats,propertyChanged:propertyChanged});
     }
-
-    _viewer.setOpt("show_projects",_connection.k8s == null);
 
     _viewer.connection = connection;
     _visuals.createLogViewer(_logs,_connection,{show_header:false});
@@ -636,11 +742,12 @@ clear()
 function
 modelLoaded(viewer,model)
 {
-    var common = _esp.getStorage("esp-connect");
-    common.setOpt("esp-server",_server);
+    /*
     setTimeout(setProject,1000);
+    */
 }
 
+/*
 function
 setProject()
 {
@@ -650,7 +757,6 @@ setProject()
     else if (_k8s != null)
     {
         const   url = (_viewer.connection != null && _viewer.connection.k8s != null) ? _viewer.connection.k8s.projectUrl : "";
-        document.getElementById("bannerTitle").innerHTML = "ESP Model Viewer (" + url + ")";
         loadPublishWindows();
     }
     else if (_esp.hasParm("project"))
@@ -666,6 +772,7 @@ setProject()
         _viewer.project = "*";
     }
 }
+*/
 
 function
 projectLoaded(viewer)
@@ -1416,6 +1523,17 @@ table.tabs td.tabs
     padding:2px;
 }
 
+div#banner select#namespaces,
+div#banner select#projects
+{
+    width:150px;
+}
+
+div#banner option
+{
+    background:white;
+}
+
 div#banner td.theme
 {
     text-align:right;
@@ -1448,6 +1566,14 @@ td.bannerControls
                 <td class="bannerControls">
                     <table class="bannerControls">
                         <tr>
+                            <td class="namespace">
+                                <span>Namespace:</span>
+                                <select id="namespaces" onchange="setNamespace(this.value)"></select>
+                            </td>
+                            <td class="project">
+                                <span>Project:</span>
+                                <select id="projects" onchange="setProject(this.value)"></select>
+                            </td>
                             <td class="theme">
                                 <span>Theme:</span>
                                 <select id="theme" onchange="setTheme(this.value)">
@@ -1465,9 +1591,6 @@ td.bannerControls
                                     <option value="sas_ignite">Ignite</option>
                                     <option value="sas_inspire">Inspire</option>
                                 </select>
-                            </td>
-                            <td id="connectCell" class="icon">
-                                <a id="connect" class="icon" href="javascript:_esp.showConnectDialog({connect:connect},_server)">&#xf137;</a>
                             </td>
                         </tr>
                     </table>
