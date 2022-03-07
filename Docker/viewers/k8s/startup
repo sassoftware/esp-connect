@@ -1,0 +1,5 @@
+#./kubectl proxy --kubeconfig=./kubeconfig --v=7 &
+
+./kubectl proxy --kubeconfig=./kubeconfig &
+
+node http.mjs --port 4444 --wsproxy --verbose

@@ -22,6 +22,8 @@ var	_api =
     _layoutDelegate:null,
     _parms:null,
     _prompted:{},
+    _user:"bob",
+    _pw:"Esppass1*",
 
     connect:function(url,delegate,options)
     {
@@ -59,24 +61,27 @@ var	_api =
     getCredentials:function()
     {
         return(new Promise((resolve,reject) => {
-            var o =
-            {
-                ok:function(data)
+            var o = {
+                ok:function(dialog)
                 {
-                    resolve({user:data.user,password:data.password});
-                    dialogs.hideDialog();
+                    dialog.hide();
+                    _api._user = dialog.getValue("user");
+                    _api._pw = dialog.getValue("password");
+                    resolve({user:_api._user,password:_api._pw});
+                    return(true);
                 },
-                cancel:function()
+                cancel:function(dialog)
                 {
-                    dialogs.hideDialog();
-                    reject(data.token);
-                },
-                cancel:dialogs.hideDialog,
-                header:"Enter User and Password",
-                values:[{name:"user",label:"User",value:""},{name:"password",label:"Password",type:"password",value:""}]
+                    dialog.hide();
+                    reject();
+                    return(true);
+                }
             };
 
-            dialogs.showDialog(o);
+            var form = [];
+            form.push({name:"user",label:"User:",value:_api._user});
+            form.push({name:"password",label:"Password:",type:"password",value:_api._pw});
+            _esp.getDialogs().showDialog({title:"Enter User and Password",delegate:o,label_width:"40px",form:form});
         }));
     },
 
@@ -751,7 +756,7 @@ var	_api =
 
     setHttpProxy:function(url)
     {
-        k8s.setHttpProxy(url);
+        connect.getAjax().setHttpProxy(url);
     }
 };
 

@@ -12,15 +12,20 @@
 
 <title>ESP Model Viewer</title>
 
-<script src="./vis-network.min.js" ></script>
+<!--
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js" ></script>
+-->
+<script src="../common/vis-network.min.js" ></script>
 
 <script>
 var _esp = null;
 </script>
 
-<script src="./esp-connect-ui.js"></script>
-<script>
-_esp = esp_connect_ui.api;
+<!-- Run from an esp-connect install -->
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "../esp-connect/js/ui/api.js"
+_esp = esp;
 </script>
 
 <script>
@@ -38,7 +43,6 @@ var _genGuid = null;
 var _visuals = null;
 var _publish = null;
 var _viewer = null;
-var _server = null;
 var _schema = null;
 var _detail = null;
 var _stats = null;
@@ -47,14 +51,26 @@ var _tabs = null;
 var _logs = null;
 var _k8s = null;
 
+var _k8surl = "k8s-proxy://localhost:8001";
 var _viewerSplit = "70%";
 
 function
 init()
 {
-    _esp.setWsProxy("ws://localhost:7777");
+    var tmp = new URL(".",document.URL);
 
-    var common = _esp.getStorage("esp-connect");
+    var proxy = "";
+    proxy = "http://";
+    proxy += tmp.hostname;
+    proxy += ":";
+    proxy += tmp.port;
+    _esp.setHttpProxy(proxy);
+
+    proxy = "ws://";
+    proxy += tmp.hostname;
+    proxy += ":";
+    proxy += tmp.port;
+    _esp.setWsProxy(proxy);
 
     _storage = _esp.getStorage("modelviewer");
 
@@ -63,16 +79,6 @@ init()
     viewer.addEventListener("drop",drop,false);
 
     _parms = _esp.getParms();
-
-    if (_esp.hasParm("server"))
-    {
-        _server = encodeURI(_esp.getParm("server"));
-    }
-
-    if (_server == null && _storage.hasOpt("xml"))
-    {
-        _esp.setParm("xml",_storage.getOpt("xml"));
-    }
 
     if (_parms.hasOwnProperty("theme") == false && _storage.hasOpt("theme"))
     {
@@ -94,6 +100,7 @@ init()
 
     _parms["config"] = true;
     _parms["show_header"] = false;
+    _parms["show_projects"] = false;
 
     _viewer = _visuals.createModelViewer("viewer",null,_parms);
     _viewer.addDelegate({nodeSelected:nodeHandler,deselected:clear,projectLoaded:projectLoaded,modelLoaded:modelLoaded,handleStats:handleStats,propertyChanged:propertyChanged});
@@ -222,34 +229,95 @@ init()
         publish(true);
     }
 
-    if (_server != null)
-    {
-        var u = new URL(_server);
-
-        if (u.protocol.startsWith("k8s"))
-        {
-            _k8s = _esp.createK8S(_server);
-
-            if (_k8s.project != null)
-            {
-                connect(_server);
-            }
-            else
-            {
-                _esp.showConnectDialog({connect:connect},_server);
-            }
-        }
-        else
-        {
-            connect(_server);
-        }
-    }
-    else
-    {
-        _esp.showConnectDialog({connect:connect});
-    }
-
     _esp.handleLayout({layout:layout});
+
+    loadNamespaces();
+}
+
+function
+loadNamespaces()
+{
+    var k8s = _esp.createK8S(_k8surl);
+    var namespaces = document.getElementById("namespaces");
+    var projects = document.getElementById("projects");
+    var current = _storage.getOpt("namespace");
+    var option;
+    var name;
+
+    while (namespaces.length > 0)
+    {
+        namespaces.remove(0);
+    }
+
+    while (projects.length > 0)
+    {
+        projects.remove(0);
+    }
+
+    k8s.getNamespaces().then(
+        function(result) {
+            result.forEach((item) => {
+                name = item.metadata.name;
+                option = document.createElement("option");
+                option.value = name;
+                option.appendChild(document.createTextNode(name));
+                option.selected = (name == current);
+                namespaces.add(option);
+            });
+
+            if (current != null)
+            {
+                setNamespace(current);
+            }
+        }
+    );
+}
+
+function
+setNamespace(value)
+{
+    _storage.setOpt("namespace",value);
+
+    var k8s = _esp.createK8S(_k8surl + "/" + value);
+    var namespaces = document.getElementById("namespaces");
+    var projects = document.getElementById("projects");
+    var option;
+    var name;
+
+    while (projects.length > 0)
+    {
+        projects.remove(0);
+    }
+
+    var current = _storage.getOpt("project");
+
+    k8s.getMyProjects().then(
+        function(result) {
+            result.forEach((item) => {
+                name = item.metadata.name;
+                option = document.createElement("option");
+                option.value = name;
+                option.appendChild(document.createTextNode(name));
+                option.selected = (name == current);
+                projects.add(option);
+            });
+
+            if (current != null)
+            {
+                setProject(current);
+            }
+        }
+    );
+}
+
+function
+setProject(value)
+{
+    _storage.setOpt("project",value);
+
+    var namespaces = document.getElementById("namespaces");
+    var url = _k8surl + "/" + namespaces.value + "/" + value;
+    connect(url);
 }
 
 function
@@ -346,17 +414,11 @@ connect(server)
 {
     close();
 
-    _server = server;
-
     _esp.getDialogs().clearModals();
 
     _esp.size();
 
-    document.getElementById("bannerTitle").innerHTML = "ESP Model Viewer (" + _server + ")";
-
-    _storage.setOpt("server",_server);
-
-    _esp.connect(_server,{ready:ready,closed:closed});
+    _esp.connect(server,{ready:ready,closed:closed,getCredentials:_esp.getCredentials});
 }
 
 function
@@ -369,8 +431,6 @@ ready(connection)
         _viewer = _visuals.createModelViewer("viewer",null,_parms);
         _viewer.addDelegate({nodeSelected:nodeHandler,deselected:clear,projectLoaded:projectLoaded,modelLoaded:modelLoaded,handleStats:handleStats,propertyChanged:propertyChanged});
     }
-
-    _viewer.setOpt("show_projects",_connection.k8s == null);
 
     _viewer.connection = connection;
     _visuals.createLogViewer(_logs,_connection,{show_header:false});
@@ -638,11 +698,12 @@ clear()
 function
 modelLoaded(viewer,model)
 {
-    var common = _esp.getStorage("esp-connect");
-    common.setOpt("esp-server",_server);
+    /*
     setTimeout(setProject,1000);
+    */
 }
 
+/*
 function
 setProject()
 {
@@ -652,7 +713,6 @@ setProject()
     else if (_k8s != null)
     {
         const   url = (_viewer.connection != null && _viewer.connection.k8s != null) ? _viewer.connection.k8s.projectUrl : "";
-        document.getElementById("bannerTitle").innerHTML = "ESP Model Viewer (" + url + ")";
         loadPublishWindows();
     }
     else if (_esp.hasParm("project"))
@@ -668,6 +728,7 @@ setProject()
         _viewer.project = "*";
     }
 }
+*/
 
 function
 projectLoaded(viewer)
@@ -1418,6 +1479,17 @@ table.tabs td.tabs
     padding:2px;
 }
 
+div#banner select#namespaces,
+div#banner select#projects
+{
+    width:150px;
+}
+
+div#banner option
+{
+    background:white;
+}
+
 div#banner td.theme
 {
     text-align:right;
@@ -1450,6 +1522,14 @@ td.bannerControls
                 <td class="bannerControls">
                     <table class="bannerControls">
                         <tr>
+                            <td class="namespace">
+                                <span>Namespace:</span>
+                                <select id="namespaces" onchange="setNamespace(this.value)"></select>
+                            </td>
+                            <td class="project">
+                                <span>Project:</span>
+                                <select id="projects" onchange="setProject(this.value)"></select>
+                            </td>
                             <td class="theme">
                                 <span>Theme:</span>
                                 <select id="theme" onchange="setTheme(this.value)">
@@ -1467,9 +1547,6 @@ td.bannerControls
                                     <option value="sas_ignite">Ignite</option>
                                     <option value="sas_inspire">Inspire</option>
                                 </select>
-                            </td>
-                            <td id="connectCell" class="icon">
-                                <a id="connect" class="icon" href="javascript:_esp.showConnectDialog({connect:connect},_server)">&#xf137;</a>
                             </td>
                         </tr>
                     </table>

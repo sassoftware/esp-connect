@@ -28,6 +28,18 @@ if (opts.hasOpt("port") == false)
     process.exit(0);
 }
 
+if (opts.hasOpt("http-proxy"))
+{
+    var tmp = opts.getOpt("http-proxy");
+    esp.setHttpProxy((tmp != "off") ? tmp : null);
+}
+
+if (opts.hasOpt("https-proxy"))
+{
+    var tmp = opts.getOpt("https-proxy");
+    esp.setHttpsProxy((tmp != "off") ? tmp : null);
+}
+
 function
 getProxyUrl(request)
 {
@@ -47,222 +59,228 @@ getProxyUrl(request)
     return(url);
 }
 
-class Ws
+var port = opts.getOpt("port",4444);
+var verbose = opts.getOpt("verbose",false);
+var server = null;
+
+var fileserver = new(nodestatic.Server)(process.cwd());
+
+var handler = function(request,response)
 {
-    constructor(request)
+    if (verbose)
     {
-        this._connection = request.accept(null,request.origin);
-        this._connection._ws = this;
+        console.log("request: " + request.url);
+    }
 
-        var self = this;
+    var url = getProxyUrl(request);
 
-        this._connection.on("message",function(message) {
-            if (self._websocket != null)
+    if (url != null)
+    {
+        if (verbose)
+        {
+            console.log("got proxy request: " + url);
+        }
+
+        var method = request.method.toLowerCase();
+        var proxy = esp.getAjax().create(url);
+        var s;
+
+        for (var x in request.headers)
+        {
+            s = x.toLowerCase();
+
+            if (s != "host" &&
+                s != "accept-encoding")
             {
-                if (message.type === "utf8")
+                proxy.setRequestHeader(x,request.headers[x]);
+            }
+        }
+
+        if (method == "post" || method == "put")
+        {
+            var data = "";
+
+            request.on("data", function(chunk) {
+                data += chunk;
+            });
+
+            request.on("end", function() {
+                if (verbose)
                 {
-                    self._websocket.send(message.utf8Data);
+                    console.log("set data: " + data);
                 }
-                else if (message.type === "binary")
-                {
-                    self._websocket.sendBytes(message.binaryData);
-                }
-            }
-        });
-
-        this._connection.on("close",function() {
-            if (self._websocket != null)
-            {
-                self._websocket.close();
-                self._websocket = null;
-            }
-
-            self._connection = null;
-        });
-
-        var url = getProxyUrl(request.httpRequest);
-
-        esp.getTools().createWebSocket(url.toString(),this).then(
-            function(result) {
-                self._websocket = result;
-                self._websocket._ws = self;
-            },
-            function(error) {
-                console.log("create websocket error: " + error);
-            }
-        );
-    }
-
-    open()
-    {
-    }
-
-    close()
-    {
-        if (this._ws._connection != null)
-        {
-            this._ws._connection.close();
-            this._ws._connection = null;
-        }
-        this._ws._websocket = null;
-    }
-
-    error(e)
-    {
-        console.log("ws error");
-    }
-
-    message(msg)
-    {
-        if (typeof(msg.data) == "string")
-        {
-            this._ws._connection.sendUTF(msg.data);
-        }
-        else if (msg.data instanceof ArrayBuffer)
-        {
-            this._ws._connection.sendBytes(esp.getTools().arrayBufferToBuffer(msg.data));
-        }
-        else if (msg.data instanceof Blob)
-        {
-            this._ws._connection.sendBytes(msg.binaryData);
-        }
-    }
-}
-
-if (opts.hasOpt("port"))
-{
-    var https_proxy = (process.env.https_proxy != null) ? new URL(process.env.https_proxy) : null
-    var http_proxy = (process.env.http_proxy != null) ? new URL(process.env.http_proxy) : null
-    var no_proxy = null;
-
-    if (process.env.NO_PROXY != null)
-    {
-        no_proxy = [];
-
-        var tmp = process.env.NO_PROXY.split(",");
-
-        for (var s of tmp)
-        {
-            no_proxy.push(s.trim());
-        }
-    }
-
-    var port = opts.getOpt("port",4444);
-    var server = null;
-
-    var fileserver = new(nodestatic.Server)(process.cwd());
-
-    var handler = function(request,response)
-    {
-console.log("request: " + request.url);
-        var url = getProxyUrl(request);
-
-        if (url != null)
-        {
-            var method = request.method.toLowerCase();
-            var proxy = esp.getAjax().create(url);
-            var s;
-
-            for (var x in request.headers)
-            {
-                s = x.toLowerCase();
-
-                if (s != "host" &&
-                    s != "accept-encoding")
-                {
-                    proxy.setRequestHeader(x,request.headers[x]);
-                }
-            }
-
-            if (method == "post" || method == "put")
-            {
-                var data = "";
-
-                request.on("data", function(chunk) {
-                    data += chunk;
-                });
-
-                request.on("end", function() {
-                    proxy.setData(data);
-                    proxy.send(method).then(
-                        function(result) {
-                            response.writeHead(result.status);
-                            response.write(result.text);
-                            response.end();
-                        },
-                        function(result) {
-                        }
-                    );
-                });
-            }
-            else
-            {
+                proxy.setData(data);
                 proxy.send(method).then(
                     function(result) {
+                        if (verbose)
+                        {
+                            console.log("status is: " + result.status);
+                            console.log("response: " + result.text);
+                        }
                         response.writeHead(result.status);
                         response.write(result.text);
                         response.end();
                     },
                     function(result) {
+                        if (verbose)
+                        {
+                            console.log(proxy._options);
+                            console.log("error: " + result.error.toString());
+                        }
+                        response.writeHead(500);
+                        response.write(result.error.toString());
+                        response.end();
                     }
                 );
-            }
+            });
         }
         else
         {
-            fileserver.serve(request,response);
+            proxy.send(method).then(
+                function(result) {
+                    if (verbose)
+                    {
+                        console.log("status is: " + result.status);
+                        console.log("response: " + result.text);
+                    }
+                    response.writeHead(result.status);
+                    response.write(result.text);
+                    response.end();
+                },
+                function(result) {
+                    if (verbose)
+                    {
+                        console.log(proxy._options);
+                        console.log("error: " + result.error.toString());
+                    }
+                    response.writeHead(500);
+                    response.write(result.error.toString());
+                    response.end();
+                }
+            );
         }
-    }
-
-    /*
-    if (opts.getOpt("secure",false))
-    {
-        var key = opts.getOpt("key","server.key");
-        var cert = opts.getOpt("cert","server.cert");
-
-        const options = {
-          key:fs.readFileSync(key),
-          cert:fs.readFileSync(cert)
-        };
-
-        server = https.createServer(options,handler);
-        console.log("https server running on " + port);
-    }
-    */
-    if (opts.getOpt("secure",false))
-    {
-        var cert = opts.getOpt("cert","server.pem");
-        var key = opts.getOpt("key",cert);
-
-        const options = {
-          key:fs.readFileSync(key),
-          cert:fs.readFileSync(cert)
-        };
-
-        server = https.createServer(options,handler);
-
-        console.log("https server running on " + port);
     }
     else
     {
-        server = http.createServer(handler);
-        console.log("http server running on " + port);
+        fileserver.serve(request,response);
     }
+}
 
-    server.listen(port);
+if (opts.getOpt("secure",false))
+{
+    var cert = opts.getOpt("cert","server.pem");
+    var key = opts.getOpt("key",cert);
 
-    if (opts.getOpt("wsproxy",false))
+    const options = {
+      key:fs.readFileSync(key),
+      cert:fs.readFileSync(cert)
+    };
+
+    server = https.createServer(options,handler);
+
+    console.log("https server running on " + port);
+}
+else
+{
+    server = http.createServer(handler);
+    console.log("http server running on " + port);
+}
+
+server.listen(port);
+
+if (opts.getOpt("wsproxy",false))
+{
+    class Ws
     {
-        var config = {
-            httpServer:server,
-            closeTimeout:0
-        };
+        constructor(request)
+        {
+            this._connection = request.accept(null,request.origin);
+            this._connection._ws = this;
 
-        var server = new websocket.server(config);
-        server.on("request",function(request) {
-            new Ws(request);
-        });
+            var self = this;
+
+            this._connection.on("message",function(message) {
+                if (self._websocket != null)
+                {
+                    if (message.type === "utf8")
+                    {
+                        self._websocket.send(message.utf8Data);
+                    }
+                    else if (message.type === "binary")
+                    {
+                        self._websocket.sendBytes(message.binaryData);
+                    }
+                }
+            });
+
+            this._connection.on("close",function() {
+                if (self._websocket != null)
+                {
+                    self._websocket.close();
+                    self._websocket = null;
+                }
+
+                self._connection = null;
+            });
+
+            var url = getProxyUrl(request.httpRequest);
+
+            esp.getTools().createWebSocket(url.toString(),this).then(
+                function(result) {
+                    self._websocket = result;
+                    self._websocket._ws = self;
+                },
+                function(error) {
+                    console.log("create websocket error: " + error);
+                }
+            );
+        }
+
+        open()
+        {
+        }
+
+        close()
+        {
+            if (this._ws._connection != null)
+            {
+                this._ws._connection.close();
+                this._ws._connection = null;
+            }
+            this._ws._websocket = null;
+        }
+
+        error(e)
+        {
+            console.log("ws error");
+        }
+
+        message(msg)
+        {
+            if (typeof(msg.data) == "string")
+            {
+                this._ws._connection.sendUTF(msg.data);
+            }
+            else if (msg.data instanceof ArrayBuffer)
+            {
+                this._ws._connection.sendBytes(esp.getTools().arrayBufferToBuffer(msg.data));
+            }
+            else if (msg.data instanceof Blob)
+            {
+                this._ws._connection.sendBytes(msg.binaryData);
+            }
+        }
     }
+
+    var config = {
+        httpServer:server,
+        closeTimeout:0
+    };
+
+    var server = new websocket.server(config);
+    server.on("request",function(request) {
+        new Ws(request);
+    });
 }
 
 function
@@ -274,6 +292,8 @@ showUsage()
         description:"NodeJS HTTP Server",
         options:[
             {name:"port",arg:"HTTP port",description:"HTTP port",required:true},
+            {name:"http-proxy",arg:"HTTP proxy server",description:"HTTP proxy server",required:false},
+            {name:"https-proxy",arg:"HTTPS proxy server",description:"HTTPS proxy server",required:false},
             {name:"wsproxy",arg:"true | false",description:"Run websocket proxy server, defaults to false",required:false}
         ],
         show_auth:false,

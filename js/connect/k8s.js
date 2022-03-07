@@ -8,8 +8,6 @@ import {ajax} from "./ajax.js";
 import {xpath} from "./xpath.js";
 import {Options} from "./options.js";
 
-var http_proxy = null;
-
 class K8S extends Options
 {
     constructor(url,options)
@@ -116,12 +114,6 @@ class K8S extends Options
     get baseUrl()
     {
         var s = this.httpProtocol + "//" + this.host + ":" + this.port + "/";
-
-        if (http_proxy != null)
-        {
-            var tmp = http_proxy + "/" + s;
-            s = tmp;
-        }
 
         return(s);
     }
@@ -533,7 +525,7 @@ class K8S extends Options
             }
 
             const   self = this;
-            this.getAuthToken().then(
+            this.getAuthToken(delegate).then(
                 function(result) {
                     const   status = result.status;
 
@@ -586,7 +578,7 @@ class K8S extends Options
         }));
     }
 
-    getAuthToken()
+    getAuthToken(delegate)
     {
         return(new Promise((resolve,reject) => {
             var self = this;
@@ -609,13 +601,17 @@ class K8S extends Options
                         function(result) {
                             self.getIngress("uaa").then(
                                 function(result) {
-                                    self.uaa(result).then(
+                                    self.uaa(result,delegate).then(
                                         function(result) {
                                             if (result.status == 200)
                                             {
                                                 self.setOpt("oauth2",true);
                                                 self.setOpt("access_token",result);
                                                 resolve(result);
+                                            }
+                                            else if (result.status == 401)
+                                            {
+                                                console.log("need auth: " + self._delegate);
                                             }
                                             else
                                             {
@@ -684,56 +680,95 @@ class K8S extends Options
         }));
     }
 
-    uaa(data)
+    uaa(data,delegate)
     {
-console.log("============= IN UAA");
-        return(new Promise((resolve,reject) => {
-            var url = "https://";
-            url += data.spec.tls[0].hosts[0];
-            url += "/uaa/oauth/token";
+        var url = "https://";
+        url += data.spec.tls[0].hosts[0];
+        url += "/uaa/oauth/token";
 
-            if (http_proxy != null)
+        var self = this;
+
+        return(new Promise((resolve,reject) => {
+
+            function getUaa()
             {
-                var tmp = http_proxy + "/" + url;
-                url = tmp;
+                var request = self.createRequest(url,{"Content-Type":"application/x-www-form-urlencoded","Content-Type":"application/x-www-form-urlencoded"});
+                var user = self.getOpt("user","");
+                var pw = self.getOpt("pw","");
+                var send ="";
+
+                send += "client_id=sv_client";
+                send += "&client_secret=secret";
+                send += "&grant_type=password";
+                send += "&username=" + user;
+                send += "&password=" + pw;
+
+                request.setData(send);
+
+                request.post().then(
+                    function(result) {
+                        if (result.status >= 400)
+                        {
+                            resolve({status:result.status,token:null});
+                        }
+                        else
+                        {
+                            var o = JSON.parse(result.text);
+                            resolve({status:result.status,token:o.access_token});
+                        }
+                    },
+                    function(result) {
+                        if (result.status == 401)
+                        {
+                            const   d = tools.anySupports(delegate,"getCredentials");
+
+                            if (d != null)
+                            {
+                                d.getCredentials().then(
+                                    function(result) {
+                                        self.setOpt("user",result.user);
+                                        self.setOpt("pw",result.password);
+                                        getUaa();
+                                    },
+                                    function(result) {
+                                        reject(result);
+                                    }
+                                );
+                            }
+                        }
+                        else
+                        {
+                            reject(result);
+                        }
+                    }
+                );
             }
 
-            var request = this.createRequest(url,{"Content-Type":"application/x-www-form-urlencoded","Content-Type":"application/x-www-form-urlencoded"});
-            var user = this.getOpt("user");
-            var pw = this.getOpt("pw","");
-            var send ="";
+            var user = self.getOpt("user","");
+            var pw = self.getOpt("pw","");
 
-user = "bob";
-pw = "Esppass1*";
-            send += "client_id=sv_client";
-            send += "&client_secret=secret";
-            send += "&grant_type=password";
-            send += "&username=" + user;
-            send += "&password=" + pw;
+            if (user.length > 0 && pw.length > 0)
+            {
+                getUaa();
+            }
+            else
+            {
+                const   d = tools.anySupports(delegate,"getCredentials");
 
-console.log(url);
-console.log(send);
-            request.setData(send);
-
-            request.post().then(
-                function(result) {
-                    if (result.status >= 400)
-                    {
-                        resolve({status:result.status,token:null});
-                    }
-                    else
-                    {
-                        var o = JSON.parse(result.text);
-console.log(JSON.stringify(o,null,"\t"));
-                        resolve({status:result.status,token:o.access_token});
-                    }
-                },
-                function(result) {
-console.log("got error");
-                    console.log("error: " + result);
-                    reject(result);
+                if (d != null)
+                {
+                    d.getCredentials().then(
+                        function(result) {
+                            self.setOpt("user",result.user);
+                            self.setOpt("pw",result.password);
+                            getUaa();
+                        },
+                        function(result) {
+                            reject(result);
+                        }
+                    );
                 }
-            );
+            }
         }));
     }
 
@@ -2074,11 +2109,6 @@ var _api =
         }
 
         return(o);
-    },
-
-    setHttpProxy:function(url)
-    {
-        http_proxy = url;
     }
 };
 

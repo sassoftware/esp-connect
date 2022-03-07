@@ -11,16 +11,16 @@ ENV HOME=/root
 
 WORKDIR ${HOME}
 
-RUN mkdir -p js/connect
+RUN mkdir -p esp-connect/js/connect
 RUN mkdir bin
 RUN mkdir modules
 
-ADD js/connect js/connect
+ADD js/connect esp-connect/js/connect
 ADD nodejs/connect.mjs modules 
 ADD nodejs/http.mjs modules 
-ADD Docker/connect/profile .profile
+ADD Docker/connect/common/profile .profile
 
-RUN npm install js/connect/
+RUN npm install esp-connect/js/connect/
 
 ENV ENV="${HOME}/.profile"
 

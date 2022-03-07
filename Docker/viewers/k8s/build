@@ -53,7 +53,7 @@ function usage()
 	printf "SYNOPSIS:\n"
 	printf "\t`basename $0` -name -config\n\n"
 	printf "SUMMARY:\n"
-	printf "\tCreate ESP Modelviewer docker image.\n"
+	printf "\tCreate ESP Viewers docker image.\n"
 	printf "\n"
 	printf "OPTIONS:\n\n"
 	printf "\t-name\timage name\n"
@@ -79,6 +79,6 @@ then
     exit 1
 fi
 
-cp ${CONFIG} Docker/modelviewer/k8s/config
-docker build -t ${NAME} --force-rm -f Docker/modelviewer/k8s/Dockerfile .
-rm Docker/modelviewer/k8s/config
+cp ${CONFIG} Docker/viewers/k8s/config
+docker build -t ${NAME} --force-rm -f Docker/viewers/k8s/Dockerfile .
+rm Docker/viewers/k8s/config

@@ -16,9 +16,11 @@
 var _esp = null;
 </script>
 
-<script src="./esp-connect-ui.js"></script>
-<script>
-_esp = esp_connect_ui.api;
+<!-- Run from an esp-connect install -->
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "../esp-connect/js/ui/api.js"
+_esp = esp;
 </script>
 
 <script>
@@ -35,6 +37,21 @@ var _k8s = null;
 function
 init()
 {
+    var tmp = new URL(".",document.URL);
+
+    var proxy = "";
+    proxy = "http://";
+    proxy += tmp.hostname;
+    proxy += ":";
+    proxy += tmp.port;
+    _esp.setHttpProxy(proxy);
+
+    proxy = "ws://";
+    proxy += tmp.hostname;
+    proxy += ":";
+    proxy += tmp.port;
+    _esp.setWsProxy(proxy);
+
     _storage = _esp.getStorage("logviewer");
 
     if (_esp.hasParm("server"))

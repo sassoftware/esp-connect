@@ -131,9 +131,7 @@ var	_api =
                 credentials = opts.getOptAndClear("credentials");
             }
 
-console.log("URL: " + url);
             var connection = serverconn.create(this,url,delegates,opts.getOpts());
-console.log("token: " + token);
 
             if (token != null)
             {
@@ -306,6 +304,21 @@ console.log("token: " + token);
     stringify:function(o)
     {
         return(tools.stringify(o));
+    },
+
+    setHttpProxy:function(value)
+    {
+        tools.setHttpProxy(value);
+    },
+
+    setHttpsProxy:function(value)
+    {
+        tools.setHttpsProxy(value);
+    },
+
+    setNoProxy:function(value)
+    {
+        tools.setNoProxy(value);
     },
 
     usage:function(doc)

@@ -7,6 +7,8 @@ import {Options} from "./options.js";
 import {tools} from "./tools.js";
 import {xpath} from "./xpath.js";
 
+var node_proxy = null;
+
 var _https = null;
 var _http = null;
 
@@ -66,8 +68,8 @@ class Ajax extends Options
                 this._method = method;
             }
 
-            var url = new URL(this._url,document.URL);
-            var protocol = url.protocol.toLowerCase();
+            var u = new URL(this._url,document.URL);
+            var protocol = u.protocol.toLowerCase();
 
             if (protocol == "file:")
             {
@@ -143,7 +145,15 @@ class Ajax extends Options
                 reject(self);
             }
 
-            this._request.open(this._method,this._url,true);
+            var url = this._url;
+
+            if (node_proxy != null)
+            {
+                var tmp = node_proxy + "/" + url;
+                url = tmp;
+            }
+
+            this._request.open(this._method,url,true);
 
             //this._request.setRequestHeader("accept","text/xml");
 
@@ -252,34 +262,9 @@ class Ajax extends Options
 }
 
 var TUNNEL = null;
-var http_proxy = null;
-var https_proxy = null;
-var no_proxy = null;
 
 if (tools.isNode)
 {
-    if (process.env.http_proxy != null)
-    {
-        http_proxy = new URL(process.env.http_proxy);
-    }
-
-    if (process.env.https_proxy != null)
-    {
-        https_proxy = new URL(process.env.https_proxy);
-    }
-
-    if (process.env.NO_PROXY != null)
-    {
-        no_proxy = [];
-
-        var tmp = process.env.NO_PROXY.split(",");
-
-        for (var s of tmp)
-        {
-            no_proxy.push(s.trim());
-        }
-    }
-
     import("tunnel").then(
         function(result) {
             TUNNEL = result.default;
@@ -422,6 +407,7 @@ class NodeAjax extends Options
                 });
 
                 request.on("error", function(e) {
+                    self.error = e;
                     reject(self);
                 });
 
@@ -569,26 +555,14 @@ class NodeAjax extends Options
     {
         return(new Promise((resolve,reject) => {
             var u = new URL(this._url);
-            var noproxy = false;
 
-            if (no_proxy != null)
-            {
-                for (var s of no_proxy)
-                {
-                    if (s == u.hostname)
-                    {
-                        noproxy = true;
-                        break;
-                    }
-                }
-            }
-
-            if (noproxy)
+            if (tools.isNoProxy(u.hostname))
             {
                 resolve();
                 return;
             }
 
+            var http_proxy = tools.getHttpProxy();
             var secure = (u.protocol.toLowerCase() == "https:");
 
             var proxyHost = null;
@@ -596,19 +570,23 @@ class NodeAjax extends Options
 
             if (secure)
             {
+                var https_proxy = tools.getHttpsProxy();
+
                 if (https_proxy != null)
                 {
                     proxyHost = https_proxy.hostname;
-                    proxyPort = https_proxy.port;
+                    if (https_proxy.port != 0)
+                    {
+                        proxyPort = https_proxy.port;
+                    }
                 }
             }
             else if (http_proxy != null)
             {
                 proxyHost = http_proxy.hostname;
-                proxyPort = new Number(http_proxy.port);
-                if (proxyPort == 0)
+                if (http_proxy.port != 0)
                 {
-                    proxyPort = 80;
+                    proxyPort = http_proxy.port;
                 }
             }
 
@@ -668,6 +646,11 @@ var _api =
         {
             return(new Ajax(url));
         }
+    },
+
+    setHttpProxy:function(url)
+    {
+        node_proxy = url;
     }
 };
 

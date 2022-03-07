@@ -21,6 +21,7 @@ var TUNNEL = null;
 
 var http_proxy = null;
 var https_proxy = null;
+var no_proxy = null;
 
 if (_isNode)
 {
@@ -32,6 +33,18 @@ if (_isNode)
     if (process.env.https_proxy != null)
     {
         https_proxy = new URL(process.env.https_proxy);
+    }
+
+    if (process.env.NO_PROXY != null)
+    {
+        no_proxy = [];
+
+        var tmp = process.env.NO_PROXY.split(",");
+
+        for (var s of tmp)
+        {
+            no_proxy.push(s.trim());
+        }
     }
 }
 
@@ -1274,9 +1287,41 @@ var _api =
         return(http_proxy);
     },
 
+    setHttpProxy:function(value)
+    {
+        http_proxy = (value != null) ? new URL(value) : null;
+    },
+
     getHttpsProxy:function()
     {
         return(https_proxy);
+    },
+
+    setHttpsProxy:function(value)
+    {
+        https_proxy = (value != null) ? new URL(value) : null;
+    },
+
+    getNoProxy:function()
+    {
+        return(no_proxy);
+    },
+
+    setNoProxy:function(value)
+    {
+        no_proxy = value;
+    },
+
+    isNoProxy:function(hostname)
+    {
+        var code = (hostname == "localhost");
+
+        if (code == false && no_proxy != null)
+        {
+            code = _api.contains(no_proxy,hostname);
+        }
+
+        return(code);
     }
 };
 

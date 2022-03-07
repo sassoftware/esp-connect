@@ -11,23 +11,25 @@ ENV HOME=/root
 
 WORKDIR ${HOME}
 
-RUN mkdir -p js/connect
+RUN mkdir -p esp-connect/js/connect
 RUN mkdir bin
 RUN mkdir modules
 RUN mkdir .kube
 
-ADD js/connect js/connect
+ADD js/connect esp-connect/js/connect
 ADD nodejs/connect.mjs modules 
-ADD Docker/connect/k8s/profile .profile
-ADD Docker/connect/k8s/config .kube
+ADD Docker/connect/common/profile .profile
+ADD Docker/connect/k8s/config kubeconfig
+ADD Docker/connect/k8s/startup startup
 
 RUN curl -sLO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
 RUN chmod +x ./kubectl
 RUN mv ./kubectl bin
 
-RUN npm install js/connect/
+RUN npm install esp-connect/js/connect/
 
 ENV ENV="${HOME}/.profile"
 ENV KUBECONFIG=${HOME}/.kube/config
 
+#CMD /bin/ash --login startup
 CMD /bin/ash

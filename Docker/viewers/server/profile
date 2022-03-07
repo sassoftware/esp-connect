@@ -1,0 +1,9 @@
+export http_proxy=http://inetgw.fyi.sas.com:80
+export https_proxy=http://inetgw.fyi.sas.com:80
+
+export NODE_TLS_REJECT_UNAUTHORIZED=0
+export NODE_NO_WARNINGS=1
+
+set -o vi
+
+PS1="$ "
