@@ -12,21 +12,12 @@ var TUNNEL = null;
 
 var _nodeWS = null;
 
-var http_proxy = null;
-var https_proxy = null;
+var http_proxy = tools.getHttpProxy();
+var https_proxy = tools.getHttpsProxy();
+var ws_proxy = null;
 
 if (tools.isNode)
 {
-    if (process.env.http_proxy != null)
-    {
-        http_proxy = new URL(process.env.http_proxy);
-    }
-
-    if (process.env.https_proxy != null)
-    {
-        https_proxy = new URL(process.env.https_proxy);
-    }
-
     _nodeWS = {
         open:function()
         {
@@ -467,6 +458,12 @@ class Connection extends Options
         }
         else
         {
+            if (ws_proxy != null)
+            {
+                var tmp = ws_proxy + "/" + url;
+                url = tmp;
+            }
+
             var ws = new WebSocket(url);
             ws._connection = this;
             ws.onopen = _websockets.open;
@@ -731,6 +728,16 @@ class Connection extends Options
     static established(url)
     {
         return(_websockets._established.hasOwnProperty(url));
+    }
+
+    static established(url)
+    {
+        return(_websockets._established.hasOwnProperty(url));
+    }
+
+    static setWsProxy(url)
+    {
+        ws_proxy = url;
     }
 }
 

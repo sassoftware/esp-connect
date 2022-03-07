@@ -67,6 +67,8 @@ var _viewerSplit = "70%";
 function
 init()
 {
+    _esp.setHttpProxy("http://localhost:4444");
+
     _storage = _esp.getStorage("modelviewer");
 
 console.log(_storage.toString());
@@ -263,10 +265,13 @@ console.log(_storage.toString());
 
     var url = new URL("index.html",document.URL);
 
+    /*
     _k8surl = "k8s-proxy://";
     _k8surl += url.hostname;
     _k8surl += ":";
     _k8surl += url.port;
+    */
+    _k8surl = "k8s-proxy://localhost:8001";
 
     loadNamespaces();
 }
@@ -343,7 +348,7 @@ console.log("project: " + name);
 
             if (current != null)
             {
-                //setProject(current);
+                setProject(current);
             }
         }
     );

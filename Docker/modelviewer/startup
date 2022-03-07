@@ -1,0 +1,4 @@
+export http_proxy=http://inetgw.fyi.sas.com:80
+export https_proxy=http://inetgw.fyi.sas.com:80
+
+node modules/http.mjs --port 4444 --proxy 4445

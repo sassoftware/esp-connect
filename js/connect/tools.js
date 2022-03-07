@@ -19,8 +19,21 @@ if (typeof process === "object")
 var W3CWS = null;
 var TUNNEL = null;
 
-var	http_proxy = null;
-var	https_proxy = null;
+var http_proxy = null;
+var https_proxy = null;
+
+if (_isNode)
+{
+    if (process.env.http_proxy != null)
+    {
+        http_proxy = new URL(process.env.http_proxy);
+    }
+
+    if (process.env.https_proxy != null)
+    {
+        https_proxy = new URL(process.env.https_proxy);
+    }
+}
 
 import {Options} from "./options.js";
 
@@ -435,6 +448,19 @@ var _api =
         }
 
         return(dv.buffer);
+    },
+
+    arrayBufferToBuffer:function(ab)
+    {
+        var buf = new Buffer(ab.byteLength);
+        var view = new Uint8Array(ab);
+
+        for (var i = 0; i < buf.length; i++)
+        {
+                buf[i] = view[i];
+        }
+
+        return(buf);
     },
 
     bufferToArrayBuffer:function(buf)
@@ -1241,6 +1267,16 @@ var _api =
         }
         
         return(s);
+    },
+
+    getHttpProxy:function()
+    {
+        return(http_proxy);
+    },
+
+    getHttpsProxy:function()
+    {
+        return(https_proxy);
     }
 };
 

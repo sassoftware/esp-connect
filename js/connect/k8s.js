@@ -8,6 +8,8 @@ import {ajax} from "./ajax.js";
 import {xpath} from "./xpath.js";
 import {Options} from "./options.js";
 
+var http_proxy = null;
+
 class K8S extends Options
 {
     constructor(url,options)
@@ -114,6 +116,13 @@ class K8S extends Options
     get baseUrl()
     {
         var s = this.httpProtocol + "//" + this.host + ":" + this.port + "/";
+
+        if (http_proxy != null)
+        {
+            var tmp = http_proxy + "/" + s;
+            s = tmp;
+        }
+
         return(s);
     }
 
@@ -368,7 +377,8 @@ class K8S extends Options
             url += "/pods";
 
             var self = this;
-            var request = this.createRequest(url,{"Accept":"application/json"});
+            //var request = this.createRequest(url,{"Accept":"application/json"});
+            var request = ajax.create(url);
 
             request.get().then(
                 function(result) {
@@ -676,22 +686,33 @@ class K8S extends Options
 
     uaa(data)
     {
+console.log("============= IN UAA");
         return(new Promise((resolve,reject) => {
             var url = "https://";
             url += data.spec.tls[0].hosts[0];
             url += "/uaa/oauth/token";
+
+            if (http_proxy != null)
+            {
+                var tmp = http_proxy + "/" + url;
+                url = tmp;
+            }
 
             var request = this.createRequest(url,{"Content-Type":"application/x-www-form-urlencoded","Content-Type":"application/x-www-form-urlencoded"});
             var user = this.getOpt("user");
             var pw = this.getOpt("pw","");
             var send ="";
 
+user = "bob";
+pw = "Esppass1*";
             send += "client_id=sv_client";
             send += "&client_secret=secret";
             send += "&grant_type=password";
             send += "&username=" + user;
             send += "&password=" + pw;
 
+console.log(url);
+console.log(send);
             request.setData(send);
 
             request.post().then(
@@ -703,10 +724,12 @@ class K8S extends Options
                     else
                     {
                         var o = JSON.parse(result.text);
+console.log(JSON.stringify(o,null,"\t"));
                         resolve({status:result.status,token:o.access_token});
                     }
                 },
                 function(result) {
+console.log("got error");
                     console.log("error: " + result);
                     reject(result);
                 }
@@ -2051,6 +2074,11 @@ var _api =
         }
 
         return(o);
+    },
+
+    setHttpProxy:function(url)
+    {
+        http_proxy = url;
     }
 };
 

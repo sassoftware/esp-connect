@@ -6,7 +6,6 @@
 *
 {
     font-size:1rem;
-    font-size:.9rem;
     outline:none;
 }
 
@@ -796,7 +795,6 @@ div.appheader tr.title td
 
 div.appheader td.navigation
 {
-    /*font-size:1rem;*/
 }
 
 div.appcontent
@@ -815,7 +813,6 @@ div.appfooter td.apptab
     padding:10px;
     border:0;
     text-align:center;
-    /*font-size:.8rem;*/
 }
 
 table.app
@@ -831,14 +828,12 @@ table.app td
 {
     padding:0;
     border:0;
-    /*font-size:1rem;*/
     background:white;
 }
 
 table.app tr.navigatorTitle td
 {
     background:inherit;
-    /*font-size:1rem;*/
     padding-left:10px;
     color:#909090;
 }
@@ -867,7 +862,6 @@ table.app tr.last td
 table.app tr.item td.forward
 {
     color:#c0c0c0;
-    /*font-size:1rem;*/
     padding-right:40px;
     text-align:right;
 }
@@ -883,7 +877,6 @@ table.app tr.item span.label
 
 table.app tr.item span.material-icons-outlined
 {
-    /*font-size:1.5rem;*/
     color:#00bfff;
     padding:0;
 }
@@ -917,60 +910,50 @@ div.appfooter td.selected
     table.tabs button
     {
         font-family:Verdana, Arial, Helvetica, sans-serif;
-        /*font-size:2.5rem;*/
     }
 
     table.app tr.item td
     {
-        /*font-size:2.5rem;*/
         padding:20px;
     }
 
     table.app tr.item td span.material-icons-outlined
     {
-        /*font-size:3rem;*/
     }
 
     div.appheader tr.title td
     {
-        /*font-size:3rem;*/
     }
 
     div.appheader table.appheader tr.actions td,
     div.appheader table.appheader tr.actions span
     {
-        /*font-size:3.0rem;*/
         font-weight:bold;
 	    padding-bottom:30px;
     }
 
     div.appfooter td span.material-icons-outlined
     {
-        /*font-size:3.0rem;*/
     }
 
     div.appfooter td
     {
-        /*font-size:1.0rem;*/
     }
 
     div.appfooter td.apptab
     {
-        /*font-size:2.5rem;*/
         padding-bottom:30px;
     }
 
     table.app tr.navigatorTitle td
     {
         background:inherit;
-        /*font-size:3rem;*/
         padding-left:20px;
         color:#5cacee;
     }
 
     table.app tr.item td.forward
     {
-        /*font-size:3rem;*/
     }
 
     div.appfooter td.selected
@@ -986,7 +969,6 @@ div.appfooter td.selected
 
     table.form button
     {
-        /*font-size:2.5rem;*/
         padding:8px;
     }
 
@@ -994,13 +976,11 @@ div.appfooter td.selected
     div.dialog div.title,
     div.dialog
     {
-        /*font-size:4rem;*/
     }
 
     div.dialog td.buttoncontrol button,
     div.dialog table.buttons button
     {
-        /*font-size:4rem;*/
     }
 }
 
@@ -1025,64 +1005,53 @@ div.appfooter td.selected
     table.tabs button
     {
         font-family:Verdana, Arial, Helvetica, sans-serif;
-        /*font-size:1.5rem;*/
     }
 
     table.app tr.item td
     {
-        /*font-size:1.5rem;*/
         padding:20px;
     }
 
     table.app tr.item td span.material-icons-outlined
     {
-        /*font-size:2rem;*/
     }
 
     div.appheader tr.title td
     {
-        /*font-size:2rem;*/
     }
 
     div.appheader table.appheader tr.actions td
     {
-        /*font-size:2.0rem;*/
         font-weight:bold;
 	    padding-bottom:10px;
     }
 
     div.appfooter td span.material-icons-outlined
     {
-        /*font-size:2.0rem;*/
     }
 
     div.appfooter td
     {
-        /*font-size:1.0rem;*/
     }
 
     div.appfooter td.apptab
     {
-        /*font-size:1.5rem;*/
         padding-bottom:20px;
     }
 
     table.app tr.navigatorTitle td
     {
         background:inherit;
-        /*font-size:2rem;*/
         padding-left:20px;
         color:#5cacee;
     }
 
     table.app tr.item td.forward
     {
-        /*font-size:2rem;*/
     }
 
     table.form button
     {
-        /*font-size:1.5rem;*/
         padding:8px;
     }
 
@@ -1090,12 +1059,10 @@ div.appfooter td.selected
     div.dialog div.title,
     div.dialog
     {
-        /*font-size:2rem;*/
     }
 
     div.dialog td.buttoncontrol button,
     div.dialog table.buttons button
     {
-        /*font-size:2rem;*/
     }
 }

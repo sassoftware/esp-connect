@@ -5,6 +5,7 @@
 
 import {Connection} from "../connect/connection.js";
 import {connect} from "../connect/connect.js";
+import {k8s} from "../connect/k8s.js";
 import {uitools} from "./uitools.js";
 import {dialogs} from "./dialogs.js";
 import {Storage as StoredData} from "./storage.js";
@@ -741,6 +742,16 @@ var	_api =
     createApp:function(options,delegate)
     {
         return(app.create(options,delegate));
+    },
+
+    setWsProxy:function(url)
+    {
+        Connection.setWsProxy(url);
+    },
+
+    setHttpProxy:function(url)
+    {
+        k8s.setHttpProxy(url);
     }
 };
 

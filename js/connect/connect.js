@@ -131,7 +131,9 @@ var	_api =
                 credentials = opts.getOptAndClear("credentials");
             }
 
+console.log("URL: " + url);
             var connection = serverconn.create(this,url,delegates,opts.getOpts());
+console.log("token: " + token);
 
             if (token != null)
             {

@@ -52,6 +52,8 @@ var _viewerSplit = "70%";
 function
 init()
 {
+    _esp.setWsProxy("ws://localhost:7777");
+
     var common = _esp.getStorage("esp-connect");
 
     _storage = _esp.getStorage("modelviewer");

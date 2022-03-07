@@ -1,10 +1,28 @@
-FROM nginx:latest
+FROM node:16.14.0-alpine
 
-RUN rm -rf /usr/share/nginx/html/*
+RUN apk add python3
+RUN apk add --update make
+RUN apk add --update build-base
 
-ADD https://unpkg.com/vis-network/standalone/umd/vis-network.min.js /usr/share/nginx/html/vis-network.min.js
-RUN chmod 666 /usr/share/nginx/html/vis-network.min.js
+ENV HOME=/root
 
-ADD Docker/modelviewer/index.html /usr/share/nginx/html/index.html
-ADD dist/esp-connect-ui.js /usr/share/nginx/html/esp-connect-ui.js
-ADD Docker/common/favicon.ico /usr/share/nginx/html/favicon.ico
+WORKDIR ${HOME}
+
+RUN mkdir -p js/connect
+RUN mkdir bin
+RUN mkdir modules
+
+ADD https://unpkg.com/vis-network/standalone/umd/vis-network.min.js vis-network.min.js
+RUN chmod 666 vis-network.min.js
+
+ADD js/connect/*.js js/connect
+ADD js/connect/package.json js/connect
+ADD Docker/modelviewer/index.html .
+ADD dist/esp-connect-ui.js esp-connect-ui.js
+ADD nodejs/connect.mjs modules 
+ADD nodejs/http.mjs modules 
+ADD Docker/modelviewer/startup startup
+
+RUN npm install ${HOME}/js/connect
+
+CMD /bin/ash --login startup
