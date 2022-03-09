@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+
+<title>ESP Geofence Demo</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="anonymous" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.js" integrity="sha512-SeiQaaDh73yrb56sTW/RgVdi/mMqNeM2oBwubFHagc5BkixSpP1fvqF47mKzPGWYSSy4RwbBunrJBQ4Co8fRWA==" crossorigin="anonymous"></script>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<script>
+var _esp = null;
+</script>
+
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "../esp-connect/js/ui/api.js";
+_esp = esp;
+</script>
+
+<script>
+
+var _project = "paris";
+
+var _visuals = null;
+var _trip = null;
+var _conn = null;
+
+function
+init()
+{
+    _esp.setProxies();
+
+    var parms = _esp.getParms();
+
+    if (parms.hasOwnProperty("project"))
+    {
+        _project = parms["project"];
+    }
+
+    _visuals = _esp.createVisuals(parms);
+
+    var server = _esp.getServerFromParms(parms,_project);
+
+    if (server == null)
+    {
+        _esp.showConnectDialog({connect:connect});
+        return;
+    }
+
+    connect(server);
+}
+
+function
+connect(server)
+{
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+    _esp.showStatus("Loading project...");
+    var url = new URL("model.xml",document.URL).toString();
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url},overwrite:true,force:_esp.getParm("force",false)});
+    _esp.handleLayout();
+}
+
+function
+ready(connection)
+{
+    _esp.clearStatus();
+
+    _conn = connection;
+    _conn.loadUrl("trip","paris/paris_trip.csv").then(
+        function(response){
+            _trip = response.text;
+        }
+    );
+
+    _conn.getModel({schema:true}).then(
+        function(result) {
+            _model = result;
+        }
+    );
+
+    _conn.getPublisher({window:_project + "/cq/circles_in"}).then(
+        function(result) {
+            result.publishCsvFrom("paris/circles_in.csv",{close:true,opcodes:true,flags:true});
+        }
+    );
+
+    _conn.getPublisher({window:_project + "/cq/poly_in"}).then(
+        function(result) {
+            result.publishCsvFrom("paris/poly_in.csv",{close:true,opcodes:true,flags:true});
+        }
+    );
+
+    setTimeout(createVisuals,1000);
+
+    _conn.getProjectXml(_project).then(
+        function(result) {
+            _modelXml = _esp.getXPath().format(result);
+        }
+    );
+
+    _esp.size();
+}
+
+function
+error(message)
+{
+    console.log(message);
+}
+
+var _model = null;
+var _modelXml = null;
+
+function
+createVisuals()
+{
+    var color = "#3b99fc";
+    var barColor = "rgba(255,255,255,.7)";
+    var colors = _visuals.colors.createGradientColors({color:color,num:5,end:true});
+
+    _conn.getEventCollection({window:_project + "/cq/tracker"}).then(
+        function(result) {
+
+            var config = {lat:"GPS_latitude",lon:"GPS_longitude",size:10,color:"speed",colors:colors,color_range:[0,50],
+                              header:"Paris",popup:["vehicle","speed"],marker_border:0,
+                              circle_border_width:1,circle_fill_color:"rgba(0,0,255,.5)",
+                              poly_border_width:1,poly_fill_color:"rgba(0,255,0,.5)",
+                              zoom:15,tracking:true,center:[48.875,2.287583],
+                              circles:{window:_project + "/cq/circles_in",mode:"collection",lat:"POI_y",lon:"POI_x",radius:"POI_radius",text:"POI_desc"},
+                              polygons:{window:_project + "/cq/poly_in",mode:"collection",coords:"poly_data",text:"poly_desc",order:"lon_lat"},html:getMarker
+                              };
+
+            _visuals.createMap("paris",result,config);
+
+            _visuals.createCompass("heading",result,{value:"course",size:225,columns:4,header:"Heading",color:color});
+            _visuals.createGauge("speed",result,{value:"speed",width:250,colors:colors,segments:5,header:"Speed",range:[0,40],delta:true,decimals:false,bar_color:barColor});
+            _esp.size();
+        }
+    );
+
+    _conn.getEventCollection({window:_project + "/cq/alerts_vehicles"}).then(
+        function(result) {
+            _visuals.createGauge("poiAlerts",result,{value:"POI_dist",width:250,segments:5,colors:colors,header:"Point of Interest",range:[0,100],delta:true,decimals:false,bar_color:barColor});
+            /*
+            _visuals.createBarChart("poiAlerts",result,{y:"POI_dist",width:250,header:"Point of Interest",xrange:[0,100],orientation:"horizontal",color:"POI_dist",gradient:color,gradient_end:true});
+            */
+            _esp.size();
+        }
+    );
+
+    _conn.getEventStream({window:_project + "/cq/alerts_polygons_inserts",ignore_deletes:true}).then(
+        function(result) {
+            _visuals.createTable("polygonAlerts",result,{values:["_timestamp","alert"],header:"Polygon Alerts",tail:true});
+            _esp.size();
+        }
+    );
+
+//    _esp.getDialogs().pushModal('publish');
+    start();
+}
+
+function
+start()
+{
+    var o = {
+        ok:function(dialog)
+        {
+            new Trip(dialog.getValue("vehicle"));
+            _esp.getDialogs().clearModals();
+            return(true);
+        }
+    };
+
+    var form = [];
+    form.push({name:"vehicle",label:"Car:",value:"Car 1"});
+    _esp.getDialogs().showDialog({title:"Start a Trip",delegate:o,label_width:"40px",form:form});
+}
+
+function
+getMarker(map,data,color)
+{
+    var style = "font-size:16pt";
+    style += ";color:black";
+    var heading = parseInt(data.course);
+
+    if (heading > 0 && heading < 180)
+    {
+        style += ";transform:scale(-1,1) rotate(90deg) rotate(" + -heading + "deg)";
+    }
+    else
+    {
+        style += ";transform:rotate(90deg) rotate(" + heading + "deg)";
+    }
+
+    return("<div class='mapicon' style='" + style + "'>&#xf0eb;</div>");
+}
+
+function
+sendTrip(name)
+{
+    new Trip(name);
+    _esp.getDialogs().clearModals();
+}
+
+function
+Trip(name)
+{
+    this._name = name;
+    this._data = _model.getWindow(_project + "/cq/position_in").schema.createDataFromCsv(_trip,{opcodes:true,flags:true});
+    const   self = this;
+    _conn.getPublisher({window:_project + "/cq/position_in"}).then(
+        function(result) {
+            self._publisher = result;
+        }
+    );
+    this._fields = ["vehicle","pt_id","GPS_longitude","GPS_latitude","speed","course"];
+    this._index = 0;
+    this._delay = 250;
+    this._delay = 5;
+	var	trip = this;
+	setTimeout(function(){trip.send()},500);
+}
+
+Trip.prototype.send =
+function()
+{
+    if (this._index < this._data.length)
+    {
+        var copy = this._data[this._index];
+        var o = {};
+
+        for (var x in copy)
+        {
+            o[x] = copy[x];
+        }
+        o["vehicle"] = this._name;
+        o["time"] = new Date().getTime();
+        this._publisher.add(o);
+        this._publisher.publish();
+        this._index++;
+
+        var lowest = 200;
+        var ratio = (40 - parseFloat(o["speed"])) / 40;
+        var ms = lowest + parseInt(lowest * ratio);
+
+        var	trip = this;
+        setTimeout(function(){trip.send()},ms);
+    }
+    else
+    {
+        this._publisher.close();
+    }
+}
+
+</script>
+
+</head>
+
+<body onload="init()">
+
+    <div id="banner">
+        <table style="width:100%">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td class="icon">
+                    <a class="icon" href="javascript:start()">&#xf360;</a>
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_modelXml)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'paris',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('ESP Paris Geofence Example','help.html',{width:'50%',height:'50%'})">&#xf30b;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content">
+        <div class="layout">
+            <div class="container" style="width:100%;height:400px">
+                <div id="paris" style="width:66%;height:400px"></div>
+                <div id="polygonAlerts" style="width:30%;height:400px"></div>
+            </div>
+            <div class="container" style="width:100%;height:500px">
+                <div id="speed" style="width:32%;height:100%"></div>
+                <div id="poiAlerts" style="width:32%;height:100%"></div>
+                <div id="heading" style="width:32%;height:100%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+</body>
+
+</html>

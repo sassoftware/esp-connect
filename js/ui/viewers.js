@@ -474,6 +474,8 @@ class ModelViewer extends ViewerBase
                 },
                 shapeProperties: {
                     borderRadius:2
+                },
+                widthConstraint: {
                 }
             },
             edges: {
@@ -489,18 +491,19 @@ class ModelViewer extends ViewerBase
                 arrowStrikethrough: false
             },
             physics: {
-                stabilization: {
-                    enabled: false
+                enabled: true,
+                solver: "barnesHut",
+                barnesHut: {
+                    avoidOverlap: 1,
                 },
-                enabled:true
+                hierarchicalRepulsion: {
+                    nodeDistance:200,
+                },
             },
             layout: {
                 hierarchical: {
-                    direction: "UD",
                     direction: "LR",
-                    parentCentralization: false,
                     sortMethod: "directed",
-                    shakeTowards: "leaves",
                     enabled: true
                 }
             },
@@ -534,7 +537,7 @@ class ModelViewer extends ViewerBase
                 {
                     self._delegates.forEach((d) => 
                     {
-	                    if (tools.supports(d,"nodeSelected"))
+                        if (tools.supports(d,"nodeSelected"))
                         {
                             d.nodeSelected(w);
                         }
@@ -579,7 +582,7 @@ class ModelViewer extends ViewerBase
             var width = this._content.offsetWidth;
             var height = this._content.offsetHeight;
             height -= this._headerDiv.offsetHeight;
-            var	borders = tools.getBorders(this._modelDiv,true);
+            var borders = tools.getBorders(this._modelDiv,true);
             this._modelDiv.style.width = (width - borders.hsize) + "px";
             this._modelDiv.style.height = (height - borders.vsize - this._footerDiv.offsetHeight) + "px";
         }
@@ -1445,7 +1448,7 @@ class LogViewer extends ViewerBase
     {
         if (this._logDiv != null)
         {
-            var	outerBorders = tools.getBorders(this._logDiv,true);
+            var outerBorders = tools.getBorders(this._logDiv,true);
             this._logDiv.style.width = (this._content.offsetWidth - outerBorders.hsize) + "px";
             this._logDiv.style.height = (this._content.offsetHeight - outerBorders.vsize) + "px";
         }

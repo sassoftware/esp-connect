@@ -1,0 +1,27 @@
+#!bash
+
+source Docker/common/args.sh
+
+function usage()
+{
+	printf "\n"
+	printf "SYNOPSIS:\n"
+	printf "\t`basename $0` -name \n\n"
+	printf "SUMMARY:\n"
+	printf "\tCreate ESP Connect docker image.\n"
+	printf "\n"
+	printf "OPTIONS:\n\n"
+	printf "\t-name\timage name\n"
+	printf "\n"
+	exit 1
+}
+
+NAME=${parms["name"]}
+
+if [ -z "${NAME}" ]
+then
+    usage $1
+    exit 1
+fi
+
+docker build -t ${NAME} --force-rm -f Docker/connect/server/Dockerfile .

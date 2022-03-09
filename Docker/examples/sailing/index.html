@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+
+<title>ESP Sailing Example</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="anonymous" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.js" integrity="sha512-SeiQaaDh73yrb56sTW/RgVdi/mMqNeM2oBwubFHagc5BkixSpP1fvqF47mKzPGWYSSy4RwbBunrJBQ4Co8fRWA==" crossorigin="anonymous"></script>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<script>
+var _esp = null;
+</script>
+
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "../esp-connect/js/ui/api.js";
+_esp = esp;
+</script>
+
+<script>
+
+var _project = "sailing";
+
+var _visuals = null;
+var _conn = null;
+
+function
+init()
+{
+    _esp.setProxies();
+
+    var parms = _esp.getParms();
+
+    if (parms.hasOwnProperty("project"))
+    {
+        _project = parms["project"];
+    }
+
+    _visuals = _esp.createVisuals(parms);
+    _visuals.dateformat = "%c";
+
+    _visuals.createWrapper("legend",{header:"Ships",style:{width:"98%",height:"5%","padding-top":"10px"},show_header:false});
+
+    var server = _esp.getServerFromParms(parms,_project);
+
+    if (server == null)
+    {
+        _esp.showConnectDialog({connect:connect});
+        return;
+    }
+
+    connect(server);
+}
+
+function
+connect(server)
+{
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+    _esp.showStatus("Loading project...");
+    var url = new URL("model.xml",document.URL).toString();
+    var options = {
+        model: {
+            name:_project,
+            url:url,
+            options:{
+                overwrite:true,
+                force:_esp.getParm("force",false)
+            }
+        },
+        user:"bob",
+        pw:"Esppass1*"
+    };
+    _esp.connect(server,{ready:ready,connectionError:error},options);
+    _esp.handleLayout();
+}
+
+var _eventsources = null;
+var _model = null;
+
+function
+ready(connection)
+{
+    _esp.clearStatus();
+
+    _conn = connection;
+
+    _esp.clearStatus();
+
+    _conn.publishDataFrom(_project + "/cq/Areas_Of_Interest",new URL("geoArea.csv",document.URL).toString(),{informat:"csv"});
+
+    _conn.getEventCollection({window:_project + "/cq/Boat_Current",interval:250}).then(
+        function(result) {
+
+        var color = "#3b99fc";
+        var colors = _visuals.colors.createGradientColors({color:color,num:5,end:true});
+        var w = 160;
+        var h = 90;
+        var config = {lat:"lat",lon:"long",size:10,color:"speed",colors:colors,color_range:[0,50],
+                          header:"Sailing",popup:["boat_id","heading","speed"],marker_border:0,
+                          poly_border_width:1,poly_fill_color:"rgba(0,255,0,.5)",
+                          circle_border_width:1,circle_fill_color:"rgba(0,255,0,.5)",
+                          zoom:12,center:[56.000241,-3.424250],
+                          polygons:{window:_project + "/cq/Areas_Of_Interest",mode:"collection",coords:"Poly_Data",radius:"Poly_Radius",text:"poly_desc",order:"lon_lat"},html:getSailboat};
+
+            _visuals.createCompass("heading",result,{value:"heading",size:180,header:"Current Heading",use_theme:false});
+            _visuals.createGauge("speed",result,{value:"speed",mode:"number",delta:false,segments:5,width:w,height:h,header:"Current Speed",range:[0,10]});
+            _map = _visuals.createMap("map",result,config);
+            _esp.size();
+        }
+    );
+
+    _conn.getEventStream({window:_project + "/cq/Last_Speeding_Event",ignore_deletes:true}).then(
+        function(result) {
+            _visuals.createTable("speeding",result,{header:"Speeding Violations",values:["boat_id","Location_Name","Max_speed","dateTime"],tail:true});
+            _esp.size();
+        }
+    );
+
+    _conn.getEventStream({window:_project + "/cq/Last_Exclusion_Violation",ignore_deletes:true}).then(
+        function(result) {
+            _visuals.createTable("exclusion",result,{header:"Exclusion Violations",values:["boat_id","Location_Name","Minimum_Distance","First_dateTime","Last_dateTime"],tail:true});
+            _esp.size();
+        }
+    );
+
+    _conn.getProjectXml(_project).then(
+        function(result) {
+            _model = _esp.getXPath().format(result);
+        }
+    );
+
+    _eventsources = _conn.createEventSources({complete:complete});
+
+    var delay = 50;
+
+    for (var i = 1; i < 5; i++)
+    {
+        var url = new URL("boat" + i + ".csv",document.URL).toString();
+        _eventsources.createEventSource({name:"boat" + i,type:"csv",window:_project + "/cq/Boat",opcode:"insert",opcodes:true,flags:true,dateformat:"%Y-%m-%d %H:%M:%S",url:url,delay:delay});
+    }
+
+    playpause();
+}
+
+function
+error(conn)
+{
+    console.log("connection error");
+}
+
+function
+playpause()
+{
+    var code = _eventsources.togglePlay();
+    document.getElementById("playpause").innerHTML = code ? "&#xf4f4;" : "&#xf513;";
+}
+
+function
+complete(eventsources)
+{
+    document.getElementById("playpause").innerHTML = "&#xf513;";
+}
+
+function
+getSailboat(map,data,color)
+{
+    var boat = data.boat_id;
+    var zoom = parseInt(map.getZoom());
+    var speed = parseFloat(data.speed);
+    var heading = parseInt(data.heading);
+    var marker = "";
+
+    if (window._markers == null)
+    {
+        window._markers = {};
+    }
+
+    if (speed == 0.0 && window._markers.hasOwnProperty(boat))
+    {
+        marker = window._markers[boat];
+    }
+    else
+    {
+        var style = "font-size:" + (zoom + 10) + "px";
+        style += ";color:black";
+
+        if (heading > 0 && heading < 180)
+        {
+            style += ";transform:scale(-1,1) rotate(90deg) rotate(" + -heading + "deg)";
+        }
+        else
+        {
+            style += ";transform:rotate(90deg) rotate(" + heading + "deg)";
+        }
+
+        if (boat == "Santa Maria")
+        {
+            style += ";color:#000000";
+        }
+        else if (boat == "Mayflower")
+        {
+            style += ";color:#ff0000";
+        }
+        else if (boat == "Beagle")
+        {
+            style += ";color:#ef8024";
+        }
+        else if (boat == "Bounty")
+        {
+            style += ";color:#0000ff";
+        }
+
+        marker = "<div class='mapicon' style='" + style + "'>&#xf39e;</div>";
+
+        window._markers[boat] = marker;
+    }
+
+    return(marker);
+}
+
+</script>
+
+<style>
+
+table.legend td.icon
+{
+    font-size:18pt;
+    padding-right:30px;
+}
+
+table.legend a.icon
+{
+    font-size:18pt;
+}
+
+</style>
+
+</head>
+
+<body onload="init()">
+
+    <div id="banner">
+        <table style="width:100%">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'sailing',type:true,memory:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('ESP Sailing Example','help.html',{width:'80%',height:'80%'})">&#xf30b;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content"  class="container">
+        <div id="legend" class="component legend">
+            <table class="legend" style="width:100%">
+                <tr>
+                    <td>Santa Maria</td><td class="icon" style="color:#000000">&#xf39e;</td>
+                    <td>Mayflower</td><td class="icon" style="color:#ff0000">&#xf39e;</td>
+                    <td>Beagle</td><td class="icon" style="color:#ef8024">&#xf39e;</td>
+                    <td>Bounty</td><td class="icon" style="color:#0000ff">&#xf39e;</td>
+                    <td><a id="playpause" class="icon" title="Start Sailing" href="javascript:playpause()">&#xf513;</a></td>
+                </tr>
+            </table>
+        </div>
+        <div id="map" class="component" style="width:48%;height:55%"></div>
+        <div class="component" style="width:48%;height:55%">
+            <div id="speeding" class="component" style="width:100%;height:50%"></div>
+            <div id="exclusion" class="component" style="width:100%;height:50%"></div>
+        </div>
+        <div id="heading" class="component" style="width:60%;height:290px"></div>
+        <div id="speed" class="component" style="width:35%;height:290px"></div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+</body>
+
+</html>

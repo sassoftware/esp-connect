@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+
+<title>ESP Basic Example</title>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<script>
+var _esp = null;
+</script>
+
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "../esp-connect/js/ui/api.js";
+_esp = esp;
+</script>
+
+<script>
+
+var _project = "basic";
+
+var _conn = null;
+var _visuals = null;
+
+var _xml = "<project threads='4' pubsub='auto'>\
+               <contqueries>\
+                 <contquery name='cq'>\
+                   <windows>\
+                     <window-source name='clicks' insert-only='true' index='pi_EMPTY'>\
+                        <schema-string>id*:string,element:string,x:int32,y:int32</schema-string>\
+                     </window-source>\
+                     <window-copy name='copy'>\
+                        <retention type='bytime_sliding'>30 seconds</retention>\
+                     </window-copy>\
+                     <window-aggregate name='clicksAggr'>\
+                        <schema-string>element*:string,count:int32</schema-string>\
+                        <output>\
+                            <field-expr>ESP_aCount()</field-expr>\
+                        </output>\
+                     </window-aggregate>\
+                   </windows>\
+                   <edges>\
+                     <edge source='clicks' target='copy' />\
+                     <edge source='copy' target='clicksAggr' />\
+                   </edges>\
+                 </contquery>\
+               </contqueries>\
+            </project>";
+
+function
+init()
+{
+    _esp.setProxies();
+
+    var parms = _esp.getParms();
+
+    if (parms.hasOwnProperty("project"))
+    {
+        _project = parms["project"];
+    }
+
+    _visuals = _esp.createVisuals(parms);
+
+    _visuals.createWrapper("colors",{header:"Click on the colored areas to generate events",style:{width:"98%",height:"150px"}});
+
+    var server = _esp.getServerFromParms(parms,_project);
+
+console.log("SERVER: " + server);
+    if (server == null)
+    {
+        _esp.showConnectDialog({connect:connect});
+        return;
+    }
+
+    connect(server);
+}
+
+function
+connect(server)
+{
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+    _esp.showStatus("Loading project...");
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_xml,options:{overwrite:true},parms:{retention:"30 seconds"}},force:_esp.getParm("force",true)});
+    _esp.handleLayout();
+}
+
+function
+ready(conn)
+{
+    _esp.clearStatus();
+
+    _conn = conn;
+
+    _esp.clearStatus();
+
+    _visuals.createLogViewer("logs",_conn,{header:"Log Viewer"});
+
+    _conn.getEventCollection({window:_project + "/cq/clicksAggr"}).then(
+        function(result) {
+            /*
+            _visuals.createBarChart("barchart",result,{y:"count",header:"Clicks Chart",xrange:[0,100],orientation:"horizontal",get_color:function(item){
+                return(item.element);
+                }
+            });
+            */
+
+            var parms = {"visual":"bar","datasource":{"window":"basic/cq/clicksAggr","mode":"collection","format":"ubjson","interval":"0"},"y":"count","header":"Clicks Chart","xrange":["0","100"],"orientation":"horizontal","get_color":function(item){return(item.element);}};
+            _visuals.createBarChart("barchart",result,parms);
+
+            _visuals.createGauge("gauges",result,{value:"count",segments:5,header:"Clicks Indicators",width:200,range:[0,100],bar_color:"rgba(255,255,255,.7)"});
+            _esp.size();
+        }
+    );
+
+    _conn.getProjectXml(_project).then(
+        function(result) {
+            _model = _esp.getXPath().format(result);
+        }
+    );
+
+    _conn.getPublisher({window:_project + "/cq/clicks"}).then(
+        function(result) {
+            _publisher = result;
+        },
+        function(result) {
+            console.log("get publisher failed");
+        }
+    );
+}
+
+function
+error(message)
+{
+    console.log(message);
+}
+
+function
+layout()
+{
+    _esp.refresh();
+}
+
+var _publisher = null;
+var _model = null;
+
+function
+loaded()
+{
+}
+
+function
+publish(evt)
+{
+    var e = {};
+    e["id"] = _conn.guid();
+    e["element"] = evt.currentTarget.id;
+    e["x"] = evt.clientX;
+    e["y"] = evt.clientY;
+
+    _publisher.add(e);
+    _publisher.publish();
+}
+
+</script>
+
+<body onload="init()">
+
+    <div id="banner">
+        <table style="width:100%">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'basic',type:true,memory:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('ESP Basic Example','help.html',{width:'50%',height:'50%'})" title="Help">&#xf30b;</a>
+                </td>
+            </tr>
+
+        </table>
+    </div>
+
+    <div id="content" class="container">
+        <div class="layout">
+            <div id="colors" class="container" style="width:95%;height:95%;display:flex;justify-content:space-around;align-items:center">
+                <div id="red" style="width:18%;height:80%;background:red;border:1px solid black" onmousedown="javascript:publish(event)"></div>
+                <div id="green" style="width:18%;height:80%;background:green;border:1px solid black" onmousedown="javascript:publish(event)"></div>
+                <div id="blue" style="width:18%;height:80%;background:blue;border:1px solid black" onmousedown="javascript:publish(event)"></div>
+                <div id="yellow" style="width:18%;height:80%;background:yellow;border:1px solid black" onmousedown="javascript:publish(event)"></div>
+                <div id="beige" style="width:18%;height:80%;background:beige;border:1px solid black" onmousedown="javascript:publish(event)"></div>
+            </div>
+            <div id="barchart" style="width:48%;height:350px"></div>
+            <div id="logs" style="width:48%;height:350px"></div>
+            <div id="gauges" style="width:98%;height:250px"></div>
+        </div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+</body>
+
+</html>

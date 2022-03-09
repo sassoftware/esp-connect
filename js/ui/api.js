@@ -497,18 +497,17 @@ var	_api =
         if (parms.hasOwnProperty("namespace"))
         {
             const   namespace = parms["namespace"];
+
             delete parms["namespace"];
 
             const   url = new URL(".",document.URL);
-            const   s = "k8s-proxy://" + url.host + "/" + namespace;
-            const   k8s = this.createK8S(s);
-
-            server = k8s.k8sUrl;
-            server += "/" + k8s.namespace;
+            var     s = "k8s-proxy://localhost:8001/" + namespace;
             if (project != null)
             {
-                server += "/" + project;
+                s += "/" + project;
             }
+
+            server = s;
         }
         else if (parms.hasOwnProperty("server"))
         {
@@ -757,6 +756,24 @@ var	_api =
     setHttpProxy:function(url)
     {
         connect.getAjax().setHttpProxy(url);
+    },
+
+    setProxies:function()
+    {
+        var tmp = new URL(".",document.URL);
+
+        var proxy = "";
+        proxy = "http://";
+        proxy += tmp.hostname;
+        proxy += ":";
+        proxy += tmp.port;
+        this.setHttpProxy(proxy);
+
+        proxy = "ws://";
+        proxy += tmp.hostname;
+        proxy += ":";
+        proxy += tmp.port;
+        this.setWsProxy(proxy);
     }
 };
 

@@ -179,7 +179,6 @@ class Timer
 
     run()
     {
-console.log("timer run");
         var current = new Date();
         var items = [];
         var minInterval = 1000;
@@ -189,7 +188,6 @@ console.log("timer run");
             var diff = current.getTime() - item.fired;
             var interval = item.getInterval();
 
-console.log("DIFF: " + diff + " :: " + interval);
             if (diff > interval)
             {
                 if (interval < minInterval)
@@ -210,9 +208,7 @@ console.log("DIFF: " + diff + " :: " + interval);
             }
         });
 
-console.log("1");
         items.forEach((item) => {
-console.log("2");
             item.run();
         });
 

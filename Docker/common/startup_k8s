@@ -1,0 +1,3 @@
+./bin/kubectl proxy &
+
+/bin/ash

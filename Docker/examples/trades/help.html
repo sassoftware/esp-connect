@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<link rel="stylesheet" href="../../style/connect.css" />
+</head>
+
+<body class="help">
+This example pushes stock trade data through an ESP model looking for trade violations.
+<br/><br/>
+The violation data displayed includes the following:
+<dl class="indent">
+<li>Gauges displaying the total amount of violations committed by each broker.</li>
+<li>A map and table showing the amount of violations occurring at each trading venue.</li>
+<li>A table showing min, max, and average trade prices for high volume symbols (over 100 trades).</li>
+<li>A time series chart showing the event processing rates for both total and interval.</li>
+<li>Gauges showing total events processed and current interval rate.</li>
+<li>Gauges displaying the amount of violations by type.</li>
+</dl>
+When you load the page, it will load the project into the ESP server. Upon a successful load,
+a publisher will read the 1 million trades from <a href="trades.txt" target="_blank">trades.txt</a>
+and send them to the server.
+<br/><br/>
+Since the page is both sending 1 million events and processing the results it is very busy. The
+event rates will fluctuate with the heavy processing over the million events.
+</body>
+
+</html>

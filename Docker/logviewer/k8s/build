@@ -1,0 +1,31 @@
+#!bash
+
+source Docker/common/args.sh
+
+function usage()
+{
+	printf "\n"
+	printf "SYNOPSIS:\n"
+	printf "\t`basename $0` -name -config\n\n"
+	printf "SUMMARY:\n"
+	printf "\tCreate ESP Viewers docker image.\n"
+	printf "\n"
+	printf "OPTIONS:\n\n"
+	printf "\t-name\timage name\n"
+	printf "\t-config\tKubernetes configuration file\n"
+	printf "\n"
+	exit 1
+}
+
+NAME=${parms["name"]}
+CONFIG=${parms["config"]}
+
+if [ -z "${NAME}" -o -z "${CONFIG}" ]
+then
+    usage
+    exit 1
+fi
+
+cp ${CONFIG} Docker/common/config
+docker build -t ${NAME} --force-rm -f Docker/logviewer/k8s/Dockerfile .
+rm Docker/common/config

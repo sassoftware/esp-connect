@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+
+<title>ESP Wind Turbine Example</title>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<script>
+var _esp = null;
+</script>
+
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "../esp-connect/js/ui/api.js";
+_esp = esp;
+</script>
+
+<script>
+
+var _project = "turbines";
+
+var _visuals = null;
+var _timer = null;
+var _conn = null;
+
+function
+init()
+{
+    _esp.setProxies();
+
+    _timer = _esp.createTimer();
+
+    var parms = _esp.getParms();
+
+    if (parms.hasOwnProperty("project"))
+    {
+        _project = parms["project"];
+    }
+
+    _visuals = _esp.createVisuals(parms);
+
+    var server = _esp.getServerFromParms(parms,_project);
+
+    if (server == null)
+    {
+        _esp.showConnectDialog({connect:connect});
+        return;
+    }
+
+    connect(server);
+}
+
+function
+connect(server)
+{
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+    _esp.showStatus("Loading project...");
+    var url = new URL("model.xml",document.URL).toString();
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url,options:{overwrite:true},parms:{retention:"30 seconds"}},force:_esp.getParm("force",true)});
+    _esp.handleLayout();
+}
+
+var _eventsources = null;
+var _readings = null;
+var _alerts = null;
+var _model = null;
+
+function
+ready(connection)
+{
+    _esp.clearStatus();
+
+    _conn = connection;
+
+    _esp.clearStatus();
+
+    _conn.getProjectXml(_project).then(
+        function(result) {
+            _model = _esp.getXPath().format(result);
+        }
+    );
+
+    _conn.getEventCollection({name:"readings",window:_project + "/cq/Readings_stats",interval:1000,pagesize:0}).then(
+        function(result) {
+            _readings = result;
+            _readings.addDelegate({dataChanged:handleStats});
+        }
+    );
+
+    _conn.getEventCollection({window:_project + "/cq/Union_1",pagesize:0}).then(
+        function(result) {
+            _alerts = result;
+            _alerts.addDelegate({dataChanged:handleAlerts});
+        }
+    );
+
+    var toolbar = [];
+
+    toolbar.push({id:"playPause",text:"Start Data",class:"",click:playPause});
+
+    _eventsources = _conn.createEventSources({complete:complete});
+
+    var delay = 10;
+    var url = new URL("data.csv",document.URL).toString();
+
+    _eventsources.createEventSource({name:"data",type:"csv",window:_project + "/cq/Data_Stream",opcode:"insert",
+                                        dateformat:"%Y-%m-%d %H:%M:%S",url:url,delay:delay,opcodes:true,flags:true,maxevents:0});
+
+    _esp.size();
+
+    _timer.start();
+
+    //if (_esp.getParm("load",true))
+    {
+        playPause();
+    }
+}
+
+function
+closed(connection)
+{
+    _timer.stop();
+}
+
+function
+error(connection,message)
+{
+    console.log(message);
+}
+
+var _turbines = {};
+
+function
+Turbine(id)
+{
+    const   container = document.getElementById("turbines");
+
+    this._id = id;
+    this._data = null;
+
+    this._container = document.createElement("div");
+    this._container.className = "turbineContainer";
+    container.appendChild(this._container);
+
+    this._table = document.createElement("table");
+    this._table.className = "turbine";
+    this._container.appendChild(this._table);
+
+    var tr;
+    var td;
+
+    this._table.appendChild(tr = document.createElement("tr"));
+    tr.appendChild(this._titleCell = document.createElement("td"));
+    this._titleCell.className = "turbineTitle";
+    this._titleCell.colSpan = 2;
+
+    this._table.appendChild(tr = document.createElement("tr"));
+    tr.appendChild(td = document.createElement("td"));
+    td.rowSpan = 2;
+
+    this._canvas = document.createElement("canvas");
+    this._canvas.width = 200;
+    this._canvas.height = 250;
+    this._canvas.className = "turbine";
+    this._context = this._canvas.getContext("2d");
+    td.appendChild(this._canvas);
+
+    tr.appendChild(td = document.createElement("td"));
+    td.className = "turbineInfo";
+    var table = document.createElement("table");
+    table.className = "turbineInfo";
+    table.cellSpacing = 0;
+    table.cellPadding = 0;
+    td.appendChild(table);
+
+    table.appendChild(tr = document.createElement("tr"));
+    tr.appendChild(td = document.createElement("td"));
+    td.style.paddingRight = "10px";
+    td.innerHTML = "Value:";
+    tr.appendChild(this._valueCell = document.createElement("td"));
+
+    table.appendChild(tr = document.createElement("tr"));
+    tr.appendChild(td = document.createElement("td"));
+    td.style.paddingRight = "10px";
+    td.innerHTML = "Average:";
+    tr.appendChild(this._averageCell = document.createElement("td"));
+
+    this._table.appendChild(tr = document.createElement("tr"));
+    tr.appendChild(td = document.createElement("td"));
+    td.className = "alerts";
+
+    var div = document.createElement("div");
+    div.className = "alerts";
+    td.appendChild(div);
+    div.style.width = "150px";
+    div.style.height = "150px";
+
+    this._alertsTable = _visuals.createSimpleTable(div,{key:"alert"});
+
+    var fields = new Array();
+    fields.push({name:"alert",type:"string",label:"Alert"});
+    fields.push({name:"Alert_count",type:"int",label:"Count"});
+    this._alertsTable.setFields(fields);
+
+    this._angle = Math.random() * 360;
+    this._delta = 2;
+
+    this._alerts = {};
+    this._alertTime = null;
+
+    _turbines[this._id] = this;
+
+    this._data = null;
+
+    Object.defineProperty(this,"data", {
+        get() {
+            return(this._data);
+        },
+        set(value) {
+            this._data = value;
+            this.drawInfo();
+        }
+    });
+
+    _timer.add(this);
+}
+
+Turbine.prototype.draw =
+function()
+{
+    var w = this._canvas.width;
+    var h = this._canvas.height;
+    var center = {x:w / 2,y:h / 2};
+
+    this._context.strokeStyle = "#c0c0c0";
+    this._context.strokeStyle = "black";
+    this._context.lineWidth = .5;
+
+    if (this._alertTime != null)
+    {
+        var elapsed = new Date().getTime() - this._alertTime;
+        if (elapsed >= 2000)
+        {
+            this._alertTime = null;
+        }
+    }
+
+    this._context.fillStyle = this._alertTime ? "#ff0000" : "#87cefa";
+    this._context.fillRect(0,0,this._canvas.width,this._canvas.height);
+
+    var  radius = 20;
+
+    this._context.fillStyle = "white";
+    this._context.fillRect(center.x - 10,center.y,20,center.y);
+    this._context.rect(center.x - 10,center.y,20,center.y);
+
+    this._context.beginPath();
+    this._context.ellipse(center.x,center.y,radius,radius,0,0,Math.PI * 2,0);
+    this._context.stroke();
+    this._context.fill();
+
+    var     angle = this._angle;
+    const   length = 90;
+    const   size = 8;
+    var     radians;
+
+    for (var i = 0; i < 3; i++)
+    {
+        radians = angle * (Math.PI / 180);
+        var x = center.x + (length * Math.cos(radians));
+        var y = center.y + (length * Math.sin(radians));
+
+        radians = (angle - 75) * (Math.PI / 180);
+        var x0 = center.x + (size * Math.cos(radians));
+        var y0 = center.y + (size * Math.sin(radians));
+
+        radians = (angle + 75) * (Math.PI / 180);
+        var x1 = center.x + (size * Math.cos(radians));
+        var y1 = center.y + (size * Math.sin(radians));
+
+        this._context.beginPath();
+        this._context.moveTo(x0,y0);
+        this._context.lineTo(x,y);
+        this._context.lineTo(x1,y1);
+        this._context.closePath();
+        this._context.fill();
+        this._context.stroke();
+
+        angle += 120;
+
+        if (angle > 360)
+        {
+            angle -= 360;
+        }
+    }
+
+    var  radius = 10;
+
+    this._context.beginPath();
+    this._context.ellipse(center.x,center.y,radius,radius,0,0,Math.PI * 2,0);
+    this._context.stroke();
+    this._context.fill();
+}
+
+Turbine.prototype.addAlert =
+function(data)
+{
+    this._alerts[data.alert] = data;
+    this._alertsTable.setData(Object.values(this._alerts));
+    this._alertTime = new Date().getTime();
+}
+
+Turbine.prototype.drawInfo =
+function()
+{
+    if (this._data != null)
+    {
+        var title = "";
+        var date = new Date();
+        var ts = new Number(this._data.timestamp);
+        date.setTime(ts * 1000);
+        title += this._data.location;
+        title += " - ";
+        title += this._data.attribute;
+        title += " (";
+        title += date.toLocaleDateString();
+        title += " ";
+        title += date.toLocaleTimeString();
+        title += ")";
+        this._titleCell.innerHTML = title;
+
+        this._valueCell.innerHTML = Number.parseFloat(this._data.current_value).toPrecision(4);
+        this._averageCell.innerHTML = Number.parseFloat(this._data.average).toPrecision(4);
+    }
+
+    this._alertsTable.draw();
+}
+
+Turbine.prototype.run =
+function()
+{
+    if (this._alertTime == null)
+    {
+        this._angle += this._delta;
+
+        if (this._angle > 360)
+        {
+            this._angle -= 360;
+        }
+    }
+
+    this.draw();
+}
+
+Turbine.prototype.getInterval =
+function()
+{
+    return(200);
+}
+
+function
+handleStats(events,data)
+{
+    data.forEach((item) => {
+        var key = item.location + "." + item.attribute;
+        var turbine = _turbines.hasOwnProperty(key) ? _turbines[key] : null;
+        if (turbine == null)
+        {
+            turbine = new Turbine(key);
+        }
+
+        turbine.data = item;
+    });
+}
+
+function
+handleAlerts(events,data)
+{
+    data.forEach((item) => {
+        var key = item.location + "." + item.attribute;
+        var turbine = _turbines.hasOwnProperty(key) ? _turbines[key] : null;
+
+        if (turbine != null)
+        {
+            turbine.addAlert(item);
+        }
+    });
+}
+
+function
+playPause()
+{
+    if (_eventsources.running == false)
+    {
+        _eventsources.start();
+        _timer.start();
+    }
+    else
+    {
+        _eventsources.togglePlay();
+    }
+
+    if (_eventsources.paused)
+    {
+        _timer.stop();
+    }
+    else
+    {
+        _timer.start();
+    }
+
+    document.getElementById("playPause").innerHTML = _eventsources.paused ? "Start Data" : "Pause Data";
+}
+
+function
+complete(eventsources)
+{
+    document.getElementById("playPause").innerHTML = "Start Data";
+}
+
+</script>
+
+<style>
+
+div.alerts
+{
+    border:1px solid #d8d8d8;
+    overflow:auto;
+}
+
+div.turbineContainer
+{
+    padding:10px;
+    font-size:10pt;
+}
+
+table.turbine
+{
+    width:100%;
+    height:100%;
+    border:1px solid #d8d8d8;
+}
+
+td.turbineTitle
+{
+    background:#3b99fc;
+    font-size:12pt;
+    padding:4px;
+    color:white;
+}
+
+td.turbineInfo,
+td.alerts
+{
+    padding:10px;
+}
+
+canvas.turbine
+{
+    border:1px solid #d8d8d8;
+}
+
+</style>
+
+</head>
+
+<body onload="init()">
+
+    <div id="banner">
+        <table style="width:100%">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td style="width:40%;text-align:left">
+                    <a id="playPause" href="javascript:playPause()">Start Data</a>
+                </td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'turbines',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('ESP Wind Turbine Example','help.html',{width:'80%',height:'80%'})">&#xf30b;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content"  class="container">
+        <div id="turbines" class="container" style="width:90%;height:90%;padding-top:20px"></div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+</body>
+
+</html>

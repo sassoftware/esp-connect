@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+
+<title>ESP Weather Demo</title>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<script>
+var _esp = null;
+</script>
+
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "../esp-connect/js/ui/api.js";
+_esp = esp;
+</script>
+
+<script>
+
+var _project = "weather";
+
+var _visuals = null;
+var _server = null;
+var _visual = null;
+var _model = null;
+var _appid = "";
+var _conn = null;
+
+function
+init()
+{
+    _esp.setProxies();
+
+    var parms = _esp.getParms();
+
+    if (parms.hasOwnProperty("project"))
+    {
+        _project = parms["project"];
+    }
+
+    _appid = parms.hasOwnProperty("appid") ? parms["appid"] : "";
+
+    document.getElementById("appid").value = _appid;
+
+    _visuals = _esp.createVisuals(parms);
+
+    _esp.getAjax().create("weather/model.xml").get().then(
+        function(response) {
+            _model = response.text;
+
+            var server = _esp.getServerFromParms(parms,_project);
+
+            if (server == null)
+            {
+                _esp.showConnectDialog({connect:connect});
+                return;
+            }
+
+            connect(server);
+        }
+    );
+}
+
+function
+connect(server)
+{
+    _server = server;
+
+    if (_appid.length == 0)
+    {
+        _esp.getDialogs().pushModal("help");
+        return;
+    }
+
+    _model = _model.replace("@APPID@",_appid);
+
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+
+    _esp.showStatus("Loading project...");
+
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_model},overwrite:true});
+
+    _esp.handleLayout();
+}
+
+function
+ready(connection)
+{
+    _esp.clearStatus();
+
+    _conn = connection;
+
+    _visuals.clear();
+
+    _conn.getEventCollection({window:_project + "/cq/weather",pagesize:3}).then(
+        function(result) {
+            var barColor = "rgba(255,255,255,.5)";
+            var width = 400;
+            var height = 60;
+            var lw = 2;
+
+            _visuals.createGauge("temperature",result,{segments:5,value:"temp",header:"Temperature",width:width,height:height,bar_color:barColor,
+                                    range:[0,120],fill:"#e8e8e8",line_width:lw,colors:null,show_controls:false,shape:"bullet",borderx:0,delta:true})
+            _visuals.createGauge("speed",result,{segments:5,value:"windSpeed",width:width,height:height,range:[0,20],fill:"#e8e8e8",delta:true,shape:"bullet",bar_color:barColor,
+                                    line_width:lw,header:"Wind Speed",colors:null,show_controls:false,borderx:0,marginx:{l:30,r:30,b:30,t:30}})
+            _visuals.createCompass("direction",result,{value:"windDirection",size:225,header:"Wind Direction",show_controls:false})
+
+            _esp.size();
+        }
+    );
+
+
+    _conn.getEventCollection({window:_project + "/cq/aggr"}).then(
+        function(result) {
+            //_visuals.createBarChart("highsAndLows",result,{y:["high","low"],header:"High and Low Temperatures",line_width:2,fillx:true});
+            _visuals.createLineChart("highsAndLows",result,{y:["high","low"],header:"High and Low Temperatures",line_width:2,fillx:true});
+
+            _esp.size();
+        }
+    );
+
+    _conn.getProjectXml(_project).then(
+        function(result) {
+            _model = _esp.getXPath().format(result);
+        }
+    );
+}
+
+function
+error(conn,message)
+{
+    console.log("Error",message);
+}
+
+function
+publish()
+{
+}
+
+function
+sendData(request,text,data)
+{
+    console.log(text);
+}
+
+function
+weatherError()
+{
+}
+
+function
+done()
+{
+    _esp.getDialogs().popModal("help");
+
+    const   appid = document.getElementById("appid").value;
+
+    if (appid != _appid)
+    {
+        _appid = appid;
+        connect(_server);
+    }
+}
+
+</script>
+
+</head>
+
+<body onload="init()">
+
+    <div id="banner">
+        <table style="width:100%">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_model)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'weather',type:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.getDialogs().pushModal('help')">&#xf30b;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content">
+        <div class="layout">
+            <div id="temperature" style="width:98%;height:200px"></div>
+            <div id="speed" style="width:98%;height:200px"></div>
+            <div id="direction" style="width:50%;height:400px"></div>
+            <div id="highsAndLows" style="width:45%;height:400px"></div>
+        </div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+
+    <div id="help" class="dialog" style="width:60%">
+        <table class="dialogClose" style="width:100%">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('help')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0">
+                        <tr>
+                            <td><div class="dialogTitle">ESP Weather Demo</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogContent">
+            This example shows live weather data from <a href="https://openweathermap.org" target="_blank">openweathermap.org</a>.
+            <br/><br/>
+            In order to run the model, you need to sign up and get an appid from the <a href="https://home.openweathermap.org/users/sign_up" target="_blank">here</a>
+            and enter it in the text box below.
+            <br/><br/>
+            <input type="text" id="appid" style="width:100%" />
+            <br/><br/>
+            After you have done this, the model should load and the weather data should begin to display.
+            <br/><br/>
+        </div>
+
+        <div class="dialogButtons">
+            <table style="width:100%">
+                <tr>
+                    <td class="dialogButton">
+                        <span><button class="close" onclick="javascript:done()">Done</button></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div id="espModel" class="dialog" style="width:90%;height:90%">
+
+        <table class="dialogClose" style="width:100%">
+            <tr><td class="icon"><a class="icon dialogTitle" href="javascript:_esp.getDialogs().popModal('espModel')">&#xf10c;</a></td></tr>
+        </table>
+
+        <div class="dialogTop">
+
+            <div  class="dialogHeader">
+                <div class="dialogTitle">
+                    <table style="width:100%;border:0">
+                        <tr>
+                            <td><div class="dialogTitle">ESP Model</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialogContent" style="width:95%;height:70%;margin:auto">
+            <pre id="espModelXml" class="model"></pre>
+        </div>
+    </div>
+
+</html>

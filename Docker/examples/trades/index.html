@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+
+<title>ESP Trades Demo</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="anonymous" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.js" integrity="sha512-SeiQaaDh73yrb56sTW/RgVdi/mMqNeM2oBwubFHagc5BkixSpP1fvqF47mKzPGWYSSy4RwbBunrJBQ4Co8fRWA==" crossorigin="anonymous"></script>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<script>
+var _esp = null;
+</script>
+
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "../esp-connect/js/ui/api.js";
+_esp = esp;
+</script>
+
+<script>
+
+var _project = "trades";
+
+var _visuals = null;
+var _conn = null;
+
+function
+init()
+{
+    _esp.setProxies();
+
+    var parms = _esp.getParms();
+
+    if (parms.hasOwnProperty("project"))
+    {
+        _project = parms["project"];
+    }
+
+    _visuals = _esp.createVisuals(parms);
+
+    var server = _esp.getServerFromParms(parms,_project);
+
+    if (server == null)
+    {
+        _esp.showConnectDialog({connect:connect});
+        return;
+    }
+
+    connect(server);
+}
+
+function
+connect(server)
+{
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+    _esp.showStatus("Loading project...");
+    var url = new URL("model.xml",document.URL).toString();
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,url:url},overwrite:true,force:_esp.getParm("force",true)});
+    _esp.handleLayout();
+}
+
+function
+ready(connection)
+{
+    _esp.clearStatus();
+
+    _conn = connection;
+
+    _conn.getProjectXml(_project).then(
+        function(result) {
+            _modelXml = _esp.getXPath().format(result);
+        }
+    );
+
+    createVisuals();
+
+    _conn.publishDataFrom(_project + "/cq/brokersSource","trades/brokers.csv",null,{informat:"csv"});
+    _conn.publishDataFrom(_project + "/cq/venuesSource","trades/venues.csv",null,{informat:"csv"});
+    _conn.publishDataFrom(_project + "/cq/restrictedSource","trades/restricted.csv",null,{informat:"csv"});
+
+    if (_esp.getParm("publish",true))
+    {
+        _conn.getPublisher({window:_project + "/cq/trades",blocksize:5000}).then(
+            function(result) {
+                result.publishCsvFrom("trades/trades.txt",{pause:2,opcodes:true,flags:true,chunksize:100});
+            },
+            function(result) {
+                console.log("get publisher error");
+            }
+        );
+    }
+
+    _esp.size();
+}
+
+var _modelXml = "";
+
+function
+error(connection,message)
+{
+    console.log("error: " + message);
+}
+
+function
+createVisuals()
+{
+    _esp.clearStatus();
+
+    var gradient = "#3b99fc";
+    var colors = _visuals.colors.createGradientColors({color:gradient,num:5,end:true});
+
+    const   bar = {color:"rgb(0,0,0)",thickness:.1};
+
+    _conn.getEventCollection({window:_project + "/cq/brokerAlertsAggr"}).then(
+            function(result) {
+            _visuals.createGauge("brokers",result,{value:"total",range:[0,300],segments:5,width:150,height:100,border:"1px solid #d8d8d8",padding:0,gradient:{color:gradient,end:true},header:"Total Broker Violations",plotly:{mode:"number"}});
+            _esp.size();
+        }
+    );
+
+    _conn.getEventCollection({window:_project + "/cq/venueAlertsAggr"}).then(
+        function(result) {
+            _visuals.createTable("venueTable",result,{values:["city","count"],header:"Venue Alerts",color:"count",gradient:{color:gradient,end:true}});
+            _visuals.createMap("venueMap",result,{lat:"lat",lon:"lon",size:"count",color:"count",header:"Venue Alerts",gradient:{color:gradient,end:true},marker_border:1,center:[39,-98],zoom:3,popup:["city","count"],sizes:[5,50]})
+            _esp.size();
+        }
+    );
+
+    _conn.getEventCollection({window:_project + "/cq/counter"}).then(
+        function(result) {
+            _visuals.createGauge("totalCount",result,{value:"totalCount",range:[0,1000000],segments:5,border:0,colors:colors,show_title:false,header:"Events Processed",width:300,height:60,shape:"bullet",gauge:{bar:bar}});
+            var plotly = {};
+            plotly.mode = "gauge+number+delta";
+            _visuals.createGauge("intervalRate",result,{value:"intervalRate",range:[0,12000],segments:5,shape:"bullet",width:300,height:60,colors:colors,border:0,show_title:false,header:"Interval Rate",gauge:{bar:bar},plotly:plotly});
+            _esp.size();
+        }
+    );
+
+    _conn.getEventCollection({window:_project + "/cq/symbols",pagesize:10,sort:"numTrades",filter:"gt($numTrades,100)"}).then(
+        function(result) {
+            _visuals.createTable("symbolTable",result,{values:["symbol","numTrades","minPrice","maxPrice","avgPrice"],header:"High Volume Symbols",color:"numTrades",gradient:{color:gradient,end:true}});
+            _esp.size();
+        }
+    );
+
+    _conn.getEventCollection({window:_project + "/cq/violationCounts"}).then(
+        function(result) {
+            _visuals.createGauge("violations",result,{value:"count",width:150,height:100,border:"1px solid #d8d8d8",padding:0,gradient:{color:gradient,end:true},header:"Violations By Type",plotly:{mode:"number"}});
+            _esp.size();
+        }
+    );
+
+    _conn.getEventStream({window:_project + "/cq/counter",ignore_deletes:true}).then(
+        function(result) {
+            _visuals.createTimeSeries("rates",result,{y:["totalRate","intervalRate"],time:"@timestamp",header:"Event Rates",line_width:5,curved:true,y_range:[0,12000],colors:[colors[0],colors[4]]});
+            _esp.size();
+        }
+    );
+}
+
+</script>
+
+</head>
+
+<body onload="init()">
+
+    <div id="banner">
+        <table style="width:100%">
+            <tr>
+                <td id="bannerTitle"></td>
+                <td class="icon">
+                    <a class="icon" href="javascript:_esp.showCodeDialog('Model XML',_modelXml)" title="Model XML">&#xf7c1;</a>
+                    <a class="icon" href="javascript:_visuals.showModel(_conn,{title:'ESP Model',header:'Model Viewer',project:'trades',type:true,memory:true,show_projects:false})" title="ESP Model">&#xf501;</a>
+                    <a class="icon" href="javascript:_esp.showFrameDialog('Trades Example','help.html',{width:'70%',height:'70%'})" title="Help">&#xf30b;</a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content">
+        <div class="layout">
+            <div id="brokers" style="width:98%;height:190px"></div>
+            <div class="container" style="width:100%;height:300px">
+                <div id="venueMap" style="width:30%;height:100%"></div>
+                <div id="venueTable" style="width:20%;height:100%"></div>
+                <div id="symbolTable" style="width:40%;height:100%"></div>
+            </div>
+            <div class="container" style="width:100%;height:300px">
+                <div id="rates" style="width:40%;height:100%"></div>
+                <div class="container" style="width:25%;height:100%">
+                    <div id="totalCount" style="width:100%;height:48%"></div>
+                    <div id="intervalRate" style="width:100%;height:48%"></div>
+                </div>
+                <div id="violations" style="width:30%;height:100%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer">&nbsp;</div>
+</body>
+
+</html>

@@ -1,0 +1,3 @@
+./kubectl proxy --kubeconfig=./kubeconfig &
+
+node http.mjs --port 4444 --wsproxy --logging 1

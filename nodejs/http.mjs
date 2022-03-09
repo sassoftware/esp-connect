@@ -60,23 +60,23 @@ getProxyUrl(request)
 }
 
 var port = opts.getOpt("port",4444);
-var verbose = opts.getOpt("verbose",false);
+var logging = opts.getOpt("logging",0);
 var server = null;
 
 var fileserver = new(nodestatic.Server)(process.cwd());
 
 var handler = function(request,response)
 {
-    if (verbose)
+    if (logging >= 1)
     {
-        console.log("request: " + request.url);
+        console.log("http request: " + request.url);
     }
 
     var url = getProxyUrl(request);
 
     if (url != null)
     {
-        if (verbose)
+        if (logging >= 1)
         {
             console.log("got proxy request: " + url);
         }
@@ -105,14 +105,14 @@ var handler = function(request,response)
             });
 
             request.on("end", function() {
-                if (verbose)
+                if (logging >= 2)
                 {
                     console.log("set data: " + data);
                 }
                 proxy.setData(data);
                 proxy.send(method).then(
                     function(result) {
-                        if (verbose)
+                        if (logging >= 2)
                         {
                             console.log("status is: " + result.status);
                             console.log("response: " + result.text);
@@ -122,11 +122,9 @@ var handler = function(request,response)
                         response.end();
                     },
                     function(result) {
-                        if (verbose)
-                        {
-                            console.log(proxy._options);
-                            console.log("error: " + result.error.toString());
-                        }
+                        console.log(proxy._options);
+                        console.log("error: " + result.error.toString());
+
                         response.writeHead(500);
                         response.write(result.error.toString());
                         response.end();
@@ -138,7 +136,7 @@ var handler = function(request,response)
         {
             proxy.send(method).then(
                 function(result) {
-                    if (verbose)
+                    if (logging >= 2)
                     {
                         console.log("status is: " + result.status);
                         console.log("response: " + result.text);
@@ -148,11 +146,9 @@ var handler = function(request,response)
                     response.end();
                 },
                 function(result) {
-                    if (verbose)
-                    {
-                        console.log(proxy._options);
-                        console.log("error: " + result.error.toString());
-                    }
+                    console.log(proxy._options);
+                    console.log("error: " + result.error.toString());
+
                     response.writeHead(500);
                     response.write(result.error.toString());
                     response.end();
@@ -252,7 +248,7 @@ if (opts.getOpt("wsproxy",false))
 
         error(e)
         {
-            console.log("ws error");
+            console.log("ws error: " + this._ws._connection);
         }
 
         message(msg)
@@ -279,6 +275,12 @@ if (opts.getOpt("wsproxy",false))
 
     var server = new websocket.server(config);
     server.on("request",function(request) {
+
+        if (logging >= 1)
+        {
+            console.log("websocket request: " + request.httpRequest.url);
+        }
+
         new Ws(request);
     });
 }

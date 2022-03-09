@@ -1,51 +1,6 @@
 #!bash
 
-declare -A parms
-
-KEY=""
-
-for S in "$@"
-do
-    if [ -z $KEY ]
-    then
-        KEY=`echo $S | cut -c2-`
-    else
-        if [ "`echo $S | cut -c1`" = "-" ]
-        then
-            parms[$KEY]="true"
-            KEY=`echo $S | cut -c2-`
-        else
-            parms[$KEY]=$S
-            KEY=""
-        fi
-    fi
-done
-
-if [ ! -z $KEY ]
-then
-    parms[$KEY]="true"
-fi
-
-function removeParm()
-{
-    unset "parms[$1]"
-}
-
-function removeParms()
-{
-    for i in $1
-    do
-        removeParm $i
-    done
-}
-
-function showParms()
-{
-	for i in "${!parms[@]}"
-	do
-		printf "$i=${parms[$i]}\n"
-	done
-}
+source Docker/common/args.sh
 
 function usage()
 {
@@ -63,14 +18,6 @@ function usage()
 	exit 1
 }
 
-VALUE=${parms["help"]}
-
-if [ -n "${VALUE}" ]
-then
-    usage
-    exit 1
-fi
-
 NAME=${parms["name"]}
 CONFIG=${parms["config"]}
 
@@ -80,6 +27,6 @@ then
     exit 1
 fi
 
-cp ${CONFIG} Docker/connect/k8s/config
+cp ${CONFIG} Docker/common/config
 docker build -t ${NAME} --force-rm -f Docker/connect/k8s/Dockerfile .
-rm Docker/connect/k8s/config
+rm Docker/common/config

@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project pubsub="auto" threads="1">
+  <mas-modules>
+    <mas-module language="ds2" module="module_1" func-names="Make_Insert">
+      <code>		  
+			  ds2_options sas;
+			  package module_1/overwrite=yes;
+			    dcl package masstate st();  /* Required MASSTATE package */
+                dcl package logger logr('DF.ESP'); /* Logger class to write messages for debugging */
+			    /* Declare the function.  Must declare the input opcode and the output opcode */ 
+			    method Make_Insert(varchar(16) _inOpcode, in_out varchar alert1, in_out varchar alert2, in_out varchar alert3, in_out varchar alert4, in_out bigint sequence, in_out varchar _outOpcode);	
+					dcl int rc;
+                    dcl varchar(32) key;
+					
+					alert1='2 Sigma alert';
+					alert2='Trend alert';
+					alert3='3 Sigma alert';
+					alert4='Integral alert';
+					if _inOpcode = 'delete' then do;
+						_outOpcode = 'noop'; /* Suppress event */
+						sequence = 0;  /* Dummy sequence value */
+					end;	
+					else do;
+						key = "Retain_sequence"; /* Set the name of the vector */
+						if (st.isVectorShared(key) = 0) then do;
+						  /* Vector is not shared yet.  Set up vector for the first time */
+						  logr.log('d', 'Initialize vector!');
+						  rc = st.createVector(key,1); /* Create a vector with one element */
+						  rc = st.shareVector(key); /* Share the new vector */
+  						  sequence = 0; /* Initialize sequence */
+						end;
+						else do;
+						    /* Get vector and sequence value */
+							rc = st.fetchSharedVector(key); /* Get a copy of the vector */
+							sequence = st.getLong(key,0);  /* Get first element from vector, which should be sequence number */
+						end;
+						sequence = sequence + 1;
+						_outOpcode = 'insert';    /* Set the output event to be an Insert */
+						rc = st.setLong(key,0,sequence); /* Store sequence number in vector */
+						rc = st.replaceSharedVector(key); /* Update shared copy of vector */
+                                        end;
+					/* logr.log('d', 'inOpcode=$s, outOpcode=$s, sequence=$s', _inOpcode, _outOpcode, sequence); */
+			    end; /* End Make_Insert method */
+			 endpackage;
+		  
+            </code>
+    </mas-module>
+    <mas-module language="ds2" module="module_2" func-names="Compute_Regression">
+      <code>
+				ds2_options sas;
+				package module_2/overwrite=yes;
+			    /* Declare the function.  Must declare the input opcode and the output opcode */ 
+			    method Compute_Regression(double GEN_RPM, double ROTOR_RPM, double ACTUAL_ANGLE_BLADE_1, double GEN_1_TEMP, double GEN_2_TEMP, double BEARING_A_TEMP, double BEARING_B_TEMP,
+				                          double TRAN_TEMP, double AMBIENT_TEMP, char(1) turbine, double obs_KW, double wind_ms, in_out double P__VA_RESPONSE_1);	
+					dcl char(1) _TURBINE_;
+					dcl double _BETA_1_[37];
+					dcl double _XROW_1_[37];
+ 
+					_BETA_1_:=(38.5990189821918, -0.04180452866909, -0.06453838429118, 0.02333471396419, 
+					0.07443673341782, -0.20163832016771, 0.32715927116513, 0.10739694088021, 
+					-7.76620687167783, -0.92962428666418, -0.00057695709131, -0.51063664712534, 
+					2.14857270260325, 2.76964657354381, 2.69964068861476, 2.70963686533537, 
+					2.86473552713758, 2.23381520906327, 2.40672952096966, 1.86972418295684, 
+					2.07758296925718, 2.01580757454847, 0.20064420093754, 2.84685455751461, 
+					1.54605658760847, 2.78233637868952, 2.37014179169491, 1.00403746031662, 
+					2.86231760495548, 2.79424067978506, 2.66234498394043, 3.61725620421958, 
+					3.86210794214062, 2.23276805613446, 1.20623809465019, -0.68456983454864, 
+					0);
+					"_VA_RESPONSE_1" = "TRAN_TEMP";
+					;
+					_BADVAL_ = 0.0;
+					_LINP_ = 0.0;
+					_TEMP_ = 0.0;
+					_I_ = 0.0;
+					_TURBINE_ = LEFT(TRIM(put(TURBINE, $CHAR1.)));
+					if MISSING(ACTUAL_ANGLE_BLADE_1) | MISSING(AMBIENT_TEMP) | MISSING(BEARING_A_TEMP) 
+					| MISSING(BEARING_B_TEMP) | MISSING(GEN_1_TEMP) | MISSING(GEN_2_TEMP) 
+					| MISSING(GEN_RPM) | MISSING(ROTOR_RPM) | MISSING(WIND_MS) | MISSING(OBS_KW) 
+					then do ;
+						_BADVAL_ = 1.0;
+						goto SKIP_1_0;
+					end;
+					do _I_ = 1.0 to 37.0;
+						_XROW_1_[_I_] = 0.0;
+					end;
+					_XROW_1_[1.0] = 1.0;
+					_XROW_1_[2.0] = ACTUAL_ANGLE_BLADE_1;
+					_XROW_1_[3.0] = AMBIENT_TEMP;
+					_XROW_1_[4.0] = BEARING_A_TEMP;
+					_XROW_1_[5.0] = BEARING_B_TEMP;
+					_XROW_1_[6.0] = GEN_1_TEMP;
+					_XROW_1_[7.0] = GEN_2_TEMP;
+					_XROW_1_[8.0] = GEN_RPM;
+					_XROW_1_[9.0] = ROTOR_RPM;
+					_XROW_1_[10.0] = WIND_MS;
+					_XROW_1_[11.0] = OBS_KW;
+					_TEMP_ = 1.0;
+					select (_TURBINE_);
+						when ('A') _XROW_1_[12.0] = _TEMP_;
+						when ('B') _XROW_1_[13.0] = _TEMP_;
+						when ('C') _XROW_1_[14.0] = _TEMP_;
+						when ('D') _XROW_1_[15.0] = _TEMP_;
+						when ('E') _XROW_1_[16.0] = _TEMP_;
+						when ('F') _XROW_1_[17.0] = _TEMP_;
+						when ('G') _XROW_1_[18.0] = _TEMP_;
+						when ('H') _XROW_1_[19.0] = _TEMP_;
+						when ('I') _XROW_1_[20.0] = _TEMP_;
+						when ('J') _XROW_1_[21.0] = _TEMP_;
+						when ('K') _XROW_1_[22.0] = _TEMP_;
+						when ('L') _XROW_1_[23.0] = _TEMP_;
+						when ('M') _XROW_1_[24.0] = _TEMP_;
+						when ('N') _XROW_1_[25.0] = _TEMP_;
+						when ('O') _XROW_1_[26.0] = _TEMP_;
+						when ('P') _XROW_1_[27.0] = _TEMP_;
+						when ('Q') _XROW_1_[28.0] = _TEMP_;
+						when ('R') _XROW_1_[29.0] = _TEMP_;
+						when ('S') _XROW_1_[30.0] = _TEMP_;
+						when ('T') _XROW_1_[31.0] = _TEMP_;
+						when ('U') _XROW_1_[32.0] = _TEMP_;
+						when ('V') _XROW_1_[33.0] = _TEMP_;
+						when ('W') _XROW_1_[34.0] = _TEMP_;
+						when ('X') _XROW_1_[35.0] = _TEMP_;
+						when ('Y') _XROW_1_[36.0] = _TEMP_;
+						when ('Z') _XROW_1_[37.0] = _TEMP_;
+						otherwise do ;
+							_BADVAL_ = 1.0;
+							goto SKIP_1_0;
+						end;
+					end; /* End select */
+					do _I_ = 1.0 to 37.0;
+						_LINP_ + _XROW_1_[_I_] * _BETA_1_[_I_];
+					end;
+					SKIP_1_0: if (_BADVAL_ = 0.0) &amp; ^MISSING(_LINP_) then do ;
+						P__VA_RESPONSE_1 = _LINP_;
+					end;
+					else do ;
+						_LINP_ = .;
+						P__VA_RESPONSE_1 = .;
+					end;
+					"P_TRAN_TEMP" = "P__VA_RESPONSE_1";
+					"R_TRAN_TEMP" = "_VA_RESPONSE_1" - "P__VA_RESPONSE_1";
+					_return: ;
+				end; /* end method Compute_Regression*/
+				endpackage;
+ </code>
+    </mas-module>
+  </mas-modules>
+  <contqueries>
+    <contquery name="cq">
+      <windows>
+        <window-source name="Data_Stream" pubsub="true" collapse-updates="true" insert-only="true">
+          <schema>
+            <fields>
+              <field name="id" type="string" key="true"/>
+              <field name="GEN_RPM" type="double"/>
+              <field name="ROTOR_RPM" type="double"/>
+              <field name="ACTUAL_ANGLE_BLADE_1" type="double"/>
+              <field name="GEN_1_TEMP" type="double"/>
+              <field name="GEN_2_TEMP" type="double"/>
+              <field name="BEARING_A_TEMP" type="double"/>
+              <field name="BEARING_B_TEMP" type="double"/>
+              <field name="TRAN_TEMP" type="double"/>
+              <field name="AMBIENT_TEMP" type="double"/>
+              <field name="timestamp" type="date"/>
+              <field name="turbine" type="string"/>
+              <field name="obs_KW" type="double"/>
+              <field name="wind_ms" type="double"/>
+              <field name="predicted1" type="double"/>
+              <field name="predicted2" type="double"/>
+            </fields>
+          </schema>
+          <retention type="bytime_sliding">15 seconds</retention>
+        </window-source>
+        <window-aggregate name="Readings_stats" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="attribute" type="string" key="true"/>
+              <field name="location" type="string" key="true"/>
+              <field name="id" type="string"/>
+              <field name="timestamp" type="date"/>
+              <field name="average" type="double"/>
+              <field name="standard_deviation" type="double"/>
+              <field name="current_value" type="double"/>
+              <field name="counter" type="int32"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>ESP_aLast(id)</field-expr>
+            <field-expr>ESP_aLast(timestamp)</field-expr>
+            <field-expr>ESP_aAve(value)</field-expr>
+            <field-expr>ESP_aStd(value)</field-expr>
+            <field-expr>ESP_aLast(value)</field-expr>
+            <field-expr>ESP_aCount()</field-expr>
+          </output>
+        </window-aggregate>
+        <window-pattern name="sigma2Pattern_calc" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="alertID" type="int64" key="true"/>
+              <field name="value" type="double"/>
+              <field name="location" type="string"/>
+              <field name="attribute" type="string"/>
+              <field name="alert1" type="string"/>
+            </fields>
+          </schema>
+          <patterns>
+            <pattern index="location,attribute" name="pattern1">
+              <events>
+                <event source="Make_insert" name="e11p">(current_value &gt; (average+2.5*standard_deviation)) and (startID==counter) and          (pid==attribute and aid==location)</event>
+                <event source="Make_insert" name="e11">(current_value &gt; (average+2.5*standard_deviation)) and (startID==counter) and          (pid==attribute and aid==location)</event>
+                <event source="Make_insert" name="e12">(pid==attribute and aid==location) and (current_value &gt; (average+2.5*standard_deviation))</event>
+                <event source="Make_insert" name="e13">(startID+3) == counter</event>
+              </events>
+              <logic>and(not(not(e11p)), fby{365 seconds}(e11, e12), notoccur(e13))</logic>
+              <output>
+                <field-selection name="current_value" node="e11"/>
+                <field-selection name="location" node="e11"/>
+                <field-selection name="attribute" node="e11p"/>
+                <field-selection name="alert1" node="e11p"/>
+              </output>
+            </pattern>
+          </patterns>
+        </window-pattern>
+        <window-pattern name="sigma3Pattern_calc" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="alertID" type="int64" key="true"/>
+              <field name="current_value" type="double"/>
+              <field name="location" type="string"/>
+              <field name="attribute" type="string"/>
+              <field name="alert3" type="string"/>
+            </fields>
+          </schema>
+          <patterns>
+            <pattern index="location,attribute" name="pattern1">
+              <events>
+                <event source="Make_insert" name="e41p">(current_value &gt; (average+3*standard_deviation)) and (startID==counter) and          (pid==attribute and aid==location)</event>
+                <event source="Make_insert" name="e41">(current_value &gt; (average+3*standard_deviation)) and (startID==counter) and          (pid==attribute and aid==location)</event>
+                <event source="Make_insert" name="e42">(pid==attribute and aid==location) and (current_value &gt; (average+3*standard_deviation))</event>
+                <event source="Make_insert" name="e43">(pid==attribute and aid==location) and (current_value &gt; (average+3*standard_deviation))</event>
+                <event source="Make_insert" name="e44">(pid==attribute and aid==location) and (current_value &gt; (average+3*standard_deviation))</event>
+                <event source="Make_insert" name="e45">(startID+5)==counter</event>
+              </events>
+              <logic>and(not(not(e41p)), fby{365 seconds}(e41, fby(e42, fby(e43, e44))), notoccur(e45))</logic>
+              <output>
+                <field-selection name="current_value" node="e41"/>
+                <field-selection name="location" node="e41"/>
+                <field-selection name="attribute" node="e41p"/>
+                <field-selection name="alert3" node="e41p"/>
+              </output>
+            </pattern>
+          </patterns>
+        </window-pattern>
+        <window-pattern name="integralPattern_calc" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="alertID" type="int64" key="true"/>
+              <field name="current_value1" type="double"/>
+              <field name="current_value2" type="double"/>
+              <field name="current_value3" type="double"/>
+              <field name="current_value4" type="double"/>
+              <field name="current_value5" type="double"/>
+              <field name="location" type="string"/>
+              <field name="attribute" type="string"/>
+              <field name="average_1" type="double"/>
+              <field name="average_2" type="double"/>
+              <field name="average_3" type="double"/>
+              <field name="average_4" type="double"/>
+              <field name="average_5" type="double"/>
+              <field name="alert4" type="string"/>
+            </fields>
+          </schema>
+          <patterns>
+            <pattern index="location,attribute" name="pattern1">
+              <events>
+                <event source="Make_insert" name="e61">(current_value &gt; 1.2*average) and (pid==attribute and aid==location)</event>
+                <event source="Make_insert" name="e62">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e63">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e64">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e65">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e66">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e67">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e68">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e69">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e610">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e611">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e612">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e613">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e614">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+                <event source="Make_insert" name="e615">(pid==attribute and aid==location) and (current_value &gt; 1.2*average)</event>
+              </events>
+              <logic>fby{365 seconds}(fby{365 seconds}(fby{365 seconds}(fby{365 seconds}(fby{365 seconds}(fby{365 seconds}(fby{365 seconds}(fby{365 seconds}(fby{365 seconds}(fby{365 seconds}(fby{365 seconds}(fby{365 seconds}(fby{365 seconds}(fby{365 seconds}(not(not(e61)), not(not(e62))), not(not(e63))), not(not(e64))), not(not(e65))), not(not(e66))), not(not(e67))), not(not(e68))), not(not(e69))), not(not(e610))), not(not(e611))), not(not(e612))), not(not(e613))), not(not(e614))), not(not(e615)))</logic>
+              <output>
+                <field-selection name="current_value" node="e61"/>
+                <field-selection name="current_value" node="e62"/>
+                <field-selection name="current_value" node="e63"/>
+                <field-selection name="current_value" node="e64"/>
+                <field-selection name="current_value" node="e65"/>
+                <field-selection name="location" node="e61"/>
+                <field-selection name="attribute" node="e61"/>
+                <field-selection name="average" node="e61"/>
+                <field-selection name="average" node="e62"/>
+                <field-selection name="average" node="e63"/>
+                <field-selection name="average" node="e64"/>
+                <field-selection name="average" node="e65"/>
+                <field-selection name="alert4" node="e61"/>
+              </output>
+            </pattern>
+          </patterns>
+        </window-pattern>
+        <window-pattern name="trendPattern_calc" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="alertID" type="int64" key="true"/>
+              <field name="current_value" type="double"/>
+              <field name="location" type="string"/>
+              <field name="attribute" type="string"/>
+              <field name="alert2" type="string"/>
+            </fields>
+          </schema>
+          <patterns>
+            <pattern index="location,attribute" name="pattern1">
+              <events>
+                <event source="Make_insert" name="e81">(average &lt; current_value) and (pid==attribute and aid==location) and (v1==current_value)</event>
+                <event source="Make_insert" name="e82">(pid==attribute and aid==location) and (v1 &lt; current_value) and (v2==current_value)</event>
+                <event source="Make_insert" name="e83">(pid==attribute and aid==location) and (v2 &lt; current_value) and (v3==current_value)</event>
+                <event source="Make_insert" name="e84">(pid==attribute and aid==location) and (v3 &lt; current_value) and (v4==current_value)</event>
+                <event source="Make_insert" name="e85">(pid==attribute and aid==location) and (v4 &lt; current_value) and (v5==current_value)</event>
+                <event source="Make_insert" name="e86">(pid==attribute and aid==location) and (v5 &lt; current_value)</event>
+              </events>
+              <logic>fby{365 seconds}(not(not(e81)), fby(not(not(e82)), fby(not(not(e83)), fby(not(not(e84)), fby(not(not(e85)), not(not(e86)))))))</logic>
+              <output>
+                <field-selection name="current_value" node="e81"/>
+                <field-selection name="location" node="e81"/>
+                <field-selection name="attribute" node="e81"/>
+                <field-selection name="alert2" node="e81"/>
+              </output>
+            </pattern>
+          </patterns>
+        </window-pattern>
+        <window-aggregate name="Count_sig2_alerts" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="location" type="string" key="true"/>
+              <field name="Alert_count" type="int32"/>
+              <field name="attribute" type="string" key="true"/>
+              <field name="alert" type="string"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>ESP_aCount()</field-expr>
+            <field-expr>ESP_aLast(alert1)</field-expr>
+          </output>
+        </window-aggregate>
+        <window-aggregate name="Count_sig3_alerts" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="location" type="string" key="true"/>
+              <field name="Alert_count" type="int32"/>
+              <field name="attribute" type="string" key="true"/>
+              <field name="alert" type="string"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>ESP_aCount()</field-expr>
+            <field-expr>ESP_aLast(alert3)</field-expr>
+          </output>
+        </window-aggregate>
+        <window-aggregate name="Count_integral_alerts" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="location" type="string" key="true"/>
+              <field name="Alert_count" type="int32"/>
+              <field name="attribute" type="string" key="true"/>
+              <field name="alert" type="string"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>ESP_aCount()</field-expr>
+            <field-expr>ESP_aLast(alert4)</field-expr>
+          </output>
+        </window-aggregate>
+        <window-aggregate name="Count_trend_alerts" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="location" type="string" key="true"/>
+              <field name="Alert_count" type="int32"/>
+              <field name="attribute" type="string" key="true"/>
+              <field name="alert" type="string"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>ESP_aCount()</field-expr>
+            <field-expr>ESP_aLast(alert2)</field-expr>
+          </output>
+        </window-aggregate>
+        <!--window-calculate algorithm="MAS" name="Make_insert" index="pi_EMPTY" produces-only-inserts="true" collapse-updates="true" -->
+        <window-calculate algorithm="MAS" name="Make_insert" index="pi_HASH" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="attribute" type="string" key="true"/>
+              <field name="location" type="string" key="true"/>
+              <field name="timestamp" type="date"/>
+              <field name="average" type="double"/>
+              <field name="standard_deviation" type="double"/>
+              <field name="current_value" type="double"/>
+              <field name="counter" type="int32" key="true"/>
+              <field name="sequence" type="int64" key="true"/>
+              <field name="alert1" type="string"/>
+              <field name="alert2" type="string"/>
+              <field name="alert3" type="string"/>
+              <field name="alert4" type="string"/>
+            </fields>
+          </schema>
+          <mas-map>
+            <window-map module="module_1" revision="0" source="Readings_stats" function="Make_Insert"/>
+          </mas-map>
+        </window-calculate>
+        <window-counter name="Counter_1" collapse-updates="true" count-interval="1 seconds" index="pi_EMPTY"/>
+        <window-calculate algorithm="MAS" name="Regression" index="pi_EMPTY" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="id" type="string" key="true"/>
+              <field name="GEN_RPM" type="double"/>
+              <field name="ROTOR_RPM" type="double"/>
+              <field name="ACTUAL_ANGLE_BLADE_1" type="double"/>
+              <field name="GEN_1_TEMP" type="double"/>
+              <field name="GEN_2_TEMP" type="double"/>
+              <field name="BEARING_A_TEMP" type="double"/>
+              <field name="BEARING_B_TEMP" type="double"/>
+              <field name="TRAN_TEMP" type="double"/>
+              <field name="AMBIENT_TEMP" type="double"/>
+              <field name="timestamp" type="date"/>
+              <field name="turbine" type="string"/>
+              <field name="obs_KW" type="double"/>
+              <field name="wind_ms" type="double"/>
+              <field name="predicted1" type="double"/>
+              <field name="predicted2" type="double"/>
+              <field name="P__VA_RESPONSE_1" type="double"/>
+            </fields>
+          </schema>
+          <mas-map>
+            <window-map module="module_2" revision="0" source="Data_Stream" function="Compute_Regression"/>
+          </mas-map>
+        </window-calculate>
+        <window-filter name="Turbine_R" collapse-updates="true">
+          <expression>location=="R"</expression>
+        </window-filter>
+        <window-compute name="Compute_1" index="pi_RBTREE" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="id" type="string" key="true"/>
+              <field name="GEN_RPM" type="double"/>
+              <field name="ROTOR_RPM" type="double"/>
+              <field name="ACTUAL_ANGLE_BLADE_1" type="double"/>
+              <field name="GEN_1_TEMP" type="double"/>
+              <field name="GEN_2_TEMP" type="double"/>
+              <field name="BEARING_A_TEMP" type="double"/>
+              <field name="BEARING_B_TEMP" type="double"/>
+              <field name="TRAN_TEMP" type="double"/>
+              <field name="AMBIENT_TEMP" type="double"/>
+              <field name="timestamp" type="date"/>
+              <field name="location" type="string"/>
+              <field name="obs_KW" type="double"/>
+              <field name="wind_ms" type="double"/>
+              <field name="predicted1" type="double"/>
+              <field name="predicted2" type="double"/>
+              <field name="value" type="double"/>
+              <field name="attribute" type="string"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>GEN_RPM</field-expr>
+            <field-expr>ROTOR_RPM</field-expr>
+            <field-expr>ACTUAL_ANGLE_BLADE_1</field-expr>
+            <field-expr>GEN_1_TEMP</field-expr>
+            <field-expr>GEN_2_TEMP</field-expr>
+            <field-expr>BEARING_A_TEMP</field-expr>
+            <field-expr>BEARING_B_TEMP</field-expr>
+            <field-expr>TRAN_TEMP</field-expr>
+            <field-expr>AMBIENT_TEMP</field-expr>
+            <field-expr>timestamp</field-expr>
+            <field-expr>turbine</field-expr>
+            <field-expr>obs_KW</field-expr>
+            <field-expr>wind_ms</field-expr>
+            <field-expr>predicted1</field-expr>
+            <field-expr>predicted2</field-expr>
+            <field-expr>P__VA_RESPONSE_1</field-expr>
+            <field-expr>'Predicted_tran_temp'</field-expr>
+          </output>
+        </window-compute>
+        <window-compute name="Add_alert_type1" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="location" type="string" key="true"/>
+              <field name="Alert_count" type="int32"/>
+              <field name="attribute" type="string" key="true"/>
+              <field name="alert" type="string" key="true"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>Alert_count</field-expr>
+          </output>
+        </window-compute>
+        <window-compute name="Add_alert_type2" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="location" type="string" key="true"/>
+              <field name="Alert_count" type="int32"/>
+              <field name="attribute" type="string" key="true"/>
+              <field name="alert" type="string" key="true"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>Alert_count</field-expr>
+          </output>
+        </window-compute>
+        <window-compute name="Add_alert_type3" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="location" type="string" key="true"/>
+              <field name="Alert_count" type="int32"/>
+              <field name="attribute" type="string" key="true"/>
+              <field name="alert" type="string" key="true"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>Alert_count</field-expr>
+          </output>
+        </window-compute>
+        <window-compute name="Add_alert_type4" collapse-updates="true">
+          <schema>
+            <fields>
+              <field name="location" type="string" key="true"/>
+              <field name="Alert_count" type="int32"/>
+              <field name="attribute" type="string" key="true"/>
+              <field name="alert" type="string" key="true"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>Alert_count</field-expr>
+          </output>
+        </window-compute>
+        <window-union name="Union_1" collapse-updates="true" strict="true">
+</window-union>
+      </windows>
+      <edges>
+        <edge source="sigma2Pattern_calc" target="Count_sig2_alerts"/>
+        <edge source="sigma3Pattern_calc" target="Count_sig3_alerts"/>
+        <edge source="integralPattern_calc" target="Count_integral_alerts"/>
+        <edge source="trendPattern_calc" target="Count_trend_alerts"/>
+        <edge source="Make_insert" target="sigma2Pattern_calc"/>
+        <edge source="Make_insert" target="trendPattern_calc"/>
+        <edge source="Make_insert" target="sigma3Pattern_calc"/>
+        <edge source="Make_insert" target="integralPattern_calc"/>
+        <edge source="Readings_stats" target="Make_insert" role="data"/>
+        <edge source="Data_Stream" target="Counter_1"/>
+        <edge source="Regression" target="Compute_1"/>
+        <edge source="Compute_1" target="Turbine_R"/>
+        <edge source="Compute_1" target="Readings_stats"/>
+        <edge source="Data_Stream" target="Regression" role="data"/>
+        <edge source="Count_sig2_alerts" target="Add_alert_type1"/>
+        <edge source="Count_trend_alerts" target="Add_alert_type2"/>
+        <edge source="Count_sig3_alerts" target="Add_alert_type3"/>
+        <edge source="Count_integral_alerts" target="Add_alert_type4"/>
+        <edge source="Add_alert_type1" target="Union_1"/>
+        <edge source="Add_alert_type2" target="Union_1"/>
+        <edge source="Add_alert_type3" target="Union_1"/>
+        <edge source="Add_alert_type4" target="Union_1"/>
+      </edges>
+    </contquery>
+  </contqueries>
+</project>

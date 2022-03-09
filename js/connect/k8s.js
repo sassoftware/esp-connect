@@ -682,6 +682,7 @@ class K8S extends Options
 
     uaa(data,delegate)
     {
+console.log("UAA: " + this);
         var url = "https://";
         url += data.spec.tls[0].hosts[0];
         url += "/uaa/oauth/token";
@@ -705,6 +706,8 @@ class K8S extends Options
 
                 request.setData(send);
 
+console.log(url);
+console.log(send);
                 request.post().then(
                     function(result) {
                         if (result.status >= 400)
@@ -1291,12 +1294,12 @@ class K8SProject extends K8S
                 url += "http://";
             }
 
-            /*
             url += this._config.access.externalURL;
+            /*
             */
 
-            var host = this._ingress.spec.rules[0].host;
             /*
+            var host = this._ingress.spec.rules[0].host;
             var index = host.indexOf(".");
 
             if (index != -1)
@@ -1305,8 +1308,8 @@ class K8SProject extends K8S
             }
             */
 
-            url += host;
             /*
+            url += host;
             url += this._ingress.status.loadBalancer.ingress[0].ip;
             */
             url += "/SASEventStreamProcessingServer";
@@ -1459,20 +1462,29 @@ class K8SProject extends K8S
                         else
                         {
                             const   o = JSON.parse(result.text);
-                            const   state = o.access.state;
-                            if (state == "Succeeded")
+
+                            if (o.hasOwnProperty("access"))
                             {
-                                self._config = o;
-                                resolve({config:o});
+                                const   state = o.access.state;
+
+                                if (state == "Succeeded")
+                                {
+                                    self._config = o;
+                                    resolve({config:o});
+                                }
+                                else
+                                {
+                                    if (attempts++ == 10)
+                                    {
+                                        reject({status:404});
+                                        return;
+                                    }
+
+                                    setTimeout(checkConfig,1000);
+                                }
                             }
                             else
                             {
-                                if (attempts++ == 10)
-                                {
-                                    reject({status:404});
-                                    return;
-                                }
-
                                 setTimeout(checkConfig,1000);
                             }
                         }
@@ -1668,6 +1680,81 @@ class K8SProject extends K8S
         var opts = new Options(options);
         var s = "";
 
+		s += "apiVersion: iot.sas.com/v1alpha1\n";
+		s += "kind: ESPServer\n";
+		s += "metadata:\n";
+        s += "  name: " + this._project + "\n";
+        if (this._ns != null)
+        {
+            s += "  namespace: " + this._ns + "\n";
+        }
+		s += "spec:\n";
+		s += "  # Add fields here\n";
+		s += "  failover: false\n";
+		s += "  loadBalancePolicy: \"default\" # in the future, we could add cluster-manager hash/round-robin...\n";
+		s += "  # if model has prefix \"b64\", treat it as based64 encoded \n";
+		s += "  model: \"\"\n";
+		s += "  espProperties:\n";
+        s += "    server.xml: \"" + model + "\"\n";
+        s += "  name: " + this._project + "\n";
+		s += "  projectTemplate: # deployment template for the project, overridden by ESPServer; ((...)) means a placeholder for the operator to fill in, ports 31415 and 31416 will be replaced if the project is configured to use different ports.\n";
+		s += "    autoscale:\n";
+		s += "      minReplicas: 1\n";
+		s += "      maxReplicas: 1\n";
+		s += "      metrics:\n";
+		s += "        - type: Resource\n";
+		s += "          resource:\n";
+		s += "            name: cpu\n";
+		s += "            target:\n";
+		s += "              type: Utilization\n";
+		s += "              averageUtilization: 50\n";
+		s += "    deployment:\n";
+		s += "      apiVersion: \"\"\n";
+		s += "      kind: ESPTemplate\n";
+		s += "      spec:\n";
+		s += "        selector:\n";
+		s += "          matchLabels:\n";
+		s += "        template: # required\n";
+		s += "          spec: # required\n";
+		s += "            volumes:\n";
+		s += "              - name: data\n";
+		s += "                persistentVolumeClaim:\n";
+		s += "                  claimName: esp-pv\n";
+		s += "            containers:\n";
+		s += "              - name: ((PROJECT_SERVICE_NAME)) # DONT CHANGE THE NAME\n";
+		s += "                resources:\n";
+		s += "                  requests:\n";
+		s += "                    memory: \"1Gi\"\n";
+		s += "                    cpu: \"1\"\n";
+		s += "                  limits:\n";
+		s += "                    memory: \"2Gi\"\n";
+		s += "                    cpu: \"2\"\n";
+		s += "                volumeMounts:\n";
+		s += "                  - mountPath: /mnt/data # path persistent volume gets mounted to\n";
+		s += "                    name: data # the volume specified below\n";
+        if (this._ns != null)
+        {
+		    s += "                    #                   subPath: " + this._ns + "\n";
+        }
+		s += "  loadBalancerTemplate: # deployment template for the project, overridden by ESPServer; ((...)) means a placeholder for the operator to fill in, ports 31415 and 31416 will be replaced if the project is configured to use different ports.\n";
+		s += "    deployment:\n";
+		s += "      apiVersion: \"\"\n";
+		s += "      kind: ESPTemplate\n";
+		s += "      spec: # required for deployment spec\n";
+		s += "        template: # required\n";
+		s += "          spec: # required\n";
+		s += "            containers:\n";
+		s += "              - name: ((PROJECT_SERVICE_NAME))\n";
+
+        return(s);
+    }
+
+    /*
+    getYaml(model,options)
+    {
+        var opts = new Options(options);
+        var s = "";
+
         s += "apiVersion: iot.sas.com/v1alpha1\n";
         s += "kind: ESPServer\n";
         s += "metadata:\n";
@@ -1677,7 +1764,9 @@ class K8SProject extends K8S
             s += "  namespace: " + this._ns + "\n";
         }
         s += "spec:\n";
+        s += "    failover: false\n";
         s += "    loadBalancePolicy: \"default\" \n";
+        s += "    model: \"\" \n";
         s += "    espProperties:\n";
         s += "      server.xml: \"" + model + "\"\n";
         if (this.getOpt("viya",false))
@@ -1685,6 +1774,7 @@ class K8SProject extends K8S
             s += "      meta.meteringhost: \"sas-event-stream-processing-metering-app." + this._ns + "\"\n";
             s += "      meta.meteringport: \"80\"\n";
         }
+        s += "    name: " + this._project + "\n";
         s += "    projectTemplate:\n";
         s += "      autoscale:\n";
         s += "        minReplicas: 1\n";
@@ -1739,6 +1829,7 @@ class K8SProject extends K8S
 
         return(s);
     }
+    */
 
     getDefaultModel()
     {

@@ -149,8 +149,11 @@ class Ajax extends Options
 
             if (node_proxy != null)
             {
-                var tmp = node_proxy + "/" + url;
-                url = tmp;
+                if (u.hostname != node_proxy.hostname || u.port != node_proxy.port)
+                {
+                    var tmp = node_proxy + url;
+                    url = tmp;
+                }
             }
 
             this._request.open(this._method,url,true);
@@ -650,7 +653,8 @@ var _api =
 
     setHttpProxy:function(url)
     {
-        node_proxy = url;
+        //node_proxy = url;
+        node_proxy = new URL(url);
     }
 };
 
