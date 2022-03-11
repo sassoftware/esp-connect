@@ -158,22 +158,6 @@ class Ajax extends Options
 
             this._request.open(this._method,url,true);
 
-            //this._request.setRequestHeader("accept","text/xml");
-
-            /*
-            var authorization = null;
-
-            if (tools.supports(this._delegate,"authorization"))
-            {
-                authorization = this._delegate.authorization();
-            }
-
-            if (authorization != null && authorization.length > 0)
-            {
-                request.setRequestHeader("authorization",authorization);
-            }
-            */
-
             if (this._requestHeaders != null)
             {
                 for (var name in this._requestHeaders)
@@ -236,6 +220,11 @@ class Ajax extends Options
     setRequestHeader(name,value)
     {
         this._requestHeaders[name] = value;
+    }
+
+    getRequestHeader(name)
+    {
+        return(this._requestHeaders[name]);
     }
 
     getResponseHeader(name)
@@ -424,7 +413,11 @@ class NodeAjax extends Options
                 {
                     request.setHeader(name,self._requestHeaders[name]);
                 }
-                request.setHeader("Connection","close");
+
+                if (self._requestHeaders.hasOwnProperty("connection") == false)
+                {
+                    request.setHeader("Connection","close");
+                }
 
                 if (self._bearer != null)
                 {
@@ -541,7 +534,17 @@ class NodeAjax extends Options
 
     setRequestHeader(name,value)
     {
-        this._requestHeaders[name] = value;
+        var n = name.toLowerCase();
+
+        if (value != null)
+        {
+            this._requestHeaders[n] = value;
+        }
+    }
+
+    getRequestHeader(name)
+    {
+        return(this._requestHeaders[name.toLowerCase()]);
     }
 
     setData(data,type)

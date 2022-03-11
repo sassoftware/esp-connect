@@ -14,7 +14,6 @@ var _nodeWS = null;
 
 var http_proxy = tools.getHttpProxy();
 var https_proxy = tools.getHttpsProxy();
-var ws_proxy = null;
 
 if (tools.isNode)
 {
@@ -72,72 +71,6 @@ if (tools.isNode)
         }
     };
 }
-
-var _websockets =
-{
-    _established:new Object(),
-
-    open:function(e)
-    {
-        var conn = this._connection;
-
-        if (conn != null)
-        {
-            _websockets._established[conn.getUrl()] = true;
-            conn._websocket = this;
-            conn._ready = true;
-            conn.ready(e);
-        }
-    },
-
-    close:function(e)
-    {
-        var conn = this._connection;
-
-        if (conn != null)
-        {
-            conn.clear();
-            conn.closed(e);
-        }
-    },
-
-    error:function(e)
-    {
-        var conn = this._connection;
-
-        if (conn != null)
-        {
-            conn.clear();
-            conn.error(e);
-        }
-    },
-
-    message:function(e)
-    {
-        var conn = this._connection;
-
-        if (conn != null)
-        {
-            if (e.data instanceof ArrayBuffer || e.data instanceof Blob)
-            {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    var o = codec.decode(e.target.result);
-                    conn.data(o);
-                };
-                reader.readAsArrayBuffer(e.data);
-            }
-            else
-            {
-                conn.message(e.data);
-            }
-        }
-    },
-    prompted:function(url)
-    {
-        return(this._prompted.hasOwnProperty(url));
-    }
-};
 
 class Connection extends Options
 {
@@ -341,136 +274,54 @@ class Connection extends Options
 
         this._ready = false;
 
-        if (tools.isNode)
+        var self = this;
+        var o =
         {
-            const   self = this;
+            open:function(e)
+            {
+                self._ready = true;
+                self.ready(e);
+            },
 
-            var ws = function() {
+            close:function(e)
+            {
+                self.clear();
+                self.closed(e);
+            },
 
-                function
-                WebSocketClient(url)
+            error:function(e)
+            {
+                self.clear();
+                self.error(e);
+            },
+
+            message:function(e)
+            {
+                if (e.data instanceof ArrayBuffer || e.data instanceof Blob)
                 {
-                    this._conn = self;
-                    this.binaryType = "arraybuffer";
-                    var config = {};
-                    config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
-
-                    var u = new URL(url);
-                    var secure = (u.protocol.toLowerCase() == "wss:");
-
-                    var proxyHost = null;
-                    var proxyPort = 80;
-
-                    if (secure)
-                    {
-                        if (https_proxy != null)
-                        {
-                            proxyHost = https_proxy.hostname;
-                            proxyPort = https_proxy.port;
-                        }
-                    }
-                    else if (http_proxy != null)
-                    {
-                        proxyHost = http_proxy.hostname;
-                        proxyPort = http_proxy.port;
-                    }
-
-                    var options = null;
-
-                    if (proxyHost != null)
-                    {
-                        var agent = null;
-
-                        if (secure)
-                        {
-                            agent = TUNNEL.httpsOverHttp({
-                              proxy: {
-                                host: proxyHost,
-                                port: proxyPort
-                              }
-                            });
-                        }
-                        else
-                        {
-                            agent = TUNNEL.httpOverHttp({
-                              proxy: {
-                                host: proxyHost,
-                                port: proxyPort
-                              }
-                            });
-                        }
-
-                        options = {};
-                        options.agent = agent;
-                    }
-
-                    W3CWS.call(this,url,null,null,null,options,config);
-                }
-
-                WebSocketClient.prototype = Object.create(W3CWS.prototype);
-                WebSocketClient.prototype.constructor = WebSocketClient;
-
-                var ws = new WebSocketClient(url,this);
-                ws.onopen = _nodeWS.open;
-                ws.onclose = _nodeWS.close;
-                ws.onerror = _nodeWS.error;
-                ws.onmessage = _nodeWS.message;
-            }
-
-            var checkProxy = function() {
-                if (http_proxy != null)
-                {
-                    if (TUNNEL == null)
-                    {
-                        import("tunnel").then(
-                            function(result) {
-                                TUNNEL = result.default;
-                                ws();
-                            }
-                        );
-                    }
-                    else
-                    {
-                        ws();
-                    }
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        var o = codec.decode(e.target.result);
+                        self.data(o);
+                    };
+                    reader.readAsArrayBuffer(e.data);
                 }
                 else
                 {
-                    ws();
+                    self.message(e.data);
                 }
             }
+        };
 
-            if (W3CWS == null)
-            {
-                import("websocket").then(
-                    function(result) {
-                        W3CWS = result.default.w3cwebsocket;
-                        checkProxy();
-                    }).
-                    catch((e) => {
-                        console.log("import error on websocket: " + e);
-                    });
+        tools.createWebSocket(url,o).then(
+            function(result) {
+                self._websocket = result;
+                self._ready = true;
+            },
+            function(error) {
+                console.log("create websocket error: " + error);
             }
-            else
-            {
-                checkProxy();
-            }
-        }
-        else
-        {
-            if (ws_proxy != null)
-            {
-                var tmp = ws_proxy + "/" + url;
-                url = tmp;
-            }
-
-            var ws = new WebSocket(url);
-            ws._connection = this;
-            ws.onopen = _websockets.open;
-            ws.onclose = _websockets.close;
-            ws.onerror = _websockets.error;
-            ws.onmessage = _websockets.message;
-        }
+        );
     }
 
     stop()
@@ -705,12 +556,6 @@ class Connection extends Options
         return(this.url);
     }
 
-    established()
-    {
-        var url = this.getUrl();
-        return(_websockets.established(url));
-    }
-
     static create(url,options)
     {
         var u = tools.createUrl(decodeURI(url));
@@ -723,21 +568,6 @@ class Connection extends Options
         var u = tools.createUrl(decodeURI(url));
         var conn = new DelegateConnection(delegate,u["host"],u["port"],u["path"],u["secure"],options,config);
         return(conn);
-    }
-
-    static established(url)
-    {
-        return(_websockets._established.hasOwnProperty(url));
-    }
-
-    static established(url)
-    {
-        return(_websockets._established.hasOwnProperty(url));
-    }
-
-    static setWsProxy(url)
-    {
-        ws_proxy = url;
     }
 }
 

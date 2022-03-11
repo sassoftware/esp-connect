@@ -235,7 +235,7 @@ else if (opts.hasOpt("k8s-ls"))
     const   usage = {
         description:"List a remote directory",
         options:[
-            {name:"k8s-rm",description:"List remote directory.",required:true},
+            {name:"k8s-ls",description:"List remote directory.",required:true},
             {name:"server",arg:"ESP server",description:"ESP Server Pod to which to connect in the form k8s-proxy://localhost:8001/namespace/project.",required:true},
             {name:"path",arg:"filename",description:"Remote directory to list.",required:true}
         ],
@@ -507,7 +507,7 @@ else if (opts.hasOpt("k8s-token"))
     var k8s = esp.createK8S(server,opts.getOpts());
     k8s.getAuthToken().then(
         function(result) {
-            console.log(result);
+            console.log(result.token);
         },
         function(result) {
             console.log("error: " + result);

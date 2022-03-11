@@ -48,7 +48,7 @@ init()
 
     _visuals = _esp.createVisuals(parms);
 
-    _esp.getAjax().create("weather/model.xml").get().then(
+    _esp.getAjax().create("model.xml").get().then(
         function(response) {
             _model = response.text;
 

@@ -750,7 +750,7 @@ var	_api =
 
     setWsProxy:function(url)
     {
-        Connection.setWsProxy(url);
+        connect.getTools().setWsProxy(url);
     },
 
     setHttpProxy:function(url)

@@ -172,7 +172,7 @@ function
 getSailboat(map,data,color)
 {
     var boat = data.boat_id;
-    var zoom = parseInt(map.getZoom());
+    var zoom = parseInt(map._map.getZoom());
     var speed = parseFloat(data.speed);
     var heading = parseInt(data.heading);
     var marker = "";

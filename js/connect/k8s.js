@@ -8,6 +8,11 @@ import {ajax} from "./ajax.js";
 import {xpath} from "./xpath.js";
 import {Options} from "./options.js";
 
+var _tokens = {};
+/*
+_tokens["roleve"] = "eyJhbGciOiJSUzI1NiIsImprdSI6Imh0dHBzOi8vbG9jYWxob3N0OjgwODAvdWFhL3Rva2VuX2tleXMiLCJraWQiOiJrZXktaWQtMSIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiODI2ZDJhMDFiZTY0M2I5YWFkZjk2MDlkNGVkOWI5MiIsInN1YiI6IjU4NzI0OTM4LWVhYjUtNDE0ZC04YmVkLThkMjgxMDYwYWM2OCIsInNjb3BlIjpbIm9wZW5pZCIsInByb2ZpbGUiXSwiY2xpZW50X2lkIjoic3ZfY2xpZW50IiwiY2lkIjoic3ZfY2xpZW50IiwiYXpwIjoic3ZfY2xpZW50IiwiZ3JhbnRfdHlwZSI6InBhc3N3b3JkIiwidXNlcl9pZCI6IjU4NzI0OTM4LWVhYjUtNDE0ZC04YmVkLThkMjgxMDYwYWM2OCIsIm9yaWdpbiI6InVhYSIsInVzZXJfbmFtZSI6ImJvYiIsImVtYWlsIjoicm9iZXJ0LmxldmV5QHNhcy5jb20iLCJhdXRoX3RpbWUiOjE2NDY5MzcyMjIsInJldl9zaWciOiJkMzUxZDBiNSIsImlhdCI6MTY0NjkzNzIyMiwiZXhwIjoxNjc4MDQxMjIyLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvdWFhL29hdXRoL3Rva2VuIiwiemlkIjoidWFhIiwiYXVkIjpbIm9wZW5pZCIsInN2X2NsaWVudCJdfQ.rFY_D0Qlbr62KfHeHsZMzwwNIfjKrxiO4d428PqI9pjjIw32AyTTvpOnztpy_KNklrNr42Ga2XJq6THb2C24goc3pFfDTktyggvGzmfF-hRLfAF1HhDazpuZITEVew2XFZ17EMgP6HK_97qEeLq0cwFFBiH2pditESfF0wiYnRBjFZ3FK4inF_q865-Hz6JS2y2jMlT_nrxaZjh9NU-GcHeR65FwkyU5ffedrRsKyjdGlA5cMBQio1JuNaDwkk9YxH2ZZQ8kb6TtvIzKiiHpA_FwDRB6gad-DgQ7HjRXjrkNpIjhlGKC4h-E24xkFVLOkjmVbb173-9y3rjToXy1lw";
+*/
+
 class K8S extends Options
 {
     constructor(url,options)
@@ -47,6 +52,14 @@ class K8S extends Options
                 {
                     this._project = a[1];
                 }
+            }
+        }
+
+        if (this._ns != null)
+        {
+            if (_tokens.hasOwnProperty(this._ns))
+            {
+                this.setOpt("access_token",_tokens[this._ns]);
             }
         }
 
@@ -682,7 +695,6 @@ class K8S extends Options
 
     uaa(data,delegate)
     {
-console.log("UAA: " + this);
         var url = "https://";
         url += data.spec.tls[0].hosts[0];
         url += "/uaa/oauth/token";
@@ -717,6 +729,7 @@ console.log(send);
                         else
                         {
                             var o = JSON.parse(result.text);
+                            _tokens[self.namespace] = o.access_token;
                             resolve({status:result.status,token:o.access_token});
                         }
                     },
@@ -865,6 +878,8 @@ console.log(send);
                     }
 
                     resolve({files:files});
+                },
+                error:function(error) {
                 }
             }
 
@@ -973,7 +988,14 @@ console.log(send);
 
                         if (index == bufsize)
                         {
-                            ws.send(dv.buffer);
+                            if (tools.isNode)
+                            {
+                                ws.sendBytes(tools.arrayBufferToBuffer(dv.buffer));
+                            }
+                            else
+                            {
+                                ws.send(dv.buffer);
+                            }
                             dv.setUint8(0,0);
                             index = 1;
                         }
@@ -982,7 +1004,15 @@ console.log(send);
                     var end = new DataView(new ArrayBuffer(2));
                     end.setUint8(0,0);
                     end.setUint8(0,4);
-                    ws.send(end.buffer);
+
+                    if (tools.isNode)
+                    {
+                        ws.sendBytes(tools.arrayBufferToBuffer(end.buffer));
+                    }
+                    else
+                    {
+                        ws.send(end.buffer);
+                    }
 
                     ws.close();
                 },
@@ -1168,13 +1198,6 @@ console.log(send);
         url += "&stderr=true";
         
         var o = {
-            open:function()
-            {
-                if (tools.supports(delegate,"ready"))
-                {
-                    delegate.ready(this);
-                }
-            },
 
             error:function(message)
             {
@@ -1188,7 +1211,7 @@ console.log(send);
                 }
             },
 
-            close:function()
+            close:function(ws)
             {
                 if (tools.supports(delegate,"closed"))
                 {
@@ -1204,10 +1227,15 @@ console.log(send);
                 {
                     buf = tools.bufferToArrayBuffer(message);
                 }
+                else if (message.type == "binary")
+                {
+                    buf = tools.bufferToArrayBuffer(message.binaryData);
+                }
                 else
                 {
                     buf = message.data;
                 }
+
                 var dv = new DataView(buf);
                 var channel = dv.getUint8(0);
 
@@ -1241,7 +1269,17 @@ console.log(send);
             }
         };
 
-        tools.createWebSocket(url,o);
+        tools.createWebSocket(url,o).then(
+            function(result) {
+                if (tools.supports(delegate,"ready"))
+                {
+                    delegate.ready(result);
+                }
+            },
+            function(error) {
+                console.log("create websocket error: " + error);
+            }
+        );
     }
 
     supports(func)

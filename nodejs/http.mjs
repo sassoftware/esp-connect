@@ -186,45 +186,47 @@ server.listen(port);
 
 if (opts.getOpt("wsproxy",false))
 {
-    class Ws
+    class WsProxy
     {
         constructor(request)
         {
-            this._connection = request.accept(null,request.origin);
-            this._connection._ws = this;
+            this._client = request.accept(null,request.origin);
+            this._client._ws = this;
 
             var self = this;
 
-            this._connection.on("message",function(message) {
-                if (self._websocket != null)
+            this._client.on("message",function(message) {
+                if (self._server != null)
                 {
                     if (message.type === "utf8")
                     {
-                        self._websocket.send(message.utf8Data);
+                        self._server.send(message.utf8Data);
                     }
                     else if (message.type === "binary")
                     {
-                        self._websocket.sendBytes(message.binaryData);
+                        self._server.send(message.binaryData);
                     }
                 }
             });
 
-            this._connection.on("close",function() {
-                if (self._websocket != null)
+            this._client.on("close",function() {
+                if (self._server != null)
                 {
-                    self._websocket.close();
-                    self._websocket = null;
+                    //self._server.close();
+                    self._server = null;
                 }
 
-                self._connection = null;
+                self._client = null;
             });
 
             var url = getProxyUrl(request.httpRequest);
 
+            self._server = null;
+
             esp.getTools().createWebSocket(url.toString(),this).then(
                 function(result) {
-                    self._websocket = result;
-                    self._websocket._ws = self;
+                    self._server = result;
+                    self._server._ws = self;
                 },
                 function(error) {
                     console.log("create websocket error: " + error);
@@ -232,39 +234,53 @@ if (opts.getOpt("wsproxy",false))
             );
         }
 
-        open()
+        open(ws)
         {
+            console.log("opened: " + ws);
         }
 
         close()
         {
-            if (this._ws._connection != null)
+            if (this._client != null)
             {
-                this._ws._connection.close();
-                this._ws._connection = null;
+                this._client.close();
+                this._client = null;
             }
-            this._ws._websocket = null;
+            this._server = null;
         }
 
         error(e)
         {
-            console.log("ws error: " + this._ws._connection);
+            console.log("ws error: " + this._ws._client);
         }
 
         message(msg)
         {
+            if (this._client != null)
+            {
+                if (msg.type == "utf8")
+                {
+                    this._client.sendUTF(msg.utf8Data);
+                }
+                else if (msg.type == "binary")
+                {
+                    this._client.sendBytes(esp.getTools().arrayBufferToBuffer(msg.binaryData));
+                }
+            }
+            /*
             if (typeof(msg.data) == "string")
             {
-                this._ws._connection.sendUTF(msg.data);
+                this._ws._client.sendUTF(msg.data);
             }
             else if (msg.data instanceof ArrayBuffer)
             {
-                this._ws._connection.sendBytes(esp.getTools().arrayBufferToBuffer(msg.data));
+                this._ws._client.sendBytes(esp.getTools().arrayBufferToBuffer(msg.data));
             }
             else if (msg.data instanceof Blob)
             {
-                this._ws._connection.sendBytes(msg.binaryData);
+                this._ws._client.sendBytes(msg.binaryData);
             }
+            */
         }
     }
 
@@ -281,7 +297,7 @@ if (opts.getOpt("wsproxy",false))
             console.log("websocket request: " + request.httpRequest.url);
         }
 
-        new Ws(request);
+        new WsProxy(request);
     });
 }
 

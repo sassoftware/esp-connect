@@ -16,11 +16,12 @@ if (typeof process === "object")
     }
 }
 
-var W3CWS = null;
+var WebSocketClient = null;
 var TUNNEL = null;
 
 var http_proxy = null;
 var https_proxy = null;
+var ws_proxy = null;
 var no_proxy = null;
 
 if (_isNode)
@@ -530,38 +531,40 @@ var _api =
 
                 var ws = function() {
 
-                    function
-                    WebSocketClient(url)
+                    var config = {};
+                    var options = {};
+
+                    //config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
+
+                    var u = new URL(url);
+                    var secure = (u.protocol.toLowerCase() == "wss:");
+
+                    var proxyHost = null;
+                    var proxyPort = 0;
+
+                    if (_api.isNoProxy(u.hostname) == false)
                     {
-                        this._conn = self;
-                        this.binaryType = "arraybuffer";
-                        var config = {};
-                        config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
-
-                        var u = new URL(url);
-                        var secure = (u.protocol.toLowerCase() == "wss:");
-
-                        var proxyHost = null;
-                        var proxyPort = 80;
-
                         if (secure)
                         {
                             if (https_proxy != null)
                             {
                                 proxyHost = https_proxy.hostname;
-                                proxyPort = https_proxy.port;
+                                proxyPort = parseInt(https_proxy.port);
                             }
                         }
                         else if (http_proxy != null)
                         {
                             proxyHost = http_proxy.hostname;
-                            proxyPort = http_proxy.port;
+                            proxyPort = parseInt(http_proxy.port);
                         }
-
-                        var options = null;
 
                         if (proxyHost != null)
                         {
+                            if (proxyPort == 0 || isNaN(proxyPort))
+                            {
+                                proxyPort = 80;
+                            }
+
                             var agent = null;
 
                             if (secure)
@@ -583,36 +586,50 @@ var _api =
                                 });
                             }
 
-                            options = {};
                             options.agent = agent;
                         }
-
-                        W3CWS.call(this,url,null,null,null,options,config);
                     }
 
-                    WebSocketClient.prototype = Object.create(W3CWS.prototype);
-                    WebSocketClient.prototype.constructor = WebSocketClient;
+                    var ws = new WebSocketClient();
+                    var onClose = (self.supports(delegate,"close"));
+                    var onError = (self.supports(delegate,"error"));
+                    var onMessage = (self.supports(delegate,"message"));
 
-                    var ws = new WebSocketClient(url,this);
+                    ws.on("connect", function(connection) {
 
-                    if (self.supports(delegate,"open"))
-                    {
-                        ws.onopen = delegate.open;
-                    }
-                    if (self.supports(delegate,"close"))
-                    {
-                        ws.onclose = delegate.close;
-                    }
-                    if (self.supports(delegate,"error"))
-                    {
-                        ws.onerror = delegate.error;
-                    }
-                    if (self.supports(delegate,"message"))
-                    {
-                        ws.onmessage = delegate.message;
-                    }
+                        resolve(connection);
 
-                    resolve(ws);
+                        connection.on("error", function(error) {
+                            if (onError)
+                            {
+                                delegate.error(error.toString());
+                            }
+                        });
+
+                        connection.on("close", function() {
+                            if (onClose)
+                            {
+                                delegate.close(connection);
+                            }
+                        });
+
+                        connection.on("message", function(message) {
+                            if (onMessage)
+                            {
+                                delegate.message(message);
+                            }
+                        });
+                    });
+
+                    ws.on("connectFailed", function(error) {
+                        reject(error);
+                    });
+
+                    /*
+                    console.log(options);
+                    */
+
+                    ws.connect(url,null,null,null,options);
                 }
 
                 var checkProxy = function() {
@@ -638,11 +655,11 @@ var _api =
                     }
                 }
 
-                if (W3CWS == null)
+                if (WebSocketClient == null)
                 {
                     import("websocket").then(
                         function(result) {
-                            W3CWS = result.default.w3cwebsocket;
+                            WebSocketClient = result.default.client;
                             checkProxy();
                         }).
                         catch((e) => {
@@ -656,23 +673,40 @@ var _api =
             }
             else
             {
+                if (ws_proxy != null)
+                {
+                    var tmp = ws_proxy + "/" + url;
+                    url = tmp;
+                }
+
                 ws = new WebSocket(url);
 
                 if (this.supports(delegate,"open"))
                 {
-                    ws.onopen = delegate.open;
+                    ws.onopen = function(e) {
+                        delegate.open(e);
+                    };
                 }
+
                 if (this.supports(delegate,"close"))
                 {
-                    ws.onclose = delegate.close;
+                    ws.onclose = function(e) {
+                        delegate.close(e);
+                    };
                 }
+
                 if (this.supports(delegate,"error"))
                 {
-                    ws.onerror = delegate.error;
+                    ws.onerror = function(e) {
+                        delegate.error(e);
+                    };
                 }
+
                 if (this.supports(delegate,"message"))
                 {
-                    ws.onmessage = delegate.message;
+                    ws.onmessage = function(e) {
+                        delegate.message(e);
+                    };
                 }
 
                 resolve(ws);
@@ -1301,6 +1335,11 @@ var _api =
     getNoProxy:function()
     {
         return(no_proxy);
+    },
+
+    setWsProxy(url)
+    {
+        ws_proxy = url;
     },
 
     setNoProxy:function(value)
