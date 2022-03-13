@@ -6,13 +6,12 @@ function usage()
 {
 	printf "\n"
 	printf "SYNOPSIS:\n"
-	printf "\t`basename $0` [-name] [-config]\n\n"
+	printf "\t`basename $0` -name -config\n\n"
 	printf "SUMMARY:\n"
-	printf "\tCreate esp-connect docker image. If you specify a Kubernetes configuration file, the image will\n"
-	printf "\tinclude the kubectl client along with the K8S configuration.\n"
+	printf "\tCreate esp-connect docker image."
 	printf "\n"
 	printf "OPTIONS:\n\n"
-	printf "\t-name\timage name, defaults to 'esp-connect'\n"
+	printf "\t-name\timage name\n"
 	printf "\t-config\tKubernetes configuration file\n"
 	printf "\n"
 	exit 1

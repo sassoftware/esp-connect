@@ -195,26 +195,26 @@ if (opts.getOpt("wsproxy",false))
 
             var self = this;
 
-            this._client.on("message",function(message) {
+            this._client.on("message",function(data) {
                 if (self._server != null)
                 {
-                    if (message.type === "utf8")
+                    if (data.type === "utf8")
                     {
                         if (logging >= 2)
                         {
                             console.log("got UTF 8 data from client");
                         }
 
-                        self._server.send(message.utf8Data);
+                        self._server.send(data.utf8Data);
                     }
-                    else if (message.type === "binary")
+                    else if (data.type === "binary")
                     {
                         if (logging >= 2)
                         {
                             console.log("got binary data from client");
                         }
 
-                        self._server.send(message.binaryData);
+                        self._server.send(data.binaryData);
                     }
                 }
             });

@@ -10,6 +10,7 @@ set -o vi
 export PATH=$PATH:$HOME/bin
 
 export NODE_TLS_REJECT_UNAUTHORIZED=0
+export NODE_NO_WARNINGS=1
 
 export http_proxy=http://inetgw.fyi.sas.com:80
 export https_proxy=http://inetgw.fyi.sas.com:80

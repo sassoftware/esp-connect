@@ -15,16 +15,13 @@ RUN mkdir -p esp-connect/style
 RUN mkdir -p bin
 RUN mkdir -p .kube
 RUN mkdir -p common
-RUN mkdir -p modelviewer
-RUN mkdir -p logviewer
 
 ADD https://unpkg.com/vis-network/standalone/umd/vis-network.min.js common/vis-network.min.js
-RUN chmod 666 common/vis-network.min.js
 
-ADD js/connect/*.js esp-connect/js/connect
-ADD js/connect/package.json esp-connect/js/connect
-ADD js/ui/*.js esp-connect/js/ui
-ADD style/*.css esp-connect/style
+ADD js/connect/*.js esp-connect/js/connect/
+ADD js/connect/package.json esp-connect/js/connect/
+ADD js/ui/*.js esp-connect/js/ui/
+ADD style/*.css esp-connect/style/
 ADD Docker/logviewer/k8s/logviewer.html index.html
 ADD nodejs/http.mjs modules/http.mjs
 ADD Docker/common/config .kube

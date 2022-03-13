@@ -16,12 +16,11 @@ RUN mkdir -p common
 RUN mkdir -p modules
 
 ADD https://unpkg.com/vis-network/standalone/umd/vis-network.min.js common/vis-network.min.js
-RUN chmod 666 common/vis-network.min.js
 
-ADD js/connect/*.js esp-connect/js/connect
+ADD js/connect/*.js esp-connect/js/connect/
 ADD js/connect/package.json esp-connect/js/connect
-ADD js/ui/*.js esp-connect/js/ui
-ADD style/*.css esp-connect/style
+ADD js/ui/*.js esp-connect/js/ui/
+ADD style/*.css esp-connect/style/
 ADD Docker/examples/index.html index.html
 ADD Docker/examples/basic basic
 ADD Docker/examples/paris paris

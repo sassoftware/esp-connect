@@ -10,6 +10,9 @@
 <title>ESP Webcam Publisher</title>
 
 <link href="../../common/google-icons.css" rel="stylesheet"></link>
+<!--
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"></link>
+-->
 
 <script type="text/javascript">
 var _esp = null;
@@ -261,9 +264,6 @@ var delegate = {
         w += "/" + _storage.getOpt("sourcewin","w_data");
 
         _connection.getPublisher({id:"1",window:w,binary:true}).then(
-        /*
-        _connection.getPublisher({id:"1",window:w,binary:false}).then(
-        */
             function(result) {
                 _publisher = result;
             }
@@ -327,7 +327,14 @@ publish()
 
     var o = {};
     o["id"] = _esp.guid();
-    o["image"] = _esp.createBuffer(atob(data));
+    if (_publisher.isBinary())
+    {
+        o["image"] = _esp.createBuffer(atob(data));
+    }
+    else
+    {
+        o["image"] = data;
+    }
 
     _publisher.add(o);
     _publisher.publish();
