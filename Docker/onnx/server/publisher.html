@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP Webcam Publisher</title>
+
+<link href="../../common/google-icons.css" rel="stylesheet"></link>
+
+<script type="text/javascript">
+var _esp = null;
+</script>
+
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "../esp-connect/js/ui/api.js";
+_esp = esp;
+</script>
+
+<script type="text/javascript">
+
+var _size = {width:640,height:480};
+
+var _videoContainer = null;
+var _connectForm = null;
+var _publishForm = null;
+var _connection = null;
+var _publisher = null;
+var _storage = null;
+var _context = null;
+var _quality = .5;
+var _canvas = null;
+var _mirror = false;
+var _video = null;
+var _rate = 5;
+var _app = null;
+
+var _interval = null;
+
+function
+init()
+{
+    _esp.setProxies();
+
+    _server = _esp.getStorage("server");
+    _storage = _esp.getStorage("webcam_demo");
+//_storage.reset();
+
+    _quality = _storage.getOpt("image_quality",".5");
+    //_rate = _storage.getOpt("publish_rate",1);
+
+    var delegate = {
+        content:function(app,item) {
+            if (item.key == "config.esp")
+            {
+                app.content = {element:_connectForm.table,title:"Connect To Server"};
+            }
+            else if (item.key == "config.publish")
+            {
+                app.content = {element:_publishForm.table,title:"Publish Properties"};
+            }
+        },
+        tabSelected:function(app,tab) {
+            if (tab.name == "publish")
+            {
+                storeValues(_publishForm);
+
+                _quality = _storage.getOpt("image_quality",".5");
+                _mirror = _storage.getOpt("mirror","false");
+
+                if (_videoContainer == null)
+                {
+                    _videoContainer = document.createElement("table");
+                    _videoContainer.style.width = "100%";
+                    _videoContainer.style.height = "100%";
+                    var td = _videoContainer.appendChild(document.createElement("tr")).appendChild(document.createElement("td"));
+                    td.style.textAlign = "center";
+                    _video = document.createElement("video");
+                    td.appendChild(_video);
+                    _video.controls = true;
+                    _video.disableRemotePlayback = true;
+                    _video.disablePictureInPicture = true;
+                    _video.controlsList = "nofullscreen nodownload";
+                    _video.addEventListener("loadedmetadata",function() {
+                        _size = {width:this.offsetWidth,height:this.offsetHeight};
+                        _canvas = document.getElementById("canvas");
+                        _canvas.width = _size.width;
+                        _canvas.height = _size.height;
+                        _context = _canvas.getContext("2d");
+                    });
+                    _video.addEventListener("play",function() {
+                        _video.style.transform = _mirror ? "scaleX(-1)" : "scaleX(1)";
+
+                        if (_video.requestVideoFrameCallback != null)
+                        {
+                            _video.requestVideoFrameCallback(videocb);
+                        }
+                        else
+                        {
+                            _interval = setInterval(publish,parseInt(1000 / _rate));
+                        }
+                    });
+                    _video.addEventListener("pause",function() {
+                        if (_interval != null)
+                        {
+                            clearInterval(_interval);
+                            _interval = null;
+                        }
+                    });
+                    _video.className = "webcam";
+                }
+
+                _video.width = _storage.getOpt("video_width",100)
+
+                if (navigator.mediaDevices.getUserMedia)
+                {
+                    var constraints = {video:{facingMode:"environment"}};
+                    navigator.mediaDevices.getUserMedia(constraints).then(
+                        function (result) {
+                            _video.srcObject = result;
+                        })
+                        .catch(function (error) {
+                            console.log(error.name + ": " + error);
+                        });
+                }
+
+                app.content = {element:_videoContainer,title:"Publish Webcam"};
+            }
+        }
+    };
+
+    _app = _esp.createApp({
+        container:"thediv",
+        name:"webcam",
+        icons:"material-icons-outlined",
+        tabs:[
+            {
+                name:"settings",
+                text:"Settings",
+                icon:"settings",
+                start:true,
+                navigators:[
+                    {
+                        name:"config",
+                        items:[
+                            {
+                                name:"esp",
+                                text:"ESP",
+                                icon:"dns",
+                            },
+                            {
+                                name:"publish",
+                                text:"Publish",
+                                icon:"publish"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                name:"publish",
+                text:"Publish",
+                icon:"photo_camera",
+                disabled:true
+            }
+        ]
+    },delegate);
+
+    var parms = _esp.getParms();
+
+    createForms();
+
+    /*
+    setTimeout(function() {
+        _app.start();
+        _app.show("publish");
+        _app.show("settings","config","config.esp");
+    },500);
+    */
+
+    _app.start();
+    _app.show("settings","config","config.esp");
+    /*
+    */
+
+/*
+    setTimeout(function(){
+        connect(_storage.getOpt("espserver","https://espsrv03.unx.sas.com:34001"),false);},50);
+*/
+}
+
+function
+createForms()
+{
+    var form;
+
+    form = [];
+    form.push({name:"espserver",label:"ESP Server:",value:_storage.getOpt("espserver","https://espsrv03.unx.sas.com:34001"),focus:true});
+    form.push({name:"project",label:"Project:",value:_storage.getOpt("project","project")});
+    form.push({name:"contquery",label:"Continuous Query:",value:_storage.getOpt("contquery","contquery")});
+    form.push({name:"sourcewin",label:"Source Window:",value:_storage.getOpt("sourcewin","w_data")});
+    form.push({type:"button",name:"connect",text:"Connect",
+        onclick:function()
+        {
+            var values = _connectForm.getValues();
+
+            for (name in values)
+            {
+                _storage.setOpt(name,values[name]);
+            }
+
+            setTimeout(function(){
+                    connect(_storage.getOpt("espserver"));
+                },10);
+        }
+    });
+
+    _connectForm = _esp.getDialogs().createDialog({show_header:false,buttons:"none",label_width:"80px",oneline:false}).createForm(form);
+
+    form = [];
+    form.push({name:"video_width",label:"Video Width:",value:_storage.getOpt("video_width",400)});
+    form.push({name:"publish_rate",label:"Publish Rate (FPS):",value:_storage.getOpt("publish_rate",5)});
+
+    form.push({name:"quality",label:"Image Quality:",type:"select",value:_storage.getOpt("quality",".5"),
+        options:[
+            {name:"1 (Highest)",value:1},
+            {name:"2",value:.7},
+            {name:"3",value:.5},
+            {name:"4",value:.3},
+            {name:"5",value:.1}
+        ]
+    });
+    form.push({name:"mirror",label:"Mirror Image:",type:"boolean",value:_storage.getOpt("mirror",false)});
+
+    _publishForm = _esp.getDialogs().createDialog({show_header:false,buttons:"none",label_width:"80px",oneline:false}).createForm(form);
+}
+
+function
+storeValues(form)
+{
+    var values = form.getValues();
+
+    for (name in values)
+    {
+        _storage.setOpt(name,values[name]);
+    }
+}
+
+var delegate = {
+    ready:function(connection)
+    {
+        _connection = connection;
+        _esp.clearStatus();
+
+        var w = _storage.getOpt("project","project");
+        w += "/" + _storage.getOpt("contquery","cq");
+        w += "/" + _storage.getOpt("sourcewin","w_data");
+
+        _connection.getPublisher({id:"1",window:w,binary:true}).then(
+        /*
+        _connection.getPublisher({id:"1",window:w,binary:false}).then(
+        */
+            function(result) {
+                _publisher = result;
+            }
+        );
+
+        _app.enableTabs(["publish"]);
+    },
+    connectionError:function(connection,message) {
+        _esp.showConnectionError(connection,message);
+    }
+};
+
+function
+connect(server)
+{
+    _server = server;
+    _esp.connect(_server,delegate,{reconnect:0});
+    _app.show("publish");
+}
+
+var _current = 0;
+var _index = 0;
+
+function
+videocb(now,metadata)
+{
+    if (now - _current < (1000 / _rate))
+    {
+        if (_video.requestVideoFrameCallback != null)
+        {
+            _video.requestVideoFrameCallback(videocb);
+        }
+
+        return;
+    }
+
+    _current = now;
+
+    publish();
+}
+
+function
+publish()
+{
+    if (_mirror)
+    {
+        _context.save();
+        _context.translate(_canvas.width, 0);
+        _context.scale(-1,1);
+        _context.drawImage(_video,0,0,_canvas.width,_canvas.height);
+        _context.restore();
+    }
+    else
+    {
+        _context.drawImage(_video,0,0,_canvas.width,_canvas.height);
+    }
+
+    var data = _canvas.toDataURL("image/jpeg",_quality);
+    var index = data.indexOf(",");
+    data = data.substr(index + 1);
+
+    var o = {};
+    o["id"] = _esp.guid();
+    o["image"] = _esp.createBuffer(atob(data));
+
+    _publisher.add(o);
+    _publisher.publish();
+
+    if (_video.requestVideoFrameCallback != null)
+    {
+        _video.requestVideoFrameCallback(videocb);
+    }
+}
+
+</script>
+
+<style type="text/css">
+
+table.form
+{
+    width:98%;
+    margin:0;
+}
+
+table.form td.value
+{
+    padding-bottom:20px;
+}
+
+video.webcam
+{
+    border:1px solid black;
+}
+
+div#thediv
+{
+    position:absolute;
+    width:100%;
+    height:100%;
+    left:0;
+    top:0;
+}
+
+@media only screen 
+    and (min-device-width: 375px) 
+    and (max-device-width: 812px) 
+{
+    span.material-icons-outlined
+    {
+        font-size:3rem;
+    }
+}
+
+@media only screen 
+    and (min-device-width: 375px) 
+    and (max-device-width: 812px) 
+    and (orientation: landscape)
+{
+    *
+    {
+        font-size:1.3rem;
+    }
+
+    span.material-icons-outlined
+    {
+        font-size:2rem;
+    }
+}
+
+</style>
+
+</head>
+
+<body onload="init()">
+    <div id="thediv"></div>
+    <canvas id="canvas" style="display:none"></canvas>
+</body>
+
+</html>

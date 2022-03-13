@@ -1,0 +1,31 @@
+#!bash
+
+source Docker/common/args.sh
+
+function usage()
+{
+	printf "\n"
+	printf "SYNOPSIS:\n"
+	printf "\t`basename $0` -name -cert \n\n"
+	printf "SUMMARY:\n"
+	printf "\tCreate ESP ONNX docker image.\n"
+	printf "\n"
+	printf "OPTIONS:\n\n"
+	printf "\t-name\timage name\n"
+	printf "\t-cert\tcertificate file\n"
+	printf "\n"
+	exit 1
+}
+
+NAME=${parms["name"]}
+CERT=${parms["cert"]}
+
+if [ -z "${NAME}" -o -z "${CERT}" ]
+then
+    usage $1
+    exit 1
+fi
+
+cp ${CERT} Docker/common/server.pem
+docker build -t ${NAME} --force-rm -f Docker/onnx/server/Dockerfile .
+rm Docker/common/server.pem

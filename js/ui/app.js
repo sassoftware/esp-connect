@@ -386,12 +386,15 @@ class Tab extends Options
     {
         var navigator = null;
 
-        for (var n of list)
+        if (list != null)
         {
-            if (n.name == name)
+            for (var n of list)
             {
-                navigator = n;
-                break;
+                if (n.name == name)
+                {
+                    navigator = n;
+                    break;
+                }
             }
         }
 
@@ -779,7 +782,7 @@ class App extends Tab
         this.layout();
     }
 
-    show(navigator,item,tab)
+    show(tab,navigator,item)
     {
         if (this._splash != null)
         {
@@ -793,11 +796,22 @@ class App extends Tab
         }
 
         var t = (tab != null) ? this.getTab(tab) : this;
-        this.tab = t.name;
-        var nav = t.getNavigator(navigator);
-        if (nav != null)
+
+        if (t != null)
         {
-            nav.current = item;
+            this.tab = t.name;
+
+            if (navigator != null)
+            {
+                var nav = t.getNavigator(navigator);
+                if (nav != null)
+                {
+                    if (item != null)
+                    {
+                        nav.current = item;
+                    }
+                }
+            }
         }
     }
 

@@ -1226,7 +1226,6 @@ var	_api =
         var frame = document.createElement("iframe");
         frame.style.width = "100%";
         frame.style.height = "100%";
-        frame.className = "dialogCode";
         var dialog = new Dialog(options);
         frame.src = dialog.getOpt("url","");
         frame.className = "dialogFrame";

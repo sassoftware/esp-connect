@@ -613,10 +613,10 @@ var _api =
                             }
                         });
 
-                        connection.on("message", function(message) {
+                        connection.on("message", function(data) {
                             if (onMessage)
                             {
-                                delegate.message(message);
+                                delegate.message(data);
                             }
                         });
                     });
@@ -679,35 +679,44 @@ var _api =
                     url = tmp;
                 }
 
+                const   onOpen = (this.supports(delegate,"open"));
+                const   onClose = (this.supports(delegate,"close"));
+                const   onError = (this.supports(delegate,"error"));
+                const   onMessage = (this.supports(delegate,"message"));
+
                 ws = new WebSocket(url);
 
-                if (this.supports(delegate,"open"))
-                {
-                    ws.onopen = function(e) {
+                ws.onopen = function(e) {
+                    //console.log("open");
+                    if (onOpen)
+                    {
                         delegate.open(e);
-                    };
-                }
+                    }
+                };
 
-                if (this.supports(delegate,"close"))
-                {
-                    ws.onclose = function(e) {
+                ws.onclose = function(e) {
+                    //console.log("close: " + e.code + " :: " + e.reason);
+                    if (onClose)
+                    {
                         delegate.close(e);
-                    };
-                }
+                    }
+                };
 
-                if (this.supports(delegate,"error"))
-                {
-                    ws.onerror = function(e) {
+                ws.onerror = function(e) {
+                    //console.log("error");
+                    if (onError)
+                    {
                         delegate.error(e);
-                    };
-                }
+                    }
+                };
 
-                if (this.supports(delegate,"message"))
-                {
-                    ws.onmessage = function(e) {
+                ws.onmessage = function(e) {
+                    //console.log("message");
+                    if (onMessage)
+                    {
                         delegate.message(e);
-                    };
-                }
+                    }
+                };
 
                 resolve(ws);
             }

@@ -200,23 +200,39 @@ if (opts.getOpt("wsproxy",false))
                 {
                     if (message.type === "utf8")
                     {
+                        if (logging >= 2)
+                        {
+                            console.log("got UTF 8 data from client");
+                        }
+
                         self._server.send(message.utf8Data);
                     }
                     else if (message.type === "binary")
                     {
+                        if (logging >= 2)
+                        {
+                            console.log("got binary data from client");
+                        }
+
                         self._server.send(message.binaryData);
                     }
                 }
             });
 
             this._client.on("close",function() {
+                console.log("lost client connection");
+
                 if (self._server != null)
                 {
-                    //self._server.close();
+                    self._server.close();
                     self._server = null;
                 }
 
                 self._client = null;
+            });
+
+            this._client.on("error",function(error) {
+                console.log("client error: " + error);
             });
 
             var url = getProxyUrl(request.httpRequest);
@@ -241,17 +257,20 @@ if (opts.getOpt("wsproxy",false))
 
         close()
         {
+            console.log("lost server connection");
+
             if (this._client != null)
             {
                 this._client.close();
                 this._client = null;
             }
+
             this._server = null;
         }
 
         error(e)
         {
-            console.log("ws error: " + this._ws._client);
+            console.log("ws error: " + this._client);
         }
 
         message(msg)
@@ -270,21 +289,22 @@ if (opts.getOpt("wsproxy",false))
             /*
             if (typeof(msg.data) == "string")
             {
-                this._ws._client.sendUTF(msg.data);
+                this._client.sendUTF(msg.data);
             }
             else if (msg.data instanceof ArrayBuffer)
             {
-                this._ws._client.sendBytes(esp.getTools().arrayBufferToBuffer(msg.data));
+                this._client.sendBytes(esp.getTools().arrayBufferToBuffer(msg.data));
             }
             else if (msg.data instanceof Blob)
             {
-                this._ws._client.sendBytes(msg.binaryData);
+                this._client.sendBytes(msg.binaryData);
             }
             */
         }
     }
 
     var config = {
+        maxReceivedFrameSize:5000000,
         httpServer:server,
         closeTimeout:0
     };

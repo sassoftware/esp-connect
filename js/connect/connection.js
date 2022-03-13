@@ -297,7 +297,19 @@ class Connection extends Options
 
             message:function(e)
             {
-                if (e.data instanceof ArrayBuffer || e.data instanceof Blob)
+                if (tools.isNode)
+                {
+                    if (e.type === "utf8")
+                    {
+                        self.message(e.utf8Data);
+                    }
+                    else if (e.type === "binary")
+                    {
+                        var o = codec.decode(tools.bufferToArrayBuffer(e.binaryData));
+                        self.data(o);
+                    }
+                }
+                else if (e.data instanceof ArrayBuffer || e.data instanceof Blob)
                 {
                     var reader = new FileReader();
                     reader.onload = function(e) {

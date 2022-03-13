@@ -19,6 +19,11 @@ body
     margin:0;
 }
 
+body.help
+{
+    margin:10px;
+}
+
 div.container
 {
     display:flex;
@@ -536,6 +541,8 @@ pre.dialogCode
     height:100%;
     border:1px solid #d8d8d8;
     overflow:auto;
+    padding-left:10px;
+    padding-right:10px;
 }
 
 iframe.dialogFrame
@@ -894,6 +901,12 @@ div.appfooter td.selected
     and (min-device-width: 375px) 
     and (max-device-width: 812px) 
 {
+    *
+    {
+        font-size:1.75rem;
+        outline:none;
+    }
+
     div.appheader,
     div.appcontent,
     table.app
@@ -989,6 +1002,12 @@ div.appfooter td.selected
     and (max-device-width: 812px) 
     and (orientation: landscape)
 {
+    *
+    {
+        font-size:1.5rem;
+        outline:none;
+    }
+
     div.appheader,
     div.appcontent,
     table.app

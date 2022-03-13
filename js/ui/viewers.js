@@ -1014,10 +1014,13 @@ class ModelViewer extends ViewerBase
             key += "/"
             key += o["window"]
             this._data[key] = o;
-            if ((w = this._model.getWindow(key)) != null)
+            if (this._model != null)
             {
-                w.cpu = parseInt(o.cpu);
-                w.count = o.count;
+                if ((w = this._model.getWindow(key)) != null)
+                {
+                    w.cpu = parseInt(o.cpu);
+                    w.count = o.count;
+                }
             }
         });
 

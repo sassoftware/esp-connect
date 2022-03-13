@@ -762,14 +762,16 @@ var	_api =
     {
         var tmp = new URL(".",document.URL);
 
+        var secure = (tmp.protocol == "https:");
+
         var proxy = "";
-        proxy = "http://";
+        proxy = secure ? "https://" : "http://";
         proxy += tmp.hostname;
         proxy += ":";
         proxy += tmp.port;
         this.setHttpProxy(proxy);
 
-        proxy = "ws://";
+        proxy = secure ? "wss://" : "ws://";
         proxy += tmp.hostname;
         proxy += ":";
         proxy += tmp.port;

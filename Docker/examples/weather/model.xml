@@ -1,129 +1,130 @@
-<project name='p' threads='4' pubsub='auto'>
-	<contqueries>
-		<contquery name='cq'>
-			<windows>
-				<window-source name='s'>
-					<schema>
-						<fields>
-							<field name='name' type='string' key='true' />
-							<field name='weather' type='string' />
-							<field name='temp' type='double' />
-							<field name='tempMin' type='double' />
-							<field name='tempMax' type='double' />
-							<field name='pressure' type='int32' />
-							<field name='humidity' type='int32' />
-							<field name='windSpeed' type='double' />
-							<field name='windDirection' type='int32' />
-							<field name='sunrise' type='date' />
-							<field name='sunset' type='date' />
-							<field name='lat' type='double' />
-							<field name='lon' type='double' />
-							<field name='guid' type='string' />
-						</fields>
-					</schema>
-					<connectors>
-						<connector class='url'>
-							<properties>
-								<property name='type'>pub</property>
-								<property name='config'><![CDATA[
+<?xml version="1.0"?>
+<project threads="4" pubsub="auto">
+  <contqueries>
+    <contquery name="cq">
+      <windows>
+        <window-source name="s">
+          <schema>
+            <fields>
+              <field name="name" type="string" key="true"/>
+              <field name="weather" type="string"/>
+              <field name="temp" type="double"/>
+              <field name="tempMin" type="double"/>
+              <field name="tempMax" type="double"/>
+              <field name="pressure" type="int32"/>
+              <field name="humidity" type="int32"/>
+              <field name="windSpeed" type="double"/>
+              <field name="windDirection" type="int32"/>
+              <field name="sunrise" type="date"/>
+              <field name="sunset" type="date"/>
+              <field name="lat" type="double"/>
+              <field name="lon" type="double"/>
+              <field name="guid" type="string"/>
+            </fields>
+          </schema>
+          <connectors>
+            <connector class="url">
+              <properties>
+                <property name="type">pub</property>
+                <property name="config"><![CDATA[
 <url-connector>
-	<url-publishers>
-		<url-publisher name='weather'>
-			<requests>
-				<request name="weather">
-					<url>http://api.openweathermap.org/data/2.5/group?id=4487042,4180439,5368361,4930956,4164138,5128581,4140963,5809844,5391959,4671654&amp;APPID=@APPID@&amp;units=imperial</url>
-				</request>
-			</requests>
-			<generate>0</generate>
-			<event-loops>
-            	<event-loop-json name='loop'>
-              		<use-json>#_content</use-json>
-					<json>$.list</json>
-			        <opcode>upsert</opcode>
-					<function-context>
-						<functions>
-							<function name='id'>json(#_context,'id')</function>
-							<function name='name'>json(#_context,'name')</function>
-							<function name='weather'>json(#_context,'weather.description')</function>
-							<function name='temp'>json(#_context,'main.temp')</function>
-							<function name='tempMin'>json(#_context,'main.temp_min')</function>
-							<function name='tempMax'>json(#_context,'main.temp_max')</function>
-							<function name='pressure'>json(#_context,'main.pressure')</function>
-							<function name='humidity'>json(#_context,'main.humidity')</function>
-							<function name='windSpeed'>json(#_context,'wind.speed')</function>
-							<function name='windDirection'>json(#_context,'wind.deg')</function>
-							<function name='sunrise'>json(#_context,'sys.sunrise')</function>
-							<function name='sunset'>json(#_context,'sys.sunset')</function>
-							<function name='lat'>json(#_context,'coord.lat')</function>
-							<function name='lon'>json(#_context,'coord.lon')</function>
-							<function name='guid'>guid()</function>
-						</functions>
-					</function-context>
-            	</event-loop-json>
-			</event-loops>
-		</url-publisher>
-	</url-publishers>
+    <url-publishers>
+        <url-publisher name='weather'>
+            <requests>
+                <request name="weather">
+                    <url>http://api.openweathermap.org/data/2.5/group?id=4487042,4180439,5368361,4930956,4164138,5128581,4140963,5809844,5391959,4671654&amp;APPID=@APPID@&amp;units=imperial</url>
+                </request>
+            </requests>
+            <generate>0</generate>
+            <event-loops>
+                <event-loop-json name='loop'>
+                    <use-json>#_content</use-json>
+                    <json>$.list</json>
+                    <opcode>upsert</opcode>
+                    <function-context>
+                        <functions>
+                            <function name='id'>json(#_context,'id')</function>
+                            <function name='name'>json(#_context,'name')</function>
+                            <function name='weather'>json(#_context,'weather.description')</function>
+                            <function name='temp'>json(#_context,'main.temp')</function>
+                            <function name='tempMin'>json(#_context,'main.temp_min')</function>
+                            <function name='tempMax'>json(#_context,'main.temp_max')</function>
+                            <function name='pressure'>json(#_context,'main.pressure')</function>
+                            <function name='humidity'>json(#_context,'main.humidity')</function>
+                            <function name='windSpeed'>json(#_context,'wind.speed')</function>
+                            <function name='windDirection'>json(#_context,'wind.deg')</function>
+                            <function name='sunrise'>json(#_context,'sys.sunrise')</function>
+                            <function name='sunset'>json(#_context,'sys.sunset')</function>
+                            <function name='lat'>json(#_context,'coord.lat')</function>
+                            <function name='lon'>json(#_context,'coord.lon')</function>
+                            <function name='guid'>guid()</function>
+                        </functions>
+                    </function-context>
+                </event-loop-json>
+            </event-loops>
+        </url-publisher>
+    </url-publishers>
 </url-connector>
                                 ]]></property>
-								<property name='interval'>5</property>
-							</properties>
-						</connector>
-					</connectors>
-				</window-source>
-                <window-functional name='weather'>
-                    <schema copy='s' />
-                    <function-context>
-                        <properties>
-                            <property-string name='tempRatio'>product($temp,.10)</property-string>
-                            <property-string name='windSpeedRatio'>product($windSpeed,.10)</property-string>
-                            <property-string name='windDirectionRatio'>product($windDirection,.10)</property-string>
-                        </properties>
-                        <functions>
-                            <function name='temp'>sum($temp,random(diff(0,#tempRatio),#tempRatio))</function>
-                            <function name='windSpeed'>sum($windSpeed,random(diff(0,#windSpeedRatio),#windSpeedRatio))</function>
-                            <function name='windDirection'>sum($windDirection,random(diff(0,#windDirectionRatio),#windDirectionRatio))</function>
-                        </functions>
-                    </function-context>
-                </window-functional>
-                <window-aggregate name='aggr'>
-					<schema>
-						<fields>
-							<field name='name' type='string' key='true' />
-							<field name='low' type='double' />
-							<field name='high' type='double' />
-						</fields>
-					</schema>
-                    <output>
-                        <field-expr>ESP_aMin(temp)</field-expr>
-                        <field-expr>ESP_aMax(temp)</field-expr>
-                    </output>
-                </window-aggregate>
-                <window-functional name='func' index='pi_EMPTY' output-insert-only='true'>
-                    <schema copy='s' copy-keys='false'>
-                        <fields>
-							<field name='guid' type='string' key='true' />
-                        </fields>
-                    </schema>
-                    <opcode>insert</opcode>
-                    <function-context>
-                        <properties>
-                            <property-string name='tempRatio'>product($temp,.10)</property-string>
-                            <property-string name='windSpeedRatio'>product($windSpeed,.10)</property-string>
-                            <property-string name='windDirectionRatio'>product($windDirection,.10)</property-string>
-                        </properties>
-                        <functions>
-                            <function name='temp'>sum($temp,random(diff(0,#tempRatio),#tempRatio))</function>
-                            <function name='windSpeed'>sum($windSpeed,random(diff(0,#windSpeedRatio),#windSpeedRatio))</function>
-                            <function name='windDirection'>sum($windDirection,random(diff(0,#windDirectionRatio),#windDirectionRatio))</function>
-                        </functions>
-                    </function-context>
-                </window-functional>
-			</windows>
-			<edges>
-				<edge source='s' target='weather'/>
-				<edge source='s' target='func'/>
-				<edge source='func' target='aggr'/>
-			</edges>
-		</contquery>
-	</contqueries>
+                <property name="interval">5</property>
+              </properties>
+            </connector>
+          </connectors>
+        </window-source>
+        <window-functional name="weather">
+          <schema copy="s"/>
+          <function-context>
+            <properties>
+              <property-string name="tempRatio">product($temp,.10)</property-string>
+              <property-string name="windSpeedRatio">product($windSpeed,.10)</property-string>
+              <property-string name="windDirectionRatio">product($windDirection,.10)</property-string>
+            </properties>
+            <functions>
+              <function name="temp">sum($temp,random(diff(0,#tempRatio),#tempRatio))</function>
+              <function name="windSpeed">sum($windSpeed,random(diff(0,#windSpeedRatio),#windSpeedRatio))</function>
+              <function name="windDirection">sum($windDirection,random(diff(0,#windDirectionRatio),#windDirectionRatio))</function>
+            </functions>
+          </function-context>
+        </window-functional>
+        <window-aggregate name="aggr">
+          <schema>
+            <fields>
+              <field name="name" type="string" key="true"/>
+              <field name="low" type="double"/>
+              <field name="high" type="double"/>
+            </fields>
+          </schema>
+          <output>
+            <field-expr>ESP_aMin(temp)</field-expr>
+            <field-expr>ESP_aMax(temp)</field-expr>
+          </output>
+        </window-aggregate>
+        <window-functional name="func" index="pi_EMPTY" output-insert-only="true">
+          <schema copy="s" copy-keys="false">
+            <fields>
+              <field name="guid" type="string" key="true"/>
+            </fields>
+          </schema>
+          <opcode>insert</opcode>
+          <function-context>
+            <properties>
+              <property-string name="tempRatio">product($temp,.10)</property-string>
+              <property-string name="windSpeedRatio">product($windSpeed,.10)</property-string>
+              <property-string name="windDirectionRatio">product($windDirection,.10)</property-string>
+            </properties>
+            <functions>
+              <function name="temp">sum($temp,random(diff(0,#tempRatio),#tempRatio))</function>
+              <function name="windSpeed">sum($windSpeed,random(diff(0,#windSpeedRatio),#windSpeedRatio))</function>
+              <function name="windDirection">sum($windDirection,random(diff(0,#windDirectionRatio),#windDirectionRatio))</function>
+            </functions>
+          </function-context>
+        </window-functional>
+      </windows>
+      <edges>
+        <edge source="s" target="weather"/>
+        <edge source="s" target="func"/>
+        <edge source="func" target="aggr"/>
+      </edges>
+    </contquery>
+  </contqueries>
 </project>
