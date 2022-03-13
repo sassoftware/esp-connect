@@ -1,4 +1,4 @@
-#!bash
+#!/bin/bash
 
 source Docker/common/args.sh
 
