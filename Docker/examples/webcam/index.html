@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP Connect  Examples</title>
+
+<script type="text/javascript">
+var _esp = null;
+</script>
+
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "../esp-connect/js/ui/api.js";
+_esp = esp;
+</script>
+
+<script type="text/javascript">
+
+var _project = "onnx";
+var _server = null;
+
+function
+init()
+{
+    _esp.handleLayout();
+
+    var parms = _esp.getParms();
+
+    _server = _esp.getServerFromParms(parms,_project);
+
+    if (_server == null)
+    {
+        _esp.showConnectDialog({connect:connect});
+        return;
+    }
+}
+
+function
+connect(server)
+{
+    _server = server;
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+}
+
+function
+go(page)
+{
+    var s = "";
+
+    /*
+    if (_namespace != null)
+    {
+        s += "namespace=" + _namespace;
+    }
+    else if (_server != null)
+    {
+        s += "server=" + _server;
+    }
+    */
+    if (_server != null)
+    {
+        s += "server=" + _server;
+    }
+
+    var url = page + "/index.html";
+
+    if (s.length > 0)
+    {
+        url += "?" + s;
+    }
+
+console.log(url);
+    s = new URL(url,document.URL).toString();
+console.log(s);
+
+    window.open(s,"_blank");
+}
+
+</script>
+
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+
+<style type="text/css">
+a
+{
+    text-decoration:none;
+    color:black;
+}
+
+ul.examples
+{
+    font-size:1.2rem;
+}
+
+ul.examples a
+{
+    font-style:italic;
+    text-decoration:underline;
+}
+
+</style>
+
+</head>
+
+<body onload="init()">
+
+    <div id="banner">
+        <table style="width:100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td id="bannerTitle">ESP Webcam ONNX Demo</td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content">
+        <ul class="examples">
+            <li><a href="javascript:go('publisher')">Publisher</a> - Start a webcam and send the video into an ESP model.</li>
+            <li><a href="javascript:go('viewer')">Viewer</a> - Visualize the image object detection output from the ESP model.</li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

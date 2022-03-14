@@ -85,7 +85,7 @@ connect(server)
 {
     document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
     _esp.showStatus("Loading project...");
-    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_xml,options:{overwrite:true},parms:{retention:"30 seconds"}},force:_esp.getParm("force",true)});
+    _esp.connect(server,{ready:ready,error:error},{model:{name:_project,data:_xml,parms:{retention:"30 seconds"}},force:_esp.getParm("force",true)});
     _esp.handleLayout();
 }
 

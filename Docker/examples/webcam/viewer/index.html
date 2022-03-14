@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP Webcam Viewer</title>
+
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"></link>
+<script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<!--
+<link href="../../common/google-icons.css" rel="stylesheet"></link>
+<script src="../../common/plotly-min.js" charset="utf-8"></script>
+<script src="../../common/vis-network.min.js"></script>
+-->
+
+<script type="text/javascript">
+var _esp = null;
+</script>
+
+<link rel="stylesheet" href="../../esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "../../esp-connect/js/ui/api.js";
+_esp = esp;
+</script>
+
+<script type="text/javascript">
+
+var _project = "onnx";
+
+var _size = {width:640,height:480};
+
+var _modelviewerTable = null;
+var _connectForm = null;
+var _modelviewer = null;
+var _viewerForm = null;
+var _connection = null;
+var _storage = null;
+var _visuals = null;
+var _context = null;
+var _model = null;
+var _app = null;
+var _xml = null;
+
+var _interval = null;
+
+function
+init()
+{
+    _esp.setProxies();
+
+    var parms = _esp.getParms();
+
+    _server = _esp.getServerFromParms(parms,_project);
+
+    if (_server == null)
+    {
+        _esp.showConnectDialog({connect:connect});
+        return;
+    }
+
+    _storage = _esp.getStorage("webcam_demo");
+//_storage.reset();
+
+    _xml = document.createElement("table");
+    _xml.cellspacing = 0;
+    _xml.cellpadding = 0;
+    _xml.className = "xml";
+    _xml.appendChild(document.createElement("tr")).appendChild(document.createElement("td")).appendChild(document.createElement("pre"));
+
+    _modelviewerTable = document.createElement("table");
+    _modelviewerTable.cellspacing = 0;
+    _modelviewerTable.cellpadding = 0;
+    _modelviewerTable.className = "xml";
+    _modelviewerTable.appendChild(document.createElement("tr")).appendChild(document.createElement("td")).appendChild(document.createElement("div"));
+
+    var delegate = {
+        content:function(app,item) {
+            if (item.key == "config.esp")
+            {
+                app.content = {element:_connectForm.table,title:"Connect To Server"};
+            }
+            else if (item.key == "config.viewer")
+            {
+                app.content = {element:_viewerForm.table,title:"Viewer Properties"};
+            }
+            else if (item.key == "model.xml")
+            {
+                app.content = {element:_xml,title:"XML"};
+            }
+            else if (item.key == "model.viewer")
+            {
+                app.content = {element:_modelviewerTable,title:"Model Viewer"};
+                _modelviewer.fit();
+            }
+            else if (item.key == "visualizations.imageviewer")
+            {
+                storeValues(_viewerForm);
+                _imageviewer.setOpt("scale",_storage.getOpt("scale",1));
+                _imageviewer.setOpt("text_color",_storage.getOpt("color1","white"));
+                _imageviewer.setOpt("rect_color",_storage.getOpt("color2","white"));
+                _imageviewer.setOpt("line_color",_storage.getOpt("color1","white"));
+                _imageviewer.setOpt("point_color",_storage.getOpt("color2","white"));
+                app.content = {element:_imageviewer.container,title:"Image Viewer"};
+                _visuals.size();
+            }
+            else if (item.key == "visualizations.itemcounts")
+            {
+                app.content = {element:_itemcounts.container,title:"Item Count Viewer"};
+                _visuals.size();
+            }
+            else if (item.key == "visualizations.itemscores")
+            {
+                app.content = {element:_itemscores.container,title:"Item Score Viewer"};
+                _visuals.size();
+            }
+        },
+        tabSelected:function(app,tab) {
+        }
+    };
+
+    _app = _esp.createApp({
+        container:"thediv",
+        name:"webcam",
+        icons:"material-icons-outlined",
+        tabs:[
+            {
+                name:"settings",
+                text:"Settings",
+                icon:"settings",
+                start:true,
+                navigators:[
+                    {
+                        name:"config",
+                        items:[
+                            {
+                                name:"esp",
+                                text:"ESP",
+                                icon:"dns",
+                            },
+                            {
+                                name:"viewer",
+                                text:"Viewer",
+                                icon:"visibility"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                name:"viewers",
+                text:"Viewers",
+                icon:"visibility",
+                navigators:[
+                    {
+                        name:"model",
+                        text:"Model",
+                        items:[
+                            {
+                                name:"xml",
+                                text:"Xml",
+                                icon:"code"
+                            },
+                            {
+                                name:"viewer",
+                                text:"Viewer",
+                                icon:"share"
+                            }
+                        ]
+                    },
+                    {
+                        name:"visualizations",
+                        text:"Visualizations",
+                        items:[
+                            {
+                                name:"imageviewer",
+                                text:"Image Viewer",
+                                icon:"image"
+                            },
+                            {
+                                name:"itemcounts",
+                                text:"Item Counts",
+                                icon:"category"
+                            },
+                            {
+                                name:"itemscores",
+                                text:"Item Scores",
+                                icon:"category"
+                            }
+                        ]
+                    }
+                ],
+                disabled:true
+            }
+        ]
+    },delegate);
+
+    _app.size = function()
+    {
+        if (_xml != null)
+        {
+            _xml.rows[0].cells[0].firstChild.style.width = (this.content.offsetWidth - 50) + "px";
+            _xml.rows[0].cells[0].firstChild.style.height = (this.content.offsetHeight - 50) + "px";
+        }
+
+        if (_modelviewerTable != null)
+        {
+            _modelviewerTable.rows[0].cells[0].firstChild.style.width = (this.content.offsetWidth - 50) + "px";
+            _modelviewerTable.rows[0].cells[0].firstChild.style.height = (this.content.offsetHeight - 50) + "px";
+            if (_modelviewer != null)
+            {
+                _modelviewer.sizeContent();
+            }
+        }
+
+        _visuals.size();
+    }
+
+    createForms();
+
+    _visuals = _esp.createVisuals(parms);
+
+    _app.start();
+    _app.show("settings","config","config.esp");
+}
+
+function
+createForms()
+{
+    var form;
+
+    form = [];
+    form.push({name:"espserver",label:"ESP Server:",value:_server,focus:true});
+    form.push({type:"button",name:"connect",text:"Connect",
+        onclick:function()
+        {
+            var values = _connectForm.getValues();
+
+            for (name in values)
+            {
+                _storage.setOpt(name,values[name]);
+            }
+
+            setTimeout(function(){
+                    connect(_storage.getOpt("espserver"));
+                },10);
+        }
+    });
+
+    _connectForm = _esp.getDialogs().createDialog({show_header:false,buttons:"none",label_width:"80px",oneline:false}).createForm(form);
+
+    form = [];
+    form.push({name:"scale",label:"Image Scale:",value:_storage.getOpt("scale","1")});
+    form.push({name:"min_score",label:"Minimum Score:",value:_storage.getOpt("min_score","1")});
+    form.push({name:"color1",label:"Color 1:",value:_storage.getOpt("color1","white")});
+    form.push({name:"color2",label:"Color 2:",value:_storage.getOpt("color2","white")});
+
+    _viewerForm = _esp.getDialogs().createDialog({show_header:false,buttons:"none",label_width:"80px",oneline:false}).createForm(form);
+}
+
+function
+storeValues(form)
+{
+    var values = form.getValues();
+
+    for (name in values)
+    {
+        _storage.setOpt(name,values[name]);
+    }
+}
+
+var _imageviewer = null;
+var _itemcounts = null;
+var _itemscores = null;
+
+var delegate = {
+    ready:function(connection)
+    {
+        _connection = connection;
+
+        _connection.getEventStream({id:"images",window:_project + "/cq/w_calc",maxevents:1,interval:0}).then(
+            function(result) {
+                var div = document.createElement("div");
+                div.style.width = "95%";
+                div.style.height = "95%";
+                div.style.margin = "auto";
+                _imageviewer = _visuals.createImageViewer(div,result,{image:"image",header:"Output Image",show_header:false,filter_in_title:false,size_to_content:true});
+                //_app.show("viewers","visualizations","visualizations.imageviewer");
+            }
+        );
+
+        _connection.getEventCollection({id:"items",window:_project + "/cq/w_aggr"}).then(
+            function(result) {
+
+                var div = document.createElement("div");
+                div.style.width = "95%";
+                div.style.height = "95%";
+                div.style.margin = "auto";
+                _itemcounts = _visuals.createBarChart(div,result,{y:"count",header:"Item Counts"});
+
+                div = document.createElement("div");
+                div.style.width = "95%";
+                div.style.height = "95%";
+                div.style.margin = "auto";
+                _itemscores = _visuals.createBarChart(div,result,{y:["min_score","max_score","avg_score"],header:"Item Scores"});
+
+                //_app.show("viewers","visualizations","visualizations.itemcounts");
+                _app.show("viewers","visualizations");
+            }
+        );
+
+        _app.enableTabs(["viewers"]);
+
+        _connection.getProjectXml(_storage.getOpt("project","project")).then(
+            function(result) {
+                _model = _esp.getXPath().format(result);
+                _xml.rows[0].cells[0].firstChild.innerText = _model;
+            }
+        );
+
+        var options = {};
+        options["title"] = "ESP Model";
+        options["project"] = _storage.getOpt("project","project");
+        options["type"] = true;
+        options["memory"] = true;
+        options["show_projects"] = false;
+        _modelviewer = _visuals.createModelViewer(_modelviewerTable.rows[0].cells[0].firstChild,_connection,options);
+    },
+    connectionError:function(connection,message) {
+
+        _esp.showConnectionError(connection,message);
+    },
+    projectLoadError:function(connection,message) {
+        if (message == null)
+        {
+            message = "Project load error";
+        }
+
+        _esp.getDialogs().message("Project Load Failed",message,{css:{height:"300px"}});
+    }
+};
+
+function
+connect(server)
+{
+    _server = server;
+    _esp.connect(_server,delegate,{reconnect:0});
+}
+
+</script>
+
+<style type="text/css">
+
+table.form
+{
+    width:98%;
+    margin:0;
+}
+
+table.form td.value
+{
+    padding-bottom:20px;
+}
+
+video.webcam
+{
+    border:1px solid black;
+}
+
+table.xml
+{
+    overflow:hidden;
+    margin:auto;
+}
+
+table.xml td
+{
+    overflow:hidden;
+}
+
+table.xml pre
+{
+    overflow:auto;
+    border:1px solid #c0c0c0;
+}
+
+div#thediv
+{
+    position:absolute;
+    width:100%;
+    height:100%;
+    left:0;
+    top:0;
+}
+
+div#splash
+{
+    background:black;
+    color:white;
+    background:white;
+    color:black;
+    font-size:4rem;
+    text-align:center;
+}
+
+div#splash td
+{
+    padding:40px;
+}
+
+@media only screen 
+    and (min-device-width: 375px) 
+    and (max-device-width: 812px) 
+{
+}
+
+@media only screen 
+    and (min-device-width: 375px) 
+    and (max-device-width: 812px) 
+    and (orientation: landscape)
+{
+}
+
+</style>
+
+</head>
+
+<body onload="init()">
+    <div id="thediv"></div>
+    <canvas id="canvas" style="display:none"></canvas>
+</body>
+
+</html>

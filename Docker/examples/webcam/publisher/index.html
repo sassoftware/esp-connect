@@ -18,13 +18,15 @@
 var _esp = null;
 </script>
 
-<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+<link rel="stylesheet" href="../../esp-connect/style/connect.css" />
 <script type="module">
-import {esp} from "../esp-connect/js/ui/api.js";
+import {esp} from "../../esp-connect/js/ui/api.js";
 _esp = esp;
 </script>
 
 <script type="text/javascript">
+
+var _project = "onnx";
 
 var _size = {width:640,height:480};
 
@@ -49,7 +51,16 @@ init()
 {
     _esp.setProxies();
 
-    _server = _esp.getStorage("server");
+    var parms = _esp.getParms();
+
+    _server = _esp.getServerFromParms(parms,_project);
+
+    if (_server == null)
+    {
+        _esp.showConnectDialog({connect:connect});
+        return;
+    }
+
     _storage = _esp.getStorage("webcam_demo");
 //_storage.reset();
 
@@ -202,10 +213,7 @@ createForms()
     var form;
 
     form = [];
-    form.push({name:"espserver",label:"ESP Server:",value:_storage.getOpt("espserver","https://espsrv03.unx.sas.com:34001"),focus:true});
-    form.push({name:"project",label:"Project:",value:_storage.getOpt("project","project")});
-    form.push({name:"contquery",label:"Continuous Query:",value:_storage.getOpt("contquery","contquery")});
-    form.push({name:"sourcewin",label:"Source Window:",value:_storage.getOpt("sourcewin","w_data")});
+    form.push({name:"espserver",label:"ESP Server:",value:_server,focus:true});
     form.push({type:"button",name:"connect",text:"Connect",
         onclick:function()
         {
@@ -253,35 +261,49 @@ storeValues(form)
     }
 }
 
-var delegate = {
-    ready:function(connection)
-    {
-        _connection = connection;
-        _esp.clearStatus();
-
-        var w = _storage.getOpt("project","project");
-        w += "/" + _storage.getOpt("contquery","cq");
-        w += "/" + _storage.getOpt("sourcewin","w_data");
-
-        _connection.getPublisher({id:"1",window:w,binary:true}).then(
-            function(result) {
-                _publisher = result;
-            }
-        );
-
-        _app.enableTabs(["publish"]);
-    },
-    connectionError:function(connection,message) {
-        _esp.showConnectionError(connection,message);
-    }
-};
-
 function
 connect(server)
 {
     _server = server;
-    _esp.connect(_server,delegate,{reconnect:0});
-    _app.show("publish");
+
+    var url = new URL("model.xml",document.URL).toString();
+
+    var options = {
+        model: {
+            name:_project,
+            url:url,
+            options:{
+                overwrite:true,
+                force:_esp.getParm("force",false),
+                env: {
+                    PYTHONPATH:"/mnt/data/onnx"
+                }
+            }
+        }
+    };
+
+    var delegate = {
+        ready:function(connection)
+        {
+            _connection = connection;
+
+            _esp.clearStatus();
+
+            _connection.getPublisher({id:"1",window:_project + "/cq/w_data",binary:true}).then(
+                function(result) {
+                    _publisher = result;
+                }
+            );
+
+            _app.enableTabs(["publish"]);
+            _app.show("publish");
+        },
+        connectionError:function(connection,message) {
+            _esp.showConnectionError(connection,message);
+        }
+    };
+
+    _esp.connect(_server,delegate,options);
 }
 
 var _current = 0;

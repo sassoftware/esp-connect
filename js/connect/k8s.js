@@ -1539,6 +1539,8 @@ class K8SProject extends K8S
 
     load(model,options)
     {
+console.log("LAOD: " + options);
+console.log(JSON.stringify(options,null,"\t"));
         return(new Promise((resolve,reject) => {
             var opts = new Options(options);
 
@@ -1554,7 +1556,7 @@ class K8SProject extends K8S
             const   modelData = "b64" + tools.b64Encode(xpath.xmlString(model));
 
             var self = this;
-            var content = this.getYaml(modelData);
+            var content = this.getYaml(modelData,options);
             var request = this.createRequest(url,{"Accept":"application/json","Content-type":"application/yaml"});
             request.setData(content);
             request.post().then(
@@ -1767,6 +1769,22 @@ class K8SProject extends K8S
 		s += "                  limits:\n";
 		s += "                    memory: \"2Gi\"\n";
 		s += "                    cpu: \"2\"\n";
+
+
+
+        if (opts.hasOpt("env"))
+        {
+		    s += "                env:\n";
+
+            var env = opts.getOpt("env");
+
+            for (var x in env)
+            {
+		        s += "                  - name: " + x + "\n";
+		        s += "                    value: " + env[x] + "\n";
+            }
+        }
+
 		s += "                volumeMounts:\n";
 		s += "                  - mountPath: /mnt/data # path persistent volume gets mounted to\n";
 		s += "                    name: data # the volume specified below\n";
@@ -1786,88 +1804,6 @@ class K8SProject extends K8S
 
         return(s);
     }
-
-    /*
-    getYaml(model,options)
-    {
-        var opts = new Options(options);
-        var s = "";
-
-        s += "apiVersion: iot.sas.com/v1alpha1\n";
-        s += "kind: ESPServer\n";
-        s += "metadata:\n";
-        s += "  name: " + this._project + "\n";
-        if (this._ns != null)
-        {
-            s += "  namespace: " + this._ns + "\n";
-        }
-        s += "spec:\n";
-        s += "    failover: false\n";
-        s += "    loadBalancePolicy: \"default\" \n";
-        s += "    model: \"\" \n";
-        s += "    espProperties:\n";
-        s += "      server.xml: \"" + model + "\"\n";
-        if (this.getOpt("viya",false))
-        {
-            s += "      meta.meteringhost: \"sas-event-stream-processing-metering-app." + this._ns + "\"\n";
-            s += "      meta.meteringport: \"80\"\n";
-        }
-        s += "    name: " + this._project + "\n";
-        s += "    projectTemplate:\n";
-        s += "      autoscale:\n";
-        s += "        minReplicas: 1\n";
-        s += "        maxReplicas: 1\n";
-        s += "        metrics:\n";
-        s += "        - type: Resource\n";
-        s += "          resource:\n";
-        s += "            name: cpu\n";
-        s += "            target:\n";
-        s += "              type: Utilization\n";
-        s += "              averageUtilization: 50\n";
-        s += "      deployment:\n";
-        s += "        spec:\n";
-        s += "          selector:\n";
-        s += "            matchLabels:\n";
-        s += "          template:\n";
-        s += "            spec:\n";
-        if (this.getOpt("viya",false) == false)
-        {
-            s += "               volumes:\n";
-            s += "               - name: data\n";
-            s += "                 persistentVolumeClaim:\n";
-            s += "                   claimName: esp-pv\n";
-        }
-        s += "               containers:\n";
-        s += "               - name: ((PROJECT_SERVICE_NAME))\n";
-        s += "                 resources:\n";
-        s += "                   requests:\n";
-        s += "                     memory: \"1Gi\"\n";
-        s += "                     cpu: \"1\"\n";
-        s += "                   limits:\n";
-        s += "                     memory: \"2Gi\"\n";
-        s += "                     cpu: \"2\"\n";
-        if (this.getOpt("viya",false) == false)
-        {
-            s += "                 volumeMounts:\n";
-            s += "                 - mountPath: /mnt/data\n";
-            s += "                   name: data\n";
-        }
-        s += "    loadBalancerTemplate:\n";
-        s += "      deployment:\n";
-        s += "        spec:\n";
-        s += "          template:\n";
-        s += "            spec:\n";
-        s += "              containers:\n";
-        s += "              - name: ((PROJECT_SERVICE_NAME)) \n";
-        s += "access:\n";
-        s += "  state: \"Pending\" \n";
-        s += "  internalHostName:  foo\n";
-        s += "  internalHttpPort:  0\n";
-        s += "  externalURL: foo\n";
-
-        return(s);
-    }
-    */
 
     getDefaultModel()
     {
