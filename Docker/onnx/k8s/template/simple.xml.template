@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<project name="@PROJECT@" pubsub="auto" threads="4">
+    <contqueries>
+        <contquery name="cq" trace="s">
+            <windows>
+                <window-source name="s">
+                    <schema>
+                        <fields>
+                        <field name="id" type="string" key="true"/>
+                        <field name="str" type="string"/>
+                        <field name="num" type="int32"/>
+                        </fields>
+                    </schema>
+                </window-source>
+            </windows>
+        </contquery>
+    </contqueries>
+</project>

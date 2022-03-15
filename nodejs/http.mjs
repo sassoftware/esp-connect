@@ -184,142 +184,139 @@ else
 
 server.listen(port);
 
-if (opts.getOpt("wsproxy",false))
+class WsProxy
 {
-    class WsProxy
+    constructor(request)
     {
-        constructor(request)
-        {
-            this._client = request.accept(null,request.origin);
-            this._client._ws = this;
+        this._client = request.accept(null,request.origin);
+        this._client._ws = this;
 
-            var self = this;
+        var self = this;
 
-            this._client.on("message",function(data) {
-                if (self._server != null)
+        this._client.on("message",function(data) {
+            if (self._server != null)
+            {
+                if (data.type === "utf8")
                 {
-                    if (data.type === "utf8")
+                    if (logging >= 2)
                     {
-                        if (logging >= 2)
-                        {
-                            console.log("got UTF 8 data from client");
-                        }
-
-                        self._server.send(data.utf8Data);
+                        console.log("got UTF 8 data from client");
                     }
-                    else if (data.type === "binary")
+
+                    self._server.send(data.utf8Data);
+                }
+                else if (data.type === "binary")
+                {
+                    if (logging >= 2)
                     {
-                        if (logging >= 2)
-                        {
-                            console.log("got binary data from client");
-                        }
-
-                        self._server.send(data.binaryData);
+                        console.log("got binary data from client");
                     }
-                }
-            });
 
-            this._client.on("close",function() {
-                console.log("lost client connection");
-
-                if (self._server != null)
-                {
-                    self._server.close();
-                    self._server = null;
-                }
-
-                self._client = null;
-            });
-
-            this._client.on("error",function(error) {
-                console.log("client error: " + error);
-            });
-
-            var url = getProxyUrl(request.httpRequest);
-
-            self._server = null;
-
-            esp.getTools().createWebSocket(url.toString(),this).then(
-                function(result) {
-                    self._server = result;
-                    self._server._ws = self;
-                },
-                function(error) {
-                    console.log("create websocket error: " + error);
-                }
-            );
-        }
-
-        open(ws)
-        {
-            console.log("opened: " + ws);
-        }
-
-        close()
-        {
-            console.log("lost server connection");
-
-            if (this._client != null)
-            {
-                this._client.close();
-                this._client = null;
-            }
-
-            this._server = null;
-        }
-
-        error(e)
-        {
-            console.log("ws error: " + this._client);
-        }
-
-        message(msg)
-        {
-            if (this._client != null)
-            {
-                if (msg.type == "utf8")
-                {
-                    this._client.sendUTF(msg.utf8Data);
-                }
-                else if (msg.type == "binary")
-                {
-                    this._client.sendBytes(esp.getTools().arrayBufferToBuffer(msg.binaryData));
+                    self._server.send(data.binaryData);
                 }
             }
-            /*
-            if (typeof(msg.data) == "string")
+        });
+
+        this._client.on("close",function() {
+            console.log("lost client connection");
+
+            if (self._server != null)
             {
-                this._client.sendUTF(msg.data);
+                self._server.close();
+                self._server = null;
             }
-            else if (msg.data instanceof ArrayBuffer)
-            {
-                this._client.sendBytes(esp.getTools().arrayBufferToBuffer(msg.data));
+
+            self._client = null;
+        });
+
+        this._client.on("error",function(error) {
+            console.log("client error: " + error);
+        });
+
+        var url = getProxyUrl(request.httpRequest);
+
+        self._server = null;
+
+        esp.getTools().createWebSocket(url.toString(),this).then(
+            function(result) {
+                self._server = result;
+                self._server._ws = self;
+            },
+            function(error) {
+                console.log("create websocket error: " + error);
             }
-            else if (msg.data instanceof Blob)
-            {
-                this._client.sendBytes(msg.binaryData);
-            }
-            */
-        }
+        );
     }
 
-    var config = {
-        maxReceivedFrameSize:5000000,
-        httpServer:server,
-        closeTimeout:0
-    };
+    open(ws)
+    {
+        console.log("opened: " + ws);
+    }
 
-    var server = new websocket.server(config);
-    server.on("request",function(request) {
+    close()
+    {
+        console.log("lost server connection");
 
-        if (logging >= 1)
+        if (this._client != null)
         {
-            console.log("websocket request: " + request.httpRequest.url);
+            this._client.close();
+            this._client = null;
         }
 
-        new WsProxy(request);
-    });
+        this._server = null;
+    }
+
+    error(e)
+    {
+        console.log("ws error: " + this._client);
+    }
+
+    message(msg)
+    {
+        if (this._client != null)
+        {
+            if (msg.type == "utf8")
+            {
+                this._client.sendUTF(msg.utf8Data);
+            }
+            else if (msg.type == "binary")
+            {
+                this._client.sendBytes(esp.getTools().arrayBufferToBuffer(msg.binaryData));
+            }
+        }
+        /*
+        if (typeof(msg.data) == "string")
+        {
+            this._client.sendUTF(msg.data);
+        }
+        else if (msg.data instanceof ArrayBuffer)
+        {
+            this._client.sendBytes(esp.getTools().arrayBufferToBuffer(msg.data));
+        }
+        else if (msg.data instanceof Blob)
+        {
+            this._client.sendBytes(msg.binaryData);
+        }
+        */
+    }
 }
+
+var config = {
+    maxReceivedFrameSize:5000000,
+    httpServer:server,
+    closeTimeout:0
+};
+
+var server = new websocket.server(config);
+server.on("request",function(request) {
+
+    if (logging >= 1)
+    {
+        console.log("websocket request: " + request.httpRequest.url);
+    }
+
+    new WsProxy(request);
+});
 
 function
 showUsage()
@@ -331,8 +328,7 @@ showUsage()
         options:[
             {name:"port",arg:"HTTP port",description:"HTTP port",required:true},
             {name:"http-proxy",arg:"HTTP proxy server",description:"HTTP proxy server",required:false},
-            {name:"https-proxy",arg:"HTTPS proxy server",description:"HTTPS proxy server",required:false},
-            {name:"wsproxy",arg:"true | false",description:"Run websocket proxy server, defaults to false",required:false}
+            {name:"https-proxy",arg:"HTTPS proxy server",description:"HTTPS proxy server",required:false}
         ],
         show_auth:false,
         show_cert:false

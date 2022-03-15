@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/zsh
 
 declare -A parms
 
@@ -15,7 +15,7 @@ do
             parms[$KEY]="true"
             KEY=`echo $S | cut -c2-`
         else
-            parms[$KEY]=$S
+            parms[$KEY]="$S"
             KEY=""
         fi
     fi
@@ -41,8 +41,8 @@ function removeParms()
 
 function showParms()
 {
-	for i in "${!parms[@]}"
-	do
-		printf "$i=${parms[$i]}\n"
-	done
+    for key val in "${(@kv)parms}"
+    do
+        echo "$key -> $val"
+    done
 }

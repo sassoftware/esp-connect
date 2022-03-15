@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/zsh
 
 source Docker/common/args.sh
 
@@ -6,34 +6,48 @@ function usage()
 {
 	printf "\n"
 	printf "SYNOPSIS:\n"
-	printf "\t`basename $0` -name -config\n\n"
+	printf "\t`basename $0` -name -config -ns\n\n"
 	printf "SUMMARY:\n"
-	printf "\tCreate ESP Viewers docker image.\n"
+	printf "\tCreate ESP Webcam ONNX Demo docker image.\n"
 	printf "\n"
 	printf "OPTIONS:\n\n"
 	printf "\t-name\timage name\n"
 	printf "\t-config\tKubernetes configuration file\n"
+	printf "\t-ns\tK8S Namespace\n"
 	printf "\n"
 	exit 1
 }
 
-VALUE=${parms["help"]}
+NAME=$parms[name]
+CONFIG=$parms[config]
+NS=$parms[ns]
 
-if [ -n "${VALUE}" ]
+if [ -z "${NAME}" -o -z "${CONFIG}" -o -z "${NS}" ]
 then
     usage
     exit 1
 fi
 
-NAME=${parms["name"]}
-CONFIG=${parms["config"]}
+mkdir -p Docker/onnx/k8s/tmp
 
-if [ -z "${NAME}" -o -z "${CONFIG}" ]
-then
-    usage
-    exit 1
-fi
+SIMPLE_MODEL=`cat Docker/onnx/k8s/template/simple.xml.template | sed s/@PROJECT@/simple/g | base64`
+ONNX_MODEL=`cat Docker/onnx/k8s/template/onnx.xml.template | sed s/@PROJECT@/onnx/g | base64`
+
+cat Docker/onnx/k8s/template/simple.yaml.template | sed s/@NAMESPACE@/$NS/g | sed s/@XML@/$SIMPLE_MODEL/g > Docker/onnx/k8s/tmp/simple.yaml
+cat Docker/onnx/k8s/template/onnx.yaml.template | sed s/@NAMESPACE@/$NS/g | sed s/@XML@/$ONNX_MODEL/g > Docker/onnx/k8s/tmp/onnx.yaml
+
+cat Docker/onnx/k8s/template/index.html.template | sed s/@NAMESPACE@/$NS/g > Docker/onnx/k8s/tmp/index.html
+cat Docker/onnx/k8s/template/publisher.html.template | sed s/@NAMESPACE@/$NS/g > Docker/onnx/k8s/tmp/publisher.html
+cat Docker/onnx/k8s/template/viewer.html.template | sed s/@NAMESPACE@/$NS/g > Docker/onnx/k8s/tmp/viewer.html
+cat Docker/onnx/k8s/template/startup.template | sed s/@NAMESPACE@/$NS/g > Docker/onnx/k8s/tmp/startup
 
 cp ${CONFIG} Docker/common/config
-docker build -t ${NAME} --force-rm -f Docker/modelviewer/k8s/Dockerfile .
+
+Docker/common/certgen.sh
+
+mv server.pem Docker/onnx/k8s/tmp
+
+docker build -t ${NAME} --force-rm -f Docker/onnx/k8s/Dockerfile .
+
 rm Docker/common/config
+rm -rf Docker/onnx/k8s/tmp

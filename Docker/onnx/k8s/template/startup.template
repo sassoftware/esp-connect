@@ -1,0 +1,67 @@
+getPod() {
+    kubectl -n @NAMESPACE@ get pods |
+    while read line
+    do
+        echo $line | grep -q "^$1-"
+        if [ $? -eq 0 ]
+        then
+            POD=`echo $line | cut -f 1 -d ' '`
+            echo $POD
+            break
+        fi
+    done
+}
+
+getRunningPod() {
+    kubectl -n @NAMESPACE@ get pods |
+    while read line
+    do
+        echo $line | grep -q "^$1-"
+        if [ $? -eq 0 ]
+        then
+            STATUS=`echo $line | cut -f 3 -d ' '`
+
+            if [ "$STATUS" = "Running" ]
+            then
+                POD=`echo $line | cut -f 1 -d ' '`
+                echo $POD
+                break
+            fi
+        fi
+    done
+}
+
+POD=$(getPod simple)
+
+if [ -z "${POD}" ]
+then
+    printf "kubectl -n @NAMESPACE@ apply -f models/simple.yaml\n"
+    kubectl -n @NAMESPACE@ apply -f models/simple.yaml
+
+    while true
+    do
+        POD=$(getRunningPod simple)
+        echo POD IS $POD
+        if [ -n "${POD}" ]
+        then
+            break
+        fi
+        sleep 2
+    done
+
+    printf "kubectl cp onnx @NAMESPACE@/$POD:/mnt/data..."
+    kubectl cp onnx @NAMESPACE@/$POD:/mnt/data
+    printf "done\n"
+fi
+
+POD=$(getPod onnx)
+
+if [ -z "${POD}" ]
+then
+    printf "kubectl -n @NAMESPACE@ apply -f models/onnx.yaml\n"
+    kubectl -n @NAMESPACE@ apply -f models/onnx.yaml
+fi
+
+./bin/kubectl proxy &
+
+node modules/http.mjs --port 4444 --wsproxy --secure --logging 1

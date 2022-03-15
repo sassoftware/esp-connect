@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>ESP ONNX Webcam Demo</title>
+
+<script type="text/javascript">
+var _esp = null;
+</script>
+
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+<script type="module">
+import {esp} from "../esp-connect/js/ui/api.js";
+_esp = esp;
+</script>
+
+<script type="text/javascript">
+
+function
+init()
+{
+    _esp.handleLayout();
+
+    var parms = {namespace:"@NAMESPACE@"};
+    var server = _esp.getServerFromParms(parms,"onnx");
+
+    document.getElementById("bannerTitle").innerHTML = document.title + " (" + server + ")";
+}
+
+</script>
+
+<link rel="stylesheet" href="../esp-connect/style/connect.css" />
+
+<style type="text/css">
+a
+{
+    text-decoration:none;
+    color:black;
+}
+
+ul.examples
+{
+    font-size:1.2rem;
+}
+
+ul.examples a
+{
+    font-style:italic;
+    text-decoration:underline;
+}
+
+</style>
+
+</head>
+
+<body onload="init()">
+
+    <div id="banner">
+        <table style="width:100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td id="bannerTitle">ESP Webcam ONNX Demo</td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="content">
+        <ul class="examples">
+            <li><a href="publisher.html" target="_blank">Publisher</a> - Start a webcam and send the video into an ESP model.</li>
+            <li><a href="viewer.html" target="_blank">Viewer</a> - Visualize the image object detection output from the ESP model.</li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

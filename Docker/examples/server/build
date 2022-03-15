@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/zsh
 
 source Docker/common/args.sh
 
@@ -16,7 +16,9 @@ function usage()
 	exit 1
 }
 
-NAME=${parms["name"]}
+NAME=$parms[name]
+
+echo NAME IS $NAME
 
 if [ -z "${NAME}" ]
 then

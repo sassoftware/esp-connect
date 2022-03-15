@@ -15,18 +15,23 @@ RUN mkdir -p esp-connect/style
 
 RUN mkdir common
 RUN mkdir bin
+RUN mkdir models
 RUN mkdir .kube
-
-ADD https://unpkg.com/vis-network/standalone/umd/vis-network.min.js common/vis-network.min.js
 
 ADD js/connect/*.js esp-connect/js/connect/
 ADD js/connect/package.json esp-connect/js/connect/
 ADD js/ui/*.js esp-connect/js/ui/
 ADD style/*.css esp-connect/style/
-ADD Docker/modelviewer/k8s/index.html index.html
+ADD Docker/onnx/k8s/tmp/index.html index.html
+ADD Docker/onnx/k8s/tmp/publisher.html publisher.html
+ADD Docker/onnx/k8s/tmp/viewer.html viewer.html
+ADD Docker/onnx/k8s/onnx onnx
 ADD nodejs/http.mjs modules/http.mjs
 ADD Docker/common/config .kube
-ADD Docker/common/startup_k8s_http startup
+ADD Docker/onnx/k8s/tmp/simple.yaml models/simple.yaml
+ADD Docker/onnx/k8s/tmp/onnx.yaml models/onnx.yaml
+ADD Docker/onnx/k8s/tmp/server.pem server.pem
+ADD Docker/onnx/k8s/tmp/startup startup
 ADD Docker/common/profile .profile
 
 RUN curl -sLO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
