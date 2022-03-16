@@ -57,20 +57,7 @@ var _viewerSplit = "70%";
 function
 init()
 {
-    var tmp = new URL(".",document.URL);
-
-    var proxy = "";
-    proxy = "http://";
-    proxy += tmp.hostname;
-    proxy += ":";
-    proxy += tmp.port;
-    _esp.setHttpProxy(proxy);
-
-    proxy = "ws://";
-    proxy += tmp.hostname;
-    proxy += ":";
-    proxy += tmp.port;
-    _esp.setWsProxy(proxy);
+    _esp.setProxies();
 
     _storage = _esp.getStorage("modelviewer");
 

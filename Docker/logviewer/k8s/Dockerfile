@@ -22,7 +22,7 @@ ADD js/connect/*.js esp-connect/js/connect/
 ADD js/connect/package.json esp-connect/js/connect/
 ADD js/ui/*.js esp-connect/js/ui/
 ADD style/*.css esp-connect/style/
-ADD Docker/logviewer/k8s/logviewer.html index.html
+ADD Docker/logviewer/k8s/index.html index.html
 ADD nodejs/http.mjs modules/http.mjs
 ADD Docker/common/config .kube
 ADD Docker/common/startup_k8s_http startup

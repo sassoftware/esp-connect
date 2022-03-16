@@ -16,7 +16,7 @@ function usage()
 	exit 1
 }
 
-NAME=${parms["name"]}
+NAME=$parms[name]
 
 if [ -z "${NAME}" ]
 then

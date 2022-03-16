@@ -17,16 +17,8 @@ function usage()
 	exit 1
 }
 
-VALUE=${parms["help"]}
-
-if [ -n "${VALUE}" ]
-then
-    usage
-    exit 1
-fi
-
-NAME=${parms["name"]}
-CONFIG=${parms["config"]}
+NAME=$parms[name]
+CONFIG=$parms[config]
 
 if [ -z "${NAME}" -o -z "${CONFIG}" ]
 then

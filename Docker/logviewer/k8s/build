@@ -17,8 +17,8 @@ function usage()
 	exit 1
 }
 
-NAME=${parms["name"]}
-CONFIG=${parms["config"]}
+NAME=$parms[name]
+CONFIG=$parms[config]
 
 if [ -z "${NAME}" -o -z "${CONFIG}" ]
 then
