@@ -4,18 +4,18 @@ source Docker/common/args.sh
 
 function usage()
 {
-	printf "\n"
-	printf "SYNOPSIS:\n"
-	printf "\t`basename $0` -name -config -ns\n\n"
-	printf "SUMMARY:\n"
-	printf "\tCreate ESP Webcam ONNX Demo docker image.\n"
-	printf "\n"
-	printf "OPTIONS:\n\n"
-	printf "\t-name\timage name\n"
-	printf "\t-config\tKubernetes configuration file\n"
-	printf "\t-ns\tK8S Namespace\n"
-	printf "\n"
-	exit 1
+    printf "\n"
+    printf "SYNOPSIS:\n"
+    printf "\t`basename $0` -name -config -ns\n\n"
+    printf "SUMMARY:\n"
+    printf "\tCreate ESP Webcam ONNX Demo docker image.\n"
+    printf "\n"
+    printf "OPTIONS:\n\n"
+    printf "\t-name\timage name\n"
+    printf "\t-config\tKubernetes configuration file\n"
+    printf "\t-ns\tK8S Namespace\n"
+    printf "\n"
+    exit 1
 }
 
 NAME=$parms[name]

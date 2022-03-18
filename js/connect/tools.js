@@ -467,7 +467,7 @@ var _api =
 
         for (var i = 0; i < buf.length; i++)
         {
-                buf[i] = view[i];
+            buf[i] = view[i];
         }
 
         return(buf);

@@ -77,6 +77,7 @@ class Ajax extends Options
             }
 
             this._request = new XMLHttpRequest();
+            this._request.withCredentials = true;
 
             var received = false;
 
@@ -272,6 +273,7 @@ class NodeAjax extends Options
         this._url = url;
         this._requestHeaders = new Object();
         this._options = {};
+
         this._response = null;
         this._text = "";
         this._data = null;
@@ -435,7 +437,8 @@ class NodeAjax extends Options
             var sendrequest = function(protocol) {
                 self.setProxy().then(
                     function() {
-                        complete(protocol.request(self._options));
+                        var request = protocol.request(self._options);
+                        complete(request);
                     }
                 );
             }
@@ -517,6 +520,11 @@ class NodeAjax extends Options
                 this._options[name] = options[name];
             }
         }
+    }
+
+    setOption(name,value)
+    {
+        this._options[name] = value;
     }
 
     setAccept(value)

@@ -89,7 +89,13 @@ var handler = function(request,response)
         {
             s = x.toLowerCase();
 
-            if (s != "host" &&
+            if (logging >= 2)
+            {
+                console.log("received header: " + x + "=" + request.headers[x]);
+            }
+
+            if (s != "host" && 
+                s != "origin" &&
                 s != "accept-encoding")
             {
                 proxy.setRequestHeader(x,request.headers[x]);
@@ -235,17 +241,20 @@ class WsProxy
 
         var url = getProxyUrl(request.httpRequest);
 
-        self._server = null;
+        if (url != null)
+        {
+            self._server = null;
 
-        esp.getTools().createWebSocket(url.toString(),this).then(
-            function(result) {
-                self._server = result;
-                self._server._ws = self;
-            },
-            function(error) {
-                console.log("create websocket error: " + error);
-            }
-        );
+            esp.getTools().createWebSocket(url.toString(),this).then(
+                function(result) {
+                    self._server = result;
+                    self._server._ws = self;
+                },
+                function(error) {
+                    console.log("create websocket error: " + error);
+                }
+            );
+        }
     }
 
     open(ws)

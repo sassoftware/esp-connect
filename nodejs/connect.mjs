@@ -550,10 +550,17 @@ else
     opts.clearOpts(names);
     */
     var o = opts.clone();
+    var delegate = {
+        getCredentials:function(options)
+        {
+            return(esp.getCredentials());
+        },
+        ready:ready
+    };
 
     if (server.length > 0)
     {
-        esp.connect(server,{ready:ready},o);
+        esp.connect(server,delegate,o);
     }
     else
     {
