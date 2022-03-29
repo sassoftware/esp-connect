@@ -36,7 +36,7 @@ var _connection = null;
 var _publisher = null;
 var _storage = null;
 var _context = null;
-var _quality = .5;
+var _quality = .1;
 var _canvas = null;
 var _mirror = false;
 var _video = null;
@@ -63,7 +63,7 @@ init()
     _storage = _esp.getStorage("webcam_demo");
 //_storage.reset();
 
-    _quality = _storage.getOpt("image_quality",".5");
+    _quality = _storage.getOpt("image_quality",".1");
     //_rate = _storage.getOpt("publish_rate",1);
 
     var delegate = {
@@ -78,7 +78,7 @@ init()
             {
                 storeValues(_publishForm);
 
-                _quality = _storage.getOpt("image_quality",".5");
+                _quality = _storage.getOpt("image_quality",".1");
                 _mirror = _storage.getOpt("mirror","false");
 
                 if (_videoContainer == null)
@@ -200,7 +200,7 @@ createForms()
     form.push({name:"video_width",label:"Video Width:",value:_storage.getOpt("video_width",400)});
     form.push({name:"publish_rate",label:"Publish Rate (FPS):",value:_storage.getOpt("publish_rate",5)});
 
-    form.push({name:"quality",label:"Image Quality:",type:"select",value:_storage.getOpt("quality",".5"),
+    form.push({name:"quality",label:"Image Quality:",type:"select",value:_storage.getOpt("quality",".1"),
         options:[
             {name:"1 (Highest)",value:1},
             {name:"2",value:.7},

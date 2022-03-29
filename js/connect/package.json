@@ -26,6 +26,7 @@
     "xmlhttprequest": "latest",
     "tunnel": "latest",
     "node-static": "latest",
-    "prompt-sync": "latest"
+    "prompt-sync": "latest",
+    "yaml": "latest"
   }
 }

@@ -23,7 +23,7 @@ ADD style/*.css esp-connect/style/
 ADD Docker/modelviewer/server/index.html index.html
 ADD nodejs/http.mjs modules/http.mjs
 ADD Docker/common/startup_http startup
-ADD Docker/common/profile .profile
+ADD Docker/common/profile_server .profile
 
 RUN npm install ${HOME}/esp-connect/js/connect
 

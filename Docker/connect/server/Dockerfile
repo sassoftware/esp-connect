@@ -18,7 +18,7 @@ RUN mkdir modules
 ADD js/connect esp-connect/js/connect
 ADD nodejs/connect.mjs modules 
 ADD nodejs/http.mjs modules 
-ADD Docker/common/profile .profile
+ADD Docker/common/profile_server .profile
 
 RUN npm install esp-connect/js/connect/
 

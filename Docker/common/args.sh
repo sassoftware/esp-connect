@@ -8,16 +8,14 @@ for S in "$@"
 do
     if [ -z $KEY ]
     then
-        KEY=`echo $S | cut -c2-`
+        KEY=`echo $S | cut -b3-`
+    elif [ "`echo $S | cut -b1-2`" = "--" ]
+    then
+        parms[$KEY]="true"
+        KEY=`echo $S | cut -b3-`
     else
-        if [ "`echo $S | cut -c1`" = "-" ]
-        then
-            parms[$KEY]="true"
-            KEY=`echo $S | cut -c2-`
-        else
-            parms[$KEY]="$S"
-            KEY=""
-        fi
+        parms[$KEY]="$S"
+        KEY=""
     fi
 done
 
@@ -46,3 +44,5 @@ function showParms()
         echo "$key -> $val"
     done
 }
+
+#showParms

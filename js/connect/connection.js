@@ -295,17 +295,17 @@ class Connection extends Options
                 self.error(e);
             },
 
-            message:function(e)
+            message:function(ws,e)
             {
                 if (tools.isNode)
                 {
-                    if (e.type === "utf8")
+                    if (typeof(e.data) == "string")
                     {
-                        self.message(e.utf8Data);
+                        self.message(e.data);
                     }
-                    else if (e.type === "binary")
+                    else
                     {
-                        var o = codec.decode(tools.bufferToArrayBuffer(e.binaryData));
+                        var o = codec.decode(e.data);
                         self.data(o);
                     }
                 }
@@ -360,7 +360,7 @@ class Connection extends Options
             return;
         }
 
-        if (Connection.established(this.getUrl()) == false)
+        if (tools.established(this.getUrl()) == false)
         {
             this._reconnect.interval = 5;
         }

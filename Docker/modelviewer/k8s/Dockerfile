@@ -26,8 +26,9 @@ ADD style/*.css esp-connect/style/
 ADD Docker/modelviewer/k8s/index.html index.html
 ADD nodejs/http.mjs modules/http.mjs
 ADD Docker/common/config .kube
+ADD Docker/common/favicon.ico favicon.ico
 ADD Docker/common/startup_k8s_http startup
-ADD Docker/common/profile .profile
+ADD Docker/common/profile_k8s .profile
 
 RUN curl -sLO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
 RUN chmod +x ./kubectl

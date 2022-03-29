@@ -1,27 +1,29 @@
 #!/bin/zsh
 
+SCRIPT=`basename $0`
+
 source Docker/common/args.sh
 
 function usage()
 {
 	printf "\n"
 	printf "SYNOPSIS:\n"
-	printf "\t`basename $0` -name \n\n"
+    printf "\t${SCRIPT} --image\n\n"
 	printf "SUMMARY:\n"
 	printf "\tCreate ESP Modelviewer docker image.\n"
 	printf "\n"
 	printf "OPTIONS:\n\n"
-	printf "\t-name\timage name\n"
+	printf "\t--image\timage name\n"
 	printf "\n"
 	exit 1
 }
 
-NAME=$parms[name]
+IMAGE=$parms[image]
 
-if [ -z "${NAME}" ]
+if [ -z "${IMAGE}" ]
 then
     usage $1
     exit 1
 fi
 
-docker build -t ${NAME} --force-rm -f Docker/modelviewer/server/Dockerfile .
+docker build -t ${IMAGE} --force-rm -f Docker/modelviewer/server/Dockerfile .

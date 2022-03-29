@@ -30,7 +30,7 @@ ADD Docker/examples/turbine turbine
 ADD Docker/examples/weather weather
 ADD nodejs/http.mjs modules/http.mjs
 ADD Docker/common/startup_http startup
-ADD Docker/common/profile .profile
+ADD Docker/common/profile_server .profile
 
 RUN npm install ${HOME}/esp-connect/js/connect
 

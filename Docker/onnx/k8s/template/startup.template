@@ -35,6 +35,7 @@ POD=$(getPod simple)
 
 if [ -z "${POD}" ]
 then
+    printf "creating simple ESP project\n"
     printf "kubectl -n @NAMESPACE@ apply -f models/simple.yaml\n"
     kubectl -n @NAMESPACE@ apply -f models/simple.yaml
 
@@ -48,18 +49,32 @@ then
         fi
         sleep 2
     done
+else
+    printf "simple ESP project exists\n"
+fi
 
-    printf "kubectl cp onnx @NAMESPACE@/$POD:/mnt/data..."
-    kubectl cp onnx @NAMESPACE@/$POD:/mnt/data
-    printf "done\n"
+printf "checking for ONNX files on persistent store..."
+kubectl -n @NAMESPACE@ exec $POD -- ls -1 -F /mnt/data | grep "onnx/" 
+                                                                 
+if [ $? -eq 0 ]
+then                                                                 
+    printf "onnx files present\n"
+else
+    printf "onnx files missing\n"
+    printf "kubectl cp onnx/ @NAMESPACE@/$POD:/mnt/data..."            
+    kubectl cp onnx/ @NAMESPACE@/$POD:/mnt/data                        
+    printf "done\n"                                              
 fi
 
 POD=$(getPod onnx)
 
 if [ -z "${POD}" ]
 then
+    printf "creating ONNX ESP project\n"
     printf "kubectl -n @NAMESPACE@ apply -f models/onnx.yaml\n"
     kubectl -n @NAMESPACE@ apply -f models/onnx.yaml
+else
+    printf "ONNX ESP project exists\n"
 fi
 
 ./bin/kubectl proxy &

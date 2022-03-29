@@ -1,28 +1,30 @@
 #!/bin/zsh
 
+SCRIPT=`basename $0`
+
 source Docker/common/args.sh
 
 function usage()
 {
     printf "\n"
     printf "SYNOPSIS:\n"
-    printf "\t`basename $0` -name -config -ns\n\n"
+    printf "\t${SCRIPT} --image --config --ns\n\n"
     printf "SUMMARY:\n"
     printf "\tCreate ESP Webcam ONNX Demo docker image.\n"
     printf "\n"
     printf "OPTIONS:\n\n"
-    printf "\t-name\timage name\n"
-    printf "\t-config\tKubernetes configuration file\n"
-    printf "\t-ns\tK8S Namespace\n"
+    printf "\t--image\t\timage name\n"
+    printf "\t--config\tKubernetes configuration file\n"
+    printf "\t--ns\t\tK8S Namespace\n"
     printf "\n"
     exit 1
 }
 
-NAME=$parms[name]
+IMAGE=$parms[image]
 CONFIG=$parms[config]
 NS=$parms[ns]
 
-if [ -z "${NAME}" -o -z "${CONFIG}" -o -z "${NS}" ]
+if [ -z "${IMAGE}" -o -z "${CONFIG}" -o -z "${NS}" ]
 then
     usage
     exit 1
@@ -45,9 +47,10 @@ cp ${CONFIG} Docker/common/config
 
 Docker/common/certgen.sh
 
+mv server.p12 Docker/onnx/k8s/tmp
 mv server.pem Docker/onnx/k8s/tmp
 
-docker build -t ${NAME} --force-rm -f Docker/onnx/k8s/Dockerfile .
+docker build -t ${IMAGE} --force-rm -f Docker/onnx/k8s/Dockerfile .
 
 rm Docker/common/config
 rm -rf Docker/onnx/k8s/tmp

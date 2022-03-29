@@ -282,7 +282,7 @@ class ServerConnection extends Connection
             return;
         }
 
-        if (Connection.established(this.getUrl()) == false)
+        if (tools.established(this.getUrl()) == false)
         {
             if (tools.isNode)
             {

@@ -16,7 +16,7 @@ if (typeof process === "object")
     }
 }
 
-var WebSocketClient = null;
+var W3CWS = null;
 var TUNNEL = null;
 
 var http_proxy = null;
@@ -223,6 +223,8 @@ class Timer
 
 var _api =
 {
+    _established:{},
+
     s4:function()
     {
         return(((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1); 
@@ -520,51 +522,51 @@ var _api =
         return(bytes);
     },
 
-    createWebSocket:function(url,delegate)
+    createWebSocket:function(url,delegate,config)
     {
         return(new Promise((resolve,reject) => {
-            var ws = null;
+
+            const   tools = this;
+            const   onOpen = (this.supports(delegate,"open"));
+            const   onError = (this.supports(delegate,"error"));
+            const   onMessage = (this.supports(delegate,"message"));
+            const   onClose = (this.supports(delegate,"close"));
 
             if (_isNode)
             {
-                const   self = this;
-
                 var ws = function() {
 
-                    var config = {};
-                    var options = {};
-
-                    //config.tlsOptions = (this._conn._config != null) ? this._conn._config : {};
-
-                    var u = new URL(url);
-                    var secure = (u.protocol.toLowerCase() == "wss:");
-
-                    var proxyHost = null;
-                    var proxyPort = 0;
-
-                    if (_api.isNoProxy(u.hostname) == false)
+                    function
+                    WebSocketClient(url)
                     {
+                        this.binaryType = "arraybuffer";
+                        var config = {};
+                        config.tlsOptions = (config != null) ? config : {};
+
+                        var u = new URL(url);
+                        var secure = (u.protocol.toLowerCase() == "wss:");
+
+                        var proxyHost = null;
+                        var proxyPort = 80;
+
                         if (secure)
                         {
                             if (https_proxy != null)
                             {
                                 proxyHost = https_proxy.hostname;
-                                proxyPort = parseInt(https_proxy.port);
+                                proxyPort = https_proxy.port;
                             }
                         }
                         else if (http_proxy != null)
                         {
                             proxyHost = http_proxy.hostname;
-                            proxyPort = parseInt(http_proxy.port);
+                            proxyPort = http_proxy.port;
                         }
+
+                        var options = null;
 
                         if (proxyHost != null)
                         {
-                            if (proxyPort == 0 || isNaN(proxyPort))
-                            {
-                                proxyPort = 80;
-                            }
-
                             var agent = null;
 
                             if (secure)
@@ -586,50 +588,51 @@ var _api =
                                 });
                             }
 
+                            options = {};
                             options.agent = agent;
                         }
-                    }
 
-                    var ws = new WebSocketClient();
-                    var onClose = (self.supports(delegate,"close"));
-                    var onError = (self.supports(delegate,"error"));
-                    var onMessage = (self.supports(delegate,"message"));
+                        const   self = this;
 
-                    ws.on("connect", function(connection) {
+                        this.onopen = function() {
+                            tools._established[url] = true;
 
-                        resolve(connection);
-
-                        connection.on("error", function(error) {
-                            if (onError)
+                            if (onOpen)
                             {
-                                delegate.error(error.toString());
+                                delegate.open(self);
                             }
-                        });
+                        }
 
-                        connection.on("close", function() {
+                        this.onclose = function() {
                             if (onClose)
                             {
-                                delegate.close(connection);
+                                delegate.close(self);
                             }
-                        });
+                        }
 
-                        connection.on("message", function(data) {
+                        this.onerror = function() {
+                            if (onError)
+                            {
+                                delegate.error(self);
+                            }
+                        }
+
+                        this.onmessage = function(message) {
                             if (onMessage)
                             {
-                                delegate.message(data);
+                                delegate.message(self,message);
                             }
-                        });
-                    });
+                        }
 
-                    ws.on("connectFailed", function(error) {
-                        reject(error);
-                    });
+                        W3CWS.call(this,url,null,null,null,options,config);
+                    }
 
-                    /*
-                    console.log(options);
-                    */
+                    WebSocketClient.prototype = Object.create(W3CWS.prototype);
+                    WebSocketClient.prototype.constructor = WebSocketClient;
 
-                    ws.connect(url,null,null,null,options);
+                    var ws = new WebSocketClient(url);
+
+                    resolve(ws);
                 }
 
                 var checkProxy = function() {
@@ -655,11 +658,11 @@ var _api =
                     }
                 }
 
-                if (WebSocketClient == null)
+                if (W3CWS == null)
                 {
                     import("websocket").then(
                         function(result) {
-                            WebSocketClient = result.default.client;
+                            W3CWS = result.default.w3cwebsocket;
                             checkProxy();
                         }).
                         catch((e) => {
@@ -679,42 +682,35 @@ var _api =
                     url = tmp;
                 }
 
-                const   onOpen = (this.supports(delegate,"open"));
-                const   onClose = (this.supports(delegate,"close"));
-                const   onError = (this.supports(delegate,"error"));
-                const   onMessage = (this.supports(delegate,"message"));
+                const   self = this;
 
-                ws = new WebSocket(url);
+                var ws = new WebSocket(url);
 
                 ws.onopen = function(e) {
-                    //console.log("open");
                     if (onOpen)
                     {
-                        delegate.open(e);
+                        delegate.open(self);
                     }
                 };
 
                 ws.onclose = function(e) {
-                    //console.log("close: " + e.code + " :: " + e.reason);
                     if (onClose)
                     {
-                        delegate.close(e);
+                        delegate.close(self);
                     }
                 };
 
                 ws.onerror = function(e) {
-                    //console.log("error");
                     if (onError)
                     {
-                        delegate.error(e);
+                        delegate.error(self);
                     }
                 };
 
                 ws.onmessage = function(e) {
-                    //console.log("message");
                     if (onMessage)
                     {
-                        delegate.message(e);
+                        delegate.message(self,e);
                     }
                 };
 
@@ -1366,6 +1362,11 @@ var _api =
         }
 
         return(code);
+    },
+
+    established:function(url)
+    {
+        return(this._established.hasOwnProperty(url));
     }
 };
 

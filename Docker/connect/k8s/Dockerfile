@@ -18,7 +18,7 @@ RUN mkdir .kube
 
 ADD js/connect esp-connect/js/connect
 ADD nodejs/connect.mjs modules 
-ADD Docker/common/profile .profile
+ADD Docker/common/profile_k8s .profile
 ADD Docker/common/config .kube
 ADD Docker/common/startup_k8s startup
 

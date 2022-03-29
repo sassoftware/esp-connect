@@ -35,7 +35,7 @@ ADD Docker/examples/weather weather
 ADD Docker/examples/common/config.json config.json
 ADD nodejs/http.mjs modules/http.mjs
 ADD Docker/common/startup_k8s_http startup
-ADD Docker/common/profile .profile
+ADD Docker/common/profile_k8s .profile
 ADD Docker/common/config .kube/config
 
 RUN curl -sLO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl

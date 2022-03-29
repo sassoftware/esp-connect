@@ -16,6 +16,7 @@ import {connect as esp} from "@sassoftware/esp-connect";
 
 import {default as https} from "https";
 import {default as http} from "http";
+import {default as yaml} from "yaml";
 import {default as fs} from "fs";
 import {default as nodestatic} from "node-static";
 import {default as websocket} from "websocket";
@@ -38,6 +39,27 @@ if (opts.hasOpt("https-proxy"))
 {
     var tmp = opts.getOpt("https-proxy");
     esp.setHttpsProxy((tmp != "off") ? tmp : null);
+}
+
+var _k8s = null;
+
+if (opts.hasOpt("kubeconfig"))
+{
+    var filename = opts.getOpt("kubeconfig");
+
+    if (filename == true)
+    {
+        filename = process.env.KUBECONFIG;
+    }
+
+    if (filename.length > 0)
+    {
+        const   data = fs.readFileSync(filename,"utf-8");
+
+        _k8s = yaml.parse(data);
+
+        console.log("K8S Cluster Server is " + _k8s.clusters[0].cluster.server);
+    }
 }
 
 function
@@ -76,13 +98,42 @@ var handler = function(request,response)
 
     if (url != null)
     {
-        if (logging >= 1)
+        const   k8s = (url.protocol == "k8s:" && _k8s != null);
+
+        if (k8s)
+        {
+            var tmp = _k8s.clusters[0].cluster.server;
+            tmp += url.pathname + url.search;
+            url = new URL(tmp);
+
+            if (logging >= 1)
+            {
+                console.log("got K8S proxy request: " + url);
+            }
+        }
+        else if (logging >= 1)
         {
             console.log("got proxy request: " + url);
         }
 
         var method = request.method.toLowerCase();
         var proxy = esp.getAjax().create(url);
+
+        if (k8s)
+        {
+            const   user = _k8s.users[0].user;
+
+            if (user.hasOwnProperty("client-certificate-data"))
+            {
+                proxy.setOption("cert",atob(user["client-certificate-data"]));
+            }
+
+            if (user.hasOwnProperty("client-key-data"))
+            {
+                proxy.setOption("key",atob(user["client-key-data"]));
+            }
+        }
+
         var s;
 
         for (var x in request.headers)
@@ -170,13 +221,20 @@ var handler = function(request,response)
 
 if (opts.getOpt("secure",false))
 {
+    var options = {};
     var cert = opts.getOpt("cert","server.pem");
-    var key = opts.getOpt("key",cert);
+    var a = cert.split(".");
+    var suffix = a[a.length - 1];
 
-    const options = {
-      key:fs.readFileSync(key),
-      cert:fs.readFileSync(cert)
-    };
+    if (suffix == "p12")
+    {
+        options.pfx = fs.readFileSync(cert);
+    }
+    else
+    {
+        options.key = fs.readFileSync(opts.getOpt("key",cert));
+        options.cert = fs.readFileSync(cert);
+    }
 
     server = https.createServer(options,handler);
 
@@ -259,12 +317,11 @@ class WsProxy
 
     open(ws)
     {
-        console.log("opened: " + ws);
     }
 
-    close()
+    close(ws)
     {
-        console.log("lost server connection");
+        console.log("lost server connection to " + ws.url);
 
         if (this._client != null)
         {
@@ -275,25 +332,13 @@ class WsProxy
         this._server = null;
     }
 
-    error(e)
+    error(ws)
     {
-        console.log("ws error: " + this._client);
+        console.log("ws error: " + ws);
     }
 
-    message(msg)
+    message(ws,msg)
     {
-        if (this._client != null)
-        {
-            if (msg.type == "utf8")
-            {
-                this._client.sendUTF(msg.utf8Data);
-            }
-            else if (msg.type == "binary")
-            {
-                this._client.sendBytes(esp.getTools().arrayBufferToBuffer(msg.binaryData));
-            }
-        }
-        /*
         if (typeof(msg.data) == "string")
         {
             this._client.sendUTF(msg.data);
@@ -306,7 +351,6 @@ class WsProxy
         {
             this._client.sendBytes(msg.binaryData);
         }
-        */
     }
 }
 

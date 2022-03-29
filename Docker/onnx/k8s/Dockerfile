@@ -28,11 +28,13 @@ ADD Docker/onnx/k8s/tmp/viewer.html viewer.html
 ADD Docker/onnx/k8s/onnx onnx
 ADD nodejs/http.mjs modules/http.mjs
 ADD Docker/common/config .kube
+ADD Docker/common/favicon.ico favicon.ico
 ADD Docker/onnx/k8s/tmp/simple.yaml models/simple.yaml
 ADD Docker/onnx/k8s/tmp/onnx.yaml models/onnx.yaml
 ADD Docker/onnx/k8s/tmp/server.pem server.pem
+ADD Docker/onnx/k8s/tmp/server.p12 server.p12
 ADD Docker/onnx/k8s/tmp/startup startup
-ADD Docker/common/profile .profile
+ADD Docker/common/profile_k8s .profile
 
 RUN curl -sLO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
 RUN chmod +x ./kubectl

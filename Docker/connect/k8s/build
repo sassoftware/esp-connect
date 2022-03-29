@@ -1,31 +1,33 @@
 #!/bin/zsh
 
+SCRIPT=`basename $0`
+
 source Docker/common/args.sh
 
 function usage()
 {
 	printf "\n"
 	printf "SYNOPSIS:\n"
-	printf "\t`basename $0` -name -config\n\n"
+	printf "\t${SCRIPT} --image --config\n\n"
 	printf "SUMMARY:\n"
 	printf "\tCreate esp-connect docker image."
 	printf "\n"
 	printf "OPTIONS:\n\n"
-	printf "\t-name\timage name\n"
-	printf "\t-config\tKubernetes configuration file\n"
+	printf "\t--image\t\timage name\n"
+	printf "\t--config\tKubernetes configuration file\n"
 	printf "\n"
 	exit 1
 }
 
-NAME=${parms["name"]}
-CONFIG=${parms["config"]}
+IMAGE=$parms[image]
+CONFIG=$parms[config]
 
-if [ -z "${NAME}" -o -z "${CONFIG}" ]
+if [ -z "${IMAGE}" -o -z "${CONFIG}" ]
 then
     usage
     exit 1
 fi
 
 cp ${CONFIG} Docker/common/config
-docker build -t ${NAME} --force-rm -f Docker/connect/k8s/Dockerfile .
+docker build -t ${IMAGE} --force-rm -f Docker/connect/k8s/Dockerfile .
 rm Docker/common/config
