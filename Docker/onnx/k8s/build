@@ -35,8 +35,8 @@ mkdir -p Docker/onnx/k8s/tmp
 SIMPLE_MODEL=`cat Docker/onnx/k8s/template/simple.xml.template | sed s/@PROJECT@/simple/g | base64`
 ONNX_MODEL=`cat Docker/onnx/k8s/template/onnx.xml.template | sed s/@PROJECT@/onnx/g | base64`
 
-cat Docker/onnx/k8s/template/simple.yaml.template | sed s/@NAMESPACE@/$NS/g | sed s/@XML@/$SIMPLE_MODEL/g > Docker/onnx/k8s/tmp/simple.yaml
-cat Docker/onnx/k8s/template/onnx.yaml.template | sed s/@NAMESPACE@/$NS/g | sed s/@XML@/$ONNX_MODEL/g > Docker/onnx/k8s/tmp/onnx.yaml
+cat Docker/onnx/k8s/template/simple.yaml.template | sed s/@NAMESPACE@/$NS/g | sed s/@XML@/\$SIMPLE_MODEL/g > Docker/onnx/k8s/tmp/simple.yaml
+cat Docker/onnx/k8s/template/onnx.yaml.template | sed s/@NAMESPACE@/$NS/g | sed s/@XML@/\$ONNX_MODEL/g > Docker/onnx/k8s/tmp/onnx.yaml
 
 cat Docker/onnx/k8s/template/index.html.template | sed s/@NAMESPACE@/$NS/g > Docker/onnx/k8s/tmp/index.html
 cat Docker/onnx/k8s/template/publisher.html.template | sed s/@NAMESPACE@/$NS/g > Docker/onnx/k8s/tmp/publisher.html
