@@ -3,15 +3,6 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-/*
-    This runs a NodeJS HTTP server.
-
-    If you are running an HTTPS server, you can use the following commmand to create your key and
-    certificate:
-
-    openssl req -nodes -new -x509 -keyout server.key -out server.cert
-*/
-
 import {connect as esp} from "@sassoftware/esp-connect";
 
 import {default as https} from "https";
