@@ -328,6 +328,8 @@ var	_api =
         var command = docopts.getOpt("name","");
         var summary = docopts.getOpt("summary","");
 
+        const   width = docopts.getOpt("width",60);
+
         console.log("");
         console.log("\x1b[1m\x1b[34m" + command + "(1)" + "\t\t\tESP Connect Node.js Commands\t\t\t" + command + "(1)\x1b[30m\x1b[0m");
 
@@ -395,7 +397,7 @@ var	_api =
 
         if (docopts.hasOpt("description"))
         {
-            var desc = f.format(docopts.getOpt("description",""),80,f.tab(),f.tab());
+            var desc = f.format(docopts.getOpt("description",""),width,f.tab(),f.tab());
             console.log(desc);
         }
 
