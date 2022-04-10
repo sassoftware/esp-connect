@@ -1,8 +1,5 @@
-FROM node:16.14.0-alpine
+FROM golang:1.18-alpine
 
-RUN apk add python3
-RUN apk add --update make
-RUN apk add --update build-base
 RUN apk add --update curl
 
 ENV HOME=/root
@@ -30,11 +27,18 @@ ADD Docker/common/favicon.ico favicon.ico
 ADD Docker/common/startup_k8s_http startup
 ADD Docker/common/profile_k8s .profile
 
+ADD go/http/go.mod ./
+ADD go/http/go.sum ./
+
+RUN go mod download
+
+ADD go/http/http.go ./
+
+RUN go build -o http
+
 RUN curl -sLO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
 RUN chmod +x ./kubectl
 RUN mv kubectl bin
-
-RUN npm install ${HOME}/esp-connect/js/connect
 
 ENV ENV="${HOME}/.profile"
 

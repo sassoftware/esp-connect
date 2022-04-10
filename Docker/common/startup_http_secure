@@ -1,1 +1,1 @@
-node modules/http.mjs --port 4444 --logging 1 --cert server.pem --secure
+./http -port 4444 -logging 1 -secure -cert cert.pem -key key.pem

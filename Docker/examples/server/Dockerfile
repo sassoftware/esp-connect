@@ -1,9 +1,4 @@
-FROM node:16.14.0-alpine
-
-RUN apk add python3
-RUN apk add --update make
-RUN apk add --update build-base
-RUN apk add --update curl
+FROM golang:1.18-alpine
 
 ENV HOME=/root
 
@@ -28,11 +23,17 @@ ADD Docker/examples/sailing sailing
 ADD Docker/examples/trades trades
 ADD Docker/examples/turbine turbine
 ADD Docker/examples/weather weather
-ADD nodejs/http.mjs modules/http.mjs
 ADD Docker/common/startup_http startup
 ADD Docker/common/profile_server .profile
 
-RUN npm install ${HOME}/esp-connect/js/connect
+ADD go/http/go.mod ./
+ADD go/http/go.sum ./
+
+RUN go mod download
+
+ADD go/http/http.go ./
+
+RUN go build -o http
 
 ENV ENV="${HOME}/.profile"
 

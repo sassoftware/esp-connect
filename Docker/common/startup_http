@@ -1,1 +1,1 @@
-node modules/http.mjs --port 4444 --logging 1
+./http -port 4444 -logging 1

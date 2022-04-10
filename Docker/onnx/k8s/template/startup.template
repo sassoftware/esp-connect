@@ -79,4 +79,4 @@ fi
 
 ./bin/kubectl proxy &
 
-node modules/http.mjs --port 4444 --wsproxy --secure --logging 1
+./http -port 4444 -secure -cert cert.pem -key key.pem -logging 1

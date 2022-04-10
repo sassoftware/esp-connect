@@ -1,7 +1,6 @@
 export PS1="esp: "
 
 alias connect="node $HOME/modules/connect.mjs $*"
-alias http="node $HOME/modules/http.mjs $*"
 alias k="kubectl"
 alias ls="ls -CF"
 
