@@ -21,7 +21,6 @@ ADD "https://unpkg.com/vis-network/standalone/umd/vis-network.min.js" common/vis
 ADD "https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" common/google-icons.css
 
 ADD js/connect/*.js esp-connect/js/connect/
-ADD js/connect/package.json esp-connect/js/connect/
 ADD js/ui/*.js esp-connect/js/ui/
 ADD style/*.css esp-connect/style/
 ADD Docker/onnx/server/publisher.html publisher/index.html

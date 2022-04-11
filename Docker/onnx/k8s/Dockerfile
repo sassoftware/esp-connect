@@ -16,7 +16,6 @@ RUN mkdir models
 RUN mkdir .kube
 
 ADD js/connect/*.js esp-connect/js/connect/
-ADD js/connect/package.json esp-connect/js/connect/
 ADD js/ui/*.js esp-connect/js/ui/
 ADD style/*.css esp-connect/style/
 ADD Docker/onnx/k8s/tmp/index.html index.html
