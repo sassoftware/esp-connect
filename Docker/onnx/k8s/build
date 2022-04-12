@@ -8,14 +8,14 @@ function usage()
 {
     printf "\n"
     printf "SYNOPSIS:\n"
-    printf "\t${SCRIPT} --image --version --config --ns\n\n"
+    printf "\t${SCRIPT} --image --version --kubeconfig --ns\n\n"
     printf "SUMMARY:\n"
     printf "\tCreate ESP Webcam ONNX Demo docker image.\n"
     printf "\n"
     printf "OPTIONS:\n\n"
     printf "\t--image\t\timage name\n"
 	printf "\t--version\timage version, defaults to v1.0\n"
-    printf "\t--config\tKubernetes configuration file\n"
+    printf "\t--kubeconfig\tKubernetes configuration file\n"
     printf "\t--ns\t\tK8S Namespace\n"
     printf "\n"
     exit 1
@@ -23,7 +23,7 @@ function usage()
 
 IMAGE=$parms[image]
 VERSION=$parms[version]
-CONFIG=$parms[config]
+CONFIG=$parms[kubeconfig]
 NS=$parms[ns]
 
 if [ -z "${IMAGE}" -o -z "${CONFIG}" -o -z "${NS}" ]
@@ -39,8 +39,8 @@ fi
 
 mkdir -p Docker/onnx/k8s/tmp
 
-SIMPLE_MODEL=`cat Docker/onnx/k8s/template/simple.xml.template | sed s/@PROJECT@/simple/g | base64`
-ONNX_MODEL=`cat Docker/onnx/k8s/template/onnx.xml.template | sed s/@PROJECT@/onnx/g | base64`
+SIMPLE_MODEL=`cat Docker/onnx/k8s/template/simple.xml.template | sed s/@PROJECT@/simple/g | base64 | tr -d '\n'`
+ONNX_MODEL=`cat Docker/onnx/k8s/template/onnx.xml.template | sed s/@PROJECT@/onnx/g | base64 | tr -d '\n'`
 
 cat Docker/onnx/k8s/template/simple.yaml.template | sed s/@NAMESPACE@/$NS/g | sed s/@XML@/$SIMPLE_MODEL/g > Docker/onnx/k8s/tmp/simple.yaml
 cat Docker/onnx/k8s/template/onnx.yaml.template | sed s/@NAMESPACE@/$NS/g | sed s/@XML@/$ONNX_MODEL/g > Docker/onnx/k8s/tmp/onnx.yaml

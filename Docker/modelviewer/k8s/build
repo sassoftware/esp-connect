@@ -8,21 +8,21 @@ function usage()
 {
 	printf "\n"
 	printf "SYNOPSIS:\n"
-    printf "\t${SCRIPT} --image --version --config\n\n"
+    printf "\t${SCRIPT} --image --version --kubeconfig\n\n"
 	printf "SUMMARY:\n"
 	printf "\tCreate ESP Viewers docker image.\n"
 	printf "\n"
 	printf "OPTIONS:\n\n"
 	printf "\t--image\t\timage name\n"
 	printf "\t--version\timage version, defaults to v1.0\n"
-	printf "\t--config\tKubernetes configuration file\n"
+	printf "\t--kubeconfig\tKubernetes configuration file\n"
 	printf "\n"
 	exit 1
 }
 
 IMAGE=$parms[image]
 VERSION=$parms[version]
-CONFIG=$parms[config]
+CONFIG=$parms[kubeconfig]
 
 if [ -z "${IMAGE}" -o -z "${CONFIG}" ]
 then
