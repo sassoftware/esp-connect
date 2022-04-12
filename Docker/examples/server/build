@@ -8,17 +8,19 @@ function usage()
 {
 	printf "\n"
 	printf "SYNOPSIS:\n"
-	printf "\t${SCRIPT} --image \n\n"
+	printf "\t${SCRIPT} --image --version\n\n"
 	printf "SUMMARY:\n"
 	printf "\tCreate ESP Examples docker image.\n"
 	printf "\n"
 	printf "OPTIONS:\n\n"
-	printf "\t--image\timage name\n"
+	printf "\t--image\t\timage name\n"
+	printf "\t--version\timage version, defaults to v1.0\n"
 	printf "\n"
 	exit 1
 }
 
 IMAGE=$parms[image]
+VERSION=$parms[version]
 
 if [ -z "${IMAGE}" ]
 then
@@ -26,4 +28,9 @@ then
     exit 1
 fi
 
-docker build -t ${IMAGE} --force-rm -f Docker/examples/server/Dockerfile .
+if [ -z "${VERSION}" ]
+then
+    VERSION=v1.0
+fi
+
+docker build -t ${IMAGE}:${VERSION} --force-rm -f Docker/examples/server/Dockerfile .

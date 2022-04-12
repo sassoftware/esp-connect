@@ -254,6 +254,9 @@ init()
         _esp.showConnectDialog({connect:connect});
     }
 
+    document.getElementById("IncludeOpcodes").checked = _storage.getOpt("eventOpcodes",false);
+    document.getElementById("IncludeFlags").checked = _storage.getOpt("eventFlags",false);
+
     _esp.handleLayout({layout:layout});
 }
 
@@ -1056,11 +1059,16 @@ publishData()
     }
     else if (_tabs.getSelectedIndex() == 1)
     {
+        const   opcodes = document.getElementById("IncludeOpcodes").checked;
+        const   flags = document.getElementById("IncludeFlags").checked;
+
         var data = document.getElementById("eventCsv").value;
         _storage.setOpt("eventCsv",data);
-        _connection.getPublisher({window:path}).then(
+        _storage.setOpt("eventOpcodes",opcodes);
+        _storage.setOpt("eventFlags",flags);
+        _connection.getPublisher({id:path,window:path}).then(
             function(result) {
-                result.publishCsv(data,{close:true});
+                result.publishCsv(data,{opcodes:opcodes,flags:flags});
             }
         );
     }
@@ -1097,6 +1105,7 @@ publishData()
                         }
                     }
 
+console.log(JSON.stringify(o,null,"\t"));
                     result.add(o);
                     result.publish();
                 }
@@ -1571,11 +1580,20 @@ td.bannerControls
                 </td>
             </tr>
             <tr>
-                <td class="button">
-                    <button onclick="publishData()">Publish</button>
-                    <span>&nbsp;</span>
-                    <button onclick="clearCsv()">Clear</button>
-                </td>
+                <td>
+                    <table style="width:100%;height:100%">
+                        <tr>
+                            <td class="button" style="text-align:left">
+                                <input id="IncludeOpcodes" type="checkbox"><label for="IncludeOpcodes" style="padding-right:20px">Include Opcode</label></input>
+                                <input id="IncludeFlags" type="checkbox"><label for="IncludeFlags">Include Flags</label></input>
+                            </td>
+                            <td class="button">
+                                <button onclick="publishData()">Publish</button>
+                                <span>&nbsp;</span>
+                                <button onclick="clearCsv()">Clear</button>
+                            </td>
+                        </tr>
+                    </table>
             </tr>
         </table>
     </div>

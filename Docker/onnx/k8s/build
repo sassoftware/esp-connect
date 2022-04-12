@@ -8,12 +8,13 @@ function usage()
 {
     printf "\n"
     printf "SYNOPSIS:\n"
-    printf "\t${SCRIPT} --image --config --ns\n\n"
+    printf "\t${SCRIPT} --image --version --config --ns\n\n"
     printf "SUMMARY:\n"
     printf "\tCreate ESP Webcam ONNX Demo docker image.\n"
     printf "\n"
     printf "OPTIONS:\n\n"
     printf "\t--image\t\timage name\n"
+	printf "\t--version\timage version, defaults to v1.0\n"
     printf "\t--config\tKubernetes configuration file\n"
     printf "\t--ns\t\tK8S Namespace\n"
     printf "\n"
@@ -21,6 +22,7 @@ function usage()
 }
 
 IMAGE=$parms[image]
+VERSION=$parms[version]
 CONFIG=$parms[config]
 NS=$parms[ns]
 
@@ -30,13 +32,18 @@ then
     exit 1
 fi
 
+if [ -z "${VERSION}" ]
+then
+    VERSION=v1.0
+fi
+
 mkdir -p Docker/onnx/k8s/tmp
 
 SIMPLE_MODEL=`cat Docker/onnx/k8s/template/simple.xml.template | sed s/@PROJECT@/simple/g | base64`
 ONNX_MODEL=`cat Docker/onnx/k8s/template/onnx.xml.template | sed s/@PROJECT@/onnx/g | base64`
 
-cat Docker/onnx/k8s/template/simple.yaml.template | sed s/@NAMESPACE@/$NS/g | sed s/@XML@/\$SIMPLE_MODEL/g > Docker/onnx/k8s/tmp/simple.yaml
-cat Docker/onnx/k8s/template/onnx.yaml.template | sed s/@NAMESPACE@/$NS/g | sed s/@XML@/\$ONNX_MODEL/g > Docker/onnx/k8s/tmp/onnx.yaml
+cat Docker/onnx/k8s/template/simple.yaml.template | sed s/@NAMESPACE@/$NS/g | sed s/@XML@/$SIMPLE_MODEL/g > Docker/onnx/k8s/tmp/simple.yaml
+cat Docker/onnx/k8s/template/onnx.yaml.template | sed s/@NAMESPACE@/$NS/g | sed s/@XML@/$ONNX_MODEL/g > Docker/onnx/k8s/tmp/onnx.yaml
 
 cat Docker/onnx/k8s/template/index.html.template | sed s/@NAMESPACE@/$NS/g > Docker/onnx/k8s/tmp/index.html
 cat Docker/onnx/k8s/template/publisher.html.template | sed s/@NAMESPACE@/$NS/g > Docker/onnx/k8s/tmp/publisher.html
@@ -45,7 +52,7 @@ cat Docker/onnx/k8s/template/startup.template | sed s/@NAMESPACE@/$NS/g > Docker
 
 cp ${CONFIG} Docker/common/config
 
-docker build -t ${IMAGE} --force-rm -f Docker/onnx/k8s/Dockerfile .
+docker build -t ${IMAGE}:${VERSION} --force-rm -f Docker/onnx/k8s/Dockerfile .
 
 rm Docker/common/config
 rm -rf Docker/onnx/k8s/tmp

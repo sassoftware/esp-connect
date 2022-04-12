@@ -14,6 +14,7 @@ function usage()
 	printf "\n"
 	printf "OPTIONS:\n\n"
 	printf "\t--image\t\timage name\n"
+	printf "\t--version\timage version, defaults to v1.0\n"
 	printf "\t--config\tKubernetes configuration file\n"
 	printf "\n"
 	exit 1
@@ -28,6 +29,11 @@ then
     exit 1
 fi
 
+if [ -z "${VERSION}" ]
+then
+    VERSION=v1.0
+fi
+
 cp ${CONFIG} Docker/common/config
-docker build -t ${IMAGE} --force-rm -f Docker/connect/k8s/Dockerfile .
+docker build -t ${IMAGE}:${VERSION} --force-rm -f Docker/connect/k8s/Dockerfile .
 rm Docker/common/config

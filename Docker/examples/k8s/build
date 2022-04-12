@@ -8,18 +8,20 @@ function usage()
 {
 	printf "\n"
 	printf "SYNOPSIS:\n"
-	printf "\t${SCRIPT} --image --config\n\n"
+	printf "\t${SCRIPT} --image --version --config\n\n"
 	printf "SUMMARY:\n"
 	printf "\tCreate ESP Examples K8S docker image.\n"
 	printf "\n"
 	printf "OPTIONS:\n\n"
 	printf "\t--image\t\timage name\n"
+	printf "\t--version\timage version, defaults to v1.0\n"
 	printf "\t--config\tKubernetes configuration file\n"
 	printf "\n"
 	exit 1
 }
 
 IMAGE=$parms[image]
+VERSION=$parms[version]
 CONFIG=$parms[config]
 
 if [ -z "${IMAGE}" -o -z "${CONFIG}" ]
@@ -28,6 +30,11 @@ then
     exit 1
 fi
 
+if [ -z "${VERSION}" ]
+then
+    VERSION=v1.0
+fi
+
 cp ${CONFIG} Docker/common/config
-docker build -t ${IMAGE} --force-rm -f Docker/examples/k8s/Dockerfile .
+docker build -t ${IMAGE}:${VERSION} --force-rm -f Docker/examples/k8s/Dockerfile .
 rm Docker/common/config

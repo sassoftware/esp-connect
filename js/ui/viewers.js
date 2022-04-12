@@ -492,12 +492,9 @@ class ModelViewer extends ViewerBase
             },
             physics: {
                 enabled: true,
-                solver: "barnesHut",
-                barnesHut: {
-                    avoidOverlap: 1,
-                },
                 hierarchicalRepulsion: {
-                    nodeDistance:200,
+                    damping:1,
+                    avoidOverlap:1
                 },
             },
             layout: {

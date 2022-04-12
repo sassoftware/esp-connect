@@ -615,7 +615,8 @@ class Api extends Options
 
                 if (this._publishers.hasOwnProperty(id))
                 {
-                    return(this._publishers[id]);
+                    resolve(this._publishers[id]);
+                    return;
                 }
             }
             var publisher = new Publisher(this,options);
@@ -3455,7 +3456,14 @@ class Publisher extends Options
 
             for (var o of this._csv.items)
             {
-                o["opcode"] = (o.hasOwnProperty("@opcode")) ? o["@opcode"] : opcode;
+                if (o.hasOwnProperty("@opcode") || o.hasOwnProperty("opcode"))
+                {
+                    o["opcode"] = (o.hasOwnProperty("@opcode")) ? o["@opcode"] : o["opcode"];
+                }
+                else
+                {
+                    o["opcode"] = "insert";
+                }
                 this.add(o);
                 if (this.size >= chunksize)
                 {

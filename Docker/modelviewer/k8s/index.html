@@ -216,6 +216,9 @@ init()
         publish(true);
     }
 
+    document.getElementById("IncludeOpcodes").checked = _storage.getOpt("eventOpcodes",false);
+    document.getElementById("IncludeFlags").checked = _storage.getOpt("eventFlags",false);
+
     _esp.handleLayout({layout:layout});
 
     loadNamespaces();
@@ -432,6 +435,8 @@ ready(connection)
     /*
     _viewer.setNetworkOptions({layout:{hierarchical:{direction: "DU"}}});
     */
+
+    loadPublishWindows();
 }
 
 function
@@ -685,6 +690,7 @@ clear()
 function
 modelLoaded(viewer,model)
 {
+    loadPublishWindows();
     /*
     setTimeout(setProject,1000);
     */
@@ -733,33 +739,35 @@ projectLoaded(viewer)
 function
 loadPublishWindows()
 {
-    var windows = _viewer.model.getSourceWindows();
-    var select = document.getElementById("publishUrlWindow");
-    var current = _storage.getOpt("publish-window","");
-
-    if (select != null)
+    if (_viewer.model == null)
     {
-        while (select.length > 0)
-        {
-            select.remove(0);
-        }
-
-        var option;
-
-        windows.forEach((w) =>
-        {
-            option = document.createElement("option");
-            option.value = w.key;
-            if (w.key == current)
-            {
-                option.selected = true;
-            }
-            option.appendChild(document.createTextNode(w.key));
-            select.add(option);
-        });
-
-        loadPublishWindow(select.value);
+        return;
     }
+
+    var windows = _viewer.model.getSourceWindows();
+    var current = _storage.getOpt("publish-window","");
+    var select = document.getElementById("publishUrlWindow");
+
+    while (select.length > 0)
+    {
+        select.remove(0);
+    }
+
+    var option;
+
+    windows.forEach((w) =>
+    {
+        option = document.createElement("option");
+        option.value = w.key;
+        if (w.key == current)
+        {
+            option.selected = true;
+        }
+        option.appendChild(document.createTextNode(w.key));
+        select.add(option);
+    });
+
+    loadPublishWindow(select.value);
 }
 
 function
@@ -1099,11 +1107,16 @@ publishData()
     }
     else if (_tabs.getSelectedIndex() == 1)
     {
+        const   opcodes = document.getElementById("IncludeOpcodes").checked;
+        const   flags = document.getElementById("IncludeFlags").checked;
+
         var data = document.getElementById("eventCsv").value;
         _storage.setOpt("eventCsv",data);
-        _connection.getPublisher({window:path}).then(
+        _storage.setOpt("eventOpcodes",opcodes);
+        _storage.setOpt("eventFlags",flags);
+        _connection.getPublisher({id:path,window:path}).then(
             function(result) {
-                result.publishCsv(data,{close:true});
+                result.publishCsv(data,{opcodes:opcodes,flags:flags});
             }
         );
     }
@@ -1630,11 +1643,20 @@ td.bannerControls
                 </td>
             </tr>
             <tr>
-                <td class="button">
-                    <button onclick="publishData()">Publish</button>
-                    <span>&nbsp;</span>
-                    <button onclick="clearCsv()">Clear</button>
-                </td>
+                <td>
+                    <table style="width:100%;height:100%">
+                        <tr>
+                            <td class="button" style="text-align:left">
+                                <input id="IncludeOpcodes" type="checkbox"><label for="IncludeOpcodes" style="padding-right:20px">Include Opcode</label></input>
+                                <input id="IncludeFlags" type="checkbox"><label for="IncludeFlags">Include Flags</label></input>
+                            </td>
+                            <td class="button">
+                                <button onclick="publishData()">Publish</button>
+                                <span>&nbsp;</span>
+                                <button onclick="clearCsv()">Clear</button>
+                            </td>
+                        </tr>
+                    </table>
             </tr>
         </table>
     </div>
