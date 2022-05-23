@@ -7,7 +7,7 @@ class Dialog extends Options
 {
     constructor(options)
     {
-		super(options);
+        super(options);
 
         if (_api._modals == null)
         {
@@ -138,15 +138,15 @@ class Dialog extends Options
         }
 
         var margins = uitools.getMargins(this._div);
-        var	margin = 0;
+        var margin = 0;
 
         if (margins.hasOwnProperty("left"))
         {
             margin = margins.left * 2;
         }
 
-        var	width = this._div.clientWidth - (margin * 2);
-        var	height = this._div.clientHeight - (margin * 2);
+        var width = this._div.clientWidth - (margin * 2);
+        var height = this._div.clientHeight - (margin * 2);
 
         var headerSize = uitools.getSize(this._header);
         var contentSize = uitools.getSize(this._content);
@@ -160,9 +160,9 @@ class Dialog extends Options
             this._div.style.height == "auto";
         }
 
-        var	top = margin;
+        var top = margin;
 
-        var	headerBorders = uitools.getBorders(this._header,true);
+        var headerBorders = uitools.getBorders(this._header,true);
         if (this._header != null)
         {
             this._header.style.left = margin + "px";
@@ -171,7 +171,7 @@ class Dialog extends Options
             top = this._header.offsetTop + this._header.offsetHeight;
         }
 
-        var	contentBorders = uitools.getBorders(this._content,true);
+        var contentBorders = uitools.getBorders(this._content,true);
 
         this._content.style.left = margin + "px";
         this._content.style.top = top + "px";
@@ -179,7 +179,7 @@ class Dialog extends Options
 
         var h = height - this._content.offsetTop - contentBorders.vsize;
 
-        var	footerBorders = uitools.getBorders(this._footer,true);
+        var footerBorders = uitools.getBorders(this._footer,true);
 
         this._footer.style.left = margin + "px";
         this._footer.style.top = (height - this._footer.offsetHeight) + "px";
@@ -219,11 +219,11 @@ class Dialog extends Options
         this._div.style.display = "block";
         this._div.style.position = "absolute";
 
-        var	d = window.document;
-        var	bodyWidth = d.body.offsetWidth;
-        var	bodyHeight = d.body.offsetHeight;
-        var	width = this._div.offsetWidth;
-        var	height = this._div.offsetHeight;
+        var d = window.document;
+        var bodyWidth = d.body.offsetWidth;
+        var bodyHeight = d.body.offsetHeight;
+        var width = this._div.offsetWidth;
+        var height = this._div.offsetHeight;
 
         if (xalign == "left")
         {
@@ -269,7 +269,7 @@ class Dialog extends Options
             return;
         }
 
-        var	current = _api._modals[_api._modals.length - 1];
+        var current = _api._modals[_api._modals.length - 1];
 
         if (current != this)
         {
@@ -554,7 +554,7 @@ class Form extends Options
 {
     constructor(dialog,values,options)
     {
-		super(options);
+        super(options);
 
         this._dialog = dialog;
         this._table = null;
@@ -1084,6 +1084,25 @@ class Form extends Options
         return(table);
     }
 
+    setVisibility(name,on)
+    {
+        if (on)
+        {
+            this.show(name);
+        }
+        else
+        {
+            this.hide(name);
+        }
+    }
+
+    setVisibilities(names,on)
+    {
+        names.forEach((name) => {
+            this.setVisibility(name,on);
+        });
+    }
+
     show(name)
     {
         var entry = this.getEntry(name);
@@ -1157,7 +1176,7 @@ class Form extends Options
     }
 }
 
-var	_api =
+var _api =
 {
     _modals:null,
     _cover:null,
@@ -1255,14 +1274,14 @@ var	_api =
             return;
         }
 
-        var	element = (typeof(modal) == "string") ? document.getElementById(modal) : modal;
+        var element = (typeof(modal) == "string") ? document.getElementById(modal) : modal;
 
         if (element == null)
         {
             return;
         }
 
-        var	current = this._modals[this._modals.length - 1];
+        var current = this._modals[this._modals.length - 1];
 
         if (current._div != element)
         {
@@ -1430,19 +1449,19 @@ var	_api =
             return;
         }
 
-        var	d = window.document;
-        var	bodyWidth = d.documentElement.clientWidth;
-        var	bodyHeight = d.documentElement.clientHeight;
-        var	bodyLeft = d.documentElement.scrollLeft;
-        var	bodyTop = d.documentElement.scrollTop;
+        var d = window.document;
+        var bodyWidth = d.documentElement.clientWidth;
+        var bodyHeight = d.documentElement.clientHeight;
+        var bodyLeft = d.documentElement.scrollLeft;
+        var bodyTop = d.documentElement.scrollTop;
         var xalign;
         var yalign;
-        var	element;
+        var element;
         var borders;
-        var	width;
-        var	height;
-        var	x;
-        var	y;
+        var width;
+        var height;
+        var x;
+        var y;
 
         if (uitools.isMobile())
         {

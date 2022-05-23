@@ -59,7 +59,7 @@ func (this MyHandler) ServeHTTP(writer http.ResponseWriter, request *http.Reques
     url := this.getProxyUrl(request)
     if (url != nil) {
         if (url.Scheme == "ws" || url.Scheme == "wss") {
-            log.Println("got a websocket")
+            fmt.Printf("got a websocket: %s\n",url)
             ws := NewWsProxy(url,writer,request)
             ws.Run()
         } else {

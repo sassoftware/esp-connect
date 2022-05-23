@@ -16,9 +16,7 @@ RUN mkdir .kube
 
 ADD https://unpkg.com/vis-network/standalone/umd/vis-network.min.js common/vis-network.min.js
 
-ADD js/connect/*.js esp-connect/js/connect/
-ADD js/ui/*.js esp-connect/js/ui/
-ADD style/*.css esp-connect/style/
+ADD dist/esp-connect-ui.js ./
 ADD Docker/modelviewer/k8s/index.html index.html
 ADD nodejs/http.mjs modules/http.mjs
 ADD Docker/common/config .kube
