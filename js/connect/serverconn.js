@@ -53,122 +53,12 @@ class ServerConnection extends Connection
         {
             this._impl.version = version;
 
-            if (this._impl.k8s == null && this.hasOpt("model"))
-            {
-                var model = this.getOpt("model");
-
-                var opts = new Options(model);
-                var name = opts.getOpt("name");
-                var data = opts.getOpt("data");
-                var url = opts.getOpt("url");
-
-                if (name == null)
+            this._delegates.forEach((d) => {
+                if (tools.supports(d,"ready"))
                 {
-                    tools.exception("the model must contain a name value");
+                    d.ready(this._impl);
                 }
-
-                if (data == null && url == null)
-                {
-                    tools.exception("the model must contain either a data or url field");
-                }
-
-                const   self = this;
-
-                if (url != null)
-                {
-                    ajax.create(url).get().then(
-                        function(result) {
-
-                            var data = result.xml;
-
-                            if (model.hasOwnProperty("_xml") == false)
-                            {
-                                data.documentElement.removeAttribute("name");
-                                model.data = xpath.xmlString(data);
-                            }
-
-                            self.load(model).then(
-                                function() {
-                                    self._delegates.forEach((d) => {
-                                        if (tools.supports(d,"ready"))
-                                        {
-                                            d.ready(self._impl);
-                                        }
-                                    });
-                                },
-                                function(result) {
-                                    var delivered = false;
-
-                                    self._delegates.forEach((d) => {
-                                        if (tools.supports(d,"error"))
-                                        {
-                                            d.error(self,result);
-                                        }
-                                    });
-
-                                    if (delivered == false)
-                                    {
-                                        console.log(result);
-                                    }
-                                }
-                            );
-                        },
-                        function(result) {
-                            var delivered = false;
-
-                            self._delegates.forEach((d) => {
-                                if (tools.supports(d,"error"))
-                                {
-                                    d.error(self,result);
-                                    delivered = true;
-                                }
-                            });
-
-                            if (delivered == false)
-                            {
-                                console.log(result);
-                            }
-                        }
-                    );
-                }
-                else
-                {
-                    if (model.hasOwnProperty("_xml") == false)
-                    {
-                        model._xml = xpath.createXml(model.data);
-                        model._xml.documentElement.removeAttribute("name");
-                        model.data = xpath.xmlString(model._xml);
-                    }
-
-                    this.load(model).then(
-                        function(result) {
-                            self._delegates.forEach((d) => {
-                                if (tools.supports(d,"ready"))
-                                {
-                                    d.ready(self._impl);
-                                }
-                            });
-                        },
-                        function(result) {
-                            self._delegates.forEach((d) => {
-                                if (tools.supports(d,"projectLoadError"))
-                                {
-                                    d.projectLoadError(self,result);
-                                }
-                            });
-                        }
-                    );
-                }
-            }
-            else
-            {
-                this._delegates.forEach((d) => {
-                    if (tools.supports(d,"ready"))
-                    {
-                        d.ready(this._impl);
-                    }
-                });
-            }
+            });
         }
     }
 

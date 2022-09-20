@@ -94,11 +94,6 @@ class Api extends Options
         return(this._connection.httpurl);
     }
 
-    get k8s()
-    {
-        return(this.getOpt("k8s"));
-    }
-
     get closed()
     {
         return(this._closed);
@@ -888,97 +883,83 @@ class Api extends Options
     loadProject(name,data,options,parms,env)
     {
         return(new Promise((resolve,reject) => {
-            if (this.k8s != null)
+            var id = tools.guid();
+            var request = {"project":{}};
+            var o = request["project"];
+            o["name"] = name;
+            o["id"] = id;
+            o["action"] = "load";
+
+            if (options != null)
             {
-                this.k8s.load(data,options).then(
-                    function() {
+                for (var x in options)
+                {
+                    o[x] = options[x];
+                }
+            }
+
+            if (parms != null && Object.keys(parms).length > 0)
+            {
+                var p = {};
+                for (var x in parms)
+                {
+                    p[x] = parms[x];
+                }
+                o["parms"] = p;
+            }
+
+            if (env != null && Object.keys(env).length > 0)
+            {
+                var v = {};
+                for (var x in env)
+                {
+                    v[x] = env[x];
+                }
+                o["env"] = v;
+            }
+
+            o["data"] = tools.b64Encode(data);
+
+            this.addHandler(id,{
+                process:function(result) {
+                    var code = result["@code"];
+
+                    if (code == 0)
+                    {
                         resolve();
-                    },
-                    function() {
-                        reject();
                     }
-                );
-            }
-            else
-            {
-                var id = tools.guid();
-                var request = {"project":{}};
-                var o = request["project"];
-                o["name"] = name;
-                o["id"] = id;
-                o["action"] = "load";
-
-                if (options != null)
-                {
-                    for (var x in options)
+                    else
                     {
-                        o[x] = options[x];
-                    }
-                }
+                        var message = "";
 
-                if (parms != null && Object.keys(parms).length > 0)
-                {
-                    var p = {};
-                    for (var x in parms)
-                    {
-                        p[x] = parms[x];
-                    }
-                    o["parms"] = p;
-                }
-
-                if (env != null && Object.keys(env).length > 0)
-                {
-                    var v = {};
-                    for (var x in env)
-                    {
-                        v[x] = env[x];
-                    }
-                    o["env"] = v;
-                }
-
-                o["data"] = tools.b64Encode(data);
-
-                this.addHandler(id,{
-                    process:function(result) {
-                        var code = result["@code"];
-
-                        if (code == 0)
+                        if (result.hasOwnProperty("text"))
                         {
-                            resolve();
+                            message += result["text"];
                         }
-                        else
+
+                        if (result.hasOwnProperty("details"))
                         {
-                            var message = "";
-
-                            if (result.hasOwnProperty("text"))
+                            var details = result["details"];
+                            if (Array.isArray(details))
                             {
-                                message += result["text"];
-                            }
-
-                            if (result.hasOwnProperty("details"))
-                            {
-                                var details = result["details"];
-                                if (Array.isArray(details))
+                                for (var detail of details)
                                 {
-                                    for (var detail of details)
-                                    {
-                                        message += "\n";
-                                        message += detail["detail"];
-                                    }
-                                }
-                                else
-                                {
-                                    message += details["detail"];
+                                    message += "\n";
+                                    message += detail["detail"];
                                 }
                             }
-
-                            reject(message);
+                            else
+                            {
+                                message += details["detail"];
+                            }
                         }
-                    }
-                });
 
-                this.sendObject(request);
-            }
+                        reject(message);
+                    }
+                }
+            });
+
+            this.sendObject(request);
         }));
     }
 
@@ -1039,44 +1020,30 @@ class Api extends Options
     deleteProject(name)
     {
         return(new Promise((resolve,reject) => {
-            if (this.k8s != null)
-            {
-                this.k8s.del().then(
-                    function(result) {
+            var id = tools.guid();
+            var url = this.url;
+            var request = {"project":{}};
+            var o = request["project"];
+            o["name"] = name;
+            o["id"] = id;
+            o["action"] = "delete";
+
+            this.addHandler(id,{
+                process:function(result) {
+                    var code = result["@code"];
+
+                    if (code == 0)
+                    {
                         resolve(result);
-                    },
-                    function(result) {
+                    }
+                    else
+                    {
                         reject(result);
                     }
-                );
-            }
-            else
-            {
-                var id = tools.guid();
-                var url = this.url;
-                var request = {"project":{}};
-                var o = request["project"];
-                o["name"] = name;
-                o["id"] = id;
-                o["action"] = "delete";
+                }
+            });
 
-                this.addHandler(id,{
-                    process:function(result) {
-                        var code = result["@code"];
-
-                        if (code == 0)
-                        {
-                            resolve(result);
-                        }
-                        else
-                        {
-                            reject(result);
-                        }
-                    }
-                });
-
-                this.sendObject(request);
-            }
+            this.sendObject(request);
         }));
     }
 

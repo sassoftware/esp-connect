@@ -5,7 +5,6 @@
 
 import {Connection} from "../connect/connection.js";
 import {connect} from "../connect/connect.js";
-import {k8s} from "../connect/k8s.js";
 import {uitools} from "./uitools.js";
 import {dialogs} from "./dialogs.js";
 import {Storage as StoredData} from "./storage.js";
@@ -22,8 +21,6 @@ var	_api =
     _layoutDelegate:null,
     _parms:null,
     _prompted:{},
-    _user:"bob",
-    _pw:"Esppass1*",
 
     connect:function(url,delegate,options)
     {
@@ -165,7 +162,7 @@ var	_api =
         }
     },
 
-    showConnectDialog:function(delegate,server)
+    showConnectDialog:function(delegate,server,project)
     {
         if (connect.getTools().supports(delegate,"connect") == false)
         {
@@ -173,26 +170,17 @@ var	_api =
         }
 
         var storage = new StoredData("esp-connect");
-        var k8s = null;
-
-        if (server != null && server.length > 0)
-        {
-            var u = new URL(server);
-
-            if (u.protocol.startsWith("k8s"))
-            {
-                k8s = this.createK8S(server);
-            }
-        }
 
         if (server == null || server.length == 0)
         {
             server = storage.getOpt("esp-server","");
         }
 
+        const   self = this;
+
         var o = {
             ok:function(dialog) {
-                var s = (k8s == null) ? dialog.getValue("server","").trim() : dialog.getValue("k8s_project","").trim();
+                var s = dialog.getValue("server","").trim();
 
                 if (s.length == 0)
                 {
@@ -200,6 +188,11 @@ var	_api =
                 }
 
                 storage.setOpt("esp-server",s);
+
+                if (self.isK8sUrl(s) && project != null)
+                {
+                    s += "/" + project;
+                }
 
                 delegate.connect(s);
 
@@ -209,134 +202,12 @@ var	_api =
 
         var form = [];
 
-        if (k8s == null)
+        if (server == null)
         {
-            if (server == null)
-            {
-                server = "";
-            }
-            form.push({name:"server",label:"ESP Server",value:server});
-            dialogs.showDialog({title:"Connect to ESP Server",label_width:"40px",delegate:o,form:form});
+            server = "";
         }
-        else
-        {
-            const   self = this;
-
-            var value = {name:"k8s_ns",label:"K8S Namespace",type:"select"};
-            if (k8s.namespace != null)
-            {
-                value.value = k8s.namespace;
-            }
-            value.options = [];
-            value.options.push({name:"",value:""});
-
-            k8s.getNamespaces().then(
-                function(result)
-                {
-                    return(new Promise((resolve,reject) => {
-                        result.forEach((p) => {
-                            var url = "";
-                            url += k8s.k8sUrl;
-                            url += "/" + p.metadata.name;
-                            var o = {};
-                            o.name = p.metadata.name;
-                            o.value = url;
-                            value.options.push(o);
-                        });
-
-                        value.onchange = function(e) {self.loadK8SProjects(e)};
-                        form.push(value);
-
-                        resolve();
-                    }));
-                },
-                function(result)
-                {
-                    throw("error: " + result);
-                }
-            ).then(
-                function() {
-                    return(new Promise((resolve,reject) => {
-
-                        var value = {name:"k8s_project",label:"K8S Project",type:"select"};
-                        form.push(value);
-
-                        if (k8s.namespace == null)
-                        {
-                            resolve();
-                            return;
-                        }
-                        else
-                        {
-                            k8s.getProjects(k8s.namespace).then(
-                                function(result)
-                                {
-                                    if (k8s.project != null)
-                                    {
-                                        value.value = k8s.project;
-                                    }
-
-                                    value.options = [];
-
-                                    result.forEach((p) => {
-                                        var url = "";
-                                        url += k8s.k8sUrl;
-                                        url += "/" + p.metadata.namespace;
-                                        url += "/" + p.metadata.name;
-                                        var o = {};
-                                        o.name = p.metadata.name;
-                                        o.value = url;
-                                        value.options.push(o);
-                                    });
-
-                                    resolve();
-                                }
-                            );
-                        }
-                    }));
-                }
-            ).then(
-                function(result) {
-                    dialogs.showDialog({title:"Connect to ESP Server",delegate:o,form:form});
-                }
-            );
-        }
-    },
-
-    loadK8SProjects:function(e)
-    {
-        const   url = e.target.value;
-        const   k8s = this.createK8S(url);
-        const   self = this;
-
-        var projects = e.target.dialog.getControl("k8s_project");
-
-        while (projects.options.length > 0)
-        {
-            projects.remove(0);
-        }
-
-        k8s.getProjects(k8s.namespace).then(
-            function(result)
-            {
-                result.forEach((p) => {
-
-                    var url = "";
-                    url += k8s.k8sUrl;
-                    url += "/" + p.metadata.namespace;
-                    url += "/" + p.metadata.name;
-
-                    var option = document.createElement("option");
-                    option.value = url;
-                    option.appendChild(document.createTextNode(p.metadata.name));
-                    projects.add(option);
-                });
-            },
-            function(result)
-            {
-                throw("error: " + result);
-            }
-        );
+        form.push({name:"server",label:"ESP Server",value:server});
+        dialogs.showDialog({title:"Connect to ESP Server",label_width:"40px",delegate:o,form:form});
     },
 
     showCodeDialog:function(header,code,options)
@@ -405,6 +276,11 @@ var	_api =
     createOptionsFromArgs:function()
     {
         return(connect.createOptionsFromArgs());
+    },
+
+    isK8sUrl:function(url)
+    {
+        return(connect.isK8sUrl(url));
     },
 
     createK8S:function(url)
@@ -494,25 +370,15 @@ var	_api =
     {
         var server = null;
 
-        if (parms.hasOwnProperty("namespace"))
-        {
-            const   namespace = parms["namespace"];
-
-            delete parms["namespace"];
-
-            const   url = new URL(".",document.URL);
-            var     s = "k8s-proxy://localhost:8001/" + namespace;
-            if (project != null)
-            {
-                s += "/" + project;
-            }
-
-            server = s;
-        }
-        else if (parms.hasOwnProperty("server"))
+        if (parms.hasOwnProperty("server"))
         {
             server = parms["server"];
             delete parms["server"];
+
+            if (this.isK8sUrl(server) && project != null)
+            {
+                server += "/" + project;
+            }
         }
 
         return(server);

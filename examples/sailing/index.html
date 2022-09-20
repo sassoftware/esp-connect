@@ -43,6 +43,8 @@ var _conn = null;
 function
 init()
 {
+    _esp.setProxies();
+
     var parms = _esp.getParms();
 
     if (parms.hasOwnProperty("project"))
@@ -80,9 +82,7 @@ connect(server)
                 overwrite:true,
                 force:_esp.getParm("force",false)
             }
-        },
-        user:"bob",
-        pw:"Esppass1*"
+        }
     };
     _esp.connect(server,{ready:ready,connectionError:error},options);
     _esp.handleLayout();

@@ -42,6 +42,8 @@ var _conn = null;
 function
 init()
 {
+    _esp.setProxies();
+
     var parms = _esp.getParms();
 
     if (parms.hasOwnProperty("project"))

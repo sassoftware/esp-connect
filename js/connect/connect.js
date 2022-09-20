@@ -14,10 +14,9 @@ import {Resources} from "./resources.js";
 import {codec} from "./codec.js";
 import {Options} from "./options.js";
 import {Router} from "./router.js";
-import {k8s} from "./k8s.js";
 import {Formatter} from "./formatter.js";
 
-var	_api =
+var _api =
 {
     _args:null,
     _config:null,
@@ -29,109 +28,36 @@ var	_api =
 
     connect:function(url,delegates,options,start)
     {
-        var u = tools.createUrl(decodeURI(url));
+        const self = this;
 
-        if (u.protocol.startsWith("k8s"))
+        var opts = new Options(options);
+        var mopts = opts.hasOpt("model") ? new Options(opts.getOpt("model")) : null;
+        var name = mopts.getOpt("name");
+
+        const   k8s = opts.hasOpt("k8s") ? opts.getOpt("k8s") : this.isK8sUrl(url);
+
+        if (k8s && mopts == null)
         {
-            var project = k8s.create(url,options);
-            var self = this;
-
-            if (options == null)
-            {
-                options = {};
-            }
-            options["k8s"] = project;
-
-            function auth() {
-                project.authenticate(self,delegates).then(
-                    function() {
-                        if (project.hasOpt("access_token"))
-                        {
-                            options["access_token"] = project.getOpt("access_token");
-                        }
-
-                        project.connect(self,delegates,options,start);
-                    },
-                    function() {
-                        if (project.getOpt("saslogon-error",false))
-                        {
-                            if (project.hasOpt("access_token"))
-                            {
-                                options["access_token"] = project.getOpt("access_token");
-                                project.connect(self,delegates,options,start);
-                            }
-                            else
-                            {
-                                const   d = tools.anySupports(delegates,"getToken");
-                                if (d != null)
-                                {
-                                    d.getToken().then(
-                                        function(result) {
-                                            options["access_token"] = result;
-                                            project.connect(self,delegates,options,start);
-                                        },
-                                        function(result) {
-                                        }
-                                    );
-                                }
-                            }
-                        }
-                        else if (project.getOpt("uaa-error",false))
-                        {
-                             const   d = tools.anySupports(delegates,"getCredentials");
-
-                             if (d != null)
-                             {
-                                 d.getCredentials().then(
-                                     function(result) {
-                                         project.setOpt("user",result.user);
-                                         project.setOpt("pw",result.password);
-                                         auth();
-                                     },
-                                     function(result) {
-                                     }
-                                 );
-                             }
-                             else
-                             {
-                                 self.getCredentials().then(
-                                     function(result) {
-                                         project.setOpt("user",result.user);
-                                         project.setOpt("pw",result.password);
-                                         auth();
-                                     },
-                                     function(result) {
-                                     }
-                                 );
-                             }
-                        }
-                        else
-                        {
-                            auth();
-                        }
-                    }
-                );
-            }
-
-            auth();
+            tools.exception("You must supply a model for Kubernetes");
+            return;
         }
-        else
+
+        var token = null;
+        var credentials = null;
+
+        if (opts.hasOpt("token"))
         {
-            var opts = new Options(options);
-            var token = null;
-            var credentials = null;
+            token = opts.getOptAndClear("token");
+        }
 
-            if (opts.hasOpt("token"))
-            {
-                token = opts.getOptAndClear("token");
-            }
+        if (opts.hasOpt("credentials"))
+        {
+            credentials = opts.getOptAndClear("credentials");
+        }
 
-            if (opts.hasOpt("credentials"))
-            {
-                credentials = opts.getOptAndClear("credentials");
-            }
+        var complete = function() {
 
-            var connection = serverconn.create(this,url,delegates,opts.getOpts());
+            var connection = serverconn.create(self,url,delegates,opts.getOpts());
 
             if (token != null)
             {
@@ -166,6 +92,83 @@ var	_api =
                 }
             }
         }
+
+        if (mopts != null)
+        {
+            var load = function(model) {
+                var loadurl = url;
+                loadurl += "/eventStreamProcessing/v1/projects/" + name;
+console.log("LOADURL: " + loadurl);
+                var loadreq = ajax.create(loadurl);
+                loadreq.setData(model);
+                loadreq.setRequestHeader("Content-Type","text/xml");
+                loadreq.put().then(
+                    function(result) {
+                        if (result.status >= 400)
+                        {
+                        }
+                        else
+                        {
+                            complete();
+                        }
+                    },
+                    function(result) {
+                        console.log("error loading");
+                    }
+                );
+            }
+
+            self.getModelFrom(mopts).then (
+                function(model) {
+
+                    var xml = xpath.createXml(model);
+                    xml.documentElement.setAttribute("name",name);
+
+                    model = xpath.xmlString(xml.documentElement);
+
+                    var s = url;
+                    s += "/eventStreamProcessing/v1/projectXml?name=" + name;
+
+                    ajax.create(s).get().then(
+                        function(result) {
+                        console.log("STATUS: " + result.status);
+                            if (result.status >= 400)
+                            {
+                                load(model);
+                            }
+                            else
+                            {
+                                var xml = xpath.createXml(result.text);
+                                var nodes = xpath.getNodes("//project[@name='" + name + "']",xml);
+                                var loadmodel = true;
+
+                                if (nodes.length == 1)
+                                {
+                                    const   tmp = xpath.xmlString(nodes[0]);
+                                    loadmodel = model != tmp;
+                                }
+
+                                if (loadmodel)
+                                {
+                                    load(model);
+                                }
+                                else
+                                {
+                                    complete();
+                                }
+                            }
+                        },
+                        function(result) {
+                        console.log("ERR STATUS: " + result.status);
+                            if (result.status >= 400)
+                            {
+                                load(model);
+                            }
+                        }
+                    );
+                }
+            );
+        }
     },
 
     closed:function(connection)
@@ -174,6 +177,32 @@ var	_api =
         {
             v.closed(connection);
         }
+    },
+
+    getModelFrom:function(opts)
+    {
+        if (opts.hasOpt("url") == false && opts.hasOpt("data") == false)
+        {
+            tools.exception("the model must contain either a data or url field");
+        }
+
+        return(new Promise((resolve,reject) => {
+            if (opts.hasOpt("data"))
+            {
+                resolve(opts.getOpt("data"));
+            }
+            else if (opts.hasOpt("url"))
+            {
+                ajax.create(opts.getOpt("url")).get().then(
+                    function(result) {
+                        resolve(result.text);
+                    },
+                    function(result) {
+                        reject();
+                    }
+                );
+            }
+        }));
     },
 
     createWebSocket:function(url,delegate)
@@ -256,9 +285,17 @@ var	_api =
         return(tools.createFunction(text,options));
     },
 
-    createK8S:function(url,options)
+    isK8sUrl:function(url)
     {
-        return(k8s.create(url,options));
+        var code = false;
+        var a = url.split("/");
+
+        if (a.length >= 2)
+        {
+            code = (a[a.length - 1] == "esp" || a[a.length - 2] == "esp");
+        }
+
+        return(code);
     },
 
     formatDate:function(date,format)

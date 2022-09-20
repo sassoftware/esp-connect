@@ -67,6 +67,8 @@ var _xml = "<project threads='4' pubsub='auto'>\
 function
 init()
 {
+    _esp.setProxies();
+
     var parms = _esp.getParms();
 
     if (parms.hasOwnProperty("project"))

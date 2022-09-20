@@ -41,6 +41,8 @@ var _conn = null;
 function
 init()
 {
+    _esp.setProxies();
+
     _timer = _esp.createTimer();
 
     var parms = _esp.getParms();

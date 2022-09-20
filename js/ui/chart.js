@@ -811,15 +811,7 @@ class Chart extends Options
         opts.setOpt("show_header",false);
         opts.setOpt("enable_share",false);
         opts.setOpt("content_style",{border:"0"});
-        if (conn.hasOpt("k8s"))
-        {
-            var k8s = conn.getOpt("k8s");
-            opts.setOpt("_server",k8s.projectUrl);
-        }
-        else
-        {
-            opts.setOpt("_server",ui);
-        }
+        opts.setOpt("_server",ui);
 
         var url = ui;
         url += "/eventStreamProcessing/v1/connect-visual?_opts=";

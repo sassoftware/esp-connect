@@ -175,20 +175,11 @@ class Connection extends Options
     get httpurlBase()
     {
         var base = "";
-
-        if (this.hasOpt("k8s"))
-        {
-            var k8s = this.getOpt("k8s");
-            base = k8s.espUrl;
-        }
-        else
-        {
-            base += this.httpProtocol;
-            base += "://";
-            base += this.host;
-            base += ":";
-            base += this.port;
-        }
+        base += this.httpProtocol;
+        base += "://";
+        base += this.host;
+        base += ":";
+        base += this.port;
 
         return(base);
     }

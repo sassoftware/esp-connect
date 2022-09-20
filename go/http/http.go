@@ -186,7 +186,7 @@ func (this WsProxy) ReadClient(done chan int) {
 func main() {
     port := flag.Int("port",4444,"HTTP port")
     root := flag.String("root",".","Root directory for serving files")
-    logging := flag.Int("logging",0,"Log level")
+    loglevel := flag.Int("loglevel",0,"Log level")
     secure := flag.Bool("secure",false,"Run with TLS")
     cert := flag.String("cert","cert.pem","TLS Certificate file")
     key := flag.String("key","key.pem","TLS Private Key file")
@@ -195,7 +195,7 @@ func main() {
 
     fmt.Printf("\nHTTP server running on port %d\n",*port)
 
-    _loglevel = *logging
+    _loglevel = *loglevel
 
     //var handler = new MyHandler{_root:*root}
     handler := MyHandler{_root:*root}

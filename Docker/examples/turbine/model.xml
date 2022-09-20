@@ -148,7 +148,7 @@
   <contqueries>
     <contquery name="cq">
       <windows>
-        <window-source name="Data_Stream" pubsub="true" collapse-updates="true" insert-only="true">
+        <window-source name="Data_Stream" pubsub="true" insert-only="true">
           <schema>
             <fields>
               <field name="id" type="string" key="true"/>
@@ -171,7 +171,7 @@
           </schema>
           <retention type="bytime_sliding">15 seconds</retention>
         </window-source>
-        <window-aggregate name="Readings_stats" collapse-updates="true">
+        <window-aggregate name="Readings_stats">
           <schema>
             <fields>
               <field name="attribute" type="string" key="true"/>
@@ -193,7 +193,7 @@
             <field-expr>ESP_aCount()</field-expr>
           </output>
         </window-aggregate>
-        <window-pattern name="sigma2Pattern_calc" collapse-updates="true">
+        <window-pattern name="sigma2Pattern_calc">
           <schema>
             <fields>
               <field name="alertID" type="int64" key="true"/>
@@ -221,7 +221,7 @@
             </pattern>
           </patterns>
         </window-pattern>
-        <window-pattern name="sigma3Pattern_calc" collapse-updates="true">
+        <window-pattern name="sigma3Pattern_calc">
           <schema>
             <fields>
               <field name="alertID" type="int64" key="true"/>
@@ -251,7 +251,7 @@
             </pattern>
           </patterns>
         </window-pattern>
-        <window-pattern name="integralPattern_calc" collapse-updates="true">
+        <window-pattern name="integralPattern_calc">
           <schema>
             <fields>
               <field name="alertID" type="int64" key="true"/>
@@ -308,7 +308,7 @@
             </pattern>
           </patterns>
         </window-pattern>
-        <window-pattern name="trendPattern_calc" collapse-updates="true">
+        <window-pattern name="trendPattern_calc">
           <schema>
             <fields>
               <field name="alertID" type="int64" key="true"/>
@@ -338,7 +338,7 @@
             </pattern>
           </patterns>
         </window-pattern>
-        <window-aggregate name="Count_sig2_alerts" collapse-updates="true">
+        <window-aggregate name="Count_sig2_alerts">
           <schema>
             <fields>
               <field name="location" type="string" key="true"/>
@@ -352,7 +352,7 @@
             <field-expr>ESP_aLast(alert1)</field-expr>
           </output>
         </window-aggregate>
-        <window-aggregate name="Count_sig3_alerts" collapse-updates="true">
+        <window-aggregate name="Count_sig3_alerts">
           <schema>
             <fields>
               <field name="location" type="string" key="true"/>
@@ -366,7 +366,7 @@
             <field-expr>ESP_aLast(alert3)</field-expr>
           </output>
         </window-aggregate>
-        <window-aggregate name="Count_integral_alerts" collapse-updates="true">
+        <window-aggregate name="Count_integral_alerts">
           <schema>
             <fields>
               <field name="location" type="string" key="true"/>
@@ -380,7 +380,7 @@
             <field-expr>ESP_aLast(alert4)</field-expr>
           </output>
         </window-aggregate>
-        <window-aggregate name="Count_trend_alerts" collapse-updates="true">
+        <window-aggregate name="Count_trend_alerts">
           <schema>
             <fields>
               <field name="location" type="string" key="true"/>
@@ -394,8 +394,8 @@
             <field-expr>ESP_aLast(alert2)</field-expr>
           </output>
         </window-aggregate>
-        <!--window-calculate algorithm="MAS" name="Make_insert" index="pi_EMPTY" produces-only-inserts="true" collapse-updates="true" -->
-        <window-calculate algorithm="MAS" name="Make_insert" index="pi_HASH" collapse-updates="true">
+        <!--window-calculate algorithm="MAS" name="Make_insert" index="pi_EMPTY" produces-only-inserts="true" -->
+        <window-calculate algorithm="MAS" name="Make_insert" index="pi_HASH">
           <schema>
             <fields>
               <field name="attribute" type="string" key="true"/>
@@ -416,8 +416,8 @@
             <window-map module="module_1" revision="0" source="Readings_stats" function="Make_Insert"/>
           </mas-map>
         </window-calculate>
-        <window-counter name="Counter_1" collapse-updates="true" count-interval="1 seconds" index="pi_EMPTY"/>
-        <window-calculate algorithm="MAS" name="Regression" index="pi_EMPTY" collapse-updates="true">
+        <window-counter name="Counter_1" count-interval="1 seconds" index="pi_EMPTY"/>
+        <window-calculate algorithm="MAS" name="Regression" index="pi_EMPTY">
           <schema>
             <fields>
               <field name="id" type="string" key="true"/>
@@ -443,10 +443,10 @@
             <window-map module="module_2" revision="0" source="Data_Stream" function="Compute_Regression"/>
           </mas-map>
         </window-calculate>
-        <window-filter name="Turbine_R" collapse-updates="true">
+        <window-filter name="Turbine_R">
           <expression>location=="R"</expression>
         </window-filter>
-        <window-compute name="Compute_1" index="pi_RBTREE" collapse-updates="true">
+        <window-compute name="Compute_1" index="pi_RBTREE">
           <schema>
             <fields>
               <field name="id" type="string" key="true"/>
@@ -489,7 +489,7 @@
             <field-expr>'Predicted_tran_temp'</field-expr>
           </output>
         </window-compute>
-        <window-compute name="Add_alert_type1" collapse-updates="true">
+        <window-compute name="Add_alert_type1">
           <schema>
             <fields>
               <field name="location" type="string" key="true"/>
@@ -502,7 +502,7 @@
             <field-expr>Alert_count</field-expr>
           </output>
         </window-compute>
-        <window-compute name="Add_alert_type2" collapse-updates="true">
+        <window-compute name="Add_alert_type2">
           <schema>
             <fields>
               <field name="location" type="string" key="true"/>
@@ -515,7 +515,7 @@
             <field-expr>Alert_count</field-expr>
           </output>
         </window-compute>
-        <window-compute name="Add_alert_type3" collapse-updates="true">
+        <window-compute name="Add_alert_type3">
           <schema>
             <fields>
               <field name="location" type="string" key="true"/>
@@ -528,7 +528,7 @@
             <field-expr>Alert_count</field-expr>
           </output>
         </window-compute>
-        <window-compute name="Add_alert_type4" collapse-updates="true">
+        <window-compute name="Add_alert_type4">
           <schema>
             <fields>
               <field name="location" type="string" key="true"/>
@@ -541,7 +541,7 @@
             <field-expr>Alert_count</field-expr>
           </output>
         </window-compute>
-        <window-union name="Union_1" collapse-updates="true" strict="true">
+        <window-union name="Union_1" strict="true">
 </window-union>
       </windows>
       <edges>

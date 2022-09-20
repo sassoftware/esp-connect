@@ -22,14 +22,7 @@ propertyChanged()
 function
 projectChanged()
 {
-    if (this.value.startsWith("k8s"))
-    {
-        this._viewer.loadK8S(this.value);
-    }
-    else
-    {
-        this._viewer.project = this.value;
-    }
+    this._viewer.project = this.value;
 }
 
 class Viewers extends Options
@@ -82,8 +75,6 @@ class ModelViewer extends ViewerBase
 
         super(visuals,container,connection,opts.getOpts());
 
-        this._k8s = null;
-
         this._project = null;
         this._data = null;
         this._model = null;
@@ -127,15 +118,12 @@ class ModelViewer extends ViewerBase
 
         this._connection = value;
         this._model = null;
-        this._k8s = null;
         this.draw();
 
         if (this._connection != null)
         {
             this._stats = this._connection.getStats();
             this.setStats();
-
-            this._k8s = this._connection.k8s;
 
             const   self = this;
 
@@ -668,76 +656,40 @@ class ModelViewer extends ViewerBase
         var option;
         var name;
 
-        if (connection != null && connection.k8s != null)
+        if (this._project != "*")
         {
-            this._project = "*";
-
-            if (this.getOpt("show_projects",true))
-            {
-                const   self = this;
-
-                connection.k8s.getProjects().then(
-                    function(result)
-                    {
-                        result.forEach((p) => {
-                            var url = "";
-                            url += connection.k8s.k8sUrl;
-                            url += "/" + p.metadata.namespace;
-                            url += "/" + p.metadata.name;
-                            option = document.createElement("option");
-                            option.value = url;
-                            option.appendChild(document.createTextNode(p.metadata.namespace + "/" + p.metadata.name));
-                            if (option.value == connection.k8s.projectUrl)
-                            {
-                                option.selected = true;
-                            }
-                            self._projectSelect.add(option);
-                        });
-                    },
-                    function(result)
-                    {
-                        tools.exception("error: " + opts);
-                    }
-                );
-            }
-        }
-        else
-        {
-            if (this._project != "*")
-            {
-                var exists = false;
-
-                for (var p of this._model._projects)
-                {
-                    if (p["name"] == this._project)
-                    {
-                        exists = true;
-                        break;
-                    }
-                }
-
-                if (exists == false)
-                {
-                    this._project = "*";
-                }
-            }
-
-            option = document.createElement("option");
-            option.value = "*";
-            option.appendChild(document.createTextNode("ALL"));
-            this._projectSelect.add(option);
+            var exists = false;
 
             for (var p of this._model._projects)
             {
-                option = document.createElement("option");
-                option.value = p["name"];
-                option.appendChild(document.createTextNode(option.value));
-                if (this._project != null && this._project == option.value)
+                if (p["name"] == this._project)
                 {
-                    option.selected = true;
+                    exists = true;
+                    break;
                 }
-                this._projectSelect.add(option);
             }
+
+            if (exists == false)
+            {
+                this._project = "*";
+            }
+        }
+
+        option = document.createElement("option");
+        option.value = "*";
+        option.appendChild(document.createTextNode("ALL"));
+        this._projectSelect.add(option);
+
+        for (var p of this._model._projects)
+        {
+            option = document.createElement("option");
+            option.value = p["name"];
+            option.appendChild(document.createTextNode(option.value));
+            if (this._project != null && this._project == option.value)
+            {
+                option.selected = true;
+            }
+            this._projectSelect.add(option);
         }
 
         var colors = this._visuals._colors.colors;

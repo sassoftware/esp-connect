@@ -877,7 +877,7 @@ console.log(JSON.stringify(this._o,null,"\t"));
     {
     }
 
-    message(message)
+    message(ws,message)
     {
         if (wsResponses)
         {
@@ -889,7 +889,8 @@ console.log(JSON.stringify(this._o,null,"\t"));
             }
             else
             {
-                var o = esp.decode(message.data);
+                var buf = esp.getTools().bufferToArrayBuffer(message.data);
+                var o = esp.decode(buf);
                 console.log(esp.getTools().stringify(o));
             }
         }
