@@ -32,7 +32,7 @@ var _api =
 
         var opts = new Options(options);
         var mopts = opts.hasOpt("model") ? new Options(opts.getOpt("model")) : null;
-        var name = mopts.getOpt("name");
+        var name = (mopts != null) ? mopts.getOpt("name") : null;
 
         const   k8s = opts.hasOpt("k8s") ? opts.getOpt("k8s") : this.isK8sUrl(url);
 
@@ -98,7 +98,6 @@ var _api =
             var load = function(model) {
                 var loadurl = url;
                 loadurl += "/eventStreamProcessing/v1/projects/" + name;
-console.log("LOADURL: " + loadurl);
                 var loadreq = ajax.create(loadurl);
                 loadreq.setData(model);
                 loadreq.setRequestHeader("Content-Type","text/xml");
@@ -168,6 +167,10 @@ console.log("LOADURL: " + loadurl);
                     );
                 }
             );
+        }
+        else
+        {
+            complete();
         }
     },
 

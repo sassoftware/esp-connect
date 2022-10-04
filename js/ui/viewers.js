@@ -1105,7 +1105,7 @@ class ModelViewer extends ViewerBase
             var self = this;
             setTimeout(function(){self.fit();self.draw()},after);
         }
-        else
+        else if (this._network != null)
         {
             this._network.fit();
         }
