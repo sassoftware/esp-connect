@@ -765,7 +765,7 @@ class Api extends Options
             var id = tools.guid();
             o["id"] = id;
             o["url"] = url;
-            o["format"] = "ubjson";
+            o["format"] = "cbor";
 
             this.addHandler(id,{
                 process:function(result) {
@@ -2118,7 +2118,7 @@ class EventCollection extends Datasource
     constructor(conn,options)
     {
         super(conn,options);
-        this.setOpt("format","ubjson");
+        this.setOpt("format","cbor");
         this._data = {};
         this._list = [];
         this._page = 0;
@@ -2485,7 +2485,8 @@ class EventStream extends Datasource
     constructor(conn,options)
     {
         super(conn,options);
-        this.setOpt("format","ubjson");
+        this.setOpt("format","json");
+        this.setOpt("format","cbor");
         this._data = [];
         this._counter = 1;
     }
@@ -2738,17 +2739,44 @@ class EventStream extends Datasource
 
     process(events)
     {
+        var oldjson = false;
+
+        if (events.length > 0)
+        {
+            var e = events[0];
+
+            if (e.hasOwnProperty("event"))
+            {
+                if (typeof e["event"] == "object")
+                {
+                    oldjson = true;
+                }
+            }
+        }
+
         var o;
 
         for (var e of events)
         {
             o = {}
 
+            if (oldjson)
+            {
+                e = e["event"];
+            }
+
             for (var column of this._schema._columns)
             {
                 if (e.hasOwnProperty(column))
                 {
-                    o[column] = e[column];
+                    if (e[column].hasOwnProperty("*value"))
+                    {
+                        o[column] = e[column]["*value"];
+                    }
+                    else
+                    {
+                        o[column] = e[column];
+                    }
                 }
             }
 
@@ -3016,7 +3044,7 @@ class Stats extends Options
         o["config"] = this.getOpt("config",false);
         o["memory"] = this.getOpt("memory",true);
         o["format"] = "xml";
-        o["format"] = "ubjson";
+        o["format"] = "cbor";
 
         this._api.sendObject(request);
     }

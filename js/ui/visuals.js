@@ -3357,12 +3357,24 @@ class ImageViewer extends Chart
 
     set image(value) 
     {
+        if (value != null && typeof value["event"] == "object")
+        {
+            value = value["event"];
+        }
+
         this._data = value;
 
         if (this._data != null && this._data.hasOwnProperty(this._field))
         {
             this._image._data = this._data;
+
             var imagedata = this._data[this._field];
+
+            if (imagedata.hasOwnProperty("*value"))
+            {
+                imagedata = imagedata["*value"];
+            }
+
             this._image.src = "data:application/octet-stream;base64," + imagedata;
         }
     }

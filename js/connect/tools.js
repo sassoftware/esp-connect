@@ -464,7 +464,7 @@ var _api =
 
     arrayBufferToBuffer:function(ab)
     {
-        var buf = new Buffer(ab.byteLength);
+        var buf = new Buffer.alloc(ab.byteLength);
         var view = new Uint8Array(ab);
 
         for (var i = 0; i < buf.length; i++)
@@ -934,8 +934,15 @@ var _api =
     stringify:function(o)
     {
         var tmp = JSON.parse(JSON.stringify(o,(key,value) =>
-        typeof value === "bigint" ? value.toString() : value
-        ));
+        {
+            if (typeof value === "bigint")
+            {
+                return(value.toString());
+            }
+
+            return(value);
+        }));
+
         return(JSON.stringify(tmp,null,"    "));
     },
 

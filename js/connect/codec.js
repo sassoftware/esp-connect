@@ -3,7 +3,79 @@
     SPDX-License-Identifier: Apache-2.0
 */
 
-import {tools} from "./tools.js";
+class Bitset
+{
+    constructor(size)
+    {
+        this._size = size;
+        this._bits = new Uint8Array(size);
+    }
+
+    get value()
+    {
+        var value = 0;
+
+        for (var i = 0; i < this._size; i++)
+        {
+            if (this._bits[i] == 1)
+            {
+                //value |= (1 << i);
+                value |= (1 << (this._size - 1 - i));
+            }
+        }
+
+        return(value);
+    }
+
+    set(index)
+    {
+        if (index < this._size)
+        {
+            this._bits[this._size - 1 - index] = 1;
+        }
+    }
+
+    unset(index)
+    {
+        if (index < this._size)
+        {
+            this._bits[index] = 0;
+        }
+    }
+
+    setBits(value)
+    {
+        for (var i = this._size - 1; i >= 0; i--)
+        {
+            if (value & (1 << i))
+            {
+                //this.set(this._size - 1 - i);
+                this.set(i);
+            }
+        }
+    }
+
+    to_string()
+    {
+        var s = "";
+
+        for (var i = 0; i < this._size; i++)
+        {
+            if (this._bits[i] == 0)
+            {
+                s += "0";
+            }
+            else
+            {
+                s += "1";
+            }
+        }
+
+        return(s);
+    }
+}
+
+
 
 class JsonEncoder
 {
@@ -21,7 +93,8 @@ class JsonEncoder
 
     get data()
     {
-        return(this._data);
+        var data = (this._index < this._size) ? this._data.slice(0,this._index) : this_data;
+        return(data);
     }
 
     encode(o,name)
@@ -30,11 +103,16 @@ class JsonEncoder
         {
             if (Array.isArray(o))
             {
-                this.writeName(name);
+                if (name != null)
+                {
+                    this.writeString(name);
+                }
+
                 this.beginArray();
+                const self = this;
                 o.forEach(item =>
                 {
-                    this.encode(item);
+                    self.encode(item);
                 });
                 this.endArray();
             }
@@ -44,7 +122,10 @@ class JsonEncoder
             }
             else
             {
-                this.writeName(name);
+                if (name != null)
+                {
+                    this.writeString(name);
+                }
                 this.beginObject();
                 for (var x in o)
                 {
@@ -59,38 +140,108 @@ class JsonEncoder
         }
     }
 
+    beginArray()
+    {
+        var bits = new Bitset(8);
+        bits.setBits(31);
+        bits.set(7);
+        this._view.setUint8(this._index,bits.value);
+        this._index += 1;
+    }
+
+    endArray()
+    {
+        this.writeStopCode();
+    }
+
+    beginObject()
+    {
+        var bits = new Bitset(8);
+        bits.setBits(31);
+        bits.set(5);
+        bits.set(7);
+        this._view.setUint8(this._index,bits.value);
+        this._index += 1;
+    }
+
+    endObject()
+    {
+        this.writeStopCode();
+    }
+
+    writeStopCode()
+    {
+        var bits = new Bitset(8);
+        bits.setBits(31);
+
+        bits.set(5);
+        bits.set(6);
+        bits.set(7);
+
+        this._view.setUint8(this._index,bits.value);
+        this._index += 1;
+    }
+
     writeValue(value,name)
     {
-        var type = typeof value;
+        if (isNaN(value) == false)
+        {
+            if (Number.isInteger(value))
+            {
+                //this.writeI64(value,name);
+                this.writeI32(value,name);
+            }
+            else
+            {
+                this.writeDouble(value,name);
+            }
+        }
+        else
+        {
+            var type = typeof value;
 
-        if (type == "string")
-        {
-            this.writeString(value,name);
-        }
-        else if (type == "number")
-        {
-            this.writeI32(value,name);
-        }
-        else if (type == "bigint")
-        {
-            this.writeI64(value,name);
-        }
-        else if (type == "boolean")
-        {
-            this.writeString(value ? "true" : "false",name);
+            if (type == "string")
+            {
+                this.writeString(value,name);
+            }
+            else if (type == "boolean")
+            {
+                this.writeBool(value,name);
+            }
         }
     }
 
     writeString(value,name)
     {
-        this.writeName(name);
-        this.writeType('S');
-        this.writeLength(value.length);
-
-        if (this._debug)
+        if (name != null && name.length > 0)
         {
-            var tmp = (value.length > 50) ? (value.substr(0,20) + "...") : value;
-            console.log("index: " + this._index + " write string: " + tmp);
+            this.writeString(name,null);
+        }
+
+        var info = 0;
+
+        if (value.length < 24)
+        {
+            var bits = new Bitset(8);
+            bits.setBits(value.length);
+            bits.set(5);
+            bits.set(6);
+            this._view.setInt8(this._index,bits.value);
+            this._index += 1;
+        }
+        else
+        {
+            var bits = new Bitset(8);
+            bits.set(1);
+            bits.set(3);
+            bits.set(4);
+            bits.set(5);
+            bits.set(6);
+
+            this._view.setInt8(this._index,bits.value);
+            this._index += 1;
+            this._view.setInt32(this._index,value.length);
+            this._index += 4;
         }
 
         for (var i = 0; i < value.length; i++)
@@ -100,129 +251,134 @@ class JsonEncoder
         }
     }
 
+    writeI8(value,name)
+    {
+        if (name != null && name.length > 0)
+        {
+            this.writeString(name,null);
+        }
+
+        var negative = value < 0;
+
+        if (negative)
+        {
+            value = -1 - value;
+        }
+
+        if (value >= 24)
+        {
+            var bits = new Bitset(8);
+            bits.set(3);
+            bits.set(4);
+
+            if (negative)
+            {
+                bits.set(5);
+            }
+
+            this._view.setInt8(this._index,bits.value);
+        }
+        else if (negative)
+        {
+            var bits = new Bitset(8);
+            bits.setBits(value);
+            bits.set(5);
+
+            this._view.setInt8(this._index,bits.value);
+        }
+        else
+        {
+            this._view.setInt8(this._index,value);
+        }
+
+        this._index += 1;
+    }
+
     writeI32(value,name)
     {
-        this.writeName(name);
-        this.writeType('l');
-
-        if (this._debug)
+        if (name != null && name.length > 0)
         {
-            console.log("index: " + this._index + " write i32: " + value);
+            this.writeString(name,null);
         }
+
+        var negative = value < 0;
+
+        if (negative)
+        {
+            value = -1 - value;
+        }
+
+        var bits = new Bitset(8);
+
+        bits.set(1);
+        bits.set(3);
+        bits.set(4);
+
+        if (negative)
+        {
+            bits.set(5);
+        }
+
+        this._view.setInt8(this._index,bits.value);
+        this._index += 1;
         this._view.setInt32(this._index,value);
         this._index += 4;
     }
 
     writeI64(value,name)
     {
-        this.writeName(name);
-        this.writeType('L');
-
-        if (this._debug)
+        if (name != null && name.length > 0)
         {
-            console.log("index: " + this._index + " write i64: " + value);
+            this.writeString(name,null);
         }
+
+        var negative = value < 0;
+
+        if (negative)
+        {
+            value = -1 - value;
+        }
+
+        var bits = new Bitset(8);
+        bits.set(0);
+        bits.set(1);
+        bits.set(3);
+        bits.set(4);
+
+        if (negative)
+        {
+            bits.set(5);
+        }
+
+        this._view.setInt8(this._index,bits.value);
+        this._index += 1;
+
         this._view.setBigInt64(this._index,value);
         this._index += 8;
     }
 
-    writeF32(value,name)
-    {
-        this.writeName(name);
-        this.writeType('d');
-
-        if (this._debug)
-        {
-            console.log("index: " + this._index + " write f32: " + value);
-        }
-        this._view.setFloat32(this._index,value);
-        this._index += 4;
-    }
-
-    writeF64(value,name)
-    {
-        this.writeName(name);
-        this.writeType('d');
-
-        if (this._debug)
-        {
-            console.log("index: " + this._index + " write f64: " + value);
-        }
-        this._view.setFloat64(this._index,value);
-        this._index += 8;
-    }
-
-    writeBuffer(value,name)
-    {
-        this.writeName(name);
-        this.writeType('B');
-        this.writeLength(value.byteLength);
-
-        var dv = new DataView(value);
-
-        for (var i = 0; i < value.byteLength; i++)
-        {
-            this._view.setUint8(this._index,dv.getUint8(i));
-            this._index++;
-        }
-    }
-
-    writeName(name)
+    writeDouble(value,name)
     {
         if (name != null && name.length > 0)
         {
-            this.writeLength(name.length);
-
-            if (this._debug)
-            {
-                console.log("index: " + this._index + " write name: " + name);
-            }
-            for (var i = 0; i < name.length; i++)
-            {
-                this._view.setUint8(this._index,name.charCodeAt(i));
-                this._index++;
-            }
+            this.writeString(name,null);
         }
-    }
 
-    writeType(type)
-    {
-        if (this._debug)
-        {
-            console.log("index: " + this._index + " write type: " + type);
-        }
-        this._view.setUint8(this._index,type.charCodeAt());
-        this._index++;
-    }
+        var bits = new Bitset(8);
+        bits.set(0);
+        bits.set(1);
+        bits.set(3);
+        bits.set(4);
 
-    writeLength(length)
-    {
-        if (this._debug)
-        {
-            console.log("index: " + this._index + " write length: " + length);
-        }
-        this._view.setUint32(this._index,length);
-        this._index += 4;
-    }
+        bits.set(5);
+        bits.set(6);
+        bits.set(7);
 
-    beginObject()
-    {
-        this.writeType('{');
-    }
+        this._view.setUint8(this._index,bits.value);
+        this._index += 1;
 
-    endObject()
-    {
-        this.writeType('}');
-    }
-
-    beginArray()
-    {
-        this.writeType('[');
-    }
-
-    endArray()
-    {
-        this.writeType(']');
+        this._view.setFloat64(this._index,value);
+        this._index += 8;
     }
 
     size(object)
@@ -276,33 +432,6 @@ class JsonEncoder
 
         return(bytes);
     }
-
-    dump()
-    {
-        var braces = 0;
-        var c;
-
-        for (var i = 0; i < this._data.byteLength; i++)
-        {
-            c = String.fromCharCode(this._view.getUint8(i));
-            if (c == '{')
-            {
-                braces++;
-            }
-
-            console.log(i + " :: " + this._view.getUint8(i) + " ::: " + c);
-
-            if (c == '}')
-            {
-                braces--;
-
-                if (braces == 0)
-                {
-                    break;
-                }
-            }
-        }
-    }
 }
 
 class JsonDecoder
@@ -317,214 +446,197 @@ class JsonDecoder
         this._debug = false;
 
         this.addTo();
+
+        var type;
+        var info;
+
+        var header = this.getHeader();
+        this.addTo(header.type,header.info,null);
     }
 
-    addTo(name,to)
+    addTo(type,info,to)
     {
-        var type = this.getType(true);
-
-        if (type == '{')
+        if (type == 5)
         {
-            this.addObject(name,to);
+            this.addObject(info,to);
         }
-        else if (type == '[')
+        else if (type == 4)
         {
-            this.addArray(name,to);
+            this.addArray(info,to);
         }
         else
         {
-            this.addValue(name,to);
+            this.addValue(type,info,"",to);
         }
     }
 
-    addObject(name,to)
+    addArray(info,to)
     {
-        if (this._debug)
-        {
-            console.log("index: " + this._index + " add object: " + name + " to " + to);
-        }
-
-        var o = {};
-
         if (this._o == null)
         {
-            this._o = o;
-        }
-        else if (Array.isArray(to))
-        {
-            to.push(o);
-        }
-        else
-        {
-            to[name] = o;
+            this._o = [];
+            to = this._o;
         }
 
-        var length;
-        var value;
-        var type;
+        var size = (info != 31) ? this.getUnsigned(info) : null;
+        var header;
 
-        while (this._index < this._size)
+        while ((header = this.getHeader()) != null)
         {
-            type = this.getType(false);
-
-            if (type == '}')
+            if (size == null)
             {
-                this._index++;
-                break;
+                if (header.type == 7 && header.info == 31)
+                {
+                    break;
+                }
+            }
+
+            if (header.type == 4)
+            {
+                if (Array.isArray(to))
+                {
+                    var o = [];
+                    this.addTo(header.type,header.info,o);
+                    to.push(o);
+                }
+            }
+            else if (header.type == 5)
+            {
+                if (Array.isArray(to))
+                {
+                    var o = {};
+                    this.addTo(header.type,header.info,o);
+                    to.push(o);
+                }
             }
             else
             {
-                length = this.getLength();
-                name = this.getString(length);
-                type = this.getType(false);
+                this.addTo(header.type,header.info,to);
+            }
 
-                if (type == '{')
+            if (size != null)
+            {
+                if (--size == 0)
                 {
-                    this.addTo(name,o);
-                }
-                else if (type == '[')
-                {
-                    this.addTo(name,o);
-                }
-                else
-                {
-                    this.addValue(name,o);
+                    break;
                 }
             }
-        }
-
-        if (this._debug)
-        {
-            console.log("index: " + this._index + " add object: " + name + " to " + to + " complete");
         }
     }
 
-    addArray(name,to)
+    addObject(info,to)
     {
-        if (this._debug)
-        {
-            console.log("index: " + this._index + " add array: " + name + " to " + to);
-        }
-
-        var a = [];
-
         if (this._o == null)
         {
-            this._o = a;
-        }
-        else if (Array.isArray(to))
-        {
-            to.push(a);
-        }
-        else
-        {
-            to[name] = a;
+            this._o = {};
+            to = this._o;
         }
 
-        var type;
+        var size = (info != 31) ? this.getUnsigned(info) : null;
+        var name = null;
+        var header;
 
-        while (this._index < this._size)
+        while ((header = this.getHeader()) != null)
         {
-            type = this.getType(false);
-
-            if (type == '[')
+            if (size == null)
             {
-                this.addTo("",a);
+                if (header.type == 7 && header.info == 31)
+                {
+                    break;
+                }
             }
-            else if (type == ']')
+
+            if (header.type != 3)
             {
-                this._index++;
+                console.log("====== bad");
                 break;
             }
-            else if (type == '{')
+
+            name = this.getString(header.info);
+
+            header = this.getHeader();
+
+            if (header.type == 4)
             {
-                this.addTo("",a);
+                to[name] = [];
+                this.addTo(header.type,header.info,to[name]);
+            }
+            else if (header.type == 5)
+            {
+                to[name] = {}
+                this.addTo(header.type,header.info,to[name]);
             }
             else
             {
-                this.addValue("",a);
+                this.addValue(header.type,header.info,name,to);
             }
-        }
 
-        if (this._debug)
-        {
-            console.log("index: " + this._index + " add array: " + name + " to " + to + " complete");
+            if (size != null)
+            {
+                if (--size == 0)
+                {
+                    break;
+                }
+            }
         }
     }
 
-    addValue(name,to)
+    addValue(type,info,name,to)
     {
-        if (this._debug)
-        {
-            console.log("index: " + this._index + " add value: " + name + " to " + to);
-        }
-
-        var type = this.getType(true);
         var value = null;
 
-        if (type == 'S')
+        if (type == 0 || type == 1 || type == 2 || type == 3 || type == 7)
         {
-            var length = this.getLength();
-            if (length > 0)
+            if (type == 0)
             {
-                if (this._debug)
-                {
-                    console.log("index: " + this._index + " get string of " + length + " bytes");
-                }
-
-                var data = new Uint8Array(this._data.buffer,this._index,length);
-                value = data.reduce(
-                    function (data,byte) {
-                        return(data + String.fromCharCode(byte));
-                        },
-                    '');
-
-                this._index += length;
+                value = this.getUnsigned(info);
             }
-        }
-        else if (type == 'B')
-        {
-            var length = this.getLength();
-            if (length > 0)
+            else if (type == 1)
             {
-                if (this._debug)
-                {
-                    console.log("index: " + this._index + " get blob of " + length + " bytes");
-                }
-
-                value = new Uint8Array(this._data.buffer,this._index,length);
-
-                if (tools.isNode)
-                {
-                    value = Buffer.from(value).toString("base64");
-                }
-                else
-                {
-                    value = btoa(value.reduce(
-                        function (data,byte) {
-                            return(data + String.fromCharCode(byte));
-                            },
-                        ''));
-                }
-                this._index += length;
+                var tmp = this.getUnsigned(info);
+                var value = -1 - tmp;
             }
-        }
-        else if (type == 'l')
-        {
-            value = this.getI32();
-        }
-        else if (type == 'L')
-        {
-            value = this.getI64();
-        }
-        else if (type == 'D')
-        {
-            value = this.getDouble();
+            else if (type == 2)
+            {
+                var size = this.getUnsigned(info);
+
+                if (size > 0)
+                {
+                    value = new Uint8Array(this._data.buffer,this._index,size);
+
+                    if (_api._isNode)
+                    {
+                        value = Buffer.from(value).toString("base64");
+                    }
+                    else
+                    {
+                        value = btoa(value.reduce(
+                            function (data,byte) {
+                                return(data + String.fromCharCode(byte));
+                                },
+                            ''));
+                    }
+
+                    this._index += size;
+                }
+            }
+            else if (type == 3)
+            {
+                value = this.getString(info);
+            }
+            else if (type == 7)
+            {
+                value = this.getDouble(info);
+            }
         }
 
         if (value != null)
         {
-            if (Array.isArray(to))
+            if (this._o == null)
+            {
+                this._o = value;
+            }
+            else if (Array.isArray(to))
             {
                 to.push(value);
             }
@@ -535,99 +647,127 @@ class JsonDecoder
         }
     }
 
-    getType(increment)
+    getHeader()
     {
-        var type = String.fromCharCode(this._data.getInt8(this._index));
-
-        if (this._debug)
+        if (this._index >= this._size)
         {
-            console.log("index: " + this._index + " get type: " + type);
+            return(null);
         }
 
-        if (increment)
-        {
-            this._index++;
-        }
-        return(type);
+        var header = this._data.getUint8(this._index);
+        var o = {};
+        o.type = (header & 0xe0) >> 5;
+        o.info = (header & 0x1f);
+
+        /*
+        console.log(JSON.stringify(o));
+        */
+
+        this._index++;
+
+        return(o);
     }
 
-    getLength()
+    getString(info)
     {
-        var length = this._data.getInt32(this._index);
+        var s = null;
+        var size = this.getUnsigned(info);
 
-        if (this._debug)
+        if (size > 0)
         {
-            console.log("index: " + this._index + " get length: " + length);
+            var data = new Uint8Array(this._data.buffer,this._index,size);
+            s = data.reduce(
+                function (data,byte) {
+                    return(data + String.fromCharCode(byte));
+                    },
+                '');
+
+            this._index += size;
         }
 
-        this._index += 4;
-        return(length);
-    }
-
-    getString(length)
-    {
-        var s = String.fromCharCode.apply(null,new Uint8Array(this._data.buffer,this._index,length));
-
-        if (this._debug)
-        {
-            console.log("index: " + this._index + " get string: " + s);
-        }
-
-        this._index += length;
         return(s);
     }
 
-    getI32()
+    /*
+    getString(info)
     {
-        var value = this._data.getInt32(this._index);
+        var s = null;
+        var size = this.getUnsigned(info);
 
-        if (this._debug)
+        if (size > 0)
         {
-            console.log("index: " + this._index + " get i32: " + value);
+            s = String.fromCharCode.apply(null,new Uint8Array(this._data.buffer,this._index,size));
+            this._index += size;
         }
 
-        this._index += 4;
-        return(value);
+        return(s);
     }
+    */
 
-    getI64()
+    getUnsigned(info)
     {
         var value = 0;
 
-        if (_api._supportsGetBigInt)
+        if (info < 24)
         {
-            value = this._data.getBigInt64(this._index);
+            value = info;
         }
-        else
+        else if (info <= 27)
         {
-            const bigThirtyTwo = BigInt(32);
-            const bigZero = BigInt(0);
-            const left = BigInt(this._data.getUint32(this._index | 0,!!false) >>> 0);
-            const right = BigInt(this._data.getUint32((this._index | 0) + 4 | 0,!!false) >>> 0);
-
-            value = (left<<bigThirtyTwo)|right;
+            if (info == 24)
+            {
+                value = this._data.getUint8(this._index);
+                this._index += 1;
+            }
+            else if (info == 25)
+            {
+                value = this._data.getUint16(this._index);
+                this._index += 2;
+            }
+            else if (info == 26)
+            {
+                value = this._data.getUint32(this._index);
+                this._index += 4;
+            }
+            else if (info == 27)
+            {
+                value = this._data.getBigInt64(this._index);
+                this._index += 8;
+            }
         }
-
-        if (this._debug)
-        {
-            console.log("index: " + this._index + " get i64: " + value);
-        }
-
-        this._index += 8;
 
         return(value);
     }
 
-    getDouble()
+    getDouble(info)
     {
-        var value = this._data.getFloat64(this._index);
+        var value = 0.0;
 
-        if (this._debug)
+        if (info < 25)
         {
-            console.log("index: " + this._index + " get double: " + value);
+            if (info < 24)
+            {
+                value = info;
+            }
+            else
+            {
+                this._index += 1;
+            }
         }
-
-        this._index += 8;
+        else if (info == 25)
+        {
+            this._index += 2;
+        }
+        else if (info == 26)
+        {
+            value = this._data.getFloat32(this._index);
+            this._index += 4;
+        }
+        else if (info == 27)
+        {
+            value = this._data.getFloat64(this._index);
+            this._index += 8;
+        }
 
         return(value);
     }
@@ -635,6 +775,7 @@ class JsonDecoder
 
 var _api =
 {
+    _isNode:false,
     _supportsGetBigInt:false,
 
     init:function()
@@ -642,7 +783,18 @@ var _api =
         var buf = new ArrayBuffer(2);
         var dv = new DataView(buf);
         dv.setInt16(0,256,true);
-        this._supportsGetBigInt = tools.supports(dv,"getBigInt64");
+        this._supportsGetBigInt = (("getBigInt64" in dv) && typeof(dv["getBigInt64"]) == "function");
+
+        if (typeof process === "object")
+        {
+            if (process.hasOwnProperty("versions"))
+            {
+                if (process.versions.hasOwnProperty("node"))
+                {
+                    this._isNode = true;
+                }
+            }
+        }
     },
 
     encode:function(o)

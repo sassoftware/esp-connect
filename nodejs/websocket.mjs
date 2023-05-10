@@ -11,7 +11,7 @@ if (url == null)
 }
 
 var logging = opts.getOpt("logging",0);
-var ubjson = opts.getOpt("ubjson",false);
+var cbor = opts.getOpt("cbor",false);
 var input = opts.getOpt("input");
 var requests = null;
 
@@ -58,7 +58,7 @@ var o =
         {
             console.log(e.data);
         }
-        else if (ubjson)
+        else if (cbor)
         {
             var o = esp.decode(e.data);
             console.log(esp.getTools().stringify(o));
@@ -104,7 +104,15 @@ send()
             return;
         }
 
-        ws.send(JSON.stringify(o));
+        if (cbor)
+        {
+            var encoded = esp.encode(o);
+            ws.send(encoded);
+        }
+        else
+        {
+            ws.send(JSON.stringify(o));
+        }
     }
 }
 
@@ -123,7 +131,7 @@ showUsage()
             {name:"url",arg:"Websocket Url",description:"Websocket to which to connect",required:true},
             {name:"input",arg:"Filename",description:"Input JSON file",required:false},
             {name:"logging",arg:"Level",description:"Logging level",required:false},
-            {name:"ubjson",arg:"true | false",description:"Receive UBJSON, defaults to false",required:false}
+            {name:"cbor",arg:"true | false",description:"Send and receive data in Concise Binary Object Representation (CBOR), defaults to false",required:false}
         ],
         show_auth:false,
         show_cert:false
