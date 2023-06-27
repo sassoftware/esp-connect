@@ -211,7 +211,7 @@ class JsonEncoder
         }
     }
 
-    writeString(value,name)
+    writeI8(value,name)
     {
         if (name != null && name.length > 0)
         {
@@ -244,11 +244,33 @@ class JsonEncoder
             this._index += 4;
         }
 
-        for (var i = 0; i < value.length; i++)
+        if (value >= 24)
         {
-            this._view.setUint8(this._index,value.charCodeAt(i));
-            this._index++;
+            var bits = new Bitset(8);
+            bits.set(3);
+            bits.set(4);
+
+            if (negative)
+            {
+                bits.set(5);
+            }
+
+            this._view.setInt8(this._index,bits.value);
         }
+        else if (negative)
+        {
+            var bits = new Bitset(8);
+            bits.setBits(value);
+            bits.set(5);
+
+            this._view.setInt8(this._index,bits.value);
+        }
+        else
+        {
+            this._view.setInt8(this._index,value);
+        }
+
+        this._index += 1;
     }
 
     writeI8(value,name)
