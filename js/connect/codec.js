@@ -75,8 +75,6 @@ class Bitset
     }
 }
 
-
-
 class JsonEncoder
 {
     constructor(o)
@@ -208,6 +206,46 @@ class JsonEncoder
             {
                 this.writeBool(value,name);
             }
+        }
+    }
+
+    writeString(value,name)
+    {       
+        if (name != null && name.length > 0)
+        {
+            this.writeString(name,null);
+        }
+        
+        var info = 0;
+        
+        if (value.length < 24)
+        {
+            var bits = new Bitset(8);
+            bits.setBits(value.length);
+            bits.set(5);
+            bits.set(6);
+            this._view.setInt8(this._index,bits.value);
+            this._index += 1;
+        }
+        else
+        {
+            var bits = new Bitset(8);
+            bits.set(1);
+            bits.set(3);
+            bits.set(4);
+            bits.set(5);
+            bits.set(6);
+                
+            this._view.setInt8(this._index,bits.value);
+            this._index += 1;
+            this._view.setInt32(this._index,value.length);
+            this._index += 4;
+        }
+
+        for (var i = 0; i < value.length; i++)
+        {
+            this._view.setUint8(this._index,value.charCodeAt(i));
+            this._index++;
         }
     }
 
@@ -401,6 +439,34 @@ class JsonEncoder
 
         this._view.setFloat64(this._index,value);
         this._index += 8;
+    }
+
+    writeBuffer(value,name)
+    {
+        if (name != null && name.length > 0)
+        {
+            this.writeString(name,null);
+        }
+
+        var bits = new Bitset(8);
+
+        bits.set(1);
+        bits.set(3);
+        bits.set(4);
+        bits.set(6);
+
+        this._view.setUint8(this._index,bits.value);
+        this._index += 1;
+
+        var dv = new DataView(value);
+
+        this._view.setUint32(this._index,dv.byteLength);
+
+        for (var i = 0; i < dv.byteLength; i++)
+        {
+            this._view.setUint8(this._index,dv.getUint8(i));
+            this._index += 1;
+        }
     }
 
     size(object)
@@ -616,7 +682,7 @@ class JsonDecoder
             else if (type == 1)
             {
                 var tmp = this.getUnsigned(info);
-                var value = -1 - tmp;
+                value = BigInt(BigInt(-1) - BigInt(tmp));
             }
             else if (type == 2)
             {

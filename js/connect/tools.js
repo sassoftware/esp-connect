@@ -937,7 +937,8 @@ var _api =
         {
             if (typeof value === "bigint")
             {
-                return(value.toString());
+                //return(value.toString());
+                return(new Number(value.toString()));
             }
 
             return(value);
