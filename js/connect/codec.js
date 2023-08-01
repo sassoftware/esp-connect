@@ -182,7 +182,17 @@ class JsonEncoder
 
     writeValue(value,name)
     {
-        if (isNaN(value) == false)
+        var type = typeof value;
+
+        if (type == "string")
+        {
+            this.writeString(value,name);
+        }
+        else if (type == "boolean")
+        {
+            this.writeBool(value,name);
+        }
+        else if (isNaN(value) == false)
         {
             if (Number.isInteger(value))
             {
@@ -192,19 +202,6 @@ class JsonEncoder
             else
             {
                 this.writeDouble(value,name);
-            }
-        }
-        else
-        {
-            var type = typeof value;
-
-            if (type == "string")
-            {
-                this.writeString(value,name);
-            }
-            else if (type == "boolean")
-            {
-                this.writeBool(value,name);
             }
         }
     }
@@ -461,6 +458,7 @@ class JsonEncoder
         var dv = new DataView(value);
 
         this._view.setUint32(this._index,dv.byteLength);
+        this._index += 4;
 
         for (var i = 0; i < dv.byteLength; i++)
         {
